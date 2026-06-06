@@ -1,1 +1,12 @@
 /documents
+# فایل‌های شخصی اینتلیجی
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/vcs.xml
+.idea/compiler.xml
+*.iml
+
+# فایل‌های خروجی و کامپایل شده جاوا
+out/
+target/
+*.class
