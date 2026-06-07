@@ -1,6 +1,6 @@
 package models.user;
 
-import models.entities.plants.bowling.Plant;
+import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
 import models.greenhouse.GreenHouse;
 import models.quests.Quest;
