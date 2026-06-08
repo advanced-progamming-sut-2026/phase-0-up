@@ -4,6 +4,7 @@ import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.quests.Quest;
+import models.quests.QuestContext;
 import models.user.Profile;
 
 import java.util.List;
