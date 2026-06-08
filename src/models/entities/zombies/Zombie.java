@@ -1,5 +1,6 @@
 package models.entities.zombies;
 
+import models.entities.plants.Entity;
 import models.entities.zombies.Abilities.ZombieAbility;
 import models.entities.zombies.Components.HealthComponent;
 import models.entities.zombies.Components.MovementComponent;
@@ -7,7 +8,7 @@ import models.entities.zombies.Components.StateComponent;
 
 import java.util.List;
 
-public class Zombie {
+public class Zombie extends Entity {
     private HealthComponent health;
     private MovementComponent movement;
     private StateComponent state;
@@ -15,7 +16,8 @@ public class Zombie {
     private int wavePointCost;
     private boolean glowing;
 
-    public Zombie(HealthComponent health, MovementComponent movement) {}
+
+    public Zombie(HealthComponent health) {}
     public void addAbility(ZombieAbility ability) {}
     public void update() {}
     public StateComponent getState() { return state; }

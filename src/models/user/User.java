@@ -10,7 +10,7 @@ public class User {
     private Gender gender;
     private String hashPassword;
     private Map<Integer , String> securityQuestions;
-    private Profile profile;
+    private Profile profile;   //each user has its profile
     private boolean stayLoggedIn = false;
 
     public User(String username, String password, String nickname, String email, Gender gender, String hashPassword, Map<Integer, String> securityQuestions , Profile profile){};
