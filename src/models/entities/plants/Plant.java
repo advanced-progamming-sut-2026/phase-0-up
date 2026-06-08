@@ -16,5 +16,7 @@ public class Plant extends Entity{
 
     public void upgrade(){}
     public boolean isReadyToPlant(){return false;}
-
+    @Override
+    public void update() {}
+    public boolean isDead(){return false;}
 }

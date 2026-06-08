@@ -17,4 +17,5 @@ public abstract class Entity {
     public void setHp(int hp) {};
     public boolean isAlive() {return false;}
     public void setAlive(boolean alive) {};
+    public abstract void update();
 }

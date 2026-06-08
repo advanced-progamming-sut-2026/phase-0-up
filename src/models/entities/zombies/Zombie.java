@@ -19,6 +19,7 @@ public class Zombie extends Entity {
 
     public Zombie(HealthComponent health) {}
     public void addAbility(ZombieAbility ability) {}
+    @Override
     public void update() {}
     public StateComponent getState() { return state; }
     public MovementComponent getMovement() { return movement; }
