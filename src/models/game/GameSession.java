@@ -1,6 +1,8 @@
 package models.game;
 
+import models.entities.sun.Sun;
 import models.game.gamemodes.GameMode;
+import models.map.GameMap;
 import models.user.Profile;
 
 import java.util.List;
@@ -12,6 +14,8 @@ public class GameSession {
     private GameMap map;
     private int sunAmount;
     private List<String> selectedPlants;
+    private List<Sun> activeSuns;
+    private List<SeedPacket> selectedSeeds;
     private int plantFoodCount;
     private long timeTicks;
     private int currentWave;

@@ -25,6 +25,7 @@ public class Profile {
     private Map<String , Integer> passedMiniGames;
     private int dailyQuestsDone;
     private int noneDailyQuestsDone;
+    private boolean hasBoughtDailyOfferToday;
 
     public Profile(){};
     public void addCoins(int n){};

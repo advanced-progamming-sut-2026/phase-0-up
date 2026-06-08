@@ -1,6 +1,6 @@
 package models.map.Terrains;
 
-import models.entities.plants.Entity;
+import models.entities.Entity;
 
 public class FrozenTerrain extends Terrain{
     private int hp = 600;

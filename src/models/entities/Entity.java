@@ -1,8 +1,8 @@
-package models.entities.plants;
-
+package models.entities;
+//every entity should extend this class and have update function to get updated every tick
 public abstract class Entity {
     protected int id;
-    protected int x;
+    protected double x;
     protected int y;
     protected int hp;
     protected boolean isAlive;

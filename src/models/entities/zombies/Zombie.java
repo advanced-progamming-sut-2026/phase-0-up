@@ -1,6 +1,6 @@
 package models.entities.zombies;
 
-import models.entities.plants.Entity;
+import models.entities.Entity;
 import models.entities.zombies.Abilities.ZombieAbility;
 import models.entities.zombies.Components.HealthComponent;
 import models.entities.zombies.Components.MovementComponent;

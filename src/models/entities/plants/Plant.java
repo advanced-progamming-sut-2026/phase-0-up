@@ -1,10 +1,11 @@
 package models.entities.plants;
 
+import models.entities.Entity;
 import models.entities.plants.FoodStrategies.CompositePlantFoodStrategy;
 
 import java.util.List;
 
-public class Plant extends Entity{
+public class Plant extends Entity {
     protected int level;
     protected int cost;
     protected double recharge;
