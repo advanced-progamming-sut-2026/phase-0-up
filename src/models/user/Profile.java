@@ -12,6 +12,7 @@ public class Profile {
     private int gameNumbers;
     private int coins;
     private int gems;
+    private int plantFoodCount;
     private int difficultyLevel;
     private int bestNumberOfMeowPoints;
     private List<Plant> unlockedPlants;

@@ -1,4 +1,4 @@
-package controllers.commands.menucommands;
+package controllers.commands.menu;
 
 import controllers.commands.Command;
 
