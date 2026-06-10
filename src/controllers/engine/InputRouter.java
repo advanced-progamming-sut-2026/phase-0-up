@@ -4,11 +4,9 @@ package controllers.engine;
 import java.util.Scanner;
 
 public class InputRouter {
-    private final Scanner scanner;
     private MenuType currentMenu;
 
-    public InputRouter(Scanner scanner) {
-        this.scanner = scanner;
+    public InputRouter() {
         this.currentMenu = MenuType.LOGIN_MENU;
     }
 
