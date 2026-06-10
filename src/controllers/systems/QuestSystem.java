@@ -5,6 +5,7 @@ import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.quests.Quest;
 import models.quests.QuestContext;
+import models.quests.Reward.Reward;
 import models.user.Profile;
 
 import java.util.List;

@@ -10,6 +10,7 @@ public class Wave {
     private int WaveCost;
     private List<Zombie> zombies;
     private int totalInitialHp;
+    private int delay;
 
     public void spawn(){};
     public void isDefeated(){};

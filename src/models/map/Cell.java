@@ -5,8 +5,8 @@ import models.map.Terrains.Terrain;
 public class Cell {
     private int x;
     private int y;
-    Plant plant = null;
-    Terrain terrain;
+    private Plant plant = null;
+    private Terrain terrain;
     public boolean isPlantable;
     public void addPlant(Plant plant){};
     public void removePlant(){};
