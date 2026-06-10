@@ -8,9 +8,9 @@ import java.util.List;
 public class Plant extends Entity {
     protected int level;
     protected int cost;
-    protected double recharge;
-    protected double actionInterval;
-    protected double cooldown;
+    protected int recharge;
+    protected int actionInterval;
+    protected int cooldown;
     protected boolean thisPlantHasFood;
     protected List<PlantTags> tags;
     protected CompositePlantFoodStrategy plantFoodStrategy;
