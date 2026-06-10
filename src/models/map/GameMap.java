@@ -9,9 +9,6 @@ public class GameMap {
     public Cell getCell(int x, int y){return null;}
     public Row getRow(int x){return null;}
     List<Collectible> activeCollectibles;
-    public void render(){};
-
-
 
 
 }
