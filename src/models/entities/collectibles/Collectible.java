@@ -1,7 +1,8 @@
 package models.entities.collectibles;
 
-public class Collectible {
-    private int x;
-    private int y;
+import models.entities.Entity;
+
+public abstract class Collectible extends Entity {
+    protected long expireTime;
     public void collect(){};
 }

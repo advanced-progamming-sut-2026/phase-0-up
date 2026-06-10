@@ -1,6 +1,6 @@
 package models.game;
 
-import models.entities.sun.Sun;
+import models.entities.collectibles.Sun;
 import models.game.gamemodes.GameMode;
 import models.map.GameMap;
 import models.user.Profile;

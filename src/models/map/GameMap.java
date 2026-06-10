@@ -1,5 +1,7 @@
 package models.map;
 
+import models.entities.collectibles.Collectible;
+
 import java.util.List;
 
 public class GameMap {
