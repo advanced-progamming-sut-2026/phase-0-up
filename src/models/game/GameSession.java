@@ -13,7 +13,6 @@ public class GameSession {
     private Level level;
     private GameMap map;
     private int sunAmount;
-    private List<String> selectedPlants;
     private List<Sun> activeSuns;
     private List<SeedPacket> selectedSeeds;
     private int plantFoodCount;

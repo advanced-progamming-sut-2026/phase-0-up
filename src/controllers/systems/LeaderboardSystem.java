@@ -1,5 +1,7 @@
 package controllers.systems;
 
+import models.leaderboard.LbColumn;
+import models.leaderboard.LeaderboardEntry;
 import utils.storage.DatabaseManager;
 
 import java.util.List;

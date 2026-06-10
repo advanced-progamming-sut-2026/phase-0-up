@@ -1,6 +1,7 @@
 package views.renderers.MenuRenderer;
 
 import models.user.Profile;
+import utils.registry.PlantRegistry;
 
 public class PlantMenuRenderer {
     public void renderAllPlants(PlantRegistry registry){}

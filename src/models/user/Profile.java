@@ -3,6 +3,7 @@ package models.user;
 import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
 import models.greenhouse.GreenHouse;
+import models.news.News;
 import models.quests.Quest;
 
 import java.util.List;
@@ -15,7 +16,9 @@ public class Profile {
     private int plantFoodCount;
     private int difficultyLevel;
     private int bestNumberOfMeowPoints;
+    private List<News> newsList;
     private List<Plant> unlockedPlants;
+    private List<Plant> lockedPlants;
     private List<Zombie> seenZombies;
     private Map<String , Integer> ownedSeedPackets;
     private GreenHouse myGreenHouse;
@@ -51,4 +54,5 @@ public class Profile {
     public int getNoneDailyQuestsDone() {return 0;}
     public void setDifficultyLevel(int difficultyLevel) {};
     public int getDifficultyLevel() {return 0;}
+    public void addNews(News news){};
 }

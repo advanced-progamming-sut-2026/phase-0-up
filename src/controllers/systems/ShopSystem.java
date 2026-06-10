@@ -1,5 +1,6 @@
 package controllers.systems;
 
+import models.shop.Currency;
 import models.user.Profile;
 
 public class ShopSystem {

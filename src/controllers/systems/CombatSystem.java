@@ -1,5 +1,7 @@
 package controllers.systems;
 
+import models.entities.Entity;
+import models.entities.plants.Plant;
 import models.game.GameSession;
 
 //this class should resolve the combat mechanics
@@ -12,5 +14,4 @@ public class CombatSystem {
     private void checkLawnmowers(GameSession session){}
     private void processDeaths(GameSession session){}
     private void updateZombieStates(GameSession session){}
-
 }
