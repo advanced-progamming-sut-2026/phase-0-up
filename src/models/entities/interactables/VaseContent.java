@@ -1,4 +1,4 @@
-package models.entities.intractables;
+package models.entities.interactables;
 
 public enum VaseContent {
     ZOMBIE,

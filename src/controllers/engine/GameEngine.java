@@ -5,6 +5,7 @@ import controllers.systems.SunSystem;
 import controllers.systems.TimeSystem;
 import controllers.systems.WaveSystem;
 import models.game.GameSession;
+import views.OutputHandler;
 
 public class GameEngine {
     private GameSession gameSession;
@@ -14,7 +15,10 @@ public class GameEngine {
     private WaveSystem waveSystem;
     private boolean running;
 
-    public void startLoop(GameSession gameSession) {}
+    public void startLoop() {}
     public void stopLoop() {}
-    private void run(){} //main method which updates every entity in game on every tick
+
+    public void advanceOneTick() {
+
+    }
 }

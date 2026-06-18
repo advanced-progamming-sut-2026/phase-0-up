@@ -11,4 +11,36 @@ public class QuestTemplate {
     private int rewardAmount;
     private String priority;
     private List<String> variables;
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public String getCondition() {
+        return condition;
+    }
+
+    public String getRewardType() {
+        return rewardType;
+    }
+
+    public int getRewardAmount() {
+        return rewardAmount;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public List<String> getVariables() {
+        return variables;
+    }
 }

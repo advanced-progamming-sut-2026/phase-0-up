@@ -8,7 +8,7 @@ import models.entities.zombies.Components.StateComponent;
 
 import java.util.List;
 
-public class Zombie extends Entity {
+public class Zombie{
     private HealthComponent health;
     private MovementComponent movement;
     private StateComponent state;
@@ -19,8 +19,6 @@ public class Zombie extends Entity {
 
     public Zombie(HealthComponent health) {}
     public void addAbility(ZombieAbility ability) {}
-    @Override
-    public void update() {}
     public StateComponent getState() { return state; }
     public MovementComponent getMovement() { return movement; }
     public void setWavePointCost(int wavePointCost) {}

@@ -1,6 +1,6 @@
 package models.minigames;
 
-import models.entities.intractables.Vase;
+import models.entities.interactables.Vase;
 import models.game.GameSession;
 
 public class VaseBreaker extends Minigame{

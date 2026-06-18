@@ -15,4 +15,52 @@ public class ZombieTemplate {
    private boolean canSpawnPlantFood;
    private String behavior;
    private List<String> specialAbilities;
+
+   public int getId() {
+      return id;
+   }
+
+   public String getCategory() {
+      return category;
+   }
+
+   public int getBaseHp() {
+      return baseHp;
+   }
+
+   public int getArmorHp() {
+      return armorHp;
+   }
+
+   public String getAlias() {
+      return alias;
+   }
+
+   public int getEatDamage() {
+      return eatDamage;
+   }
+
+   public int getEatSpeed() {
+      return eatSpeed;
+   }
+
+   public double getSpeed() {
+      return speed;
+   }
+
+   public int getWavePointCost() {
+      return wavePointCost;
+   }
+
+   public boolean isCanSpawnPlantFood() {
+      return canSpawnPlantFood;
+   }
+
+   public String getBehavior() {
+      return behavior;
+   }
+
+   public List<String> getSpecialAbilities() {
+      return specialAbilities;
+   }
 }
