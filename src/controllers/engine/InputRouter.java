@@ -1,7 +1,9 @@
 package controllers.engine;
 
 
+import controllers.commands.menu.EnterMenuCommand;
 import controllers.commands.menu.ExitMenuCommand;
+import controllers.commands.menu.ShowCurrentMenuCommand;
 import models.user.AppSession;
 import utils.regex.AllMenuRegex;
 import views.InputHandler;
@@ -45,6 +47,8 @@ public class InputRouter {
 
     private void routeAndExecute(String input) {
         if (AllMenuRegex.EXIT_MENU.matches(input)) exitMenu();
+        else if (AllMenuRegex.ENTER_MENU.matches(input)) enterMenu(input);
+        else if (AllMenuRegex.SHOW_CURRENT.matches(input)) new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute();
     }
 
     private void exitGame() {
@@ -56,6 +60,12 @@ public class InputRouter {
         if (appSession.getCurrentMenu() == MenuType.SIGNUP_MENU) exitGame();
         ExitMenuCommand command = new ExitMenuCommand(appSession, allMenuRenderer);
         command.execute();
+    }
+
+    private void enterMenu(String input){
+       String menuName = AllMenuRegex.ENTER_MENU.getGroup(input, "menuName");
+       EnterMenuCommand command = new EnterMenuCommand(appSession, menuName, allMenuRenderer);
+       command.execute();
     }
 
 }
