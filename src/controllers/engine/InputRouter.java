@@ -1,16 +1,14 @@
 package controllers.engine;
 
 
-import models.user.AuthContext;
+import models.user.AppSession;
 import utils.regex.AllMenuRegex;
 import views.InputHandler;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
 
 public class InputRouter {
-    private final AuthContext authContext;
-
-    private MenuType currentMenu;
+    private final AppSession appSession;
 
     private boolean running;
 
@@ -30,10 +28,9 @@ public class InputRouter {
     private final ShopRenderer shopRenderer = new ShopRenderer();
     private final TravelLogRenderer travelLogRenderer = new TravelLogRenderer();
 
-    public InputRouter(AuthContext authContext) {
-        this.currentMenu = MenuType.LOGIN_MENU;
+    public InputRouter(AppSession appSession) {
         this.running = true;
-        this.authContext = authContext;
+        this.appSession = appSession;
     }
 
     public void startLoop(){
@@ -49,9 +46,6 @@ public class InputRouter {
         if (AllMenuRegex.EXIT_MENU.matches(input)) {
             exitMenu();
         }
-    }
-    public void setCurrentMenu(MenuType currentMenu) {
-        this.currentMenu = currentMenu;
     }
 
     private void exitGame(){
