@@ -3,9 +3,11 @@ package controllers.engine;
 
 import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
+import controllers.commands.profileandsettings.ChangeDifficultyCommand;
 import models.user.AppSession;
 import utils.regex.AllMenuRegex;
 import utils.regex.MainMenuRegex;
+import utils.regex.SettingMenuRegex;
 import views.InputHandler;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
@@ -50,8 +52,16 @@ public class InputRouter {
         switch (appSession.getCurrentMenu()){
             case MAIN_MENU -> {
                 if(MainMenuRegex.LOG_OUT.matches(input)) logout();}
-
+            case SETTINGS_MENU -> {
+                if(SettingMenuRegex.CHANGE_DL.matches(input))
+                    changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl"));}
         }
+    }
+
+    private void changeDL(String dl) {
+        ChangeDifficultyCommand command = new ChangeDifficultyCommand(appSession.getCurrentUser()
+                , Integer.parseInt(dl));
+        command.execute();
     }
 
     private void logout() {
