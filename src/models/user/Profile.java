@@ -52,7 +52,7 @@ public class Profile {
     public Map<String, Integer> getPassedMiniGames() {return null;}
     public int getDailyQuestsDone() {return 0;}
     public int getNoneDailyQuestsDone() {return 0;}
-    public void setDifficultyLevel(int difficultyLevel) {};
+    public void setDifficultyLevel(int difficultyLevel) {this.difficultyLevel = difficultyLevel;};
     public int getDifficultyLevel() {return 0;}
     public void addNews(News news){};
 }

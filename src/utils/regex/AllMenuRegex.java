@@ -1,7 +1,10 @@
 package utils.regex;
 
 public enum AllMenuRegex implements Regex{
-    EXIT_MENU("^\\s*menu\\s+exit\\s*$");
+    EXIT_MENU("^\\s*menu\\s+exit\\s*$"),
+    ENTER_MENU("^\\s*menu\\s+enter\\s+(?<menuName>\\S+)\\s*$"),
+    SHOW_CURRENT("^\\s*menu\\s+show\\s+current\\s*$");
+
 
     private final String pattern;
 
