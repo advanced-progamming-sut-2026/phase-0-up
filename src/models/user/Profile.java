@@ -8,6 +8,7 @@ import models.quests.Quest;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Profile {
     private int gameNumbers;
@@ -30,6 +31,9 @@ public class Profile {
     private int dailyQuestsDone;
     private int noneDailyQuestsDone;
     private boolean hasBoughtDailyOfferToday;
+    private Set<String> seenZombieAliases;
+
+
 
     public Profile(){};
     public void addCoins(int n){coins += n;}
@@ -40,6 +44,7 @@ public class Profile {
     public int getGameNumbers() {return gameNumbers;}
     public int getCoins() {return coins;}
     public int getGems() {return gems;}
+    public Set<String> getSeenZombieAliases() {return seenZombieAliases;}
     public int getBestNumberOfMeowPoints() {return 0;}
     public List<Plant> getUnlockedPlants() {return null;}
     public List<Zombie> getSeenZombies() {return null;}

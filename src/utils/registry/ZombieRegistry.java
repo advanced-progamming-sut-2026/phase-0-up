@@ -19,5 +19,9 @@ public class ZombieRegistry {
 
     public Map<String, ZombieTemplate> getZombieTemplatesByAlias(){return null;}
     public ZombieTemplate getZombieTemplateByAlias(String alias){return null;}
-    public void register(ZombieTemplate zombieTemplate){}
+    public void register(ZombieTemplate zombieTemplate){
+        if (zombieTemplate != null && zombieTemplate.getAlias() != null){
+            zombieTemplatesByAlias.put(zombieTemplate.getAlias(), zombieTemplate);
+        }
+    }
 }
