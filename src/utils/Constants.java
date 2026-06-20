@@ -46,6 +46,8 @@ public class Constants {
     // ۵. فروشگاه و اقتصاد (Shop & Economy)
     // ==========================================
     public static final int NEW_PLANT_COST_COINS = 2000;           // قیمت خرید گیاه جدید
+    public static final int UPGRADE_PLANT_COST_COINS = 1000;          // هزینه سکه‌ای ارتقای گیاه (inferred)
+    public static final int UPGRADE_PLANT_REQUIRED_SEED_PACKETS = 5;  // تعداد seed packet لازم برای ارتقا (inferred)
     public static final int BOOST_PLANT_COST_GEMS = 2;             // هزینه بوست کردن گیاه در صفحه انتخاب
 
     public static final int MAX_PLANT_FOOD_CAPACITY = 3;           // سقف نگهداری غذای گیاه

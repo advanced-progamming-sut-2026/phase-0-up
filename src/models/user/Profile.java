@@ -2,6 +2,7 @@ package models.user;
 
 import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
+import models.game.Chapter;
 import models.greenhouse.GreenHouse;
 import models.news.News;
 import models.quests.Quest;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Profile {
     private int gameNumbers;
@@ -29,10 +31,15 @@ public class Profile {
     private List<Quest> completedQuests;
     private int lastChapter;
     private int lastLevel;
+    private List<Chapter> unlockedChapters;
+    private Chapter currentChapter;
     private Map<String , Integer> passedMiniGames;
     private int dailyQuestsDone;
     private int noneDailyQuestsDone;
     private boolean hasBoughtDailyOfferToday;
+    private Set<String> seenZombieAliases;
+
+
 
     public Profile() {
         this.gameNumbers = Constants.DEFAULT_GAME_NUMBERS;
@@ -62,14 +69,20 @@ public class Profile {
         initializeStartingPlants();
     }
 
-    public void addCoins(int n){};
-    public void spendCoins(int n){};
-    public void addGems(int n){};
-    public void spendGems(int n){};
-    public void increaseGameNumbers(){};
-    public int getGameNumbers() {return 0;}
-    public int getCoins() {return 0;}
-    public int getGems() {return 0;}
+
+    public Chapter getCurrentChapter() {return currentChapter;}
+    public void setCurrentChapter(Chapter currentChapter) {this.currentChapter = currentChapter;}
+    public void addUnlockedChapter(Chapter chapter) {unlockedChapters.add(chapter);}
+    public List<Chapter> getUnlockedChapters() {return unlockedChapters;}
+    public void addCoins(int n){coins += n;}
+    public void spendCoins(int n){coins -= n;}
+    public void addGems(int n){gems += n;}
+    public void spendGems(int n){gems -= n;}
+    public void increaseGameNumbers(){gameNumbers++;}
+    public int getGameNumbers() {return gameNumbers;}
+    public int getCoins() {return coins;}
+    public int getGems() {return gems;}
+    public Set<String> getSeenZombieAliases() {return seenZombieAliases;}
     public int getBestNumberOfMeowPoints() {return 0;}
     public List<Plant> getUnlockedPlants() {return null;}
     public List<Zombie> getSeenZombies() {return null;}
@@ -82,9 +95,9 @@ public class Profile {
     public Map<String, Integer> getPassedMiniGames() {return null;}
     public int getDailyQuestsDone() {return 0;}
     public int getNoneDailyQuestsDone() {return 0;}
-    public void setDifficultyLevel(int difficultyLevel) {this.difficultyLevel = difficultyLevel;};
+    public void setDifficultyLevel(int difficultyLevel) {this.difficultyLevel = difficultyLevel;}
     public int getDifficultyLevel() {return 0;}
-    public void addNews(News news){};
+    public void addNews(News news){}
 
     //method for initializing starting plants;
     private void initializeStartingPlants(){

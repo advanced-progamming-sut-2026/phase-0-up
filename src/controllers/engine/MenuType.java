@@ -13,7 +13,9 @@ public enum MenuType {
     SIGNUP_MENU("signup"),
     PLANTS_MENU("plants"),
     SETTINGS_MENU("settings"),
-    ONLINE_MENU("online");
+    ONLINE_MENU("online"),
+    TRAVEL_LOG_MENU("travel-log"),
+    LEADERBOARD("leaderboard");
 
     private final String menuName;
 

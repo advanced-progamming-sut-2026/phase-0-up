@@ -8,5 +8,5 @@ public class Chapter {
     private EnvironmentType environment;
 
     public boolean isComplete(){return false;}
-
+    public String getName(){return name;}
 }

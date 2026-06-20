@@ -1,6 +1,7 @@
 package controllers.commands.shopandeconomy;
 
 import controllers.commands.Command;
+import models.shop.Shop;
 
 public class BuyShopItemCommand implements Command {
     private int itemId;

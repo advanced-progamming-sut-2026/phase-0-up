@@ -11,7 +11,7 @@ import models.user.AppSession;
 import utils.regex.AllMenuRegex;
 import utils.regex.MainMenuRegex;
 import utils.regex.SettingMenuRegex;
-import utils.regex.SignUpMenuRegex;
+import utils.regex.*;
 import views.InputHandler;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
@@ -23,7 +23,7 @@ public class InputRouter {
 
     private final AllMenuRenderer allMenuRenderer = new AllMenuRenderer();
     private final CollectionMenuRenderer collectionMenuRenderer = new CollectionMenuRenderer();
-    private final GameMenuRenderer gameMenuRenderer = new GameMenuRenderer();
+    private final PlayMenuRenderer gameMenuRenderer = new PlayMenuRenderer();
     private final LoginMenuRenderer loginMenuRenderer = new LoginMenuRenderer();
     private final MainMenuRenderer mainMenuRenderer = new MainMenuRenderer();
     private final NewsMenuRenderer newsMenuRenderer = new NewsMenuRenderer();
@@ -52,11 +52,61 @@ public class InputRouter {
     }
 
     private void routeAndExecute(String input) {
-        if (AllMenuRegex.EXIT_MENU.matches(input)) exitMenu();
-        else if (AllMenuRegex.ENTER_MENU.matches(input)) enterMenu(input);
-        else if (AllMenuRegex.SHOW_CURRENT.matches(input))
-            new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute();
+        if (AllMenuRegex.EXIT_MENU.matches(input)) {exitMenu(); return;}
+        else if (AllMenuRegex.ENTER_MENU.matches(input)) {enterMenu(input); return;}
+        else if (AllMenuRegex.SHOW_CURRENT.matches(input)) {new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute(); return;}
         switch (appSession.getCurrentMenu()){
+            case MAIN_MENU : {
+                if(MainMenuRegex.LOG_OUT.matches(input)) {logout(); return;} break;}
+            case SETTINGS_MENU : {
+                if(SettingMenuRegex.CHANGE_DL.matches(input)){
+                    changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl")); return;} break;}
+            case PROFILE_MENU : { if(handleProfileMenuExecute(input)) {return;} break;}
+            case PLAY_MENU : { if(handlePlayMenuExecute(input)) {return;} break;}
+            case SHOP_MENU : {if(handleShopMenuExecute(input)) {return;} break;}
+            case SIGNUP_MENU :
+                if (SignUpMenuRegex.SIGN_UP.matches(input)) new RegisterCommand(input, signUpMenuRenderer).execute();
+                return;
+        }
+    }
+
+    private boolean handleShopMenuExecute(String input) {
+        Shop shop = appSession.getShop();
+        if(ShopMenuRegex.SHOP_LIST.matches(input)){
+            new ShowShopCommand("list" , shop).execute();
+            return true;
+        }
+        else if(ShopMenuRegex.SHOP_DAILY.matches(input)){
+            new ShowShopCommand("daily" , shop).execute();
+            return true;
+        }
+        else if(ShopMenuRegex.BUY.matches(input)){
+
+        }
+        return false;
+    }
+
+    private boolean handlePlayMenuExecute(String input) {
+        if(PlayMenuRegex.ENTER_CHAPTER.matches(input)){
+            new EnterChapterCommand(PlayMenuRegex.ENTER_CHAPTER.getGroup(input , "chapter") ,
+                    appSession.getCurrentUser().getProfile()).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.ENTER_GREENHOUSE.matches(input)){
+            new EnterOtherMenus(MenuType.GREENHOUSE_MENU , appSession).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.ENTER_TRAVEL_LOG.matches(input)){
+            new EnterOtherMenus(MenuType.TRAVEL_LOG_MENU , appSession).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.ENTER_LEADERBOARD.matches(input)){
+            new EnterOtherMenus(MenuType.LEADERBOARD , appSession).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.SHOW_COINS.matches(input)){
+            new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.COIN).execute();
+            return true;
             case MAIN_MENU -> {
                 if (MainMenuRegex.LOG_OUT.matches(input)) logout();}
             case SETTINGS_MENU -> {
@@ -66,6 +116,47 @@ public class InputRouter {
                 if (SignUpMenuRegex.SIGN_UP.matches(input)) new RegisterCommand(input, signUpMenuRenderer).execute();
             }
         }
+        else if(PlayMenuRegex.SHOW_GEMS.matches(input)){
+            new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.GEM).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.CHEAT_CODE.matches(input)){
+            new CheatAddCommand(PlayMenuRegex.CHEAT_CODE.getGroup(input , "currency") ,
+                    Integer.parseInt(PlayMenuRegex.CHEAT_CODE.getGroup(input , "n")) ,
+                    appSession.getCurrentUser().getProfile()).execute();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean handleProfileMenuExecute(String input) {
+        User user = appSession.getCurrentUser();
+        if(ProfileMenuRegex.CHANGE_USERNAME.matches(input)) {
+            new ProfileCommands( user, EditAction.USERNAME ,
+                    ProfileMenuRegex.CHANGE_USERNAME.getGroup(input , "username") , null).execute();
+            return true;
+        }
+        else if(ProfileMenuRegex.CHANGE_NICKNAME.matches(input)) {
+            new ProfileCommands(user, EditAction.NICKNAME ,
+                    ProfileMenuRegex.CHANGE_NICKNAME.getGroup(input , "nickname") , null).execute();
+            return true;
+        }
+        else if(ProfileMenuRegex.CHANGE_EMAIL.matches(input)) {
+            new ProfileCommands(user, EditAction.EMAIL ,
+                    ProfileMenuRegex.CHANGE_EMAIL.getGroup(input , "email") , null).execute();
+            return true;
+        }
+        else if(ProfileMenuRegex.CHANGE_EMAIL.matches(input)) {
+            new ProfileCommands(user, EditAction.PASSWORD ,
+                    ProfileMenuRegex.CHANGE_PASS.getGroup(input , "newP") ,
+                    ProfileMenuRegex.CHANGE_PASS.getGroup(input , "oldP")).execute();
+            return true;
+        }
+        else if(ProfileMenuRegex.SHOW_INFO.matches(input)) {
+            new ShowProfileCommand(user).execute();
+            return true;
+        }
+        return false;
     }
 
     private void changeDL(String dl) {
