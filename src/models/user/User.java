@@ -8,11 +8,24 @@ public class User {
     private String email;
     private Gender gender;
     private String hashPassword;
-    private Map<Integer , String> securityQuestions;
+    private int securityQuestionIndex;
+    private String securityAnswerHash;
     private Profile profile;   //each user has its profile
     private boolean stayLoggedIn = false;
 
-    public User(String username, String password, String nickname, String email, Gender gender, String hashPassword, Map<Integer, String> securityQuestions , Profile profile){};
+    public User(String username, String nickname, String email, Gender gender,
+                String hashPassword, int securityQuestionIndex, String securityAnswerHash) {
+        this.username = username;
+        this.nickname = nickname;
+        this.email = email;
+        this.gender = gender;
+        this.hashPassword = hashPassword;
+        this.securityQuestionIndex = securityQuestionIndex;
+        this.securityAnswerHash = securityAnswerHash;
+        this.profile =  new Profile();
+        this.stayLoggedIn = false;
+    }
+
     public String getUsername(){return null;};
     public void changeUsername(String username) {};
     public String getPassword(){return null;}

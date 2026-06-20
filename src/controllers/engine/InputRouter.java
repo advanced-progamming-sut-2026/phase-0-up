@@ -1,6 +1,7 @@
 package controllers.engine;
 
 
+import controllers.commands.authentication.RegisterCommand;
 import controllers.commands.menu.EnterMenuCommand;
 import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
@@ -10,6 +11,7 @@ import models.user.AppSession;
 import utils.regex.AllMenuRegex;
 import utils.regex.MainMenuRegex;
 import utils.regex.SettingMenuRegex;
+import utils.regex.SignUpMenuRegex;
 import views.InputHandler;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
@@ -52,13 +54,17 @@ public class InputRouter {
     private void routeAndExecute(String input) {
         if (AllMenuRegex.EXIT_MENU.matches(input)) exitMenu();
         else if (AllMenuRegex.ENTER_MENU.matches(input)) enterMenu(input);
-        else if (AllMenuRegex.SHOW_CURRENT.matches(input)) new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute();
+        else if (AllMenuRegex.SHOW_CURRENT.matches(input))
+            new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute();
         switch (appSession.getCurrentMenu()){
             case MAIN_MENU -> {
-                if(MainMenuRegex.LOG_OUT.matches(input)) logout();}
+                if (MainMenuRegex.LOG_OUT.matches(input)) logout();}
             case SETTINGS_MENU -> {
-                if(SettingMenuRegex.CHANGE_DL.matches(input))
+                if (SettingMenuRegex.CHANGE_DL.matches(input))
                     changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl"));}
+            case SIGNUP_MENU -> {
+                if (SignUpMenuRegex.SIGN_UP.matches(input)) new RegisterCommand(input, signUpMenuRenderer).execute();
+            }
         }
     }
 
