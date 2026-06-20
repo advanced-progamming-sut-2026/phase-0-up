@@ -101,4 +101,10 @@ public class Constants {
     // ۹. تنظیمات سیستمی (System Config)
     // ==========================================
     public static final String PASSWORD_HASH_ALGORITHM = "SHA-256";
+
+    // =====================================================
+    // ۱۰. منوی انتخاب گیاه (Plant Selection Menu)
+    // =====================================================
+    public static final int DEFAULT_SEED_SLOTS = 8;
+
 }

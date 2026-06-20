@@ -15,6 +15,11 @@ public class GameSession {
     private int sunAmount;
     private List<Sun> activeSuns;
     private List<SeedPacket> selectedSeeds;
+
+    public List<SeedPacket> getSelectedSeeds() {
+        return selectedSeeds;
+    }
+
     private int plantFoodCount;
     private long timeTicks;
     private int currentWave;
@@ -30,4 +35,47 @@ public class GameSession {
     public void onWin(){};
     public void onLose(){};
 
+    public Profile getPlayer() {
+        return player;
+    }
+
+    public int getMaxSeedSlots() {
+        if (level == null || level.getTemplate() == null) {
+            return utils.Constants.DEFAULT_SEED_SLOTS;
+        }
+        return level.getTemplate().getSeedSlots();
+    }
+
+    public GameMode getMode() {
+        return mode;
+    }
+    public SeedPacket getSelectedSeed(String plantType) {
+        for (SeedPacket seed : selectedSeeds) {
+            if (seed.getPlantType().equals(plantType)) {
+                return seed;
+            }
+        }
+        return null;
+    }
+
+    public boolean isSeedSelected(String plantType) {
+        return getSelectedSeed(plantType) != null;
+    }
+
+    public Level getLevel() {
+        return level;
+    }
+
+    public void addSeed(SeedPacket seed){
+        selectedSeeds.add(seed);
+    }
+
+    public boolean removeSeed(String plantType){
+        SeedPacket seed = getSelectedSeed(plantType);
+        if(seed == null){
+            return false;
+        }
+        selectedSeeds.remove(seed);
+        return true;
+    }
 }

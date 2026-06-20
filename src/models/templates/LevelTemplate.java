@@ -1,5 +1,7 @@
 package models.templates;
 
+import utils.Constants;
+
 import java.util.List;
 
 public class LevelTemplate {
@@ -13,6 +15,7 @@ public class LevelTemplate {
     private int firstWaveBudget;
     private int waveCount;
     private char[][] terrainLayout;
+    private int seedSlots;
 
     public String getId() {
         return id;
@@ -52,5 +55,9 @@ public class LevelTemplate {
 
     public char[][] getTerrainLayout() {
         return terrainLayout;
+    }
+
+    public int getSeedSlots() {
+        return seedSlots > 0 ? seedSlots : Constants.DEFAULT_SEED_SLOTS;
     }
 }

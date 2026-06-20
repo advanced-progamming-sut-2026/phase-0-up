@@ -6,8 +6,6 @@ import views.InputHandler;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
 
-import java.util.Scanner;
-
 public class InputRouter {
     private MenuType currentMenu;
     private boolean running;

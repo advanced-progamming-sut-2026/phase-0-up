@@ -17,7 +17,7 @@ public class PlantRegistry {
         return instance;
     }
 
-    public PlantTemplate getTemplateByName(String plantName){return null;}
+    public PlantTemplate getTemplateByName(String plantName){return plantTemplatesByName.get(plantName);}
     public Map<String, PlantTemplate> getAllPlantTemplates(){
         return plantTemplatesByName;
     }

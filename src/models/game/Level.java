@@ -7,4 +7,8 @@ public class Level {
     private LevelTemplate template;
     private boolean unlocked;
     private boolean completed;
+
+    public LevelTemplate getTemplate() {
+        return template;
+    }
 }
