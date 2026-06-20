@@ -1,9 +1,11 @@
 package controllers.engine;
 
 
+import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
 import models.user.AppSession;
 import utils.regex.AllMenuRegex;
+import utils.regex.MainMenuRegex;
 import views.InputHandler;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
@@ -45,6 +47,16 @@ public class InputRouter {
 
     private void routeAndExecute(String input) {
         if (AllMenuRegex.EXIT_MENU.matches(input)) exitMenu();
+        switch (appSession.getCurrentMenu()){
+            case MAIN_MENU -> {
+                if(MainMenuRegex.LOG_OUT.matches(input)) logout();}
+
+        }
+    }
+
+    private void logout() {
+        LogoutCommand command = new LogoutCommand(appSession);
+        command.execute();
     }
 
     private void exitGame() {
