@@ -1,6 +1,7 @@
 package controllers.engine;
 
 
+import controllers.commands.menu.ExitMenuCommand;
 import models.user.AppSession;
 import utils.regex.AllMenuRegex;
 import views.InputHandler;
@@ -15,7 +16,7 @@ public class InputRouter {
     private final AllMenuRenderer allMenuRenderer = new AllMenuRenderer();
     private final CollectionMenuRenderer collectionMenuRenderer = new CollectionMenuRenderer();
     private final GameMenuRenderer gameMenuRenderer = new GameMenuRenderer();
-    private final LoginMenuRenderer loginMenuRenderer =  new LoginMenuRenderer();
+    private final LoginMenuRenderer loginMenuRenderer = new LoginMenuRenderer();
     private final MainMenuRenderer mainMenuRenderer = new MainMenuRenderer();
     private final NewsMenuRenderer newsMenuRenderer = new NewsMenuRenderer();
     private final PlantMenuRenderer plantMenuRenderer = new PlantMenuRenderer();
@@ -33,8 +34,8 @@ public class InputRouter {
         this.appSession = appSession;
     }
 
-    public void startLoop(){
-        while(running){
+    public void startLoop() {
+        while (running) {
             String input = InputHandler.readLine().trim();
 
             routeAndExecute(input);
@@ -42,41 +43,20 @@ public class InputRouter {
         }
     }
 
-    private void routeAndExecute(String input){
-        if (AllMenuRegex.EXIT_MENU.matches(input)) {
-            exitMenu();
-        }
+    private void routeAndExecute(String input) {
+        if (AllMenuRegex.EXIT_MENU.matches(input)) exitMenu();
     }
 
-    private void exitGame(){
+    private void exitGame() {
         this.running = false;
     }
 
 
-    private void exitMenu(){
-        switch (currentMenu) {
-            case SIGNUP_MENU:
-                exitGame();
-                break;
-            case LOGIN_MENU:
-                setCurrentMenu(MenuType.SIGNUP_MENU);
-                allMenuRenderer.menuExit("Sign Up");
-                break;
-            case PLAY_MENU:
-            case SETTINGS_MENU:
-            case ONLINE_MENU:
-            case NEWS_MENU:
-            case PROFILE_MENU:
-            case PLANTS_MENU:
-            case SHOP_MENU:
-            case GREENHOUSE_MENU:
-                setCurrentMenu(MenuType.MAIN_MENU);
-                allMenuRenderer.menuExit("Main Menu");
-                break;
-            case COLLECTION_MENU:
-                setCurrentMenu(MenuType.PLAY_MENU);
-                allMenuRenderer.menuExit("Play Menu");
-                break;
-        }
+    private void exitMenu() {
+        if (appSession.getCurrentMenu() == MenuType.SIGNUP_MENU) exitGame();
+        ExitMenuCommand command = new ExitMenuCommand(appSession, allMenuRenderer);
+        command.execute();
     }
+
 }
+
