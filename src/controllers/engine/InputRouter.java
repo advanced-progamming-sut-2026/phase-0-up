@@ -2,10 +2,14 @@ package controllers.engine;
 
 
 import controllers.commands.menu.EnterMenuCommand;
+import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
+import controllers.commands.profileandsettings.ChangeDifficultyCommand;
 import controllers.commands.menu.ShowCurrentMenuCommand;
 import models.user.AppSession;
 import utils.regex.AllMenuRegex;
+import utils.regex.MainMenuRegex;
+import utils.regex.SettingMenuRegex;
 import views.InputHandler;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
@@ -49,6 +53,24 @@ public class InputRouter {
         if (AllMenuRegex.EXIT_MENU.matches(input)) exitMenu();
         else if (AllMenuRegex.ENTER_MENU.matches(input)) enterMenu(input);
         else if (AllMenuRegex.SHOW_CURRENT.matches(input)) new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute();
+        switch (appSession.getCurrentMenu()){
+            case MAIN_MENU -> {
+                if(MainMenuRegex.LOG_OUT.matches(input)) logout();}
+            case SETTINGS_MENU -> {
+                if(SettingMenuRegex.CHANGE_DL.matches(input))
+                    changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl"));}
+        }
+    }
+
+    private void changeDL(String dl) {
+        ChangeDifficultyCommand command = new ChangeDifficultyCommand(appSession.getCurrentUser()
+                , Integer.parseInt(dl));
+        command.execute();
+    }
+
+    private void logout() {
+        LogoutCommand command = new LogoutCommand(appSession);
+        command.execute();
     }
 
     private void exitGame() {
