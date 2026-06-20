@@ -13,7 +13,9 @@ import controllers.commands.menu.ShowCurrentMenuCommand;
 import controllers.commands.profileandsettings.EditAction;
 import controllers.commands.profileandsettings.ProfileCommands;
 import controllers.commands.profileandsettings.ShowProfileCommand;
+import controllers.commands.shopandeconomy.ShowShopCommand;
 import models.shop.Currency;
+import models.shop.Shop;
 import models.user.AppSession;
 import models.user.User;
 import utils.regex.*;
@@ -50,9 +52,7 @@ public class InputRouter {
     public void startLoop() {
         while (running) {
             String input = InputHandler.readLine().trim();
-
             routeAndExecute(input);
-
         }
     }
 
@@ -61,14 +61,31 @@ public class InputRouter {
         else if (AllMenuRegex.ENTER_MENU.matches(input)) {enterMenu(input); return;}
         else if (AllMenuRegex.SHOW_CURRENT.matches(input)) {new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute(); return;}
         switch (appSession.getCurrentMenu()){
-            case MAIN_MENU -> {
+            case MAIN_MENU : {
                 if(MainMenuRegex.LOG_OUT.matches(input)) {logout(); return;} break;}
-            case SETTINGS_MENU -> {
+            case SETTINGS_MENU : {
                 if(SettingMenuRegex.CHANGE_DL.matches(input)){
                     changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl")); return;} break;}
-            case PROFILE_MENU -> { if(handleProfileMenuExecute(input)) {return;} break;}
-            case PLAY_MENU -> { if(handlePlayMenuExecute(input)) {return;} break;}
+            case PROFILE_MENU : { if(handleProfileMenuExecute(input)) {return;} break;}
+            case PLAY_MENU : { if(handlePlayMenuExecute(input)) {return;} break;}
+            case SHOP_MENU : {if(handleShopMenuExecute(input)) {return;} break;}
         }
+    }
+
+    private boolean handleShopMenuExecute(String input) {
+        Shop shop = appSession.getShop();
+        if(ShopMenuRegex.SHOP_LIST.matches(input)){
+            new ShowShopCommand("list" , shop).execute();
+            return true;
+        }
+        else if(ShopMenuRegex.SHOP_DAILY.matches(input)){
+            new ShowShopCommand("daily" , shop).execute();
+            return true;
+        }
+        else if(ShopMenuRegex.BUY.matches(input)){
+
+        }
+        return false;
     }
 
     private boolean handlePlayMenuExecute(String input) {
