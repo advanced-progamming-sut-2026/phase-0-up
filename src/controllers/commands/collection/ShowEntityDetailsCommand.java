@@ -27,9 +27,9 @@ public class ShowEntityDetailsCommand implements Command {
         Profile profile = currentUser.getProfile();
         CollectionMenuRenderer renderer = new CollectionMenuRenderer();
         if(type == ShowListType.ZOMBIES || type == ShowListType.ALL_ZOMBIES){
-            renderer.renderZombieDetails(profile, zombieRegistry, entityName);
+            renderer.renderZombieDetails(zombieRegistry, entityName);
         }else {
-            renderer.renderPlantDetails(profile, plantRegistry, entityName);
+            renderer.renderPlantDetails(plantRegistry, entityName);
         }
     }
 }

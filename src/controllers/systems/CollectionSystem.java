@@ -33,7 +33,7 @@ public class CollectionSystem {
             return;
         }
         if(profile.getCoins() < Constants.NEW_PLANT_COST_COINS){
-            renderer.notEnoughCoinToUpgrade(plantName);
+            renderer.notEnoughCoinToPurchase(plantName);
             return;
         }
         profile.spendCoins(Constants.NEW_PLANT_COST_COINS);
