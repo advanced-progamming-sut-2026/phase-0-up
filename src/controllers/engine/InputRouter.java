@@ -6,9 +6,15 @@ import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
 import controllers.commands.profileandsettings.ChangeDifficultyCommand;
 import controllers.commands.menu.ShowCurrentMenuCommand;
+import controllers.commands.profileandsettings.EditAction;
+import controllers.commands.profileandsettings.ProfileCommands;
+import controllers.commands.profileandsettings.ShowProfileCommand;
 import models.user.AppSession;
+import models.user.Profile;
+import models.user.User;
 import utils.regex.AllMenuRegex;
 import utils.regex.MainMenuRegex;
+import utils.regex.ProfileMenuRegex;
 import utils.regex.SettingMenuRegex;
 import views.InputHandler;
 import views.renderers.*;
@@ -50,16 +56,48 @@ public class InputRouter {
     }
 
     private void routeAndExecute(String input) {
-        if (AllMenuRegex.EXIT_MENU.matches(input)) exitMenu();
-        else if (AllMenuRegex.ENTER_MENU.matches(input)) enterMenu(input);
-        else if (AllMenuRegex.SHOW_CURRENT.matches(input)) new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute();
+        if (AllMenuRegex.EXIT_MENU.matches(input)) {exitMenu(); return;}
+        else if (AllMenuRegex.ENTER_MENU.matches(input)) {enterMenu(input); return;}
+        else if (AllMenuRegex.SHOW_CURRENT.matches(input)) {new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute(); return;}
         switch (appSession.getCurrentMenu()){
             case MAIN_MENU -> {
-                if(MainMenuRegex.LOG_OUT.matches(input)) logout();}
+                if(MainMenuRegex.LOG_OUT.matches(input)) {logout(); return;} break;}
             case SETTINGS_MENU -> {
-                if(SettingMenuRegex.CHANGE_DL.matches(input))
-                    changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl"));}
+                if(SettingMenuRegex.CHANGE_DL.matches(input)){
+                    changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl")); return;} break;}
+            case PROFILE_MENU -> { if(handleProfileMenuExecute(input)) {return;} break;}
+
         }
+    }
+
+    private boolean handleProfileMenuExecute(String input) {
+        User user = appSession.getCurrentUser();
+        if(ProfileMenuRegex.CHANGE_USERNAME.matches(input)) {
+            new ProfileCommands( user, EditAction.USERNAME ,
+                    ProfileMenuRegex.CHANGE_USERNAME.getGroup(input , "username") , null).execute();
+            return true;
+        }
+        else if(ProfileMenuRegex.CHANGE_NICKNAME.matches(input)) {
+            new ProfileCommands(user, EditAction.NICKNAME ,
+                    ProfileMenuRegex.CHANGE_NICKNAME.getGroup(input , "nickname") , null).execute();
+            return true;
+        }
+        else if(ProfileMenuRegex.CHANGE_EMAIL.matches(input)) {
+            new ProfileCommands(user, EditAction.EMAIL ,
+                    ProfileMenuRegex.CHANGE_EMAIL.getGroup(input , "email") , null).execute();
+            return true;
+        }
+        else if(ProfileMenuRegex.CHANGE_EMAIL.matches(input)) {
+            new ProfileCommands(user, EditAction.PASSWORD ,
+                    ProfileMenuRegex.CHANGE_PASS.getGroup(input , "newP") ,
+                    ProfileMenuRegex.CHANGE_PASS.getGroup(input , "oldP")).execute();
+            return true;
+        }
+        else if(ProfileMenuRegex.SHOW_INFO.matches(input)) {
+            new ShowProfileCommand(user).execute();
+            return true;
+        }
+        return false;
     }
 
     private void changeDL(String dl) {

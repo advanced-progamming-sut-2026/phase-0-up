@@ -32,14 +32,14 @@ public class Profile {
     private boolean hasBoughtDailyOfferToday;
 
     public Profile(){};
-    public void addCoins(int n){};
-    public void spendCoins(int n){};
-    public void addGems(int n){};
-    public void spendGems(int n){};
-    public void increaseGameNumbers(){};
-    public int getGameNumbers() {return 0;}
-    public int getCoins() {return 0;}
-    public int getGems() {return 0;}
+    public void addCoins(int n){coins += n;}
+    public void spendCoins(int n){coins -= n;}
+    public void addGems(int n){gems += n;}
+    public void spendGems(int n){gems -= n;}
+    public void increaseGameNumbers(){gameNumbers++;}
+    public int getGameNumbers() {return gameNumbers;}
+    public int getCoins() {return coins;}
+    public int getGems() {return gems;}
     public int getBestNumberOfMeowPoints() {return 0;}
     public List<Plant> getUnlockedPlants() {return null;}
     public List<Zombie> getSeenZombies() {return null;}
@@ -52,7 +52,7 @@ public class Profile {
     public Map<String, Integer> getPassedMiniGames() {return null;}
     public int getDailyQuestsDone() {return 0;}
     public int getNoneDailyQuestsDone() {return 0;}
-    public void setDifficultyLevel(int difficultyLevel) {this.difficultyLevel = difficultyLevel;};
+    public void setDifficultyLevel(int difficultyLevel) {this.difficultyLevel = difficultyLevel;}
     public int getDifficultyLevel() {return 0;}
-    public void addNews(News news){};
+    public void addNews(News news){}
 }
