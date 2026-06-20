@@ -4,18 +4,19 @@ package controllers.engine;
 import controllers.commands.menu.EnterMenuCommand;
 import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
+import controllers.commands.playmenu.CheatAddCommand;
+import controllers.commands.playmenu.EnterChapterCommand;
+import controllers.commands.playmenu.EnterOtherMenus;
+import controllers.commands.playmenu.ShowWalletCommand;
 import controllers.commands.profileandsettings.ChangeDifficultyCommand;
 import controllers.commands.menu.ShowCurrentMenuCommand;
 import controllers.commands.profileandsettings.EditAction;
 import controllers.commands.profileandsettings.ProfileCommands;
 import controllers.commands.profileandsettings.ShowProfileCommand;
+import models.shop.Currency;
 import models.user.AppSession;
-import models.user.Profile;
 import models.user.User;
-import utils.regex.AllMenuRegex;
-import utils.regex.MainMenuRegex;
-import utils.regex.ProfileMenuRegex;
-import utils.regex.SettingMenuRegex;
+import utils.regex.*;
 import views.InputHandler;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
@@ -27,7 +28,7 @@ public class InputRouter {
 
     private final AllMenuRenderer allMenuRenderer = new AllMenuRenderer();
     private final CollectionMenuRenderer collectionMenuRenderer = new CollectionMenuRenderer();
-    private final GameMenuRenderer gameMenuRenderer = new GameMenuRenderer();
+    private final PlayMenuRenderer gameMenuRenderer = new PlayMenuRenderer();
     private final LoginMenuRenderer loginMenuRenderer = new LoginMenuRenderer();
     private final MainMenuRenderer mainMenuRenderer = new MainMenuRenderer();
     private final NewsMenuRenderer newsMenuRenderer = new NewsMenuRenderer();
@@ -66,8 +67,43 @@ public class InputRouter {
                 if(SettingMenuRegex.CHANGE_DL.matches(input)){
                     changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl")); return;} break;}
             case PROFILE_MENU -> { if(handleProfileMenuExecute(input)) {return;} break;}
-
+            case PLAY_MENU -> { if(handlePlayMenuExecute(input)) {return;} break;}
         }
+    }
+
+    private boolean handlePlayMenuExecute(String input) {
+        if(PlayMenuRegex.ENTER_CHAPTER.matches(input)){
+            new EnterChapterCommand(PlayMenuRegex.ENTER_CHAPTER.getGroup(input , "chapter") ,
+                    appSession.getCurrentUser().getProfile()).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.ENTER_GREENHOUSE.matches(input)){
+            new EnterOtherMenus(MenuType.GREENHOUSE_MENU , appSession).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.ENTER_TRAVEL_LOG.matches(input)){
+            new EnterOtherMenus(MenuType.TRAVEL_LOG_MENU , appSession).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.ENTER_LEADERBOARD.matches(input)){
+            new EnterOtherMenus(MenuType.LEADERBOARD , appSession).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.SHOW_COINS.matches(input)){
+            new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.COIN).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.SHOW_GEMS.matches(input)){
+            new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.GEM).execute();
+            return true;
+        }
+        else if(PlayMenuRegex.CHEAT_CODE.matches(input)){
+            new CheatAddCommand(PlayMenuRegex.CHEAT_CODE.getGroup(input , "currency") ,
+                    Integer.parseInt(PlayMenuRegex.CHEAT_CODE.getGroup(input , "n")) ,
+                    appSession.getCurrentUser().getProfile()).execute();
+            return true;
+        }
+        return false;
     }
 
     private boolean handleProfileMenuExecute(String input) {

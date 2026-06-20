@@ -1,6 +1,5 @@
-package views.renderers;
+package views.renderers.MenuRenderer;
 
-import models.entities.plants.Plant;
 import models.greenhouse.Pot;
 
 public class GreenhouseRenderer {

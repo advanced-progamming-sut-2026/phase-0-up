@@ -2,6 +2,7 @@ package models.user;
 
 import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
+import models.game.Chapter;
 import models.greenhouse.GreenHouse;
 import models.news.News;
 import models.quests.Quest;
@@ -27,6 +28,8 @@ public class Profile {
     private List<Quest> completedQuests;
     private int lastChapter;
     private int lastLevel;
+    private List<Chapter> unlockedChapters;
+    private Chapter currentChapter;
     private Map<String , Integer> passedMiniGames;
     private int dailyQuestsDone;
     private int noneDailyQuestsDone;
@@ -36,6 +39,10 @@ public class Profile {
 
 
     public Profile(){};
+    public Chapter getCurrentChapter() {return currentChapter;}
+    public void setCurrentChapter(Chapter currentChapter) {this.currentChapter = currentChapter;}
+    public void addUnlockedChapter(Chapter chapter) {unlockedChapters.add(chapter);}
+    public List<Chapter> getUnlockedChapters() {return unlockedChapters;}
     public void addCoins(int n){coins += n;}
     public void spendCoins(int n){coins -= n;}
     public void addGems(int n){gems += n;}

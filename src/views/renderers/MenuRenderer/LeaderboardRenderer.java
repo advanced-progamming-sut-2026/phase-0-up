@@ -1,4 +1,4 @@
-package views.renderers;
+package views.renderers.MenuRenderer;
 
 import models.leaderboard.LeaderboardEntry;
 
