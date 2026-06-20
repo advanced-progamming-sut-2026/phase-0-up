@@ -1,59 +1,82 @@
 package controllers.engine;
 
 
+import models.user.AppSession;
 import utils.regex.AllMenuRegex;
 import views.InputHandler;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
 
 public class InputRouter {
-    private MenuType currentMenu;
-    private boolean running;
-    private AllMenuRenderer allMenuRenderer = new AllMenuRenderer();
-    private CollectionMenuRenderer collectionMenuRenderer = new CollectionMenuRenderer();
-    private GameMenuRenderer gameMenuRenderer = new GameMenuRenderer();
-    private LoginMenuRenderer loginMenuRenderer =  new LoginMenuRenderer();
-    private MainMenuRenderer mainMenuRenderer = new MainMenuRenderer();
-    private NewsMenuRenderer newsMenuRenderer = new NewsMenuRenderer();
-    private PlantMenuRenderer plantMenuRenderer = new PlantMenuRenderer();
-    private ProfileMenuRenderer profileMenuRenderer = new ProfileMenuRenderer();
-    private SettingMenuRenderer settingMenuRenderer = new SettingMenuRenderer();
-    private SignUpMenuRenderer signUpMenuRenderer = new SignUpMenuRenderer();
-    private GreenhouseRenderer greenhouseRenderer = new GreenhouseRenderer();
-    private LeaderboardRenderer leaderboardRenderer = new LeaderboardRenderer();
-    private MapRenderer mapRenderer = new MapRenderer();
-    private ShopRenderer shopRenderer = new ShopRenderer();
-    private TravelLogRenderer travelLogRenderer = new TravelLogRenderer();
+    private final AppSession appSession;
 
-    public InputRouter() {
-        this.currentMenu = MenuType.LOGIN_MENU;
+    private boolean running;
+
+    private final AllMenuRenderer allMenuRenderer = new AllMenuRenderer();
+    private final CollectionMenuRenderer collectionMenuRenderer = new CollectionMenuRenderer();
+    private final GameMenuRenderer gameMenuRenderer = new GameMenuRenderer();
+    private final LoginMenuRenderer loginMenuRenderer =  new LoginMenuRenderer();
+    private final MainMenuRenderer mainMenuRenderer = new MainMenuRenderer();
+    private final NewsMenuRenderer newsMenuRenderer = new NewsMenuRenderer();
+    private final PlantMenuRenderer plantMenuRenderer = new PlantMenuRenderer();
+    private final ProfileMenuRenderer profileMenuRenderer = new ProfileMenuRenderer();
+    private final SettingMenuRenderer settingMenuRenderer = new SettingMenuRenderer();
+    private final SignUpMenuRenderer signUpMenuRenderer = new SignUpMenuRenderer();
+    private final GreenhouseRenderer greenhouseRenderer = new GreenhouseRenderer();
+    private final LeaderboardRenderer leaderboardRenderer = new LeaderboardRenderer();
+    private final MapRenderer mapRenderer = new MapRenderer();
+    private final ShopRenderer shopRenderer = new ShopRenderer();
+    private final TravelLogRenderer travelLogRenderer = new TravelLogRenderer();
+
+    public InputRouter(AppSession appSession) {
         this.running = true;
+        this.appSession = appSession;
     }
 
     public void startLoop(){
         while(running){
             String input = InputHandler.readLine().trim();
 
-            if (AllMenuRegex.EXIT_MENU.matches(input)) {
-                switch (currentMenu) {
-                    case SIGNUP_MENU -> exit();
-                    case LOGIN_MENU -> setCurrentMenu(MenuType.SIGNUP_MENU);
-                    case PLAY_MENU, SETTINGS_MENU, ONLINE_MENU, NEWS_MENU, PROFILE_MENU,
-                         PLANTS_MENU, SHOP_MENU, GREENHOUSE_MENU ->
-                            setCurrentMenu(MenuType.MAIN_MENU);
-                    case COLLECTION_MENU -> setCurrentMenu(MenuType.PLAY_MENU);
-                }
-            }
-
+            routeAndExecute(input);
 
         }
     }
-    public void routeAndExecute(String input){}
-    public void setCurrentMenu(MenuType currentMenu) {
-        this.currentMenu = currentMenu;
+
+    private void routeAndExecute(String input){
+        if (AllMenuRegex.EXIT_MENU.matches(input)) {
+            exitMenu();
+        }
     }
 
-    private void exit(){
+    private void exitGame(){
         this.running = false;
+    }
+
+
+    private void exitMenu(){
+        switch (currentMenu) {
+            case SIGNUP_MENU:
+                exitGame();
+                break;
+            case LOGIN_MENU:
+                setCurrentMenu(MenuType.SIGNUP_MENU);
+                allMenuRenderer.menuExit("Sign Up");
+                break;
+            case PLAY_MENU:
+            case SETTINGS_MENU:
+            case ONLINE_MENU:
+            case NEWS_MENU:
+            case PROFILE_MENU:
+            case PLANTS_MENU:
+            case SHOP_MENU:
+            case GREENHOUSE_MENU:
+                setCurrentMenu(MenuType.MAIN_MENU);
+                allMenuRenderer.menuExit("Main Menu");
+                break;
+            case COLLECTION_MENU:
+                setCurrentMenu(MenuType.PLAY_MENU);
+                allMenuRenderer.menuExit("Play Menu");
+                break;
+        }
     }
 }
