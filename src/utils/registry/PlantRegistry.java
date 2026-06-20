@@ -22,6 +22,10 @@ public class PlantRegistry {
         return plantTemplatesByName;
     }
 
-    public void register(PlantTemplate plantTemplate){}
+    public void register(PlantTemplate plantTemplate){
+        if (plantTemplate != null && plantTemplate.getName() != null){
+            plantTemplatesByName.put(plantTemplate.getName(), plantTemplate);
+        }
+    }
 
 }
