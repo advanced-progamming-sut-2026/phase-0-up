@@ -1,16 +1,21 @@
 package controllers.engine;
 
 
+import controllers.commands.authentication.LoginCommand;
 import controllers.commands.authentication.RegisterCommand;
 import controllers.commands.menu.EnterMenuCommand;
 import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
+import controllers.commands.playmenu.CheatAddCommand;
 import controllers.commands.playmenu.EnterChapterCommand;
+import controllers.commands.playmenu.EnterOtherMenus;
+import controllers.commands.playmenu.ShowWalletCommand;
 import controllers.commands.profileandsettings.ChangeDifficultyCommand;
 import controllers.commands.menu.ShowCurrentMenuCommand;
 import controllers.commands.profileandsettings.EditAction;
 import controllers.commands.profileandsettings.ProfileCommands;
 import controllers.commands.profileandsettings.ShowProfileCommand;
+import controllers.commands.shopandeconomy.BuyShopItemCommand;
 import controllers.commands.shopandeconomy.ShowShopCommand;
 import models.shop.Currency;
 import models.shop.Shop;
