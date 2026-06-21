@@ -8,6 +8,14 @@ public class LoginMenuRenderer {
     public void successOfLoggingIn(Result result) {
         OutputHandler.showMessage(result.message());
     }
-    public void forgetPasswordRender(boolean success , User currentUser){}
+
+    public void forgetPasswordRender(Result result){
+        OutputHandler.showMessage(result.message());
+    }
+
+    public void showSecurityQuestion(User user) {
+        OutputHandler.showMessage("Answer your security question");
+        OutputHandler.showMessage(user.getSecurityQuestion().substring(3));
+    }
 
 }

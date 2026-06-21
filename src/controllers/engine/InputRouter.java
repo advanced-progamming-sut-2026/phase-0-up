@@ -1,6 +1,7 @@
 package controllers.engine;
 
 
+import controllers.commands.authentication.ForgetPasswordCommand;
 import controllers.commands.authentication.LoginCommand;
 import controllers.commands.authentication.RegisterCommand;
 import controllers.commands.menu.EnterMenuCommand;
@@ -78,11 +79,18 @@ public class InputRouter {
             case PLAY_MENU :  if (handlePlayMenuExecute(input)) return;
             case SHOP_MENU : if (handleShopMenuExecute(input)) return;
             case SIGNUP_MENU :
-                if (SignUpMenuRegex.SIGN_UP.matches(input)) new RegisterCommand(input, signUpMenuRenderer).execute();
-                return;
+                if (SignUpMenuRegex.SIGN_UP.matches(input)) {
+                    new RegisterCommand(input, signUpMenuRenderer).execute();
+                    return;
+                }
             case LOGIN_MENU:
-                if (LoginMenuRegex.LOGIN.matches(input)) new LoginCommand(input, appSession, loginMenuRenderer).execute();
-                return;
+                if (LoginMenuRegex.LOGIN.matches(input)) {
+                    new LoginCommand(input, appSession, loginMenuRenderer).execute();
+                    return;
+                } else if (LoginMenuRegex.FORGET_PASSWORD.matches(input)) {
+                    new ForgetPasswordCommand(input, appSession, loginMenuRenderer).execute();
+                    return;
+                }
         }
 
         allMenuRenderer.invalidCommand();
@@ -99,9 +107,10 @@ public class InputRouter {
             return true;
         }
         else if(ShopMenuRegex.BUY.matches(input)){
-            new BuyShopItemCommand(Integer.parseInt(ShopMenuRegex.BUY.getGroup(input , "id")) , appSession.getShop() ,
+            new BuyShopItemCommand(Integer.parseInt(ShopMenuRegex.BUY.getGroup(input , "id")) , appSession.getShop(),
                     Integer.parseInt(ShopMenuRegex.BUY.getGroup(input , "number")) ,
-                    ShopMenuRegex.BUY.getGroup(input , "plantType") , appSession.getCurrentUser().getProfile()).execute();
+                    ShopMenuRegex.BUY.getGroup(input , "plantType"),
+                    appSession.getCurrentUser().getProfile(), shopRenderer).execute();
             return true;
         }
         return false;

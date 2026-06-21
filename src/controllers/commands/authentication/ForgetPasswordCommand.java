@@ -1,15 +1,82 @@
 package controllers.commands.authentication;
 
-import controllers.auth.SessionManager;
 import controllers.commands.Command;
+import models.user.AppSession;
+import models.user.User;
+import utils.Result;
+import utils.regex.LoginMenuRegex;
+import utils.storage.DatabaseManager;
+import utils.storage.PasswordHasher;
+import utils.validation.PasswordValidator;
+import views.InputHandler;
+import views.renderers.MenuRenderer.LoginMenuRenderer;
 
 public class ForgetPasswordCommand implements Command {
-    private String Username;
-    private String email;
-    private SessionManager sessionManager;
+    private final String username;
+    private final String email;
+    private final AppSession appSession;
+    private final LoginMenuRenderer loginMenuRenderer;
+
+    public ForgetPasswordCommand(String input, AppSession appSession, LoginMenuRenderer loginMenuRenderer) {
+        this.username = LoginMenuRegex.FORGET_PASSWORD.getGroup(input, "username");
+        this.email = LoginMenuRegex.FORGET_PASSWORD.getGroup(input, "email");
+        this.appSession = appSession;
+        this.loginMenuRenderer = loginMenuRenderer;
+    }
 
     @Override
     public void execute() {
+        DatabaseManager databaseManager = DatabaseManager.getInstance();
+        User user = databaseManager.findUser(username);
 
+        if (user == null) {
+            loginMenuRenderer.forgetPasswordRender(new Result(false, "User not found!"));
+            return;
+        }
+        if (!user.getEmail().equalsIgnoreCase(email)) {
+            loginMenuRenderer.forgetPasswordRender(new Result(false, "Email does not match the username!"));
+            return;
+        }
+
+        if (!processSecurityAnswer(user)) {
+            return;
+        }
+
+        processPasswordReset(user);
+    }
+
+    private boolean processSecurityAnswer(User user) {
+        loginMenuRenderer.showSecurityQuestion(user);
+        String input = InputHandler.readLine().trim();
+
+        if (!LoginMenuRegex.ANSWER_SECURITY.matches(input)) {
+            loginMenuRenderer.forgetPasswordRender(new Result(false, "Invalid answer format!"));
+            return false;
+        }
+
+        String answer = LoginMenuRegex.ANSWER_SECURITY.getGroup(input, "answer");
+        String normalizedAnswer = answer.trim().toLowerCase();
+
+        if (!PasswordHasher.matches(normalizedAnswer, user.getSecurityAnswerHash())) {
+            loginMenuRenderer.forgetPasswordRender(new Result(false, "Invalid answer!"));
+            return false;
+        }
+        return true;
+    }
+
+    private void processPasswordReset(User user) {
+        loginMenuRenderer.forgetPasswordRender(new Result(true, "Enter new password:"));
+        String newPassword = InputHandler.readLine().trim();
+
+        Result validationResult = new PasswordValidator().validate(newPassword);
+        if (!validationResult.success()) {
+            loginMenuRenderer.forgetPasswordRender(validationResult);
+            return;
+        }
+
+        user.changePassword(PasswordHasher.hash(newPassword));
+        DatabaseManager.getInstance().saveAll();
+
+        loginMenuRenderer.forgetPasswordRender(new Result(true, "Password changed successfully!"));
     }
 }

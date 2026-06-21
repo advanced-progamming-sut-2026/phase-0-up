@@ -19,18 +19,19 @@ public class BuyShopItemCommand implements Command {
     private int count;
     private String plantType;
     private Profile profile;
+    ShopRenderer renderer;
 
-    public BuyShopItemCommand(int itemId, Shop shop, int count, String plantType , Profile profile) {
+    public BuyShopItemCommand(int itemId, Shop shop, int count, String plantType , Profile profile, ShopRenderer renderer) {
         this.itemId = itemId;
         this.shop = shop;
         this.count = count;
         this.plantType = plantType;
         this.profile = profile;
+        this.renderer = renderer;
     }
 
     @Override
     public void execute() {
-        ShopRenderer renderer = new ShopRenderer();
         if(itemId > 5) {
             renderer.successOfBuyingAProduct(new Result(false, "item ID is wrong"));
             return;}
