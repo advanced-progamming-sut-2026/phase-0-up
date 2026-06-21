@@ -7,14 +7,15 @@ import views.renderers.MenuRenderer.MainMenuRenderer;
 
 public class LogoutCommand implements Command {
     private AppSession appSession;
+    private MainMenuRenderer mainMenuRenderer;
 
-    public LogoutCommand(AppSession appSession) {
+    public LogoutCommand(AppSession appSession, MainMenuRenderer mainMenuRenderer) {
         this.appSession = appSession;
+        this.mainMenuRenderer = mainMenuRenderer;
     }
 
     @Override
     public void execute() {
-        MainMenuRenderer mainMenuRenderer = new MainMenuRenderer();
         if(!appSession.isLoggedIn()){
             mainMenuRenderer.logOutRender(false);
             return;

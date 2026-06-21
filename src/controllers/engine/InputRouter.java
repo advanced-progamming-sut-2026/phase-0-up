@@ -36,7 +36,7 @@ public class InputRouter {
 
     private final AllMenuRenderer allMenuRenderer = new AllMenuRenderer();
     private final CollectionMenuRenderer collectionMenuRenderer = new CollectionMenuRenderer();
-    private final PlayMenuRenderer gameMenuRenderer = new PlayMenuRenderer();
+    private final PlayMenuRenderer playMenuRenderer = new PlayMenuRenderer();
     private final LoginMenuRenderer loginMenuRenderer = new LoginMenuRenderer();
     private final MainMenuRenderer mainMenuRenderer = new MainMenuRenderer();
     private final NewsMenuRenderer newsMenuRenderer = new NewsMenuRenderer();
@@ -69,14 +69,14 @@ public class InputRouter {
         else if (AllMenuRegex.ENTER_MENU.matches(input)) {enterMenu(input); return;}
         else if (AllMenuRegex.SHOW_CURRENT.matches(input)) {new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute(); return;}
         switch (appSession.getCurrentMenu()){
-            case MAIN_MENU : {
-                if(MainMenuRegex.LOG_OUT.matches(input)) {logout(); return;} break;}
-            case SETTINGS_MENU : {
+            case MAIN_MENU :
+                if(MainMenuRegex.LOG_OUT.matches(input)) {logout(); return;}
+            case SETTINGS_MENU :
                 if(SettingMenuRegex.CHANGE_DL.matches(input)){
-                    changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl")); return;} break;}
-            case PROFILE_MENU : { if(handleProfileMenuExecute(input)) {return;} break;}
-            case PLAY_MENU : { if(handlePlayMenuExecute(input)) {return;} break;}
-            case SHOP_MENU : {if(handleShopMenuExecute(input)) {return;} break;}
+                    changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl")); return;}
+            case PROFILE_MENU :  if (handleProfileMenuExecute(input)) return;
+            case PLAY_MENU :  if (handlePlayMenuExecute(input)) return;
+            case SHOP_MENU : if (handleShopMenuExecute(input)) return;
             case SIGNUP_MENU :
                 if (SignUpMenuRegex.SIGN_UP.matches(input)) new RegisterCommand(input, signUpMenuRenderer).execute();
                 return;
@@ -91,11 +91,11 @@ public class InputRouter {
     private boolean handleShopMenuExecute(String input) {
         Shop shop = appSession.getShop();
         if(ShopMenuRegex.SHOP_LIST.matches(input)){
-            new ShowShopCommand("list" , shop).execute();
+            new ShowShopCommand("list", shop, shopRenderer).execute();
             return true;
         }
         else if(ShopMenuRegex.SHOP_DAILY.matches(input)){
-            new ShowShopCommand("daily" , shop).execute();
+            new ShowShopCommand("daily", shop, shopRenderer).execute();
             return true;
         }
         else if(ShopMenuRegex.BUY.matches(input)){
@@ -110,33 +110,33 @@ public class InputRouter {
     private boolean handlePlayMenuExecute(String input) {
         if(PlayMenuRegex.ENTER_CHAPTER.matches(input)){
             new EnterChapterCommand(PlayMenuRegex.ENTER_CHAPTER.getGroup(input , "chapter") ,
-                    appSession.getCurrentUser().getProfile()).execute();
+                    appSession.getCurrentUser().getProfile(), playMenuRenderer).execute();
             return true;
         }
         else if(PlayMenuRegex.ENTER_GREENHOUSE.matches(input)){
-            new EnterOtherMenus(MenuType.GREENHOUSE_MENU , appSession).execute();
+            new EnterOtherMenus(MenuType.GREENHOUSE_MENU , appSession, playMenuRenderer).execute();
             return true;
         }
         else if(PlayMenuRegex.ENTER_TRAVEL_LOG.matches(input)){
-            new EnterOtherMenus(MenuType.TRAVEL_LOG_MENU , appSession).execute();
+            new EnterOtherMenus(MenuType.TRAVEL_LOG_MENU , appSession, playMenuRenderer).execute();
             return true;
         }
         else if(PlayMenuRegex.ENTER_LEADERBOARD.matches(input)){
-            new EnterOtherMenus(MenuType.LEADERBOARD , appSession).execute();
+            new EnterOtherMenus(MenuType.LEADERBOARD , appSession, playMenuRenderer).execute();
             return true;
         }
         else if(PlayMenuRegex.SHOW_COINS.matches(input)){
-            new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.COIN).execute();
+            new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.COIN, playMenuRenderer).execute();
             return true;
         }
         else if(PlayMenuRegex.SHOW_GEMS.matches(input)){
-            new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.GEM).execute();
+            new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.GEM, playMenuRenderer).execute();
             return true;
         }
         else if(PlayMenuRegex.CHEAT_CODE.matches(input)){
             new CheatAddCommand(PlayMenuRegex.CHEAT_CODE.getGroup(input , "currency") ,
                     Integer.parseInt(PlayMenuRegex.CHEAT_CODE.getGroup(input , "n")) ,
-                    appSession.getCurrentUser().getProfile()).execute();
+                    appSession.getCurrentUser().getProfile(), playMenuRenderer).execute();
             return true;
         }
         return false;
@@ -166,7 +166,7 @@ public class InputRouter {
             return true;
         }
         else if(ProfileMenuRegex.SHOW_INFO.matches(input)) {
-            new ShowProfileCommand(user).execute();
+            new ShowProfileCommand(user, profileMenuRenderer).execute();
             return true;
         }
         return false;
@@ -174,12 +174,12 @@ public class InputRouter {
 
     private void changeDL(String dl) {
         ChangeDifficultyCommand command = new ChangeDifficultyCommand(appSession.getCurrentUser()
-                , Integer.parseInt(dl));
+                , Integer.parseInt(dl), settingMenuRenderer);
         command.execute();
     }
 
     private void logout() {
-        LogoutCommand command = new LogoutCommand(appSession);
+        LogoutCommand command = new LogoutCommand(appSession, mainMenuRenderer);
         command.execute();
     }
 

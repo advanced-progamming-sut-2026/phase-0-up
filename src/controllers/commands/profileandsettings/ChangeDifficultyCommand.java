@@ -7,15 +7,16 @@ import views.renderers.MenuRenderer.SettingMenuRenderer;
 public class ChangeDifficultyCommand implements Command {
     private User currentUser;
     private int difficulty;
+    private SettingMenuRenderer renderer;
 
-    public ChangeDifficultyCommand(User currentUser, int difficulty) {
+    public ChangeDifficultyCommand(User currentUser, int difficulty,  SettingMenuRenderer renderer) {
         this.currentUser = currentUser;
         this.difficulty = difficulty;
+        this.renderer = renderer;
     }
 
     @Override
     public void execute() {
-        SettingMenuRenderer renderer = new SettingMenuRenderer();
         if(difficulty < 1 || difficulty > 5){
             renderer.changeDL(false , difficulty);
             return;

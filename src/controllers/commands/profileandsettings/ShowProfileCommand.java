@@ -7,9 +7,11 @@ import views.renderers.MenuRenderer.ProfileMenuRenderer;
 
 public class ShowProfileCommand implements Command {
     private User user;
+    private ProfileMenuRenderer profileMenuRenderer;
 
-    public ShowProfileCommand(User currentUser) {
+    public ShowProfileCommand(User currentUser, ProfileMenuRenderer profileMenuRenderer) {
         this.user = currentUser;
+        this.profileMenuRenderer = profileMenuRenderer;
     }
 
     @Override
@@ -24,7 +26,6 @@ public class ShowProfileCommand implements Command {
         int passed = (user.getProfile().getLastChapter()-1) * 4 + user.getProfile().getLastLevel()-1;
         sb.append("Completed Levels : ").append(passed).append("\n");
         sb.append("Max Number Of MeowPoints : ").append(user.getProfile().getBestNumberOfMeowPoints()).append("\n");
-        new ProfileMenuRenderer().showInfo(sb.toString());
-        return;
+        profileMenuRenderer.showInfo(sb.toString());
     }
 }

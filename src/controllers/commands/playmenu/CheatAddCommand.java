@@ -8,16 +8,18 @@ public class CheatAddCommand implements Command {
     private String currencyName;
     private int n;
     private Profile profile;
+    PlayMenuRenderer renderer;
 
-    public CheatAddCommand(String currencyName, int n , Profile profile) {
+
+    public CheatAddCommand(String currencyName, int n , Profile profile,  PlayMenuRenderer renderer) {
         this.currencyName = currencyName;
         this.n = n;
         this.profile = profile;
+        this.renderer = renderer;
     }
 
     @Override
     public void execute() {
-        PlayMenuRenderer renderer = new PlayMenuRenderer();
         if(currencyName.equals("coin")){
             profile.addCoins(n);
         } else {

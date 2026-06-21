@@ -8,15 +8,17 @@ import views.renderers.MenuRenderer.PlayMenuRenderer;
 public class ShowWalletCommand implements Command {
     private Profile profile;
     private Currency currency;
+    private PlayMenuRenderer renderer;
 
-    public ShowWalletCommand(Profile profile , Currency currency) {
+
+    public ShowWalletCommand(Profile profile , Currency currency,  PlayMenuRenderer renderer) {
         this.profile = profile;
         this.currency = currency;
+        this.renderer = renderer;
     }
 
     @Override
     public void execute() {
-        PlayMenuRenderer renderer = new PlayMenuRenderer();
         if(currency == Currency.COIN){
             renderer.coinsAndGemsRenderer(profile.getCoins() , currency.toString());
         } else {

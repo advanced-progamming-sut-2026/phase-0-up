@@ -8,14 +8,16 @@ import views.renderers.MenuRenderer.PlayMenuRenderer;
 public class EnterOtherMenus implements Command {
     private MenuType newMenu;
     private AppSession appSession;
-    public EnterOtherMenus(MenuType newMenu , AppSession appSession) {
+    private PlayMenuRenderer renderer;
+
+    public EnterOtherMenus(MenuType newMenu , AppSession appSession, PlayMenuRenderer renderer) {
         this.newMenu = newMenu;
         this.appSession = appSession;
+        this.renderer = renderer;
     }
 
     @Override
     public void execute() {
-        PlayMenuRenderer renderer = new PlayMenuRenderer();
         switch (newMenu){
             case LEADERBOARD -> {
                 appSession.setCurrentMenu(MenuType.LEADERBOARD);

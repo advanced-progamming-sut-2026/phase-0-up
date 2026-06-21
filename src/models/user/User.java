@@ -1,7 +1,5 @@
 package models.user;
 
-import java.util.HashMap;
-import java.util.Map;
 import utils.Constants;
 
 public class User {

@@ -7,15 +7,15 @@ import views.renderers.ShopRenderer;
 public class ShowShopCommand implements Command {
     private String type;
     private Shop shop;
-
-    public ShowShopCommand(String type , Shop shop) {
+    ShopRenderer renderer;
+    public ShowShopCommand(String type , Shop shop, ShopRenderer renderer) {
         this.type = type;
         this.shop = shop;
+        this.renderer = renderer;
     }
 
     @Override
     public void execute() {
-        ShopRenderer renderer = new ShopRenderer();
         switch (type){
             case "list": {
                 renderer.listAllProducts(shop.showPermanentItems());
