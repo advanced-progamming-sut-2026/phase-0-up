@@ -13,6 +13,7 @@ import controllers.commands.menu.ShowCurrentMenuCommand;
 import controllers.commands.profileandsettings.EditAction;
 import controllers.commands.profileandsettings.ProfileCommands;
 import controllers.commands.profileandsettings.ShowProfileCommand;
+import controllers.commands.shopandeconomy.BuyShopItemCommand;
 import controllers.commands.shopandeconomy.ShowShopCommand;
 import models.shop.Currency;
 import models.shop.Shop;
@@ -83,7 +84,10 @@ public class InputRouter {
             return true;
         }
         else if(ShopMenuRegex.BUY.matches(input)){
-
+            new BuyShopItemCommand(Integer.parseInt(ShopMenuRegex.BUY.getGroup(input , "id")) , appSession.getShop() ,
+                    Integer.parseInt(ShopMenuRegex.BUY.getGroup(input , "number")) ,
+                    ShopMenuRegex.BUY.getGroup(input , "plantType") , appSession.getCurrentUser().getProfile()).execute();
+            return true;
         }
         return false;
     }

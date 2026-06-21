@@ -53,18 +53,20 @@ public class Profile {
     public int getGems() {return gems;}
     public Set<String> getSeenZombieAliases() {return seenZombieAliases;}
     public int getBestNumberOfMeowPoints() {return 0;}
-    public List<Plant> getUnlockedPlants() {return null;}
+    public List<Plant> getUnlockedPlants() {return unlockedPlants;}
     public List<Zombie> getSeenZombies() {return null;}
-    public Map<String, Integer> getOwnedSeedPackets() {return null;}
-    public GreenHouse getMyGreenHouse() {return null;}
+    public Map<String, Integer> getOwnedSeedPackets() {return ownedSeedPackets;}
+    public GreenHouse getMyGreenHouse() {return myGreenHouse;}
     public List<Quest> getActiveQuests() {return null;}
     public List<Quest> getCompletedQuests() {return null;}
-    public int getLastChapter() {return 0;}
-    public int getLastLevel() {return 0;}
+    public int getLastChapter() {return lastChapter;}
+    public int getLastLevel() {return lastLevel;}
     public Map<String, Integer> getPassedMiniGames() {return null;}
     public int getDailyQuestsDone() {return 0;}
     public int getNoneDailyQuestsDone() {return 0;}
     public void setDifficultyLevel(int difficultyLevel) {this.difficultyLevel = difficultyLevel;}
     public int getDifficultyLevel() {return 0;}
     public void addNews(News news){}
+    public int getPlantFoodCount() {return plantFoodCount;}
+    public void setPlantFoodCount(int plantFoodCount) {this.plantFoodCount = plantFoodCount;}
 }
