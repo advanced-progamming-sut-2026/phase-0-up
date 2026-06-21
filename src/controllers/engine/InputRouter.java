@@ -1,7 +1,6 @@
 package controllers.engine;
 
 
-import controllers.commands.authentication.LoginCommand;
 import controllers.commands.authentication.RegisterCommand;
 import controllers.commands.menu.EnterMenuCommand;
 import controllers.commands.authentication.LogoutCommand;
@@ -11,6 +10,9 @@ import controllers.commands.profileandsettings.ChangeDifficultyCommand;
 import controllers.commands.menu.ShowCurrentMenuCommand;
 import controllers.commands.profileandsettings.EditAction;
 import controllers.commands.profileandsettings.ProfileCommands;
+import controllers.commands.profileandsettings.ShowProfileCommand;
+import controllers.commands.shopandeconomy.ShowShopCommand;
+import models.shop.Currency;
 import models.shop.Shop;
 import models.user.AppSession;
 import models.user.User;
@@ -92,7 +94,10 @@ public class InputRouter {
             return true;
         }
         else if(ShopMenuRegex.BUY.matches(input)){
-
+            new BuyShopItemCommand(Integer.parseInt(ShopMenuRegex.BUY.getGroup(input , "id")) , appSession.getShop() ,
+                    Integer.parseInt(ShopMenuRegex.BUY.getGroup(input , "number")) ,
+                    ShopMenuRegex.BUY.getGroup(input , "plantType") , appSession.getCurrentUser().getProfile()).execute();
+            return true;
         }
         return false;
     }
@@ -118,14 +123,6 @@ public class InputRouter {
         else if(PlayMenuRegex.SHOW_COINS.matches(input)){
             new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.COIN).execute();
             return true;
-            case MAIN_MENU -> {
-                if (MainMenuRegex.LOG_OUT.matches(input)) logout();}
-            case SETTINGS_MENU -> {
-                if (SettingMenuRegex.CHANGE_DL.matches(input))
-                    changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl"));}
-            case SIGNUP_MENU -> {
-                if (SignUpMenuRegex.SIGN_UP.matches(input)) new RegisterCommand(input, signUpMenuRenderer).execute();
-            }
         }
         else if(PlayMenuRegex.SHOW_GEMS.matches(input)){
             new ShowWalletCommand(appSession.getCurrentUser().getProfile() , Currency.GEM).execute();

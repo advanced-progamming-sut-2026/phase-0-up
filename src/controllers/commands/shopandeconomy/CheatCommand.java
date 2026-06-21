@@ -1,6 +1,7 @@
 package controllers.commands.shopandeconomy;
 
 import controllers.commands.Command;
+import models.shop.Currency;
 
 
 public class CheatCommand implements Command {
