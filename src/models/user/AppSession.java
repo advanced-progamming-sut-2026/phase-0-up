@@ -6,8 +6,7 @@ public class AppSession {
     private User currentUser;
     private MenuType currentMenu;
 
-    public AppSession(User currentUser) {
-        this.currentUser = currentUser;
+    public AppSession() {
         currentMenu = MenuType.SIGNUP_MENU;
     }
 

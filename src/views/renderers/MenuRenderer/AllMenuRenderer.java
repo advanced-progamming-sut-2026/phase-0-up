@@ -11,11 +11,17 @@ public class AllMenuRenderer {
     public void showCurrentMenu(MenuType menu) {
         OutputHandler.showMessage("Current Menu: " + menu.getMenuName());
     }
+
     public void enterMenu(Result result){
         OutputHandler.showMessage(result.message());
     }
+
     public void menuExit(String destination){
         OutputHandler.showMessage(String.format("returned to %s menu",destination));
+    }
+
+    public void invalidCommand(){
+        OutputHandler.showMessage("Invalid Command");
     }
 
 }

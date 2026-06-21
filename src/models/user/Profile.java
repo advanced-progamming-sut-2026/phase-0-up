@@ -10,6 +10,7 @@ import utils.Constants;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,7 +26,7 @@ public class Profile {
     private List<Plant> unlockedPlants;
     private List<Plant> lockedPlants;
     private List<Zombie> seenZombies;
-    private Map<String , Integer> ownedSeedPackets;
+    private Map<String, Integer> ownedSeedPackets;
     private GreenHouse myGreenHouse;
     private List<Quest> activeQuests;
     private List<Quest> completedQuests;
@@ -33,13 +34,11 @@ public class Profile {
     private int lastLevel;
     private List<Chapter> unlockedChapters;
     private Chapter currentChapter;
-    private Map<String , Integer> passedMiniGames;
+    private Map<String, Integer> passedMiniGames;
     private int dailyQuestsDone;
     private int noneDailyQuestsDone;
     private boolean hasBoughtDailyOfferToday;
     private Set<String> seenZombieAliases;
-
-
 
     public Profile() {
         this.gameNumbers = Constants.DEFAULT_GAME_NUMBERS;
@@ -60,6 +59,8 @@ public class Profile {
         this.seenZombies = new ArrayList<>();
         this.activeQuests = new ArrayList<>();
         this.completedQuests = new ArrayList<>();
+        this.unlockedChapters = new ArrayList<>();
+        this.seenZombieAliases = new HashSet<>();
 
         this.ownedSeedPackets = new HashMap<>();
         this.passedMiniGames = new HashMap<>();
@@ -69,38 +70,172 @@ public class Profile {
         initializeStartingPlants();
     }
 
+    private void initializeStartingPlants() {
+        //TODO: unlock default plants for each profile;
+    }
 
-    public Chapter getCurrentChapter() {return currentChapter;}
-    public void setCurrentChapter(Chapter currentChapter) {this.currentChapter = currentChapter;}
-    public void addUnlockedChapter(Chapter chapter) {unlockedChapters.add(chapter);}
-    public List<Chapter> getUnlockedChapters() {return unlockedChapters;}
-    public void addCoins(int n){coins += n;}
-    public void spendCoins(int n){coins -= n;}
-    public void addGems(int n){gems += n;}
-    public void spendGems(int n){gems -= n;}
-    public void increaseGameNumbers(){gameNumbers++;}
-    public int getGameNumbers() {return gameNumbers;}
-    public int getCoins() {return coins;}
-    public int getGems() {return gems;}
-    public Set<String> getSeenZombieAliases() {return seenZombieAliases;}
-    public int getBestNumberOfMeowPoints() {return 0;}
-    public List<Plant> getUnlockedPlants() {return null;}
-    public List<Zombie> getSeenZombies() {return null;}
-    public Map<String, Integer> getOwnedSeedPackets() {return null;}
-    public GreenHouse getMyGreenHouse() {return null;}
-    public List<Quest> getActiveQuests() {return null;}
-    public List<Quest> getCompletedQuests() {return null;}
-    public int getLastChapter() {return 0;}
-    public int getLastLevel() {return 0;}
-    public Map<String, Integer> getPassedMiniGames() {return null;}
-    public int getDailyQuestsDone() {return 0;}
-    public int getNoneDailyQuestsDone() {return 0;}
-    public void setDifficultyLevel(int difficultyLevel) {this.difficultyLevel = difficultyLevel;}
-    public int getDifficultyLevel() {return 0;}
-    public void addNews(News news){}
+    // --- Getters & Setters ---
 
-    //method for initializing starting plants;
-    private void initializeStartingPlants(){
-        //TODO: unlock default plants for each profile
-    };
+    public int getGameNumbers() {
+        return gameNumbers;
+    }
+
+    public void increaseGameNumbers() {
+        this.gameNumbers++;
+    }
+
+    public int getCoins() {
+        return coins;
+    }
+
+    public void addCoins(int n) {
+        this.coins += n;
+    }
+
+    public void spendCoins(int n) {
+        this.coins -= n;
+    }
+
+    public int getGems() {
+        return gems;
+    }
+
+    public void addGems(int n) {
+        this.gems += n;
+    }
+
+    public void spendGems(int n) {
+        this.gems -= n;
+    }
+
+    public int getPlantFoodCount() {
+        return plantFoodCount;
+    }
+
+    public void addPlantFood(int n) {
+        this.plantFoodCount += n;
+    }
+
+    public void spendPlantFood(int n) {
+        this.plantFoodCount -= n;
+    }
+
+    public int getDifficultyLevel() {
+        return difficultyLevel;
+    }
+
+    public void setDifficultyLevel(int difficultyLevel) {
+        this.difficultyLevel = difficultyLevel;
+    }
+
+    public int getBestNumberOfMeowPoints() {
+        return bestNumberOfMeowPoints;
+    }
+
+    public void setBestNumberOfMeowPoints(int bestNumberOfMeowPoints) {
+        this.bestNumberOfMeowPoints = bestNumberOfMeowPoints;
+    }
+
+    public List<News> getNewsList() {
+        return newsList;
+    }
+
+    public void addNews(News news) {
+        this.newsList.add(news);
+    }
+
+    public List<Plant> getUnlockedPlants() {
+        return unlockedPlants;
+    }
+
+    public List<Plant> getLockedPlants() {
+        return lockedPlants;
+    }
+
+    public List<Zombie> getSeenZombies() {
+        return seenZombies;
+    }
+
+    public void addSeenZombie(Zombie zombie) {
+    }
+
+    public Set<String> getSeenZombieAliases() {
+        return seenZombieAliases;
+    }
+
+    public Map<String, Integer> getOwnedSeedPackets() {
+        return ownedSeedPackets;
+    }
+
+    public GreenHouse getMyGreenHouse() {
+        return myGreenHouse;
+    }
+
+    public List<Quest> getActiveQuests() {
+        return activeQuests;
+    }
+
+    public List<Quest> getCompletedQuests() {
+        return completedQuests;
+    }
+
+    public int getLastChapter() {
+        return lastChapter;
+    }
+
+    public void setLastChapter(int lastChapter) {
+        this.lastChapter = lastChapter;
+    }
+
+    public int getLastLevel() {
+        return lastLevel;
+    }
+
+    public void setLastLevel(int lastLevel) {
+        this.lastLevel = lastLevel;
+    }
+
+    public List<Chapter> getUnlockedChapters() {
+        return unlockedChapters;
+    }
+
+    public void addUnlockedChapter(Chapter chapter) {
+        this.unlockedChapters.add(chapter);
+    }
+
+    public Chapter getCurrentChapter() {
+        return currentChapter;
+    }
+
+    public void setCurrentChapter(Chapter currentChapter) {
+        this.currentChapter = currentChapter;
+    }
+
+    public Map<String, Integer> getPassedMiniGames() {
+        return passedMiniGames;
+    }
+
+    public int getDailyQuestsDone() {
+        return dailyQuestsDone;
+    }
+
+    public void incrementDailyQuestsDone() {
+        this.dailyQuestsDone++;
+    }
+
+    public int getNoneDailyQuestsDone() {
+        return noneDailyQuestsDone;
+    }
+
+    public void incrementNoneDailyQuestsDone() {
+        this.noneDailyQuestsDone++;
+    }
+
+    public boolean isHasBoughtDailyOfferToday() {
+        return hasBoughtDailyOfferToday;
+    }
+
+    public void setHasBoughtDailyOfferToday(boolean hasBoughtDailyOfferToday) {
+        this.hasBoughtDailyOfferToday = hasBoughtDailyOfferToday;
+    }
 }

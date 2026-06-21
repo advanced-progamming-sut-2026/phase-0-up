@@ -75,4 +75,13 @@ public class DatabaseManager {
     public boolean usernameExists(String username){
         return users.containsKey(username);
     }
+
+    public User getLoggedInUser() {
+        for (User user : users.values()) {
+            if (user.isStayLoggedIn()) {
+                return user;
+            }
+        }
+        return null;
+    }
 }

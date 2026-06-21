@@ -48,6 +48,8 @@ public class RegisterCommand implements Command {
         SecurityQuestionData securityData = handleSecurityQuestionInput();
 
         registerNewUser(genderType, securityData.questionNumber(), securityData.answer());
+
+        signUpMenuRenderer.register(new Result(true, "User successfully registered"));
     }
 
     private boolean validateCredentials() {
@@ -121,6 +123,6 @@ public class RegisterCommand implements Command {
         String hashedPassword = PasswordHasher.hash(password);
         String hashedQuestionAnswer = PasswordHasher.hash(questionAnswer);
         DatabaseManager.getInstance().addUser(new User(username, nickname, email, genderType,
-                hashedPassword, questionNumber, hashedQuestionAnswer));
+                hashedPassword, questionNumber - 1, hashedQuestionAnswer));
     }
 }

@@ -1,6 +1,8 @@
 package models.user;
 
+import java.util.HashMap;
 import java.util.Map;
+import utils.Constants;
 
 public class User {
     private String username;
@@ -10,8 +12,8 @@ public class User {
     private String hashPassword;
     private int securityQuestionIndex;
     private String securityAnswerHash;
-    private Profile profile;   //each user has its profile
-    private boolean stayLoggedIn = false;
+    private Profile profile;   // Each user has their own profile
+    private boolean stayLoggedIn;
 
     public User(String username, String nickname, String email, Gender gender,
                 String hashPassword, int securityQuestionIndex, String securityAnswerHash) {
@@ -22,24 +24,83 @@ public class User {
         this.hashPassword = hashPassword;
         this.securityQuestionIndex = securityQuestionIndex;
         this.securityAnswerHash = securityAnswerHash;
-        this.profile =  new Profile();
+        this.profile = new Profile();
         this.stayLoggedIn = false;
     }
 
+    public String getUsername() {
+        return username;
+    }
 
-    public User(String username, String password, String nickname, String email, Gender gender, String hashPassword, Map<Integer, String> securityQuestions , Profile profile){}
-    public String getUsername(){return null;}
-    public void changeUsername(String username) {this.username = username;}
-    public String getPassword(){return null;}
-    public void changePassword(String newPassword){}
-    public Profile getProfile(){return null;}
-    public String getNickname() {return null;}
-    public void changeNickname(String nickname){this.nickname = nickname;}
-    public String getEmail() {return null;}
-    public void changeEmail(String email){this.email = email;}
-    public Gender getGender() {return null;}
-    public String getHashPassword() {return null;}
-    public Map<Integer, String> getSecurityQuestions() {return null;}
-    public void setStayLoggedIn(boolean stayLoggedIn) {}
-    public boolean isStayLoggedIn() {return false;}
+    public void changeUsername(String username) {
+        this.username = username;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void changeEmail(String email) {
+        this.email = email;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public String getHashPassword() {
+        return hashPassword;
+    }
+
+    public void changePassword(String newPasswordHash) {
+        this.hashPassword = newPasswordHash;
+    }
+
+    public int getSecurityQuestionIndex() {
+        return securityQuestionIndex;
+    }
+
+    public void setSecurityQuestionIndex(int securityQuestionIndex) {
+        this.securityQuestionIndex = securityQuestionIndex;
+    }
+
+    public String getSecurityAnswerHash() {
+        return securityAnswerHash;
+    }
+
+    public void setSecurityAnswerHash(String securityAnswerHash) {
+        this.securityAnswerHash = securityAnswerHash;
+    }
+
+    public Profile getProfile() {
+        return profile;
+    }
+
+    public void setProfile(Profile profile) {
+        this.profile = profile;
+    }
+
+    public boolean isStayLoggedIn() {
+        return stayLoggedIn;
+    }
+
+    public void setStayLoggedIn(boolean stayLoggedIn) {
+        this.stayLoggedIn = stayLoggedIn;
+    }
+
+    public String getSecurityQuestion() {
+        return Constants.SECURITY_QUESTIONS[securityQuestionIndex];
+    }
 }

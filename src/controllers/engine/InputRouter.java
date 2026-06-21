@@ -1,13 +1,19 @@
 package controllers.engine;
 
 
+import controllers.commands.authentication.LoginCommand;
 import controllers.commands.authentication.RegisterCommand;
 import controllers.commands.menu.EnterMenuCommand;
 import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
+import controllers.commands.playmenu.EnterChapterCommand;
 import controllers.commands.profileandsettings.ChangeDifficultyCommand;
 import controllers.commands.menu.ShowCurrentMenuCommand;
+import controllers.commands.profileandsettings.EditAction;
+import controllers.commands.profileandsettings.ProfileCommands;
+import models.shop.Shop;
 import models.user.AppSession;
+import models.user.User;
 import utils.regex.AllMenuRegex;
 import utils.regex.MainMenuRegex;
 import utils.regex.SettingMenuRegex;
@@ -67,7 +73,12 @@ public class InputRouter {
             case SIGNUP_MENU :
                 if (SignUpMenuRegex.SIGN_UP.matches(input)) new RegisterCommand(input, signUpMenuRenderer).execute();
                 return;
+            case LOGIN_MENU:
+                if (LoginMenuRegex.LOGIN.matches(input)) new LoginCommand(input, appSession, loginMenuRenderer).execute();
+                return;
         }
+
+        allMenuRenderer.invalidCommand();
     }
 
     private boolean handleShopMenuExecute(String input) {
@@ -133,23 +144,23 @@ public class InputRouter {
         User user = appSession.getCurrentUser();
         if(ProfileMenuRegex.CHANGE_USERNAME.matches(input)) {
             new ProfileCommands( user, EditAction.USERNAME ,
-                    ProfileMenuRegex.CHANGE_USERNAME.getGroup(input , "username") , null).execute();
+                    ProfileMenuRegex.CHANGE_USERNAME.getGroup(input , "username") , null, profileMenuRenderer).execute();
             return true;
         }
         else if(ProfileMenuRegex.CHANGE_NICKNAME.matches(input)) {
             new ProfileCommands(user, EditAction.NICKNAME ,
-                    ProfileMenuRegex.CHANGE_NICKNAME.getGroup(input , "nickname") , null).execute();
+                    ProfileMenuRegex.CHANGE_NICKNAME.getGroup(input , "nickname") , null, profileMenuRenderer).execute();
             return true;
         }
         else if(ProfileMenuRegex.CHANGE_EMAIL.matches(input)) {
             new ProfileCommands(user, EditAction.EMAIL ,
-                    ProfileMenuRegex.CHANGE_EMAIL.getGroup(input , "email") , null).execute();
+                    ProfileMenuRegex.CHANGE_EMAIL.getGroup(input , "email") , null, profileMenuRenderer).execute();
             return true;
         }
         else if(ProfileMenuRegex.CHANGE_EMAIL.matches(input)) {
             new ProfileCommands(user, EditAction.PASSWORD ,
                     ProfileMenuRegex.CHANGE_PASS.getGroup(input , "newP") ,
-                    ProfileMenuRegex.CHANGE_PASS.getGroup(input , "oldP")).execute();
+                    ProfileMenuRegex.CHANGE_PASS.getGroup(input , "oldP"), profileMenuRenderer).execute();
             return true;
         }
         else if(ProfileMenuRegex.SHOW_INFO.matches(input)) {
