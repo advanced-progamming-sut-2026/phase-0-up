@@ -104,6 +104,26 @@ public class Constants {
     // ==========================================
     public static final String PASSWORD_HASH_ALGORITHM = "SHA-256";
 
+    public static final String[] SECURITY_QUESTIONS = {
+            "1. What was the name of your first pet?",
+            "2. In what city were you born?",
+            "3. What was your favorite childhood book?",
+            "4. What was the model of your first car?",
+            "5. What was your best friend's name in high school?"
+    };
+
+    public static final int DEFAULT_GAME_NUMBERS = 0;
+    public static final int DEFAULT_INITIAL_COINS = 2000;
+    public static final int DEFAULT_INITIAL_GEMS = 100;
+    public static final int DEFAULT_PLANT_FOOD_COUNT = 0;
+    public static final int DEFAULT_DIFFICULTY_LEVEL = 3;
+    public static final int DEFAULT_BEST_MEOW_POINTS = 0;
+    public static final int DEFAULT_LAST_CHAPTER = 1;
+    public static final int DEFAULT_LAST_LEVEL = 1;
+    public static final int DEFAULT_DAILY_QUESTS_DONE = 0;
+    public static final int DEFAULT_NONE_DAILY_QUESTS_DONE = 0;
+    public static final boolean DEFAULT_HAS_BOUGHT_DAILY_OFFER = false;
+
     // =====================================================
     // ۱۰. منوی انتخاب گیاه (Plant Selection Menu)
     // =====================================================

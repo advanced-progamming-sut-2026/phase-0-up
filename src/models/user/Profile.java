@@ -6,7 +6,10 @@ import models.game.Chapter;
 import models.greenhouse.GreenHouse;
 import models.news.News;
 import models.quests.Quest;
+import utils.Constants;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +41,35 @@ public class Profile {
 
 
 
-    public Profile(){};
+    public Profile() {
+        this.gameNumbers = Constants.DEFAULT_GAME_NUMBERS;
+        this.coins = Constants.DEFAULT_INITIAL_COINS;
+        this.gems = Constants.DEFAULT_INITIAL_GEMS;
+        this.plantFoodCount = Constants.DEFAULT_PLANT_FOOD_COUNT;
+        this.difficultyLevel = Constants.DEFAULT_DIFFICULTY_LEVEL;
+        this.bestNumberOfMeowPoints = Constants.DEFAULT_BEST_MEOW_POINTS;
+        this.lastChapter = Constants.DEFAULT_LAST_CHAPTER;
+        this.lastLevel = Constants.DEFAULT_LAST_LEVEL;
+        this.dailyQuestsDone = Constants.DEFAULT_DAILY_QUESTS_DONE;
+        this.noneDailyQuestsDone = Constants.DEFAULT_NONE_DAILY_QUESTS_DONE;
+        this.hasBoughtDailyOfferToday = Constants.DEFAULT_HAS_BOUGHT_DAILY_OFFER;
+
+        this.newsList = new ArrayList<>();
+        this.unlockedPlants = new ArrayList<>();
+        this.lockedPlants = new ArrayList<>();
+        this.seenZombies = new ArrayList<>();
+        this.activeQuests = new ArrayList<>();
+        this.completedQuests = new ArrayList<>();
+
+        this.ownedSeedPackets = new HashMap<>();
+        this.passedMiniGames = new HashMap<>();
+
+        this.myGreenHouse = new GreenHouse();
+
+        initializeStartingPlants();
+    }
+
+
     public Chapter getCurrentChapter() {return currentChapter;}
     public void setCurrentChapter(Chapter currentChapter) {this.currentChapter = currentChapter;}
     public void addUnlockedChapter(Chapter chapter) {unlockedChapters.add(chapter);}
@@ -69,4 +100,9 @@ public class Profile {
     public void addNews(News news){}
     public int getPlantFoodCount() {return plantFoodCount;}
     public void setPlantFoodCount(int plantFoodCount) {this.plantFoodCount = plantFoodCount;}
+
+    //method for initializing starting plants;
+    private void initializeStartingPlants(){
+        //TODO: unlock default plants for each profile
+    };
 }

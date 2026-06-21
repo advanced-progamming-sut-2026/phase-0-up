@@ -1,5 +1,7 @@
 package utils.validation;
 
+import utils.Result;
+
 public interface Validator {
-    public boolean validate(String value);
+    public Result validate(String value);
 }

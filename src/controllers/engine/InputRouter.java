@@ -1,13 +1,10 @@
 package controllers.engine;
 
 
+import controllers.commands.authentication.RegisterCommand;
 import controllers.commands.menu.EnterMenuCommand;
 import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
-import controllers.commands.playmenu.CheatAddCommand;
-import controllers.commands.playmenu.EnterChapterCommand;
-import controllers.commands.playmenu.EnterOtherMenus;
-import controllers.commands.playmenu.ShowWalletCommand;
 import controllers.commands.profileandsettings.ChangeDifficultyCommand;
 import controllers.commands.menu.ShowCurrentMenuCommand;
 import controllers.commands.profileandsettings.EditAction;
@@ -18,7 +15,9 @@ import controllers.commands.shopandeconomy.ShowShopCommand;
 import models.shop.Currency;
 import models.shop.Shop;
 import models.user.AppSession;
-import models.user.User;
+import utils.regex.AllMenuRegex;
+import utils.regex.MainMenuRegex;
+import utils.regex.SettingMenuRegex;
 import utils.regex.*;
 import views.InputHandler;
 import views.renderers.*;
@@ -70,6 +69,9 @@ public class InputRouter {
             case PROFILE_MENU : { if(handleProfileMenuExecute(input)) {return;} break;}
             case PLAY_MENU : { if(handlePlayMenuExecute(input)) {return;} break;}
             case SHOP_MENU : {if(handleShopMenuExecute(input)) {return;} break;}
+            case SIGNUP_MENU :
+                if (SignUpMenuRegex.SIGN_UP.matches(input)) new RegisterCommand(input, signUpMenuRenderer).execute();
+                return;
         }
     }
 
