@@ -4,7 +4,7 @@ public class SeedPacket {
     private String plantType;
     private int cooldownDuration;
     private long lastPlantedTick;
-    private boolean isBoosted = false;
+    private boolean isBoosted;
 
     public SeedPacket(String plantType, int cooldownDuration) {
         this.plantType = plantType;

@@ -1,7 +1,5 @@
 package models.greenhouse;
 
-import models.entities.plants.Plant;
-import utils.regex.GreenHouseMenuRegex;
 
 public class Pot{
     private int x;
@@ -26,15 +24,11 @@ public class Pot{
         return this.state == PotState.EMPTY;
     }
 
-    public boolean isReady(){
-        if (this.state == PotState.GROWING && System.currentTimeMillis() >= readyAtTimestamp)
-            state = PotState.READY;
-        return state == PotState.READY;
+    public boolean isReady() {
+        if (this.state == PotState.READY) return true;
+
+        return this.state == PotState.GROWING && System.currentTimeMillis() >= readyAtTimestamp;
     }
-
-
-
-
 
     public int getX() {
         return x;
@@ -97,5 +91,11 @@ public class Pot{
     public void instantGrow() {
         this.readyAtTimestamp = System.currentTimeMillis();
         this.state = PotState.READY;
+    }
+
+    public void updateState() {
+        if (this.state == PotState.GROWING && System.currentTimeMillis() >= readyAtTimestamp) {
+            this.state = PotState.READY;
+        }
     }
 }

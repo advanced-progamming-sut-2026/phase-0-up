@@ -3,7 +3,9 @@ package utils.regex;
 public enum GreenHouseMenuRegex implements Regex {
     ENTER_SHOP("^\\s*enter\\s+shop\\s*$"),
     PLANT("^\\s*plant\\s+pot\\s+at\\s+\\((?<x>\\d+),\\s+(?<y>\\d+)\\)\\s*$"),
-    COLLECT("^collect\\s+\\((?<x>-?\\d+),\\s*(?<y>-?\\d+)\\)$");
+    COLLECT("^\\s*collect\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$"),
+    SHOW_STATUS("^\\s*show\\s+greenhouse\\s*$"),
+    GROW("^\\s*grow\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$");
 
     private final String pattern;
 

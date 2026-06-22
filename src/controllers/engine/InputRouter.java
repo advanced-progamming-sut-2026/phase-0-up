@@ -4,6 +4,10 @@ package controllers.engine;
 import controllers.commands.authentication.ForgetPasswordCommand;
 import controllers.commands.authentication.LoginCommand;
 import controllers.commands.authentication.RegisterCommand;
+import controllers.commands.greenhouse.CollectPotCommand;
+import controllers.commands.greenhouse.GrowPotCommand;
+import controllers.commands.greenhouse.PlantPotCommand;
+import controllers.commands.greenhouse.ShowGreenhouseCommand;
 import controllers.commands.menu.EnterMenuCommand;
 import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
@@ -71,17 +75,26 @@ public class InputRouter {
         switch (appSession.getCurrentMenu()){
             case MAIN_MENU :
                 if(MainMenuRegex.LOG_OUT.matches(input)) {logout(); return;}
+                break;
             case SETTINGS_MENU :
                 if(SettingMenuRegex.CHANGE_DL.matches(input)){
                     changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl")); return;}
-            case PROFILE_MENU :  if (handleProfileMenuExecute(input)) return;
-            case PLAY_MENU :  if (handlePlayMenuExecute(input)) return;
-            case SHOP_MENU : if (handleShopMenuExecute(input)) return;
+                break;
+            case PROFILE_MENU :
+                if (handleProfileMenuExecute(input)) return;
+                break;
+            case PLAY_MENU :
+                if (handlePlayMenuExecute(input)) return;
+                break;
+            case SHOP_MENU :
+                if (handleShopMenuExecute(input)) return;
+                break;
             case SIGNUP_MENU :
                 if (SignUpMenuRegex.SIGN_UP.matches(input)) {
                     new RegisterCommand(input, signUpMenuRenderer).execute();
                     return;
                 }
+                break;
             case LOGIN_MENU:
                 if (LoginMenuRegex.LOGIN.matches(input)) {
                     new LoginCommand(input, appSession, loginMenuRenderer).execute();
@@ -90,15 +103,27 @@ public class InputRouter {
                     new ForgetPasswordCommand(input, appSession, loginMenuRenderer).execute();
                     return;
                 }
+                break;
             case GREENHOUSE_MENU:
                 if (GreenHouseMenuRegex.ENTER_SHOP.matches(input)) {
                     enterShop();
                     return;
+                } else if (GreenHouseMenuRegex.PLANT.matches(input)) {
+                    plantPot(input);
+                    return;
+                } else if (GreenHouseMenuRegex.SHOW_STATUS.matches(input)){
+                    new ShowGreenhouseCommand(appSession.getCurrentUser().getProfile().getMyGreenHouse(),
+                            greenhouseRenderer).execute();
+                    return;
+                } else if (GreenHouseMenuRegex.COLLECT.matches(input)) {
+                    collectPot(input);
+                    return;
+                } else if (GreenHouseMenuRegex.GROW.matches(input)) {
+                    growPlant(input);
+                    return;
                 }
-                else if (GreenHouseMenuRegex.PLANT.matches(input)) {
-
-                }
-        }
+                break;
+            }
 
         allMenuRenderer.invalidCommand();
     }
@@ -218,6 +243,27 @@ public class InputRouter {
 
     private void enterShop(){
         appSession.setCurrentMenu(MenuType.SHOP_MENU);
+    }
+
+    private void plantPot(String input){
+        int potX = Integer.parseInt(GreenHouseMenuRegex.PLANT.getGroup(input, "x"));
+        int potY = Integer.parseInt(GreenHouseMenuRegex.PLANT.getGroup(input, "y"));
+
+        new PlantPotCommand(potX, potY, greenhouseRenderer, appSession).execute();
+    }
+
+    private void collectPot(String input){
+        int potX = Integer.parseInt(GreenHouseMenuRegex.COLLECT.getGroup(input, "x"));
+        int potY = Integer.parseInt(GreenHouseMenuRegex.COLLECT.getGroup(input, "y"));
+
+        new CollectPotCommand(appSession, greenhouseRenderer, potX, potY).execute();
+    }
+
+    private void growPlant(String input){
+        int potX  = Integer.parseInt(GreenHouseMenuRegex.GROW.getGroup(input, "x"));
+        int potY =  Integer.parseInt(GreenHouseMenuRegex.GROW.getGroup(input, "y"));
+
+        new GrowPotCommand(greenhouseRenderer, appSession, potX, potY).execute();
     }
 
 }

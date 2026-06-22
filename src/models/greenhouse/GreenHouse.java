@@ -12,11 +12,10 @@ public class GreenHouse {
 
     public GreenHouse() {
         this.pots = new Pot[rows][cols];
+        initializePots();
     }
 
     public void increaseSpeed(int x, int y){}
-    public String showStatus(){return null;}
-    public void harvestReward(Plant plant){}
 
     private void initializePots() {
         for (int i = 0; i < rows; i++){
@@ -78,4 +77,13 @@ public class GreenHouse {
         int y = userY - 1;
         return x >= 0 && x < cols && y >= 0 && y < rows;
     }
+
+    public int getRows() {
+        return rows;
+    }
+
+    public int getCols() {
+        return cols;
+    }
+
 }

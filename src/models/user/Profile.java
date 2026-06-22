@@ -3,6 +3,7 @@ package models.user;
 import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
 import models.game.Chapter;
+import models.game.SeedPacket;
 import models.greenhouse.GreenHouse;
 import models.news.News;
 import models.quests.Quest;
@@ -25,7 +26,7 @@ public class Profile {
     private List<News> newsList;
     private List<String> unlockedPlants;
     private List<String> lockedPlants;
-    private Map<String, Integer> ownedSeedPackets;
+    private Map<SeedPacket, Integer> ownedSeedPackets;
     private GreenHouse myGreenHouse;
     private List<Quest> activeQuests;
     private List<Quest> completedQuests;
@@ -155,7 +156,7 @@ public class Profile {
         return seenZombieAliases;
     }
 
-    public Map<String, Integer> getOwnedSeedPackets() {
+    public Map<SeedPacket, Integer> getOwnedSeedPackets() {
         return ownedSeedPackets;
     }
 

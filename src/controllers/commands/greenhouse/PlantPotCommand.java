@@ -33,7 +33,6 @@ public class PlantPotCommand implements Command {
             greenhouseRenderer.plantPot(new Result(false, "Invalid coordinate"));
             return;
         }
-
         Pot pot = greenHouse.getPot(potX - 1, potY - 1);
 
         if (!pot.isEmpty()) {
@@ -48,7 +47,8 @@ public class PlantPotCommand implements Command {
         if (isMarigold){
             plantSeed = new GreenHousePlant("Marigold", true);
         } else {
-            String plantName = profile.getUnlockedPlants().get(random.nextInt() %  profile.getUnlockedPlants().size());
+            int randomIndex = random.nextInt(profile.getUnlockedPlants().size());
+            String plantName = profile.getUnlockedPlants().get(randomIndex);
             plantSeed = new GreenHousePlant(plantName, false);
         }
 
