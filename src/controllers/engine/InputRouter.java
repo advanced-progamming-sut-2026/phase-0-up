@@ -175,7 +175,7 @@ public class InputRouter {
                     ProfileMenuRegex.CHANGE_EMAIL.getGroup(input , "email") , null, profileMenuRenderer).execute();
             return true;
         }
-        else if(ProfileMenuRegex.CHANGE_EMAIL.matches(input)) {
+        else if(ProfileMenuRegex.CHANGE_PASS.matches(input)) {
             new ProfileCommands(user, EditAction.PASSWORD ,
                     ProfileMenuRegex.CHANGE_PASS.getGroup(input , "newP") ,
                     ProfileMenuRegex.CHANGE_PASS.getGroup(input , "oldP"), profileMenuRenderer).execute();

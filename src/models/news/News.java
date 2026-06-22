@@ -8,6 +8,15 @@ public class News {
     private String date;
     private boolean read;
 
+    public News(int id, String title, String description, String author, String date) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.author = author;
+        this.date = date;
+        this.read = false;
+    }
+
     public int getId() {
         return id;
     }
@@ -30,5 +39,8 @@ public class News {
 
     public boolean isRead() {
         return read;
+    }
+    public void markAsRead() {
+        this.read = true;
     }
 }
