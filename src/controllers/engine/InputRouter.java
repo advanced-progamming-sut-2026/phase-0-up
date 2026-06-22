@@ -61,7 +61,6 @@ public class InputRouter {
             String input = InputHandler.readLine().trim();
 
             routeAndExecute(input);
-
         }
     }
 
@@ -90,6 +89,14 @@ public class InputRouter {
                 } else if (LoginMenuRegex.FORGET_PASSWORD.matches(input)) {
                     new ForgetPasswordCommand(input, appSession, loginMenuRenderer).execute();
                     return;
+                }
+            case GREENHOUSE_MENU:
+                if (GreenHouseMenuRegex.ENTER_SHOP.matches(input)) {
+                    enterShop();
+                    return;
+                }
+                else if (GreenHouseMenuRegex.PLANT.matches(input)) {
+
                 }
         }
 
@@ -207,6 +214,10 @@ public class InputRouter {
        String menuName = AllMenuRegex.ENTER_MENU.getGroup(input, "menuName");
        EnterMenuCommand command = new EnterMenuCommand(appSession, menuName, allMenuRenderer);
        command.execute();
+    }
+
+    private void enterShop(){
+        appSession.setCurrentMenu(MenuType.SHOP_MENU);
     }
 
 }

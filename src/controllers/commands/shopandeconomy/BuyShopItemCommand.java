@@ -3,6 +3,7 @@ package controllers.commands.shopandeconomy;
 import controllers.commands.Command;
 import models.entities.plants.Plant;
 import models.greenhouse.Pot;
+import models.greenhouse.PotState;
 import models.shop.Currency;
 import models.shop.DailyOffer;
 import models.shop.Shop;
@@ -41,7 +42,7 @@ public class BuyShopItemCommand implements Command {
                     "you don't have enough coins!")); return;}
             Random rand = new Random(); found.setPurchased(true);
             int random = rand.nextInt(profile.getUnlockedPlants().size());
-            String name = profile.getUnlockedPlants().get(random).getName();
+            String name = profile.getUnlockedPlants().get(random);
             buyARandomSeedPackInDaily(name);
         } else {
             ShopItem found = null;
@@ -86,8 +87,8 @@ public class BuyShopItemCommand implements Command {
     }
 
     private boolean checkForContainingTheName() {
-        for(Plant p : profile.getUnlockedPlants()){
-            if(p.getName().equals(plantType.toLowerCase())){
+        for(String p : profile.getUnlockedPlants()){
+            if(p.equalsIgnoreCase(plantType)){
                 return true;
             }
         }
@@ -107,7 +108,7 @@ public class BuyShopItemCommand implements Command {
         profile.spendCoins(1000);
         Random rand = new Random();
         int random = rand.nextInt(profile.getUnlockedPlants().size());
-        String name = profile.getUnlockedPlants().get(random).getName();
+        String name = profile.getUnlockedPlants().get(random);
         profile.getOwnedSeedPackets().merge(name , 5 , Integer::sum);
     }
 
@@ -118,16 +119,13 @@ public class BuyShopItemCommand implements Command {
 
     private void buyAPot() {
         profile.spendCoins(2000);
-        if(profile.getMyGreenHouse().getUnlockedPots().isEmpty()){
-            Pot e = new Pot(1 , 1);
-            profile.getMyGreenHouse().getUnlockedPots().add(e); return;
-        }
         Pot lastPot = profile.getMyGreenHouse().getUnlockedPots().getLast();
-        Pot e;
-        if(lastPot.getY() != 4)
-            e = new Pot(lastPot.getX(), lastPot.getY() + 1);
+
+        if(lastPot.getX() != 4) {
+            profile.getMyGreenHouse()
+                    .getPot(lastPot.getX() + 1, lastPot.getY()).setState(PotState.EMPTY);
+        }
         else
-            e = new Pot(lastPot.getX() + 1, 1);
-        profile.getMyGreenHouse().getUnlockedPots().add(e);
+            profile.getMyGreenHouse().getPot(1, lastPot.getY() + 1).setState(PotState.EMPTY);
     }
 }

@@ -23,9 +23,8 @@ public class Profile {
     private int difficultyLevel;
     private int bestNumberOfMeowPoints;
     private List<News> newsList;
-    private List<Plant> unlockedPlants;
-    private List<Plant> lockedPlants;
-    private List<Zombie> seenZombies;
+    private List<String> unlockedPlants;
+    private List<String> lockedPlants;
     private Map<String, Integer> ownedSeedPackets;
     private GreenHouse myGreenHouse;
     private List<Quest> activeQuests;
@@ -56,7 +55,6 @@ public class Profile {
         this.newsList = new ArrayList<>();
         this.unlockedPlants = new ArrayList<>();
         this.lockedPlants = new ArrayList<>();
-        this.seenZombies = new ArrayList<>();
         this.activeQuests = new ArrayList<>();
         this.completedQuests = new ArrayList<>();
         this.unlockedChapters = new ArrayList<>();
@@ -144,20 +142,14 @@ public class Profile {
         this.newsList.add(news);
     }
 
-    public List<Plant> getUnlockedPlants() {
+    public List<String> getUnlockedPlants() {
         return unlockedPlants;
     }
 
-    public List<Plant> getLockedPlants() {
+    public List<String> getLockedPlants() {
         return lockedPlants;
     }
 
-    public List<Zombie> getSeenZombies() {
-        return seenZombies;
-    }
-
-    public void addSeenZombie(Zombie zombie) {
-    }
 
     public Set<String> getSeenZombieAliases() {
         return seenZombieAliases;
