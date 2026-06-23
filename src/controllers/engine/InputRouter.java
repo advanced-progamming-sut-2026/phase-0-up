@@ -11,15 +11,14 @@ import controllers.commands.greenhouse.ShowGreenhouseCommand;
 import controllers.commands.menu.EnterMenuCommand;
 import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
+import controllers.commands.news.NewsViewType;
+import controllers.commands.news.ShowNewsCommand;
 import controllers.commands.playmenu.CheatAddCommand;
 import controllers.commands.playmenu.EnterChapterCommand;
 import controllers.commands.playmenu.EnterOtherMenus;
 import controllers.commands.playmenu.ShowWalletCommand;
-import controllers.commands.profileandsettings.ChangeDifficultyCommand;
+import controllers.commands.profileandsettings.*;
 import controllers.commands.menu.ShowCurrentMenuCommand;
-import controllers.commands.profileandsettings.EditAction;
-import controllers.commands.profileandsettings.ProfileCommands;
-import controllers.commands.profileandsettings.ShowProfileCommand;
 import controllers.commands.shopandeconomy.BuyShopItemCommand;
 import controllers.commands.shopandeconomy.ShowShopCommand;
 import models.shop.Currency;
@@ -123,9 +122,24 @@ public class InputRouter {
                     return;
                 }
                 break;
+            case NEWS_MENU:
+                if(handleNewsMenuExecute(input)) return;
+                break;
             }
 
         allMenuRenderer.invalidCommand();
+    }
+    private boolean handleNewsMenuExecute(String input){
+        User user = appSession.getCurrentUser();
+        if(NewsMenuRegex.SHOW_UNREAD.matches(input)){
+            new ShowNewsCommand(user, NewsViewType.UNREAD, newsMenuRenderer);
+            return true;
+        }
+        else if(NewsMenuRegex.SHOW_ALL.matches(input)){
+            new ShowNewsCommand(user,NewsViewType.ALL, newsMenuRenderer);
+            return true;
+        }
+        return false;
     }
 
     private boolean handleShopMenuExecute(String input) {
