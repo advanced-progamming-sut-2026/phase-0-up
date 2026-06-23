@@ -4,6 +4,7 @@ package controllers.engine;
 import controllers.commands.authentication.ForgetPasswordCommand;
 import controllers.commands.authentication.LoginCommand;
 import controllers.commands.authentication.RegisterCommand;
+import controllers.commands.collection.*;
 import controllers.commands.greenhouse.CollectPotCommand;
 import controllers.commands.greenhouse.GrowPotCommand;
 import controllers.commands.greenhouse.PlantPotCommand;
@@ -125,10 +126,55 @@ public class InputRouter {
             case NEWS_MENU:
                 if(handleNewsMenuExecute(input)) return;
                 break;
+            case COLLECTION_MENU:
+                if(handleCollectionMenuExecute(input)) return;
+                break;
             }
 
         allMenuRenderer.invalidCommand();
     }
+
+    private boolean handleCollectionMenuExecute(String input){
+        User user = appSession.getCurrentUser();
+        if(CollectionMenuRegex.SHOW_PLANTS.matches(input)){
+            new ShowCollectionListCommand(ShowListType.PLANTS,user);
+            return true;
+        }
+        else if(CollectionMenuRegex.SHOW_ALL_PLANTS.matches(input)){
+            new ShowCollectionListCommand(ShowListType.ALL_PLANTS, user);
+            return true;
+        }
+        else if(CollectionMenuRegex.SHOW_ZOMBIES.matches(input)){
+            new ShowCollectionListCommand(ShowListType.ZOMBIES, user);
+            return true;
+        }
+        else if(CollectionMenuRegex.SHOW_ALL_ZOMBIES.matches(input)){
+            new ShowCollectionListCommand(ShowListType.ALL_ZOMBIES, user);
+            return true;
+        }
+        else if(CollectionMenuRegex.SHOW_ZOMBIE_DETAIL.matches(input)){
+            String name = CollectionMenuRegex.SHOW_ZOMBIE_DETAIL.getGroup(input,"zombieName");
+            new ShowEntityDetailsCommand(ShowListType.ZOMBIES, name, user);
+            return true;
+        }
+        else if(CollectionMenuRegex.SHOW_PLANT_DETAIL.matches(input)){
+            String name = CollectionMenuRegex.SHOW_PLANT_DETAIL.getGroup(input, "plantName");
+            new ShowEntityDetailsCommand(ShowListType.PLANTS , name , user);
+            return true;
+        }
+        else if(CollectionMenuRegex.PURCHASE_PLANT.matches(input)){
+            String name = CollectionMenuRegex.PURCHASE_PLANT.getGroup(input , "plantName");
+            new UnlockPlantCommand(name, user);
+            return true;
+        }
+        else if(CollectionMenuRegex.UPGRADE_PLANT.matches(input)){
+            String name = CollectionMenuRegex.UPGRADE_PLANT.getGroup(input, "plantName");
+            new UpgradePlantCommand(name , user);
+            return true;
+        }
+        return false;
+    }
+
     private boolean handleNewsMenuExecute(String input){
         User user = appSession.getCurrentUser();
         if(NewsMenuRegex.SHOW_UNREAD.matches(input)){
