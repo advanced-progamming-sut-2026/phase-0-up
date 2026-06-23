@@ -20,8 +20,10 @@ import controllers.commands.playmenu.EnterOtherMenus;
 import controllers.commands.playmenu.ShowWalletCommand;
 import controllers.commands.profileandsettings.*;
 import controllers.commands.menu.ShowCurrentMenuCommand;
+import controllers.commands.seedselection.*;
 import controllers.commands.shopandeconomy.BuyShopItemCommand;
 import controllers.commands.shopandeconomy.ShowShopCommand;
+import models.game.GameSession;
 import models.shop.Currency;
 import models.shop.Shop;
 import models.user.AppSession;
@@ -36,6 +38,7 @@ import views.renderers.MenuRenderer.*;
 
 public class InputRouter {
     private final AppSession appSession;
+    private GameSession gameSession;
 
     private boolean running;
 
@@ -129,9 +132,44 @@ public class InputRouter {
             case COLLECTION_MENU:
                 if(handleCollectionMenuExecute(input)) return;
                 break;
+            case PLANTS_MENU:
+                if(handlePlantMenuExecute(input)) return;
+                break;
             }
 
+
         allMenuRenderer.invalidCommand();
+    }
+
+    private boolean handlePlantMenuExecute(String input){
+        if(SeedSelectionRegex.SHOW_ALL_PLANTS.matches(input)){
+            new ShowSeedsCommand(gameSession, true);
+            return true;
+        }
+        else if(SeedSelectionRegex.SHOW_AVAILABLE_PLANTS.matches(input)){
+            new ShowSeedsCommand(gameSession, false);
+            return true;
+        }
+        else if (SeedSelectionRegex.ADD_PLANT.matches(input)){
+            String plantName = SeedSelectionRegex.ADD_PLANT.getGroup(input, "type");
+            new ToggleSeedCommand(ToggleAction.ADD, plantName , gameSession);
+            return true;
+        }
+        else if(SeedSelectionRegex.REMOVE_PLANT.matches(input)){
+            String plantName = SeedSelectionRegex.REMOVE_PLANT.getGroup(input, "type");
+            new ToggleSeedCommand(ToggleAction.REMOVE , plantName , gameSession);
+            return true;
+        }
+        else if(SeedSelectionRegex.BOOST_PLANT.matches(input)){
+            String plantName = SeedSelectionRegex.BOOST_PLANT.getGroup(input, "type");
+            new BoostSeedCommand(plantName , gameSession);
+            return true;
+        }
+        else if(SeedSelectionRegex.START_GAME.matches(input)){
+            new StartLevelCommand(gameSession , appSession);
+            return true;
+        }
+        return false;
     }
 
     private boolean handleCollectionMenuExecute(String input){

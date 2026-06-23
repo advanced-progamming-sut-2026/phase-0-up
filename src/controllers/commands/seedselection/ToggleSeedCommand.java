@@ -88,7 +88,7 @@ public class ToggleSeedCommand implements Command {
             return;
         }
         gameSession.removeSeed(plantName);
-            renderer.successfulRemove(plantName);
+        renderer.successfulRemove(plantName);
     }
 
 }
