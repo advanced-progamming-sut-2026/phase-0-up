@@ -10,6 +10,7 @@ import utils.registry.PlantRegistry;
 import views.OutputHandler;
 import views.renderers.MenuRenderer.PlantMenuRenderer;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +37,16 @@ public class ToggleSeedCommand implements Command {
 
     private boolean isUnlockedAndAvailable() {
         Profile profile = gameSession.getPlayer();
-        Map<String, Integer> owned = profile.getOwnedSeedPackets();
+        Map<SeedPacket, Integer> map = profile.getOwnedSeedPackets();
+        Map<String, Integer> owned = null;
+
+        if (map != null) {
+            owned = new HashMap<>();
+            for (Map.Entry<SeedPacket, Integer> entry : map.entrySet()) {
+                owned.put(entry.getKey().getPlantType(), entry.getValue());
+            }
+        }
+
         boolean unlocked = owned != null && owned.getOrDefault(plantName, 0) > 0;
         LevelTemplate levelTemplate = gameSession.getLevel().getTemplate();
         List<String> available = levelTemplate.getAvailablePlants();

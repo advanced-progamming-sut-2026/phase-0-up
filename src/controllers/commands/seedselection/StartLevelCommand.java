@@ -5,16 +5,17 @@ import controllers.engine.InputRouter;
 import controllers.engine.MenuType;
 import models.game.GameSession;
 import models.game.gamemodes.GameMode;
+import models.user.AppSession;
 import views.OutputHandler;
 import views.renderers.MenuRenderer.PlantMenuRenderer;
 
 public class StartLevelCommand implements Command {
     private GameSession gameSession;
-    private InputRouter inputRouter;
+    private AppSession appSession;
 
-    public StartLevelCommand(GameSession gameSession, InputRouter inputRouter) {
+    public StartLevelCommand(GameSession gameSession, AppSession appSession) {
         this.gameSession = gameSession;
-        this.inputRouter = inputRouter;
+        this.appSession = appSession;
     }
     @Override
     public void execute() {
@@ -23,7 +24,7 @@ public class StartLevelCommand implements Command {
         if(mode != null){
             mode.onStart(gameSession);
         }
-        inputRouter.setCurrentMenu(MenuType.IN_GAME);
+        appSession.setCurrentMenu(MenuType.IN_GAME);
         renderer.gameStarted();
     }
 }
