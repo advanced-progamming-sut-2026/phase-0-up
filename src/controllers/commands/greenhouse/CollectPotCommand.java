@@ -48,24 +48,21 @@ public class CollectPotCommand implements Command {
 
         GreenHousePlant harvested = greenHouse.collect(potX - 1, potY - 1);
         Profile profile = appSession.getCurrentUser().getProfile();
+
         if (harvested.isMarigold()){
             profile.addCoins(500);
-            greenhouseRenderer.collect(new Result(true, "Marigold collected 500 coins added"));
+            greenhouseRenderer.collect(new Result(true, "Collected a Marigold! +500 coins."));
         }
         else {
-            String seedName = harvested.getName();
-            for (SeedPacket packet : profile.getOwnedSeedPackets().keySet()){
-                if (packet.getPlantType().equalsIgnoreCase(seedName)){
-                    if (packet.isBoosted()){
-                        greenhouseRenderer.collect(new Result(true, seedName + " seed Already Boosted"));
-                        return;
-                    }
-                    else {
-                        packet.setBoosted(true);
-                        greenhouseRenderer.collect(new Result(true, seedName + " seed got Boosted"));
-                        return;
-                    }
-                }
+            String seedName = harvested.getName().toLowerCase().trim();
+
+            // بررسی وضعیت بوست با استفاده از ساختار جدید و بدون نیاز به حلقه‌های پیچیده
+            if (profile.isSeedBoosted(seedName)){
+                greenhouseRenderer.collect(new Result(false, harvested.getName() + " seed Already Boosted"));
+            }
+            else {
+                profile.setSeedBoosted(seedName, true);
+                greenhouseRenderer.collect(new Result(true, harvested.getName() + " seed got Boosted"));
             }
         }
     }

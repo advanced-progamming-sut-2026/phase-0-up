@@ -26,7 +26,8 @@ public class Profile {
     private List<News> newsList;
     private List<String> unlockedPlants;
     private List<String> lockedPlants;
-    private Map<SeedPacket, Integer> ownedSeedPackets;
+    private Map<String, Integer> ownedSeedPackets;
+    private Set<String> boostedSeeds;
     private GreenHouse myGreenHouse;
     private List<Quest> activeQuests;
     private List<Quest> completedQuests;
@@ -60,6 +61,7 @@ public class Profile {
         this.completedQuests = new ArrayList<>();
         this.unlockedChapters = new ArrayList<>();
         this.seenZombieAliases = new HashSet<>();
+        this.boostedSeeds = new HashSet<>();
 
         this.ownedSeedPackets = new HashMap<>();
         this.passedMiniGames = new HashMap<>();
@@ -156,7 +158,7 @@ public class Profile {
         return seenZombieAliases;
     }
 
-    public Map<SeedPacket, Integer> getOwnedSeedPackets() {
+    public Map<String, Integer> getOwnedSeedPackets() {
         return ownedSeedPackets;
     }
 
@@ -230,5 +232,26 @@ public class Profile {
 
     public void setHasBoughtDailyOfferToday(boolean hasBoughtDailyOfferToday) {
         this.hasBoughtDailyOfferToday = hasBoughtDailyOfferToday;
+    }
+
+    public void addSeedPackets(String plantName, int count) {
+        if (plantName == null) return;
+        String key = plantName.toLowerCase().trim();
+        ownedSeedPackets.put(key, ownedSeedPackets.getOrDefault(key, 0) + count);
+    }
+
+    public boolean isSeedBoosted(String plantName) {
+        if (plantName == null) return false;
+        return boostedSeeds.contains(plantName.toLowerCase().trim());
+    }
+
+    public void setSeedBoosted(String plantName, boolean boosted) {
+        if (plantName == null) return;
+        String key = plantName.toLowerCase().trim();
+        if (boosted) {
+            boostedSeeds.add(key);
+        } else {
+            boostedSeeds.remove(key);
+        }
     }
 }

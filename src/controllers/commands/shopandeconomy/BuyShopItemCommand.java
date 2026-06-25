@@ -83,10 +83,7 @@ public class BuyShopItemCommand implements Command {
 
     private void buyARandomSeedPackInDaily(String name) {
         profile.spendCoins(1600);
-        profile.getOwnedSeedPackets().keySet().stream()
-                .filter(packet -> packet.getPlantType().equals(name))
-                .findFirst()
-                .ifPresent(packet -> profile.getOwnedSeedPackets().merge(packet, 10, Integer::sum));
+        profile.addSeedPackets(name, 10);
     }
 
     private boolean checkForContainingTheName() {
@@ -100,10 +97,7 @@ public class BuyShopItemCommand implements Command {
 
     private void buyASelectiveSeedPack(){
         profile.spendGems(5);
-        profile.getOwnedSeedPackets().keySet().stream()
-                .filter(packet -> packet.getPlantType().equals(plantType.toLowerCase()))
-                .findFirst()
-                .ifPresent(packet -> profile.getOwnedSeedPackets().merge(packet, 10, Integer::sum));
+        profile.addSeedPackets(plantType, 10);
     }
 
     private void exchangeGemToCoin() {
@@ -116,10 +110,7 @@ public class BuyShopItemCommand implements Command {
         Random rand = new Random();
         int random = rand.nextInt(profile.getUnlockedPlants().size());
         String name = profile.getUnlockedPlants().get(random);
-        profile.getOwnedSeedPackets().keySet().stream()
-                .filter(packet -> packet.getPlantType().equals(name))
-                .findFirst()
-                .ifPresent(packet -> profile.getOwnedSeedPackets().merge(packet, 5, Integer::sum));
+        profile.addSeedPackets(name, 10);
     }
 
     private void buyAPlantFood() {
