@@ -136,6 +136,6 @@ public class BuyShopItemCommand implements Command {
                     .getPot(lastPot.getX() + 1, lastPot.getY()).setState(PotState.EMPTY);
         }
         else
-            profile.getMyGreenHouse().getPot(1, lastPot.getY() + 1).setState(PotState.EMPTY);
+            profile.getMyGreenHouse().getPot(0, lastPot.getY() + 1).setState(PotState.EMPTY);
     }
 }

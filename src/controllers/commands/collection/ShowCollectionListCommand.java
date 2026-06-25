@@ -13,18 +13,19 @@ public class ShowCollectionListCommand implements Command {
     private ShowListType type;
     private ZombieRegistry zombieRegistry;
     private PlantRegistry plantRegistry;
+    private CollectionMenuRenderer renderer;
 
-    public ShowCollectionListCommand(ShowListType type, User currentUser) {
+    public ShowCollectionListCommand(ShowListType type, User currentUser, CollectionMenuRenderer renderer) {
         this.type = type;
         this.currentUser = currentUser;
         this.plantRegistry = PlantRegistry.getInstance();
         this.zombieRegistry = ZombieRegistry.getInstance();
+        this.renderer = renderer;
     }
 
     @Override
     public void execute() {
         Profile profile = currentUser.getProfile();
-        CollectionMenuRenderer renderer = new CollectionMenuRenderer();
         switch (type){
             case PLANTS -> renderer.renderUnlockedPlants(profile);
             case ALL_PLANTS -> renderer.renderAllPlants(plantRegistry);

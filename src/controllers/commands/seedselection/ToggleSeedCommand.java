@@ -7,7 +7,6 @@ import models.templates.LevelTemplate;
 import models.templates.PlantTemplate;
 import models.user.Profile;
 import utils.registry.PlantRegistry;
-import views.OutputHandler;
 import views.renderers.MenuRenderer.PlantMenuRenderer;
 
 import java.util.HashMap;
@@ -18,11 +17,14 @@ public class ToggleSeedCommand implements Command {
     private ToggleAction action;
     private GameSession gameSession;
     private String plantName;
+    private PlantMenuRenderer renderer;
 
-    public ToggleSeedCommand(ToggleAction action, String plantName, GameSession gameSession) {
+
+    public ToggleSeedCommand(ToggleAction action, String plantName, GameSession gameSession, PlantMenuRenderer renderer) {
         this.action = action;
         this.plantName = plantName;
         this.gameSession = gameSession;
+        this.renderer = renderer;
     }
 
     @Override
@@ -55,7 +57,6 @@ public class ToggleSeedCommand implements Command {
     }
 
     private void add(PlantTemplate template){
-        PlantMenuRenderer renderer = new PlantMenuRenderer();
         if (template == null) {
             renderer.notExist(plantName);
             return;
@@ -78,7 +79,6 @@ public class ToggleSeedCommand implements Command {
 
 
     private void remove(PlantTemplate template){
-        PlantMenuRenderer renderer = new PlantMenuRenderer();
         if(template == null){
             renderer.notExist(plantName);
             return;

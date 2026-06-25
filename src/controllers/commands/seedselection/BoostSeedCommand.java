@@ -1,8 +1,6 @@
 package controllers.commands.seedselection;
 
 import controllers.commands.Command;
-import controllers.engine.InputRouter;
-import models.game.GameSession;
 import models.game.SeedPacket;
 import models.templates.PlantTemplate;
 import models.user.AppSession;
@@ -12,21 +10,20 @@ import utils.Constants;
 import utils.registry.PlantRegistry;
 import views.renderers.MenuRenderer.PlantMenuRenderer;
 
-import java.util.List;
 import java.util.Map;
 
 public class BoostSeedCommand implements Command {
     private String seedName;
-    private GameSession gameSession;
     private AppSession appSession;
-    public BoostSeedCommand(String seedName, GameSession gameSession) {
+    private PlantMenuRenderer renderer;
+    public BoostSeedCommand(String seedName, AppSession appSession, PlantMenuRenderer renderer) {
         this.seedName = seedName;
-        this.gameSession = gameSession;
+        this.appSession = appSession;
+        this.renderer = renderer;
     }
 
     @Override
     public void execute() {
-        PlantMenuRenderer renderer = new PlantMenuRenderer();
         PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(seedName);
         if(template == null){
              return;

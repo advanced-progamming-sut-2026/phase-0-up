@@ -20,8 +20,7 @@ public class CollectionSystem {
         return instance;
     }
 
-    public void purchasePlant(Profile profile, String plantName){
-        CollectionMenuRenderer renderer = new CollectionMenuRenderer();
+    public void purchasePlant(Profile profile, String plantName, CollectionMenuRenderer renderer){
         PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(plantName);
         if(template == null){
             renderer.notExist(plantName);
@@ -40,8 +39,7 @@ public class CollectionSystem {
         owned.put(plantName , 1);
         new CollectionMenuRenderer().successOfPurchasePlant();
     }
-    public void upgradePlant(Profile profile, String plantName){
-        CollectionMenuRenderer renderer = new CollectionMenuRenderer();
+    public void upgradePlant(Profile profile, String plantName, CollectionMenuRenderer renderer){
         PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(plantName);
         if (template == null){
             renderer.notExist(plantName);

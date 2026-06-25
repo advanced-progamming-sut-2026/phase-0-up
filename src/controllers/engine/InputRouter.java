@@ -143,30 +143,30 @@ public class InputRouter {
 
     private boolean handlePlantMenuExecute(String input){
         if(SeedSelectionRegex.SHOW_ALL_PLANTS.matches(input)){
-            new ShowSeedsCommand(gameSession, true);
+            new ShowSeedsCommand(gameSession, true, plantMenuRenderer).execute();
             return true;
         }
         else if(SeedSelectionRegex.SHOW_AVAILABLE_PLANTS.matches(input)){
-            new ShowSeedsCommand(gameSession, false);
+            new ShowSeedsCommand(gameSession, false, plantMenuRenderer).execute();
             return true;
         }
         else if (SeedSelectionRegex.ADD_PLANT.matches(input)){
             String plantName = SeedSelectionRegex.ADD_PLANT.getGroup(input, "type");
-            new ToggleSeedCommand(ToggleAction.ADD, plantName , gameSession);
+            new ToggleSeedCommand(ToggleAction.ADD, plantName , gameSession, plantMenuRenderer).execute();
             return true;
         }
         else if(SeedSelectionRegex.REMOVE_PLANT.matches(input)){
             String plantName = SeedSelectionRegex.REMOVE_PLANT.getGroup(input, "type");
-            new ToggleSeedCommand(ToggleAction.REMOVE , plantName , gameSession);
+            new ToggleSeedCommand(ToggleAction.REMOVE , plantName , gameSession, plantMenuRenderer).execute();
             return true;
         }
         else if(SeedSelectionRegex.BOOST_PLANT.matches(input)){
             String plantName = SeedSelectionRegex.BOOST_PLANT.getGroup(input, "type");
-            new BoostSeedCommand(plantName , gameSession);
+            new BoostSeedCommand(plantName , appSession, plantMenuRenderer).execute();
             return true;
         }
         else if(SeedSelectionRegex.START_GAME.matches(input)){
-            new StartLevelCommand(gameSession , appSession);
+            new StartLevelCommand(gameSession , appSession).execute();
             return true;
         }
         return false;
@@ -175,39 +175,39 @@ public class InputRouter {
     private boolean handleCollectionMenuExecute(String input){
         User user = appSession.getCurrentUser();
         if(CollectionMenuRegex.SHOW_PLANTS.matches(input)){
-            new ShowCollectionListCommand(ShowListType.PLANTS,user);
+            new ShowCollectionListCommand(ShowListType.PLANTS,user, collectionMenuRenderer).execute();
             return true;
         }
         else if(CollectionMenuRegex.SHOW_ALL_PLANTS.matches(input)){
-            new ShowCollectionListCommand(ShowListType.ALL_PLANTS, user);
+            new ShowCollectionListCommand(ShowListType.ALL_PLANTS, user, collectionMenuRenderer).execute();
             return true;
         }
         else if(CollectionMenuRegex.SHOW_ZOMBIES.matches(input)){
-            new ShowCollectionListCommand(ShowListType.ZOMBIES, user);
+            new ShowCollectionListCommand(ShowListType.ZOMBIES, user, collectionMenuRenderer).execute();
             return true;
         }
         else if(CollectionMenuRegex.SHOW_ALL_ZOMBIES.matches(input)){
-            new ShowCollectionListCommand(ShowListType.ALL_ZOMBIES, user);
+            new ShowCollectionListCommand(ShowListType.ALL_ZOMBIES, user, collectionMenuRenderer).execute();
             return true;
         }
         else if(CollectionMenuRegex.SHOW_ZOMBIE_DETAIL.matches(input)){
             String name = CollectionMenuRegex.SHOW_ZOMBIE_DETAIL.getGroup(input,"zombieName");
-            new ShowEntityDetailsCommand(ShowListType.ZOMBIES, name, user);
+            new ShowEntityDetailsCommand(ShowListType.ZOMBIES, name, collectionMenuRenderer).execute();
             return true;
         }
         else if(CollectionMenuRegex.SHOW_PLANT_DETAIL.matches(input)){
             String name = CollectionMenuRegex.SHOW_PLANT_DETAIL.getGroup(input, "plantName");
-            new ShowEntityDetailsCommand(ShowListType.PLANTS , name , user);
+            new ShowEntityDetailsCommand(ShowListType.PLANTS , name , collectionMenuRenderer).execute();
             return true;
         }
         else if(CollectionMenuRegex.PURCHASE_PLANT.matches(input)){
             String name = CollectionMenuRegex.PURCHASE_PLANT.getGroup(input , "plantName");
-            new UnlockPlantCommand(name, user);
+            new UnlockPlantCommand(name, user, collectionMenuRenderer).execute();
             return true;
         }
         else if(CollectionMenuRegex.UPGRADE_PLANT.matches(input)){
             String name = CollectionMenuRegex.UPGRADE_PLANT.getGroup(input, "plantName");
-            new UpgradePlantCommand(name , user);
+            new UpgradePlantCommand(name , user, collectionMenuRenderer).execute();
             return true;
         }
         return false;
@@ -216,11 +216,11 @@ public class InputRouter {
     private boolean handleNewsMenuExecute(String input){
         User user = appSession.getCurrentUser();
         if(NewsMenuRegex.SHOW_UNREAD.matches(input)){
-            new ShowNewsCommand(user, NewsViewType.UNREAD, newsMenuRenderer);
+            new ShowNewsCommand(user, NewsViewType.UNREAD, newsMenuRenderer).execute();
             return true;
         }
         else if(NewsMenuRegex.SHOW_ALL.matches(input)){
-            new ShowNewsCommand(user,NewsViewType.ALL, newsMenuRenderer);
+            new ShowNewsCommand(user,NewsViewType.ALL, newsMenuRenderer).execute();
             return true;
         }
         return false;

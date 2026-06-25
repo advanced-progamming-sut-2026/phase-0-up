@@ -3,6 +3,7 @@ package controllers.commands.authentication;
 import controllers.commands.Command;
 import controllers.engine.MenuType;
 import models.user.AppSession;
+import utils.storage.DatabaseManager;
 import views.renderers.MenuRenderer.MainMenuRenderer;
 
 public class LogoutCommand implements Command {
@@ -20,6 +21,8 @@ public class LogoutCommand implements Command {
             mainMenuRenderer.logOutRender(false);
             return;
         }
+        appSession.getCurrentUser().setStayLoggedIn(false);
+        DatabaseManager.getInstance().saveAll();
         appSession.setCurrentUser(null);
         appSession.setCurrentMenu(MenuType.SIGNUP_MENU);
         mainMenuRenderer.logOutRender(true);
