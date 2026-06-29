@@ -1,4 +1,4 @@
-package controllers.systems;
+package controllers.systems.game;
 
 import models.game.GameSession;
 

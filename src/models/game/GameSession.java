@@ -16,10 +16,6 @@ public class GameSession {
     private List<Sun> activeSuns;
     private List<SeedPacket> selectedSeeds;
 
-    public List<SeedPacket> getSelectedSeeds() {
-        return selectedSeeds;
-    }
-
     private int plantFoodCount;
     private long timeTicks;
     private int currentWave;
@@ -34,6 +30,10 @@ public class GameSession {
     public void plantFood(int x, int y){};
     public void onWin(){};
     public void onLose(){};
+
+    public List<SeedPacket> getSelectedSeeds() {
+        return selectedSeeds;
+    }
 
     public Profile getPlayer() {
         return player;

@@ -2,11 +2,15 @@ import controllers.engine.InputRouter;
 import controllers.engine.MenuType;
 import models.user.AppSession;
 import models.user.User;
+import utils.gameinitializers.GameInitializer;
 import utils.storage.DatabaseManager;
 
 public class Main {
 
     public static void main(String[] args) {
+        GameInitializer gameInitializer = new GameInitializer();
+        gameInitializer.loadAllData();
+
         DatabaseManager db =  DatabaseManager.getInstance();
 
         User autoLoggedInUser = db.getLoggedInUser();
