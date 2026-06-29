@@ -3,26 +3,27 @@ package models.map.Terrains;
 import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
 
-public class GraveTerrain extends Terrain{
-    protected int hp;
-    protected boolean isDead = false;
+public class GraveInDarkAgesTerrain extends GraveTerrain{
+    private GravesInDarkAgesTypes type;
 
-    public GraveTerrain() {
+    public GraveInDarkAgesTerrain(GravesInDarkAgesTypes type) {
+        this.type = type;
+        this.symbol = '?';
         this.hp = 700;
-        this.plantable = false;
-        this.symbol = '#';
     }
 
+    @Override
     public void getShot(int damage){
         hp -= damage;
         if(hp<= 0){
             hp = 0;
             isDead = true;
+            dropCollectibles();
         }
     }
 
-    public boolean isDead() {
-        return isDead;
+    private void dropCollectibles() {
+        
     }
 
     @Override

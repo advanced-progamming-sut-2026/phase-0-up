@@ -6,9 +6,18 @@ public class StateComponent {
     private boolean isFrozen = false;
     private boolean isStopped = false;
 
-    public void freeze() {}
-    public void submerge(){}
-    public void fly(){}
+    public void setFlying(boolean flying) {
+        isFlying = flying;
+    }
+    public void setSubmerged(boolean submerged) {
+        isSubmerged = submerged;
+    }
+    public void setFrozen(boolean frozen) {
+        isFrozen = frozen;
+    }
+    public void setStopped(boolean stopped) {
+        isStopped = stopped;
+    }
     public boolean isFlying() {return isFlying;}
     public boolean isSubmerged() {return isSubmerged;}
     public boolean isFrozen() {return isFrozen;}

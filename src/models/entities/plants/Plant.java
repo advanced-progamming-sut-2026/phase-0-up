@@ -14,8 +14,15 @@ public class Plant extends Entity {
     protected boolean thisPlantHasFood;
     protected List<PlantTags> tags;
     protected CompositePlantFoodStrategy plantFoodStrategy;
+    protected boolean isFrozen;
 
     public void upgrade(){}
     public boolean isReadyToPlant(){return false;}
     public boolean isDead(){return false;}
+    public void setFrozen(boolean frozen) {isFrozen = frozen;}
+    public boolean isFrozen(){return isFrozen;}
+
+    public List<PlantTags> getTags() {
+        return tags;
+    }
 }

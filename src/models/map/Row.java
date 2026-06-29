@@ -18,9 +18,7 @@ public class Row {
     public Row(int index) {
         cells = new ArrayList<>();
         for(int i = 0 ; i < 9; i++){
-            boolean isPlantable = false;
-            if(i < 4) isPlantable = true;
-            Cell e = new Cell(i , index , isPlantable);
+            Cell e = new Cell(i , index , true);
             cells.add(e);
         }
         hasZombie = false;
