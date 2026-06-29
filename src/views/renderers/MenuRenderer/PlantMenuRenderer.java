@@ -9,6 +9,7 @@ import views.OutputHandler;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class PlantMenuRenderer {
     public void renderAllPlants(PlantRegistry registry){
@@ -23,8 +24,12 @@ public class PlantMenuRenderer {
         Profile profile = session.getPlayer();
         PlantRegistry registry = PlantRegistry.getInstance();
         LevelTemplate levelTemplate = session.getLevel().getTemplate();
-        List<String> available = levelTemplate.getAvailablePlants();
-        if (available == null || available.isEmpty()) {
+        List<String> profilePlants = profile.getUnlockedPlants();
+        List<String> levelPlants = levelTemplate.getAvailablePlants();
+        List<String> available = profilePlants.stream().filter(levelPlants::contains).collect(Collectors.toList());
+
+
+        if (available.isEmpty()) {
             OutputHandler.showMessage("No plants are available in this level.");
             return;
         }

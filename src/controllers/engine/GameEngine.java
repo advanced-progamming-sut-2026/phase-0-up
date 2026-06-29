@@ -1,18 +1,16 @@
 package controllers.engine;
 
-import controllers.systems.CombatSystem;
-import controllers.systems.SunSystem;
-import controllers.systems.TimeSystem;
-import controllers.systems.WaveSystem;
+import controllers.systems.game.*;
 import models.game.GameSession;
-import views.OutputHandler;
 
 public class GameEngine {
     private GameSession gameSession;
     private CombatSystem combatSystem;
+    private MovementSystem movementSystem;
     private SunSystem sunSystem;
     private TimeSystem timeSystem;
     private WaveSystem waveSystem;
+    private QuestSystem questSystem;
     private boolean running;
 
     public GameEngine(GameSession gameSession) {

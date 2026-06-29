@@ -1,4 +1,4 @@
-package controllers.systems;
+package controllers.systems.game;
 
 import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
@@ -11,17 +11,8 @@ import models.user.Profile;
 import java.util.List;
 
 public class QuestSystem {
-    private static QuestSystem instance;
+
     private QuestContext currentLevelContext;
-
-    private QuestSystem() {}
-
-    public static synchronized QuestSystem getInstance() {
-        if (instance == null) {
-            instance = new QuestSystem();
-        }
-        return instance;
-    }
 
     public void startTrackingLevel(GameSession session){};
     public void recordSunCollected(int amount){}
