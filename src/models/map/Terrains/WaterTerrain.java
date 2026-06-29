@@ -35,8 +35,9 @@ public class WaterTerrain extends Terrain{
     private void checkForWaterPlants(GameMap gameMap) {
         for(int j = 0 ; j < 5; j++){
             for(int i = 8 ; i > (8 - waterLevel) ;i--){
-                if(!gameMap.getRow(j).cellAt(i).getPlantStack().peek().getTags().contains(PlantTags.WATER)){
-                    gameMap.getRow(j).cellAt(i).getPlantStack().peek().setAlive(false);
+                Plant p = gameMap.getRow(j).cellAt(i).getPlantStack().peek();
+                if(!p.getTags().contains(PlantTags.WATER)){
+                    p.getHealth().takeDamage(p.getHealth().getMaxHp());
                 }
                 gameMap.getRow(j).cellAt(i).addTerrain(this);
                 gameMap.getRow(j).cellAt(i).setFlooded(true);

@@ -77,4 +77,16 @@ public class Plant extends Entity {
     }
 
     public PlantHealthComponent getHealth() { return health; }
+
+    public List<PlantTags> getTags() {
+        return tags;
+    }
+
+    public boolean isFrozen() {
+        return isFrozen;
+    }
+
+    public void setFrozen(boolean frozen) {
+        isFrozen = frozen;
+    }
 }
