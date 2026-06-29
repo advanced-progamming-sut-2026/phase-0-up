@@ -10,7 +10,6 @@ import java.util.List;
 public class Row {
     private List<Cell> cells;
     private int index;
-    private boolean hasZombie;
     private List<Zombie> activeZombies;
     private List<Projectile> activeProjectiles;
     private Lawnmower lawnmower;
@@ -21,7 +20,6 @@ public class Row {
             Cell e = new Cell(i , index , true);
             cells.add(e);
         }
-        hasZombie = false;
         activeProjectiles = new ArrayList<>();
         activeZombies = new ArrayList<>();
         lawnmower = new Lawnmower(index);
@@ -39,4 +37,41 @@ public class Row {
     }
 
     public Plant frontPlant(){return null;}
+
+    public Zombie frontZombie(){
+        if (!hasZombie()) return null;
+        Zombie frontZombie = activeZombies.getFirst();
+
+        for (Zombie z : activeZombies){
+            if (z.getMovement().getPositionX() < frontZombie.getMovement().getPositionX()){
+                frontZombie = z;
+            }
+        }
+        return frontZombie;
+    }
+
+    public void addProjectile(Projectile p){
+        activeProjectiles.add(p);
+    }
+
+    public boolean hasZombie(){
+        return !activeZombies.isEmpty();
+    }
+
+    public List<Zombie> getZombies() {
+        return activeZombies;
+    }
+
+    public List<Projectile> getActiveProjectiles() {
+        return activeProjectiles;
+    }
+
+    public List<Cell> getCells() {
+        return cells;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
 }

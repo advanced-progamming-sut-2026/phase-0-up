@@ -46,7 +46,6 @@ public class GameSession {
     public void plant(int x, int y, String plant) {};
     public void pluck(int x, int y){};
     public void advanceTime(int ticks) {};
-    public void collectSun(int x, int y){};
     public void plantFood(int x, int y){};
     public void onWin(){};
     public void onLose(){};
@@ -92,5 +91,49 @@ public class GameSession {
         }
         selectedSeeds.remove(seed);
         return true;
+    }
+
+    public GameMap getMap() {
+        return map;
+    }
+
+    public int getSunAmount() {
+        return sunAmount;
+    }
+
+    public List<Sun> getActiveSuns() {
+        return activeSuns;
+    }
+
+    public int getPlantFoodCount() {
+        return plantFoodCount;
+    }
+
+    public long getTimeTicks() {
+        return timeTicks;
+    }
+
+    public int getCurrentWave() {
+        return currentWave;
+    }
+
+    public GameState getState() {
+        return state;
+    }
+
+    public int getZombiesKilled() {
+        return zombiesKilled;
+    }
+
+    public int getPlantsLost() {
+        return plantsLost;
+    }
+
+    public void increaseSunAmount(int amount) {
+        sunAmount += amount;
+    }
+
+    public void addSun(Sun sun) {
+        activeSuns.add(sun);
     }
 }

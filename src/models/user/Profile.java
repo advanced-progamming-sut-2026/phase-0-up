@@ -27,6 +27,7 @@ public class Profile {
     private List<String> unlockedPlants;
     private List<String> lockedPlants;
     private Map<String, Integer> ownedSeedPackets;
+    private Map<String, Integer> plantsLevels;
     private Set<String> boostedSeeds;
     private GreenHouse myGreenHouse;
     private List<Quest> activeQuests;
@@ -64,6 +65,7 @@ public class Profile {
         this.boostedSeeds = new HashSet<>();
 
         this.ownedSeedPackets = new HashMap<>();
+        this.plantsLevels = new HashMap<>();
         this.passedMiniGames = new HashMap<>();
 
         this.myGreenHouse = new GreenHouse();
@@ -240,6 +242,14 @@ public class Profile {
         ownedSeedPackets.put(key, ownedSeedPackets.getOrDefault(key, 0) + count);
     }
 
+    public Map<String, Integer> getPlantsLevels() {
+        return plantsLevels;
+    }
+
+    public Set<String> getBoostedSeeds() {
+        return boostedSeeds;
+    }
+
     public boolean isSeedBoosted(String plantName) {
         if (plantName == null) return false;
         return boostedSeeds.contains(plantName.toLowerCase().trim());
@@ -253,5 +263,21 @@ public class Profile {
         } else {
             boostedSeeds.remove(key);
         }
+    }
+
+    public void unlockPlant(String plantName){
+        String formattedName = plantName.toLowerCase().trim();
+
+        if (!unlockedPlants.contains(formattedName)) {
+            unlockedPlants.add(formattedName);
+        }
+        lockedPlants.remove(formattedName);
+        plantsLevels.putIfAbsent(formattedName, 1);
+    }
+
+    public void levelUpPlant(String plantName) {
+        String key = plantName.toLowerCase().trim();
+        int currentLevel = plantsLevels.getOrDefault(key, 1);
+        plantsLevels.put(key, currentLevel + 1);
     }
 }
