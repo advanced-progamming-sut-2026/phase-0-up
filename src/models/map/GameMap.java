@@ -2,15 +2,23 @@ package models.map;
 
 import models.entities.collectibles.Collectible;
 
+import java.util.ArrayList;
 import java.util.List;
-
+//rows = y , cols = x
 public class GameMap {
     private List<Row> rows;
     private static final int rowCount = 5;
     private static final int colCount = 9;
-    public Cell getCell(int x, int y){return null;}
-    public Row getRow(int x){return null;}
     private List<Collectible> activeCollectibles;
 
+    public GameMap() {
+        rows = new ArrayList<>();
+        for(int i = 0 ; i < 5; i++){
+            Row e = new Row(i);
+            rows.add(e);
+        }
+    }
 
+    public Cell getCell(int x, int y){return rows.get(y).cellAt(x);}
+    public Row getRow(int y){return rows.get(y);}
 }

@@ -14,10 +14,7 @@ import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
 import controllers.commands.news.NewsViewType;
 import controllers.commands.news.ShowNewsCommand;
-import controllers.commands.playmenu.CheatAddCommand;
-import controllers.commands.playmenu.EnterChapterCommand;
-import controllers.commands.playmenu.EnterOtherMenus;
-import controllers.commands.playmenu.ShowWalletCommand;
+import controllers.commands.playmenu.*;
 import controllers.commands.profileandsettings.*;
 import controllers.commands.menu.ShowCurrentMenuCommand;
 import controllers.commands.seedselection.*;
@@ -61,6 +58,7 @@ public class InputRouter {
     public InputRouter(AppSession appSession) {
         this.running = true;
         this.appSession = appSession;
+        gameSession = appSession.getCurrentGameSession();
     }
 
     public void startLoop() {
@@ -167,6 +165,8 @@ public class InputRouter {
         }
         else if(SeedSelectionRegex.START_GAME.matches(input)){
             new StartLevelCommand(gameSession , appSession).execute();
+            GameEngine gameEngine = new GameEngine(gameSession);
+            gameEngine.startLoop();
             return true;
         }
         return false;
@@ -276,6 +276,10 @@ public class InputRouter {
             new CheatAddCommand(PlayMenuRegex.CHEAT_CODE.getGroup(input , "currency") ,
                     Integer.parseInt(PlayMenuRegex.CHEAT_CODE.getGroup(input , "n")) ,
                     appSession.getCurrentUser().getProfile(), playMenuRenderer).execute();
+            return true;
+        } else if(PlayMenuRegex.CHOOSE_LEVEL.matches(input)){
+            new ChooseLevelCommand(Integer.parseInt(PlayMenuRegex.CHOOSE_LEVEL.getGroup(input , "level")) ,
+                    appSession.getCurrentUser().getProfile(), playMenuRenderer , appSession).execute();
             return true;
         }
         return false;

@@ -5,6 +5,7 @@ import models.game.gamemodes.GameMode;
 import models.map.GameMap;
 import models.user.Profile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameSession {
@@ -15,11 +16,6 @@ public class GameSession {
     private int sunAmount;
     private List<Sun> activeSuns;
     private List<SeedPacket> selectedSeeds;
-
-    public List<SeedPacket> getSelectedSeeds() {
-        return selectedSeeds;
-    }
-
     private int plantFoodCount;
     private long timeTicks;
     private int currentWave;
@@ -27,6 +23,25 @@ public class GameSession {
     private int zombiesKilled;
     private int plantsLost;
 
+    public GameSession(Profile player, Level level) {
+        this.player = player;
+        this.level = level;
+        this.mode = level.getGameMode();
+        this.map = new GameMap();
+        this.sunAmount = level.getStartingSun();
+        activeSuns = new ArrayList<>();
+        selectedSeeds = new ArrayList<>();
+        this.plantFoodCount = player.getPlantFoodCount();
+        this.timeTicks = 0;
+        currentWave = 0;
+        state = GameState.PLAYING;
+        zombiesKilled = 0;
+        plantsLost = 0;
+    }
+
+    public List<SeedPacket> getSelectedSeeds() {
+        return selectedSeeds;
+    }
     public void plant(int x, int y, String plant) {};
     public void pluck(int x, int y){};
     public void advanceTime(int ticks) {};

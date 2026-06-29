@@ -16,4 +16,7 @@ public class PlayMenuRenderer {
     public void cheatRenderForAddingCoinsAndGems(int n , String currencyName){
         System.out.println(n + " added to your " + currencyName + "s");
     }
+    public void chooseLevelRenderer(Result result){
+        System.out.println(result.message());
+    }
 }

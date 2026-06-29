@@ -9,8 +9,26 @@ public class Cell {
     private int y;
     private Stack<Plant> plantStack;
     private Terrain terrain;
-    public boolean isPlantable;
-    public void addPlant(Plant plant){};
-    public void removePlant(){};
+    private boolean isPlantable;
 
+    public Cell(int x, int y, boolean isPlantable) {
+        this.x = x;
+        this.y = y;
+        this.isPlantable = isPlantable;
+    }
+
+    public Terrain getTerrain() {
+        return terrain;
+    }
+
+    public void setTerrain(Terrain terrain) {
+        this.terrain = terrain;
+    }
+
+    public boolean isPlantable() {
+        return isPlantable;
+    }
+
+    public void addPlant(Plant plant){plantStack.add(plant);}
+    public void removePlant(){plantStack.pop();}
 }

@@ -39,13 +39,13 @@ public class ToggleSeedCommand implements Command {
 
     private boolean isUnlockedAndAvailable() {
         Profile profile = gameSession.getPlayer();
-        Map<SeedPacket, Integer> map = profile.getOwnedSeedPackets();
+        Map<String, Integer> map = profile.getOwnedSeedPackets();
         Map<String, Integer> owned = null;
 
         if (map != null) {
             owned = new HashMap<>();
-            for (Map.Entry<SeedPacket, Integer> entry : map.entrySet()) {
-                owned.put(entry.getKey().getPlantType(), entry.getValue());
+            for (Map.Entry<String, Integer> entry : map.entrySet()) {
+                owned.put(entry.getKey(), entry.getValue());
             }
         }
 

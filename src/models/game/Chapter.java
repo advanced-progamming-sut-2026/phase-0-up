@@ -9,4 +9,5 @@ public class Chapter {
 
     public boolean isComplete(){return false;}
     public String getName(){return name;}
+    public Level[] getLevels(){return levels;}
 }

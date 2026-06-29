@@ -1,11 +1,14 @@
 package models.user;
 
+import controllers.engine.GameEngine;
 import controllers.engine.MenuType;
+import models.game.GameSession;
 import models.shop.Shop;
 
 public class AppSession {
     private User currentUser;
     private MenuType currentMenu;
+    private GameSession currentGameSession;
     private Shop shop;
 
     public AppSession() {
@@ -34,4 +37,12 @@ public class AppSession {
     }
 
     public Shop getShop(){return this.shop;}
+
+    public GameSession getCurrentGameSession() {
+        return currentGameSession;
+    }
+
+    public void setCurrentGameSession(GameSession currentGameSession) {
+        this.currentGameSession = currentGameSession;
+    }
 }

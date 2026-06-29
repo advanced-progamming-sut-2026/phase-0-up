@@ -15,6 +15,10 @@ public class GameEngine {
     private WaveSystem waveSystem;
     private boolean running;
 
+    public GameEngine(GameSession gameSession) {
+        this.gameSession = gameSession;
+    }
+
     public void startLoop() {}
     public void stopLoop() {}
 
