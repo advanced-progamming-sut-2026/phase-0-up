@@ -130,5 +130,7 @@ public class CollectionMenuRenderer {
     public void successOfPurchasePlant(){
         OutputHandler.showSuccess("Plant purchased successfully.");
     }
-
+    public void plantMaxLevel(String plantName){
+        OutputHandler.showError(String.format("plant %s has maximum level", plantName));
+    }
 }

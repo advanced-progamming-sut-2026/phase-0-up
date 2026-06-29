@@ -16,6 +16,7 @@ public class GameSession {
     private int sunAmount;
     private List<Sun> activeSuns;
     private List<SeedPacket> selectedSeeds;
+
     private int plantFoodCount;
     private long timeTicks;
     private int currentWave;
@@ -49,7 +50,6 @@ public class GameSession {
     public void plantFood(int x, int y){};
     public void onWin(){};
     public void onLose(){};
-
     public Profile getPlayer() {
         return player;
     }
