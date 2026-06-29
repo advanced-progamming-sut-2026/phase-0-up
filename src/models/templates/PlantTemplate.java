@@ -9,7 +9,7 @@ public class PlantTemplate {
     private List<String> tags;
     private int cost;
     private int baseHp;
-    private int[] damagePerHeat;
+    private int[] damagePerHit;
     private int shots;
     private boolean instaKill;
     private int sunProductionRate;
@@ -44,8 +44,8 @@ public class PlantTemplate {
     }
 
 
-    public int[] getDamagePerHeat() {
-        return damagePerHeat;
+    public int[] getDamagePerHit() {
+        return damagePerHit;
     }
 
     public int getShots() {

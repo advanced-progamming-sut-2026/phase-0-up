@@ -19,6 +19,10 @@ public class GameMap {
         }
     }
 
+    public void addCollectible(Collectible c){
+        activeCollectibles.add(c);
+    }
+
     public Cell getCell(int x, int y){return rows.get(y).cellAt(x);}
     public Row getRow(int y){return rows.get(y);}
 }
