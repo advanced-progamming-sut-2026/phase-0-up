@@ -56,8 +56,12 @@ public class Cell {
         return x;
     }
 
+    public boolean hasPlant(){
+        return this.currentPlant != null;
+    }
+
     public Result addPlant(Plant newPlant){
-        if (this.currentPlant != null) {
+        if (this.hasPlant()) {
 
             if (this.currentPlant.getStackableComponent() != null) {
 
@@ -80,5 +84,11 @@ public class Cell {
         return new Result(true, "Plant placed successfully.");
     }
 
-    public void removePlant(){}
+    public Result removePlant(){
+        if(this.currentPlant == null){
+            return new Result(false , "This cell does not contain a plant.");
+        }
+        this.currentPlant = null;
+        return new Result(true, "Plant removed successfully.");
+    }
 }

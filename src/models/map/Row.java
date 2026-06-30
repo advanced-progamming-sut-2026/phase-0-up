@@ -36,12 +36,20 @@ public class Row {
         this.lawnmower = lawnmower;
     }
 
-    public Plant frontPlant(){return null;}
+    public Plant frontPlant(){
+        for(int i = cells.size() - 1; i >= 0; i--){
+            Cell cell = cells.get(i);
+            if(cell.hasPlant()){
+                return cell.getCurrentPlant();
+            }
+        }
+        return null;
+    }
+
 
     public Zombie frontZombie(){
         if (!hasZombie()) return null;
         Zombie frontZombie = activeZombies.getFirst();
-
         for (Zombie z : activeZombies){
             if (z.getMovement().getPositionX() < frontZombie.getMovement().getPositionX()){
                 frontZombie = z;

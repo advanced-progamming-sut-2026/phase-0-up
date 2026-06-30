@@ -13,4 +13,12 @@ public class HealthComponent {
     public boolean tryRemoveMetallicArmor() {return false;}
     private void applyChillEffectToAttacker(Plant attacker) {}
     private void die() {}
+
+    public int getTotalHP(){
+        int totalHP = 0;
+        for(HealthLayer h : this.layers){
+            totalHP += h.getCurrentHp();
+        }
+        return totalHP;
+    }
 }
