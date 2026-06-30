@@ -3,32 +3,57 @@ import models.entities.plants.Plant;
 import models.map.Terrains.Terrain;
 import utils.Result;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
 public class Cell {
     private int x;
     private int y;
     private Plant currentPlant;
-    private Terrain terrain;
+    private List<Terrain> terrain;
     private boolean isPlantable;
+    private boolean isFlooded;
 
     public Cell(int x, int y, boolean isPlantable) {
         this.x = x;
         this.y = y;
         this.isPlantable = isPlantable;
         this.currentPlant = null;
+        terrain = new ArrayList<>();
+        isFlooded = false;
     }
 
-    public Terrain getTerrain() {
+    public List<Terrain> getTerrain() {
         return terrain;
     }
 
-    public void setTerrain(Terrain terrain) {
-        this.terrain = terrain;
+    public boolean isFlooded() {
+        return isFlooded;
+    }
+
+    public void setFlooded(boolean flooded) {
+        isFlooded = flooded;
+    }
+
+    public void addTerrain(Terrain terrain) {
+        this.terrain.add(terrain);
     }
 
     public boolean isPlantable() {
         return isPlantable;
+    }
+
+    public Plant getCurrentPlant(){
+        return currentPlant;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public int getX() {
+        return x;
     }
 
     public Result addPlant(Plant newPlant){

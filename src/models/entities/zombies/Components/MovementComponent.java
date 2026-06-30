@@ -6,7 +6,7 @@ public class MovementComponent {
     private int y;
 
     public MovementComponent(double speed, double startPosition , int y) {}
-    public void move(StateComponent state) {}
+    public void move(StateComponent state , double x , int y) {}
     public double getPositionX() { return x; }
     public int getPositionY() {return y;}
 }

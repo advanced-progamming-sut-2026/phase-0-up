@@ -22,6 +22,7 @@ public class Plant extends Entity {
 
     protected boolean thisPlantHasFood;
     protected CompositePlantFoodStrategy plantFoodStrategy;
+    protected boolean isFrozen;
 
     protected StackableComponent  stackableComponent;
 
@@ -95,5 +96,17 @@ public class Plant extends Entity {
 
     public void setStackableComponent(StackableComponent stackableComponent) {
         this.stackableComponent = stackableComponent;
+    }
+
+    public List<PlantTags> getTags() {
+        return tags;
+    }
+
+    public boolean isFrozen() {
+        return isFrozen;
+    }
+
+    public void setFrozen(boolean frozen) {
+        isFrozen = frozen;
     }
 }

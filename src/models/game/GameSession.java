@@ -1,5 +1,6 @@
 package models.game;
 
+import models.entities.collectibles.PlantFood;
 import models.entities.collectibles.Sun;
 import models.game.gamemodes.GameMode;
 import models.map.GameMap;
@@ -16,7 +17,7 @@ public class GameSession {
     private int sunAmount;
     private List<Sun> activeSuns;
     private List<SeedPacket> selectedSeeds;
-
+    private List<PlantFood> activePlantFoods;
     private int plantFoodCount;
     private long timeTicks;
     private int currentWave;
@@ -32,6 +33,7 @@ public class GameSession {
         this.sunAmount = level.getStartingSun();
         activeSuns = new ArrayList<>();
         selectedSeeds = new ArrayList<>();
+        activePlantFoods = new ArrayList<>();
         this.plantFoodCount = player.getPlantFoodCount();
         this.timeTicks = 0;
         currentWave = 0;
@@ -136,4 +138,6 @@ public class GameSession {
     public void addSun(Sun sun) {
         activeSuns.add(sun);
     }
+    public void addPlantFood(PlantFood p ){activePlantFoods.add(p);}
+    public void increasePlantFoodCount(int amount) { plantFoodCount += amount;}
 }

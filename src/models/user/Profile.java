@@ -1,9 +1,6 @@
 package models.user;
 
-import models.entities.plants.Plant;
-import models.entities.zombies.Zombie;
 import models.game.Chapter;
-import models.game.SeedPacket;
 import models.greenhouse.GreenHouse;
 import models.news.News;
 import models.quests.Quest;
