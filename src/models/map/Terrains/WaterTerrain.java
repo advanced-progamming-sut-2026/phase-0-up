@@ -19,11 +19,11 @@ public class WaterTerrain extends Terrain{
     }
 
     public void decreaseWaterLevel(int m , GameMap gameMap){
-        returnToDefualtCell(gameMap , m);
+        returnToDefaultCell(gameMap , m);
         waterLevel -= m;
     }
 
-    private void returnToDefualtCell(GameMap gameMap , int m) {
+    private void returnToDefaultCell(GameMap gameMap , int m) {
         for(int j = 0 ; j < 5; j++){
             for(int i = (8 - waterLevel) ; i > (8 - m) ;i++){
                 gameMap.getRow(j).cellAt(i).getTerrain().remove(this);
@@ -35,7 +35,7 @@ public class WaterTerrain extends Terrain{
     private void checkForWaterPlants(GameMap gameMap) {
         for(int j = 0 ; j < 5; j++){
             for(int i = 8 ; i > (8 - waterLevel) ;i--){
-                Plant p = gameMap.getRow(j).cellAt(i).getPlantStack().peek();
+                Plant p = gameMap.getRow(j).cellAt(i).getCurrentPlant();
                 if(!p.getTags().contains(PlantTags.WATER)){
                     p.getHealth().takeDamage(p.getHealth().getMaxHp());
                 }

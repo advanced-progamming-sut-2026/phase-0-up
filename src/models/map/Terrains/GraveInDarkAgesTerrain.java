@@ -1,6 +1,5 @@
 package models.map.Terrains;
 
-import models.entities.collectibles.PlantFood;
 import models.entities.collectibles.Sun;
 import models.entities.collectibles.SunType;
 import models.game.GameSession;
@@ -41,8 +40,7 @@ public class GraveInDarkAgesTerrain extends GraveTerrain{
             Sun sun = new Sun(targetX, cell.getY(), targetY, SunType.NORMAL, 50, true, 100);
             gameSession.addSun(sun);
         } else {
-            PlantFood p = new PlantFood(targetX, cell.getY(), targetY, 50, true, 100);
-            gameSession.addPlantFood(p);
+            gameSession.increasePlantFoodCount(1);
         }
     }
 
