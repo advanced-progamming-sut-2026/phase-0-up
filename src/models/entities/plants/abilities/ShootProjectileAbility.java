@@ -88,6 +88,7 @@ public class ShootProjectileAbility extends PlantAbility {
                 projectileType,
                 damage,
                 speed,
+                0,
                 owner
         );
 

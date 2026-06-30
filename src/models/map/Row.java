@@ -76,4 +76,8 @@ public class Row {
         return index;
     }
 
+    public void removeProjectile(Projectile p){
+        activeProjectiles.remove(p);
+    }
+
 }

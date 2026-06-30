@@ -13,37 +13,58 @@ public class Projectile extends Entity {
     private Plant shooter;
     private ProjectileType type;
     private int damage;
-    private double speed;
+
+    private double speedX;
+    private double speedY;
+    private double exactY;
 
     private boolean isDestroyed;
 
-    public Projectile(double x, int y, ProjectileType type, int damage, double speed, Plant shooter) {
-        super(type.toString(), 0, x, y); // اگر id صفر است، بهتر است بعدا سیستم id ساز بسازید
+    public Projectile(double x, double startY, ProjectileType type, int damage, double speedX, double speedY, Plant shooter) {
+        super(type.toString(), 0, x, (int) Math.round(startY));
         this.type = type;
         this.damage = damage;
-        this.speed = speed;
         this.shooter = shooter;
         this.isDestroyed = false;
+        this.exactY = startY;
+        this.speedX = speedX;
+        this.speedY = speedY;
     }
 
     @Override
     public void update(GameSession gameSession) {
         if (isDestroyed) return;
 
+        int previousRow = this.y;
+
         move();
 
-        if (this.x > Constants.BOARD_COLS) {
+        this.y = (int) Math.round(exactY);
+        GameMap map = gameSession.getMap();
+
+        if (this.y < 0 || this.y >= Constants.BOARD_ROWS) {
             this.isDestroyed = true;
             return;
         }
 
-        GameMap map = gameSession.getMap();
-        List<Zombie> zombiesInRow = map.getRow(y).getZombies();
+        if (this.y != previousRow) {
+            if (previousRow >= 0 && previousRow < Constants.BOARD_ROWS) {
+                map.getRow(previousRow).removeProjectile(this);
+            }
+            map.getRow(this.y).addProjectile(this);
+        }
+
+        if (this.x > Constants.BOARD_COLS || this.x < 0) {
+            this.isDestroyed = true;
+            return;
+        }
+
+        List<Zombie> zombiesInRow = map.getRow(this.y).getZombies();
 
         if (zombiesInRow != null) {
             for (Zombie z : zombiesInRow) {
                 if (!z.getHealth().isDead() && this.x >= z.getMovement().getPositionX()) {
-                    onHit(z);
+                    onHit(z, gameSession);
                     break;
                 }
             }
@@ -51,22 +72,53 @@ public class Projectile extends Entity {
     }
 
     public void move() {
-        this.x += speed;
+        this.x += speedX;
+        this.exactY += speedY;
     }
 
-    public void onHit(Zombie z) {
-        z.getHealth().applyDamage(damage, shooter);
+    public void onHit(Zombie target, GameSession gameSession) {
+        target.getHealth().applyDamage(damage, shooter);
 
         if (this.type == ProjectileType.ICE_PEA) {
-            //apply freeze
-        } else if (this.type == ProjectileType.MELON) {
-            //apply splash group damage
+            //TODO: apply snow effect to zombie
+        }
+        else if (this.type == ProjectileType.MELON) {
+            //(Splash Damage)
+            applySplashDamage(target, gameSession);
         }
 
         this.isDestroyed = true;
     }
 
-    //TODO: this method should be called by game engine and system to remove destroyed projectiles
+    private void applySplashDamage(Zombie primaryTarget, GameSession gameSession) {
+        GameMap map = gameSession.getMap();
+
+        int splashDamage = this.damage / 2;
+
+        double splashRadiusX = 1.5;
+
+        for (int rowOffset = -1; rowOffset <= 1; rowOffset++) {
+            int targetRow = this.y + rowOffset;
+
+            if (targetRow >= 0 && targetRow < Constants.BOARD_ROWS) {
+                List<Zombie> zombies = map.getRow(targetRow).getZombies();
+
+                if (zombies != null) {
+                    for (Zombie z : zombies) {
+                        if (z.getHealth().isDead() || z == primaryTarget) {
+                            continue;
+                        }
+                        double distanceX = Math.abs(z.getMovement().getPositionX() - primaryTarget.getMovement().getPositionX());
+                        if (distanceX <= splashRadiusX) {
+                            z.getHealth().applyDamage(splashDamage, shooter);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //TODO: remove destroyed projectiles in time system every tick
     public boolean isDestroyed() {
         return isDestroyed;
     }
