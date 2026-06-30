@@ -3,6 +3,8 @@ package models.entities.plants;
 import models.entities.Entity;
 import models.entities.plants.abilities.PlantAbility;
 import models.entities.plants.FoodStrategies.CompositePlantFoodStrategy;
+import models.entities.plants.components.PlantHealthComponent;
+import models.entities.plants.components.StackableComponent;
 import models.game.GameSession;
 
 import java.util.ArrayList;
@@ -21,7 +23,13 @@ public class Plant extends Entity {
     protected boolean thisPlantHasFood;
     protected CompositePlantFoodStrategy plantFoodStrategy;
 
-    public Plant(PlantHealthComponent health, int level, int cost) {
+    protected StackableComponent  stackableComponent;
+
+    public Plant(String name, int id, double x, int y,
+                 PlantHealthComponent health, int level, int cost) {
+
+        super(name, id, x, y);
+
         this.health = health;
 
         this.cost = cost;
@@ -76,4 +84,16 @@ public class Plant extends Entity {
     }
 
     public PlantHealthComponent getHealth() { return health; }
+
+    public List<PlantAbility> getAbilities() {
+        return abilities;
+    }
+
+    public StackableComponent getStackableComponent() {
+        return stackableComponent;
+    }
+
+    public void setStackableComponent(StackableComponent stackableComponent) {
+        this.stackableComponent = stackableComponent;
+    }
 }

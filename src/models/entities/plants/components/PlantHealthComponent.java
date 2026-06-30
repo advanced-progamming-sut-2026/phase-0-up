@@ -1,4 +1,4 @@
-package models.entities.plants;
+package models.entities.plants.components;
 
 public class PlantHealthComponent {
     private int maxHp;

@@ -12,7 +12,8 @@ public class ShootProjectileAbility extends PlantAbility {
     private ProjectileType projectileType;
     private int damage;
     private int shotCount;
-    private double speed;
+    private double speedX;
+    private ShootDirection direction;
 
     private int remainingShotsInBurst;
     private int burstDelayTicks;
@@ -23,7 +24,7 @@ public class ShootProjectileAbility extends PlantAbility {
         this.projectileType = projectileType;
         this.damage = damage;
         this.shotCount = shotCount;
-        this.speed = speed;
+        this.speedX = speed;
 
 
         this.burstDelayTicks = 2;
@@ -41,8 +42,14 @@ public class ShootProjectileAbility extends PlantAbility {
 
         if (zombiesInRow != null) {
             for (Zombie z : zombiesInRow) {
-                if (!z.getHealth().isDead() && z.getMovement().getPositionX() > owner.getX()) {
-                    return true;
+                if (!z.getHealth().isDead()) {
+                    double zombieX = z.getMovement().getPositionX();
+
+                    if (direction == ShootDirection.FORWARD && zombieX >= owner.getX()) {
+                        return true;
+                    } else if (direction == ShootDirection.BACKWARD && zombieX <= owner.getX()) {
+                        return true;
+                    }
                 }
             }
         }
@@ -80,18 +87,22 @@ public class ShootProjectileAbility extends PlantAbility {
     }
 
     private void fireSingleProjectile(Plant owner, GameSession gameSession) {
-        double spawnX = owner.getX() + 0.5;
+        double spawnX = (direction == ShootDirection.FORWARD) ? owner.getX() + 0.5 : owner.getX() - 0.5;
 
         Projectile projectile = new Projectile(
                 spawnX,
                 owner.getY(),
                 projectileType,
                 damage,
-                speed,
+                speedX,
                 0,
                 owner
         );
 
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
+    }
+
+    public void increaseShotCount(int amount) {
+        this.shotCount += amount;
     }
 }

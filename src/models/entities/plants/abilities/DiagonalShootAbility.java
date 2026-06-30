@@ -13,16 +13,31 @@ public class DiagonalShootAbility extends PlantAbility {
     private ProjectileType projectileType;
     private int damage;
     private double speed;
+    private int shotCount;
 
-    public DiagonalShootAbility(int actionInterval, ProjectileType projectileType, int damage, double speed) {
+    private int remainingShotsInBurst;
+    private int burstDelayTicks;
+    private int burstTimer;
+
+    public DiagonalShootAbility(int actionInterval, ProjectileType projectileType,
+                                int damage, double speed, int shotCount) {
         super(actionInterval);
         this.projectileType = projectileType;
         this.damage = damage;
         this.speed = speed;
+        this.shotCount = shotCount;
+
+        this.burstDelayTicks = 2;
+        this.burstTimer = 0;
+        this.remainingShotsInBurst = 0;
     }
 
     @Override
     public boolean canExecute(Plant owner, GameSession gameSession) {
+        if (remainingShotsInBurst > 0){
+            return  false;
+        }
+
         int currentY = owner.getY();
         //in the real game diagonal zombies gets checked but for simplification we only check adjacent rows
         for (int rowOffset = -1; rowOffset <= 1; rowOffset++) {
@@ -39,7 +54,35 @@ public class DiagonalShootAbility extends PlantAbility {
     }
 
     @Override
+    public void update(Plant owner, GameSession gameSession) {
+        if (remainingShotsInBurst > 0) {
+            if (burstTimer > 0) {
+                burstTimer--;
+            } else {
+                fireProjectile(owner, gameSession);
+                remainingShotsInBurst--;
+                if (remainingShotsInBurst > 0) {
+                    burstTimer = burstDelayTicks;
+                }
+            }
+        }
+
+        super.update(owner, gameSession);
+    }
+
+    @Override
     public void execute(Plant owner, GameSession gameSession) {
+        fireProjectile(owner, gameSession);
+
+        remainingShotsInBurst = shotCount - 1;
+
+
+        if (remainingShotsInBurst > 0) {
+            burstTimer = burstDelayTicks;
+        }
+    }
+
+    private void fireProjectile(Plant owner, GameSession gameSession) {
         double diagonalSpeed = speed / 1.414;
         //arrays of directions
         double[][] directions = {
@@ -59,7 +102,6 @@ public class DiagonalShootAbility extends PlantAbility {
                     dir[1], // speedY
                     owner
             );
-
             gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
         }
     }
