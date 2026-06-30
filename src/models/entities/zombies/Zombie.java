@@ -15,6 +15,7 @@ public class Zombie{
     private List<ZombieAbility> abilities;
     private int wavePointCost;
     private boolean glowing;
+    private boolean isHypnotized;
 
 
     public Zombie(HealthComponent health) {}
@@ -27,4 +28,12 @@ public class Zombie{
     public boolean isGlowing() {return glowing;}
     public List<ZombieAbility> getAbilities() {return abilities;}
     public HealthComponent getHealth() {return health;}
+
+    public boolean isHypnotized() {
+        return isHypnotized;
+    }
+
+    public void applyHypnotize() {
+        //TODO: reverse zombie movement and make it attack other zombies
+    }
 }
