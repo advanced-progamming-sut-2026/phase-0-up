@@ -8,9 +8,8 @@ public abstract class Collectible extends Entity {
     protected boolean isCollected;
     protected boolean isExpired;
 
-    public Collectible(double x, int y, int expireTicks) {
-        this.x = x;
-        this.y = y;
+    public Collectible(String name , double x, int y, int expireTicks) {
+        super(name , 0, x , y);
         this.expireTicks = expireTicks;
         this.isCollected = false;
         this.isExpired = false;
