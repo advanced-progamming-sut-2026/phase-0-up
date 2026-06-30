@@ -2,20 +2,15 @@ package models.entities.collectibles;
 
 import models.game.GameSession;
 
-public class Sun extends Collectible {
-    private SunType type;
+public class PlantFood extends Collectible{
     private int amount;
 
     private boolean falling;
     private double currentY;
     private double targetY;
     private double fallSpeed;
-
-    public Sun(double x, double startY, double targetY, SunType type, int amount, boolean falling, int expireTicks) {
-        super("sun", x, (int) startY, expireTicks);
-        this.currentY = startY;
-        this.targetY = targetY;
-        this.type = type;
+    public PlantFood(double x, double startY, double targetY, int amount, boolean falling, int expireTicks) {
+        super("plantFood", x,(int) startY, expireTicks);
         this.amount = amount;
         this.falling = falling;
         this.fallSpeed = 0.05;
@@ -28,7 +23,7 @@ public class Sun extends Collectible {
 
     @Override
     protected void applyEffect(GameSession gameSession) {
-        gameSession.increaseSunAmount(this.amount);
+        gameSession.increasePlantFoodCount(amount);
     }
 
     @Override
@@ -49,8 +44,6 @@ public class Sun extends Collectible {
         }
     }
 
-    // --- Getters ---
-    public SunType getType() { return type; }
     public int getAmount() { return amount; }
     public boolean isFalling() { return falling; }
 }
