@@ -17,7 +17,7 @@ public class Row {
     public Row(int index) {
         cells = new ArrayList<>();
         for(int i = 0 ; i < 9; i++){
-            Cell e = new Cell(i , index , true);
+            Cell e = new Cell(i + 0.5 , index , true);
             cells.add(e);
         }
         activeProjectiles = new ArrayList<>();

@@ -8,14 +8,14 @@ import java.util.List;
 import java.util.Stack;
 
 public class Cell {
-    private int x;
+    private double x;
     private int y;
     private Plant currentPlant;
     private List<Terrain> terrain;
     private boolean isPlantable;
     private boolean isFlooded;
 
-    public Cell(int x, int y, boolean isPlantable) {
+    public Cell(double x, int y, boolean isPlantable) {
         this.x = x;
         this.y = y;
         this.isPlantable = isPlantable;
@@ -52,7 +52,7 @@ public class Cell {
         return y;
     }
 
-    public int getX() {
+    public double getX() {
         return x;
     }
 

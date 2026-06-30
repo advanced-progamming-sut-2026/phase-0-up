@@ -9,7 +9,6 @@ public class GameMap {
     private List<Row> rows;
     private static final int rowCount = 5;
     private static final int colCount = 9;
-    private List<Collectible> activeCollectibles;
 
     public GameMap() {
         rows = new ArrayList<>();
@@ -17,10 +16,6 @@ public class GameMap {
             Row e = new Row(i);
             rows.add(e);
         }
-    }
-
-    public void addCollectible(Collectible c){
-        activeCollectibles.add(c);
     }
 
     public Cell getCell(int x, int y){return rows.get(y).cellAt(x);}
