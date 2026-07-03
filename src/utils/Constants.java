@@ -9,6 +9,11 @@ public class Constants {
     public static final int BOARD_ROWS = 5;             // تعداد ردیف‌های حیاط
     public static final int BOARD_COLS = 9;             // تعداد ستون‌های حیاط
 
+    public static final double LAWNMOWER_SPEED = 0.6;
+    public static final double LAWNMOWER_ACTIVATION_THRESHOLD = 0.0;
+    public static final double LAWNMOWER_END_POSITION = 9.0;
+
+
     // ==========================================
     // ۲. مکانیک‌های خورشید (Sun Mechanics)
     // ==========================================

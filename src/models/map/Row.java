@@ -3,7 +3,10 @@ package models.map;
 import models.entities.plants.Plant;
 import models.entities.projectiles.Projectile;
 import models.entities.zombies.Zombie;
+import utils.Constants;
+import utils.Result;
 
+import java.lang.module.ResolutionException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +29,9 @@ public class Row {
         this.index = index;
     }
 
-    public Cell cellAt(int x){return cells.get(x);}
+    public Cell cellAt(int x){
+        return cells.get(x);
+    }
 
     public Lawnmower getLawnmower() {
         return lawnmower;

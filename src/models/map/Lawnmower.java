@@ -2,7 +2,10 @@ package models.map;
 
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
+import utils.Constants;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class Lawnmower {
@@ -35,20 +38,56 @@ public class Lawnmower {
         this.row = row;
     }
 
+    public boolean isActiveNow() {
+        return isActiveNow;
+    }
+
+
+    public void activate() {
+        if (!used && !isActiveNow) {
+            isActiveNow = true;
+        }
+    }
+
+    public void active(Zombie[] zombies) {
+        activate();
+    }
+
+
+
     public void update(GameSession gameSession){
-        int index = this.getRow();
-        List<Zombie> zombies = gameSession.getMap().getRows().get(index).getZombies();
-        for(Zombie z : zombies){
-            if(z.getMovement().getPositionX() >= this.positionX &&
-                    z.getMovement().getPositionX() <= this.positionX + lawnmowerSpeed){
-                z.getHealth().applyDamage(z.getHealth().getTotalHP() , null);
+        if (!isActiveNow || used) {
+            return;
+        }
+
+        double previousX = positionX;
+        double newX = previousX + Constants.LAWNMOWER_SPEED;
+
+        List<Zombie> zombies = new ArrayList<>(
+                gameSession.getMap().getRows().get(row).getZombies()
+        );
+        for (Zombie zombie : zombies) {
+            if (zombie.getHealth().isDead()) {
+                continue;
+            }
+
+            double zombieX = zombie.getMovement().getPositionX();
+            if (collidesWithMovementSegment(zombieX, previousX, newX)) {
+                zombie.getHealth().applyDamage(zombie.getHealth().getTotalHP(), null);
             }
         }
-        this.setPositionX(this.positionX += lawnmowerSpeed);
-        if(this.positionX > 9) {
-            this.used = true;
-            this.isActiveNow = false;
+
+        positionX = newX;
+
+        if (positionX > Constants.LAWNMOWER_END_POSITION) {
+            used = true;
+            isActiveNow = false;
         }
+    }
+
+
+    private boolean collidesWithMovementSegment(double zombieX, double segmentStart, double segmentEnd) {
+        return zombieX >= segmentStart && zombieX <= segmentEnd;
     }
 
     public void setPositionX(double positionX) {

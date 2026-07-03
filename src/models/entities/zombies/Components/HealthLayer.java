@@ -9,7 +9,11 @@ public class HealthLayer {
         this.maxHp = maxHp;
         this.type = type;
     }
-    public int takeDamage(int damage) {return 0;}
-    public int getCurrentHp() {return 0;}
-    public ArmorType getType() {return null;}
+    public int takeDamage(int damage) {
+        int absorbed = Math.min(damage, currentHp);
+        currentHp -= absorbed;
+        return absorbed;
+    }
+    public int getCurrentHp() {return currentHp;}
+    public ArmorType getType() {return type;}
 }

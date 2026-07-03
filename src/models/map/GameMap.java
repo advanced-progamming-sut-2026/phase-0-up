@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 //rows = y , cols = x
 public class GameMap {
+    private List<Collectible> activeCollectibles;
     private List<Row> rows;
+    
     private static final int rowCount = 5;
     private static final int colCount = 9;
 
