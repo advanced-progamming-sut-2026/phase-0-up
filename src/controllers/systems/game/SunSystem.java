@@ -108,6 +108,10 @@ public class SunSystem {
         return !normalChapter.contains("dark");
     }
 
+    public void reset() {
+        lastSkySunSpawnTick = -1;
+    }
+
     public boolean collectSun(GameSession gameSession, double x, int y){
         Sun sun = findSunAt(gameSession , x , y );
         if(sun == null || sun.isRemovable()){

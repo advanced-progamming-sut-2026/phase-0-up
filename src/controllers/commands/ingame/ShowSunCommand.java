@@ -9,7 +9,7 @@ public class ShowSunCommand implements Command {
     private GameSession gameSession;
     private final InGameRenderer renderer;
 
-    public ShowSunCommand(InGameRenderer renderer, GameSession gameSession) {
+    public ShowSunCommand(GameSession gameSession , InGameRenderer renderer) {
         this.renderer = renderer;
         this.gameSession = gameSession;
     }
