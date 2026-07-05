@@ -53,4 +53,8 @@ public class Sun extends Collectible {
     public SunType getType() { return type; }
     public int getAmount() { return amount; }
     public boolean isFalling() { return falling; }
+
+    public double getTargetY() {
+        return targetY;
+    }
 }

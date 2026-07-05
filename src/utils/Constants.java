@@ -19,6 +19,7 @@ public class Constants {
     // ==========================================
     public static final int NORMAL_SUN_AMOUNT = 25;
     public static final int SPECIAL_SUN_AMOUNT = 100;
+    public static final int RADIOACTIVE_SUN_AMOUNT = 150;
 
     public static final double NORMAL_SUN_PROBABILITY = 0.80;      // ۸۰ درصد احتمال خورشید معمولی
     public static final double SPECIAL_SUN_PROBABILITY = 0.15;     // ۱۵ درصد احتمال خورشید ویژه
