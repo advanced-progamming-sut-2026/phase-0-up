@@ -20,6 +20,8 @@ public class Projectile extends Entity {
 
     private boolean isDestroyed;
 
+    private int bounceCount;
+
     public Projectile(double x, double startY, ProjectileType type, int damage, double speedX, double speedY, Plant shooter) {
         super(type.toString(), 0, x, (int) Math.round(startY));
         this.type = type;
@@ -31,11 +33,10 @@ public class Projectile extends Entity {
         this.speedY = speedY;
     }
 
+    //TODO: in game engine after finishing the loop on the projectiles check if any of them changed line
     @Override
     public void update(GameSession gameSession) {
         if (isDestroyed) return;
-
-        int previousRow = this.y;
 
         move();
 
@@ -43,15 +44,21 @@ public class Projectile extends Entity {
         GameMap map = gameSession.getMap();
 
         if (this.y < 0 || this.y >= Constants.BOARD_ROWS) {
-            this.isDestroyed = true;
-            return;
-        }
 
-        if (this.y != previousRow) {
-            if (previousRow >= 0 && previousRow < Constants.BOARD_ROWS) {
-                map.getRow(previousRow).removeProjectile(this);
+            if (this.type == ProjectileType.BOWLING_BULB) {
+                if (this.y < 0) {
+                    this.y = 0;
+                    this.exactY = 0;
+                } else {
+                    this.y = Constants.BOARD_ROWS - 1;
+                    this.exactY = this.y;
+                }
+                this.speedY = -this.speedY;
             }
-            map.getRow(this.y).addProjectile(this);
+            else {
+                this.isDestroyed = true;
+                return;
+            }
         }
 
         if (this.x > Constants.BOARD_COLS || this.x < 0) {
@@ -62,10 +69,21 @@ public class Projectile extends Entity {
         List<Zombie> zombiesInRow = map.getRow(this.y).getZombies();
 
         if (zombiesInRow != null) {
+            double previousX = this.x - speedX;
+
             for (Zombie z : zombiesInRow) {
-                if (!z.getHealth().isDead() && this.x >= z.getMovement().getPositionX()) {
-                    onHit(z, gameSession);
-                    break;
+                if (!z.getHealth().isDead()) {
+                    double zombieX = z.getMovement().getPositionX();
+
+                    boolean hitMovingRight = (speedX > 0 && previousX <= zombieX && this.x >= zombieX);
+                    boolean hitMovingLeft  = (speedX < 0 && previousX >= zombieX && this.x <= zombieX);
+
+                    boolean hitStationary = (speedX == 0 && Math.abs(this.x - zombieX) <= 0.5);
+
+                    if (hitMovingRight || hitMovingLeft || hitStationary) {
+                        onHit(z, gameSession);
+                        break;
+                    }
                 }
             }
         }
@@ -81,10 +99,29 @@ public class Projectile extends Entity {
 
         if (this.type == ProjectileType.ICE_PEA) {
             //TODO: apply snow effect to zombie
-        }
-        else if (this.type == ProjectileType.MELON) {
+        } else if (this.type == ProjectileType.MELON) {
             //(Splash Damage)
             applySplashDamage(target, gameSession);
+        } else if (this.type == ProjectileType.BOWLING_BULB){
+            if (bounceCount > 0) {
+                bounceCount--;
+
+                boolean canGoUp = (this.y > 0);
+                boolean canGoDown = (this.y < Constants.BOARD_ROWS - 1);
+
+                int direction = 0;
+                if (canGoUp && canGoDown) {
+                    direction = Math.random() > 0.5 ? -1 : 1;
+                } else if (canGoUp) {
+                    direction = -1;
+                } else if (canGoDown) {
+                    direction = 1;
+                }
+
+                this.speedY = direction * 0.5;
+
+                return;
+            }
         }
 
         this.isDestroyed = true;
@@ -121,5 +158,9 @@ public class Projectile extends Entity {
     //TODO: remove destroyed projectiles in time system every tick
     public boolean isDestroyed() {
         return isDestroyed;
+    }
+
+    public void setBounceCount(int bounceCount) {
+        this.bounceCount = bounceCount;
     }
 }
