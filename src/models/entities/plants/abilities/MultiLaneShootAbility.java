@@ -1,6 +1,7 @@
 package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
+import models.entities.plants.abilities.triggers.TriggerStrategy;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
 import models.entities.zombies.Zombie;
@@ -19,28 +20,14 @@ public class MultiLaneShootAbility extends PlantAbility {
     //for example for threepeater is {-1, 0, 1}
     private int[] rowOffsets;
 
-    public MultiLaneShootAbility(int actionInterval, ProjectileType projectileType, int damage, double speed, int[] rowOffsets) {
-        super(actionInterval);
+    public MultiLaneShootAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType, int damage, double speed, int[] rowOffsets) {
+        super(actionInterval,  triggerStrategy);
         this.projectileType = projectileType;
         this.damage = damage;
         this.speed = speed;
         this.rowOffsets = rowOffsets;
     }
 
-    @Override
-    public boolean canExecute(Plant owner, GameSession gameSession) {
-        for (int offset : rowOffsets) {
-            int targetY = owner.getY() + offset;
-
-            if (isValidRow(targetY, gameSession)) {
-                Row row = gameSession.getMap().getRow(targetY);
-                if (hasZombieInRow(row, owner.getX())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
     @Override
     public void execute(Plant owner, GameSession gameSession) {

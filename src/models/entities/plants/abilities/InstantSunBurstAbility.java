@@ -14,7 +14,7 @@ public class InstantSunBurstAbility extends PlantAbility{
     private boolean hasExecuted;
 
     public InstantSunBurstAbility(int sunAmount, int spawnCount) {
-        super(0);
+        super(0, null);
         this.sunAmount = sunAmount;
         this.spawnCount = spawnCount;
         this.random = new Random();

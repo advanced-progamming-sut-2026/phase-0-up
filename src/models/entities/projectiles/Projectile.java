@@ -7,12 +7,18 @@ import models.game.GameSession;
 import models.map.GameMap;
 import utils.Constants;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Projectile extends Entity {
     private Plant shooter;
     private ProjectileType type;
     private int damage;
+
+    //for piercing projectiles
+    private int pierceCount;
+    private Set<Zombie> hitTargets;
 
     private double speedX;
     private double speedY;
@@ -31,6 +37,8 @@ public class Projectile extends Entity {
         this.exactY = startY;
         this.speedX = speedX;
         this.speedY = speedY;
+        this.pierceCount = 0;
+        this.hitTargets = new HashSet<>();
     }
 
     //TODO: in game engine after finishing the loop on the projectiles check if any of them changed line
@@ -72,7 +80,7 @@ public class Projectile extends Entity {
             double previousX = this.x - speedX;
 
             for (Zombie z : zombiesInRow) {
-                if (!z.getHealth().isDead()) {
+                if (!z.getHealth().isDead() && !hitTargets.contains(z)) {
                     double zombieX = z.getMovement().getPositionX();
 
                     boolean hitMovingRight = (speedX > 0 && previousX <= zombieX && this.x >= zombieX);
@@ -82,7 +90,7 @@ public class Projectile extends Entity {
 
                     if (hitMovingRight || hitMovingLeft || hitStationary) {
                         onHit(z, gameSession);
-                        break;
+                        if (this.isDestroyed) break;
                     }
                 }
             }
@@ -96,6 +104,13 @@ public class Projectile extends Entity {
 
     public void onHit(Zombie target, GameSession gameSession) {
         target.getHealth().applyDamage(damage, shooter);
+
+        hitTargets.add(target);
+
+        if (this.pierceCount > 0){
+            pierceCount--;
+            return;
+        }
 
         if (this.type == ProjectileType.ICE_PEA) {
             //TODO: apply snow effect to zombie
@@ -162,5 +177,9 @@ public class Projectile extends Entity {
 
     public void setBounceCount(int bounceCount) {
         this.bounceCount = bounceCount;
+    }
+
+    public void setPierceCount(int pierceCount) {
+        this.pierceCount = pierceCount;
     }
 }

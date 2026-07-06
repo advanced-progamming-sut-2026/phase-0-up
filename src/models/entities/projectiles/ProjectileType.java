@@ -4,11 +4,10 @@ public enum ProjectileType {
     NORMAL_PEA,
     ICE_PEA,
     FIRE_PEA,
-    POISON_PEA,
+    GOO,
     HEAVY_CHARGED,
     BOWLING_BULB,
     MAGIC_BOLT,
-    LIGHTNING,
     THORN,
     STAR,
     SPORE,
@@ -18,5 +17,9 @@ public enum ProjectileType {
     BUTTER,
     MELON,
     WINTER_MELON,
-    PEPPER
+    PEPPER,
+    RUTABAGA,
+    PLASMA_BALL,
+    PIERCING_SPIKE,
+
 }

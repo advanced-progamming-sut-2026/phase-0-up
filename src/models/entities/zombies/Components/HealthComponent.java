@@ -42,4 +42,6 @@ public class HealthComponent {
         }
         return totalHP;
     }
+
+    //TODO: apply poison overtime damage
 }

@@ -1,16 +1,21 @@
 package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
+import models.entities.plants.abilities.triggers.TriggerStrategy;
 import models.game.GameSession;
 
 public abstract class PlantAbility {
     protected int cooldownTimer;
     protected int actionInterval;
 
-    public PlantAbility(int actionInterval) {
+    protected TriggerStrategy triggerStrategy;
+
+    public PlantAbility(int actionInterval, TriggerStrategy triggerStrategy) {
         this.actionInterval = actionInterval;
         this.cooldownTimer = actionInterval;
+        this.triggerStrategy = triggerStrategy;
     }
+
 
     public void update(Plant owner, GameSession gameSession){
         if (cooldownTimer > 0) {
@@ -25,6 +30,10 @@ public abstract class PlantAbility {
         }
     }
 
-    public abstract boolean canExecute(Plant owner,  GameSession gameSession);
+    public boolean canExecute(Plant owner,  GameSession gameSession){
+        if (triggerStrategy == null) return false;
+
+        return triggerStrategy.canTrigger(owner, gameSession);
+    }
     public abstract void execute(Plant owner,  GameSession gameSession);
 }

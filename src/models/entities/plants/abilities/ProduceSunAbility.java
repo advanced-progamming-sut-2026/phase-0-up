@@ -3,6 +3,7 @@ package models.entities.plants.abilities;
 import models.entities.collectibles.Sun;
 import models.entities.collectibles.SunType;
 import models.entities.plants.Plant;
+import models.entities.plants.abilities.triggers.TriggerStrategy;
 import models.game.GameSession;
 
 import java.util.Random;
@@ -18,9 +19,9 @@ public class ProduceSunAbility extends PlantAbility {
     private double doubleSunChance;
     private int spawnCount;
 
-    public ProduceSunAbility(int actionIntervalTicks, int[] sunAmountsByStage, int[] stageUpTicks,
+    public ProduceSunAbility(int actionIntervalTicks, TriggerStrategy triggerStrategy, int[] sunAmountsByStage, int[] stageUpTicks,
                              double doubleSunChance, int spawnCount) {
-        super(actionIntervalTicks);
+        super(actionIntervalTicks, triggerStrategy);
         this.sunAmountsByStage = sunAmountsByStage;
         this.stageUpTicks = stageUpTicks;
         this.doubleSunChance = doubleSunChance;
@@ -31,10 +32,6 @@ public class ProduceSunAbility extends PlantAbility {
         this.currentAliveTicks = 0;
     }
 
-    @Override
-    public boolean canExecute(Plant owner, GameSession gameSession) {
-        return true;
-    }
 
     @Override
     public void update(Plant owner, GameSession gameSession) {

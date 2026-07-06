@@ -4,41 +4,38 @@ import models.entities.plants.Plant;
 import models.entities.plants.abilities.triggers.TriggerStrategy;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
-import models.entities.zombies.Zombie;
 import models.game.GameSession;
 
-import java.util.List;
-
-public class ShootProjectileAbility extends PlantAbility {
+public class MultiDirectionalShootAbility extends PlantAbility {
     private ProjectileType projectileType;
     private int damage;
-    private int shotCount;
-    private double speedX;
-    private ShootDirection direction;
+    private double[][] directionSpeeds;
 
+    private int shotCount;
     private int remainingShotsInBurst;
     private int burstDelayTicks;
     private int burstTimer;
 
-    public ShootProjectileAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
-                                  int damage, int shotCount, double speed, int burstDelayTicks) {
+    public MultiDirectionalShootAbility(int actionInterval, TriggerStrategy triggerStrategy,
+                                        ProjectileType projectileType, int damage,
+                                        double[][] directionSpeeds,int shotCount) {
         super(actionInterval, triggerStrategy);
         this.projectileType = projectileType;
         this.damage = damage;
+        this.directionSpeeds = directionSpeeds;
+
+
         this.shotCount = shotCount;
-        this.speedX = speed;
 
-
-        this.burstDelayTicks = burstDelayTicks;
+        this.burstDelayTicks = 2;
         this.remainingShotsInBurst = 0;
         this.burstTimer = 0;
     }
 
     @Override
     public boolean canExecute(Plant owner, GameSession gameSession) {
-        if (remainingShotsInBurst > 0) {
-            return false;
-        }
+        if (remainingShotsInBurst > 0) return false;
+
         return super.canExecute(owner, gameSession);
     }
 
@@ -48,7 +45,7 @@ public class ShootProjectileAbility extends PlantAbility {
             if (burstTimer > 0) {
                 burstTimer--;
             } else {
-                fireSingleProjectile(owner, gameSession);
+                fireAllDirections(owner, gameSession);
                 remainingShotsInBurst--;
 
                 if (remainingShotsInBurst > 0) {
@@ -62,9 +59,7 @@ public class ShootProjectileAbility extends PlantAbility {
 
     @Override
     public void execute(Plant owner, GameSession gameSession) {
-
-        fireSingleProjectile(owner, gameSession);
-
+        fireAllDirections(owner, gameSession);
         remainingShotsInBurst = shotCount - 1;
 
         if (remainingShotsInBurst > 0) {
@@ -72,23 +67,18 @@ public class ShootProjectileAbility extends PlantAbility {
         }
     }
 
-    private void fireSingleProjectile(Plant owner, GameSession gameSession) {
-        double spawnX = (direction == ShootDirection.FORWARD) ? owner.getX() + 0.5 : owner.getX() - 0.5;
-
-        Projectile projectile = new Projectile(
-                spawnX,
-                owner.getY(),
-                projectileType,
-                damage,
-                speedX,
-                0,
-                owner
-        );
-
-        gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
-    }
-
-    public void increaseShotCount(int amount) {
-        this.shotCount += amount;
+    private void fireAllDirections(Plant owner, GameSession gameSession) {
+        for (double[] dir : directionSpeeds) {
+            Projectile projectile = new Projectile(
+                    owner.getX() + 0.5,
+                    owner.getY(),
+                    projectileType,
+                    damage,
+                    dir[0],
+                    dir[1],
+                    owner
+            );
+            gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
+        }
     }
 }

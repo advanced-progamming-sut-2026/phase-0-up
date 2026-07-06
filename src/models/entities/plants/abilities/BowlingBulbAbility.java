@@ -1,6 +1,7 @@
 package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
+import models.entities.plants.abilities.triggers.TriggerStrategy;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
 import models.entities.zombies.Zombie;
@@ -26,8 +27,9 @@ public class BowlingBulbAbility extends PlantAbility {
     private boolean hasBlue = true;
     private boolean hasOrange = true;
 
-    public BowlingBulbAbility(int actionInterval, int cyanReloadTicks, int blueReloadTicks, int orangeReloadTicks) {
-        super(actionInterval);
+    public BowlingBulbAbility(int actionInterval, TriggerStrategy triggerStrategy,
+                              int cyanReloadTicks, int blueReloadTicks, int orangeReloadTicks) {
+        super(actionInterval, triggerStrategy);
         this.cyanReloadTicks = cyanReloadTicks;
         this.blueReloadTicks = blueReloadTicks;
         this.orangeReloadTicks = orangeReloadTicks;
@@ -66,15 +68,7 @@ public class BowlingBulbAbility extends PlantAbility {
     public boolean canExecute(Plant owner, GameSession gameSession) {
         if (!hasCyan && !hasBlue && !hasOrange) return false;
 
-        List<Zombie> zombiesInRow = gameSession.getMap().getRow(owner.getY()).getZombies();
-        if (zombiesInRow != null) {
-            for (Zombie z : zombiesInRow) {
-                if (!z.getHealth().isDead() && z.getMovement().getPositionX() > owner.getX()) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return super.canExecute(owner, gameSession);
     }
 
     @Override

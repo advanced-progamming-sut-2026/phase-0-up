@@ -2,6 +2,7 @@ package models.entities.plants.abilities;
 
 
 import models.entities.plants.Plant;
+import models.entities.plants.abilities.triggers.TriggerStrategy;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.map.GameMap;
@@ -17,17 +18,15 @@ public abstract class GlobalTargetingAbility extends PlantAbility {
     private TargetingPriority priorityStrategy;
     private double priorityRange;
 
-    public GlobalTargetingAbility(int actionInterval, TargetingPriority priorityStrategy, double priorityRange) {
-        super(actionInterval);
+    public GlobalTargetingAbility(int actionInterval, TriggerStrategy triggerStrategy,
+                                  TargetingPriority priorityStrategy, double priorityRange) {
+        super(actionInterval, triggerStrategy);
         this.random = new Random();
         this.priorityStrategy = priorityStrategy;
         this.priorityRange = priorityRange;
     }
 
-    @Override
-    public boolean canExecute(Plant owner, GameSession gameSession) {
-        return !getValidTargets(gameSession).isEmpty();
-    }
+
 
     @Override
     public void execute(Plant owner, GameSession gameSession) {

@@ -5,16 +5,16 @@ import models.entities.plants.abilities.triggers.TriggerStrategy;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 
-public class DamageRandomTargetAbility extends GlobalTargetingAbility {
-    private int damage;
+public class HypnotizeRandomTargetAbility extends GlobalTargetingAbility{
 
-    public DamageRandomTargetAbility(int actionInterval, TriggerStrategy triggerStrategy, TargetingPriority priorityStrategy , double priorityRange, int damage) {
+    public HypnotizeRandomTargetAbility(int actionInterval, TriggerStrategy triggerStrategy, TargetingPriority priorityStrategy, double priorityRange) {
         super(actionInterval, triggerStrategy, priorityStrategy, priorityRange);
-        this.damage = damage;
     }
 
     @Override
     protected void applyEffectToTarget(Zombie target, Plant owner, GameSession gameSession) {
-        target.getHealth().applyDamage(damage, owner);
+        if (!target.isHypnotized()){
+            target.applyHypnotize();
+        }
     }
 }
