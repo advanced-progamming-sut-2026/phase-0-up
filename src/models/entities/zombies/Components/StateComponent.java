@@ -18,6 +18,7 @@ public class StateComponent {
     private float frozenTimer = 0f;
     private float chilledTimer = 0f;
     private float butteredTimer = 0f;
+    private boolean isTorchLit = false;
 
     public void update(float deltaTime) {
         if (frozenTimer > 0) frozenTimer -= deltaTime;
@@ -58,4 +59,7 @@ public class StateComponent {
 
     public boolean isHypnotized() { return isHypnotized; }
     public void setHypnotized(boolean hypnotized) { isHypnotized = hypnotized; }
+
+    public boolean isTorchLit() { return isTorchLit; }
+    public void setTorchLit(boolean torchLit) { this.isTorchLit = torchLit; }
 }

@@ -1,11 +1,13 @@
 package models.entities.zombies;
 
 import models.entities.Entity;
+import models.entities.plants.Plant;
 import models.entities.zombies.Abilities.ZombieAbility;
 import models.entities.zombies.Components.ArmorType;
 import models.entities.zombies.Components.HealthComponent;
 import models.entities.zombies.Components.MovementComponent;
 import models.entities.zombies.Components.StateComponent;
+import models.game.GameSession;
 
 import java.util.List;
 
@@ -27,11 +29,12 @@ public class Zombie{
     private List<ZombieAbility> abilities;
     private int wavePointCost;
     private boolean glowing;
+    private GameSession gameSession;
 
 
     public Zombie(int id, String category, int baseHp, List<ArmorType> armorTypes, String alias,
                   int eatDamage, int eatSpeed, double speed, double startX, int startY, boolean canSpawnPlantFood,
-                  List<ZombieAbility> abilities, int wavePointCost, boolean glowing) {
+                  List<ZombieAbility> abilities, int wavePointCost, boolean glowing, GameSession gameSession) {
         this.id = id;
         this.category = category;
         this.baseHp = baseHp;
@@ -49,6 +52,7 @@ public class Zombie{
         this.state = new StateComponent();
         this.health = new HealthComponent(armorTypes);
         this.movement = new MovementComponent(speed , startX , startY , state);
+        this.gameSession = gameSession;
     }
 
     public void addAbility(ZombieAbility ability) {}
@@ -61,6 +65,11 @@ public class Zombie{
     public List<ZombieAbility> getAbilities() {return abilities;}
     public HealthComponent getHealth() {return health;}
 
-    //TODO : add stun effect
-    //TODO : add ice pea slow effect
+    public GameSession getGameSession() {
+        return gameSession;
+    }
+
+    public Plant getTargetPlantInFront() {
+        return gameSession.getMap().getRow(movement.getPositionY()).cellAt((int) movement.getPositionX()).getCurrentPlant();
+    }
 }
