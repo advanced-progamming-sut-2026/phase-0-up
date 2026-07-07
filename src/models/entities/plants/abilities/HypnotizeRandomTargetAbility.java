@@ -13,8 +13,8 @@ public class HypnotizeRandomTargetAbility extends GlobalTargetingAbility{
 
     @Override
     protected void applyEffectToTarget(Zombie target, Plant owner, GameSession gameSession) {
-        if (!target.isHypnotized()){
-            target.applyHypnotize();
+        if (!target.getState().isHypnotized()){
+            target.getState().setHypnotized(true);
         }
     }
 }

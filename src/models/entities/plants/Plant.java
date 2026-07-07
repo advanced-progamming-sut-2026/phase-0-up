@@ -26,9 +26,7 @@ public class Plant extends Entity {
 
     protected StackableComponent  stackableComponent;
 
-    public Plant(String name, int id, double x, int y,
-                 PlantHealthComponent health, int level, int cost) {
-
+    public Plant(String name, int id, double x, int y, PlantHealthComponent health, int level, int cost) {
         super(name, id, x, y);
 
         this.health = health;

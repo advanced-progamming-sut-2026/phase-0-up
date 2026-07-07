@@ -5,8 +5,8 @@ public class HealthLayer {
     private int maxHp;
     private ArmorType type;
 
-    public HealthLayer(int maxHp, ArmorType type) {
-        this.maxHp = maxHp;
+    public HealthLayer(ArmorType type) {
+        this.maxHp = type.getHp();
         this.type = type;
     }
     public int takeDamage(int damage) {

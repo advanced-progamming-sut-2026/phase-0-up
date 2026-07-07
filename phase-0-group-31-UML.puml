@@ -617,7 +617,7 @@ enum models.game.EnvironmentType {
 }
 
 
-class models.map.Terrains.GrassTerrain {
+class models.map.Terrains.GraveInDarkAgesTerrain {
 }
 enum models.entities.projectiles.ProjectileType {
 +  NORMAL_PEA
@@ -653,7 +653,7 @@ class models.entities.zombies.Abilities.FishThePlants {
 + void execute(Zombie)
 }
 
-class views.renderers.MenuRenderer.GameMenuRenderer {
+class views.renderers.MenuRenderer.PlayMenuRenderer {
 + void enterChapter(String)
 + void enterOtherMenusFromThisMenu(String)
 + void coinsAndGemsRenderer(Profile)
@@ -664,7 +664,7 @@ class views.renderers.MenuRenderer.SettingMenuRenderer {
 + void settingRender(int)
 }
 
-class views.renderers.LeaderboardRenderer {
+class views.renderers.MenuRenderer.LeaderboardRenderer {
 + void listAllPlayersIncreasing(LeaderboardEntry[])
 + void listAllPlayersDecreasing(LeaderboardEntry[])
 }
@@ -868,7 +868,7 @@ class models.entities.plants.FoodStrategies.InstantGrowing {
 + void executeEffect(Plant)
 }
 
-class views.renderers.TravelLogRenderer {
+class views.renderers.MenuRenderer.TravelLogRenderer {
 + void showPage(int)
 + void isPageNumberValid()
 }
@@ -952,7 +952,7 @@ class models.leaderboard.LeaderboardEntry {
 - int bestMyoPoint
 }
 
-class views.renderers.GreenhouseRenderer {
+class views.renderers.MenuRenderer.GreenhouseRenderer {
 + void showGreenhouse(Pot[])
 }
 
@@ -1702,7 +1702,7 @@ controllers.commands.Command <|.. controllers.commands.ingame.ShowMapStatusComma
 models.quests.QuestCondition.QuestCondition <|.. models.quests.QuestCondition.WinWithNoPlantCondition
 models.map.Terrains.Terrain <|-- models.map.Terrains.LowSandTerrain
 models.entities.zombies.Abilities.ZombieAbility <|.. models.entities.zombies.Abilities.SummonGraveAbility
-models.map.Terrains.Terrain <|-- models.map.Terrains.GrassTerrain
+models.map.Terrains.Terrain <|-- models.map.Terrains.GraveInDarkAgesTerrain
 controllers.commands.Command <|.. controllers.commands.seedselection.ToggleSeedCommand
 models.entities.zombies.Abilities.ZombieAbility <|.. models.entities.zombies.Abilities.FishThePlants
 models.minigames.Minigame <|-- models.minigames.Zombotany

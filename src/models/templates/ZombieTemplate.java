@@ -6,7 +6,7 @@ public class ZombieTemplate {
    private int id;
    private String category;
    private int baseHp;
-   private int armorHp;
+   private List<String> armorTypes;
    private String alias;
    private int eatDamage;
    private int eatSpeed;
@@ -28,8 +28,8 @@ public class ZombieTemplate {
       return baseHp;
    }
 
-   public int getArmorHp() {
-      return armorHp;
+   public List<String> getArmorHp() {
+      return armorTypes;
    }
 
    public String getAlias() {
