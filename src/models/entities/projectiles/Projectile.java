@@ -217,4 +217,8 @@ public class Projectile extends Entity {
     public void setPierceCount(int pierceCount) {
         this.pierceCount = pierceCount;
     }
+
+    public Plant getShooter() {
+        return shooter;
+    }
 }

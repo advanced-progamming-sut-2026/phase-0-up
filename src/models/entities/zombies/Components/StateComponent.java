@@ -1,14 +1,6 @@
 package models.entities.zombies.Components;
 
 public class StateComponent {
-    public enum ActionState {
-        WALKING,
-        EATING,
-        LANE_SWITCHING,
-        DYING,
-        IDLE
-    }
-
     private ActionState currentAction = ActionState.WALKING;
 
     private boolean isFlying = false;
