@@ -5,10 +5,10 @@ public class HealthLayer {
     private int maxHp;
     private ArmorType type;
 
-    public HealthLayer(int maxHp, ArmorType type) {
-        this.maxHp = maxHp;
-        this.currentHp = maxHp;
+    public HealthLayer(ArmorType type) {
+        this.maxHp = type.getHp();
         this.type = type;
+        this.currentHp = maxHp;
     }
     public int takeDamage(int damage) {
         int absorbed = Math.min(damage, currentHp);

@@ -3,13 +3,19 @@ package models.entities.zombies.Components;
 import models.entities.plants.Plant;
 import models.entities.projectiles.DamageType;
 
+import java.util.List;
 import java.util.Stack;
 
 public class HealthComponent {
     private Stack<HealthLayer> layers;
+    private List<ArmorType> armorTypes;
 
-    public HealthComponent() {
+    public HealthComponent(List<ArmorType> armorTypes) {
         layers = new Stack<>();
+        this.armorTypes = armorTypes;
+        for(ArmorType a : armorTypes){
+            addLayer(new HealthLayer(a));
+        }
     }
 
     public boolean isDead() {
@@ -50,9 +56,22 @@ public class HealthComponent {
             die();
         }
     }
-    public boolean tryRemoveMetallicArmor() {return false;}
+    public boolean tryRemoveMetallicArmor() {
+        if(layers.peek().getType() == ArmorType.BUCKET){
+            layers.pop(); return true;
+        } else if(layers.peek().getType() == ArmorType.SHOULDER_ARMOR || layers.peek().getType() == ArmorType.CROWN){
+            layers.pop();
+            if(layers.peek().getType() != ArmorType.BASE_BODY){
+                layers.pop();
+            }
+            return true;
+        }
+        return false;
+    }
     private void applyChillEffectToAttacker(Plant attacker) {}
-    private void die() {}
+    private void die() {
+
+    }
 
     public int getTotalHP(){
         int totalHP = 0;

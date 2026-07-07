@@ -1,5 +1,6 @@
 package models.map.Terrains;
 
+import factories.ZombieFactory;
 import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
 import models.map.Cell;
@@ -18,6 +19,6 @@ public class LowSandTerrain extends Terrain{
 
     @Override
     public void effect(Zombie z, Plant p) {
-        z.getMovement().move(z.getState() , currentCell.getX() , currentCell.getY());
+        if(flooded) ZombieFactory.createZombie("ZombieDefault" , currentCell.getX() , currentCell.getY());
     }
 }

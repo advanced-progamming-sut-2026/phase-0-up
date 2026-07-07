@@ -15,9 +15,9 @@ public class SlipTerrain extends Terrain{
     @Override
     public void effect(Zombie z, Plant p) {
         if(direction == SlipDirection.UP){
-            z.getMovement().move(z.getState() , z.getMovement().getPositionX() , z.getMovement().getPositionY() - 1);
+            z.getMovement().startLaneSwitch(z.getMovement().getPositionY()-1);
         } else {
-            z.getMovement().move(z.getState() , z.getMovement().getPositionX() , z.getMovement().getPositionY() + 1);
+            z.getMovement().startLaneSwitch(z.getMovement().getPositionY()+1);
         }
     }
 }
