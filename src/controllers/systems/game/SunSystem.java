@@ -3,6 +3,7 @@ package controllers.systems.game;
 import models.entities.collectibles.Sun;
 import models.entities.collectibles.SunType;
 import models.entities.plants.Plant;
+import models.entities.projectiles.DamageType;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.game.gamemodes.GameMode;
@@ -89,7 +90,7 @@ public class SunSystem {
     }
 
     private double getFallDistance(){
-        return Constants.SUN_FALL_DURATION_SECONDS * Constants.TICK_IN_SECONDS*0.05;
+        return Constants.SUN_FALL_DURATION_SECONDS * Constants.TICKS_PER_SECOND *0.05;
     }
 
     private boolean canSpawnSkySun(GameSession gameSession){
@@ -151,7 +152,7 @@ public class SunSystem {
 
                 int zombieColumn = columnFromX(zombie.getMovement().getPositionX());
                 if (Math.abs(zombieColumn - centerColumn) <= radius) {
-                    zombie.getHealth().applyDamage(damage, null);
+                    zombie.getHealth().applyDamage(damage, DamageType.STANDARD,null);
                 }
             }
         }
@@ -224,9 +225,9 @@ public class SunSystem {
         }
 
         long currentTick = gameSession.getTimeTicks();
-        long elapsedSeconds = currentTick/Constants.TICK_IN_SECONDS;
+        long elapsedSeconds = currentTick/Constants.TICKS_PER_SECOND;
         double intervalSeconds = dropRate(elapsedSeconds) * getDifficultyIntervalMultiplier(gameSession);
-        long intervalTicks = Math.max(1 , Math.round(intervalSeconds * Constants.TICK_IN_SECONDS));
+        long intervalTicks = Math.max(1 , Math.round(intervalSeconds * Constants.TICKS_PER_SECOND));
 
         if(lastSkySunSpawnTick < 0){
             lastSkySunSpawnTick = currentTick;

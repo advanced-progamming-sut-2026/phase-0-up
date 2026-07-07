@@ -36,4 +36,7 @@ public class Zombie{
     public void applyHypnotize() {
         //TODO: reverse zombie movement and make it attack other zombies
     }
+
+    //TODO : add stun effect
+    //TODO : add ice pea slow effect
 }

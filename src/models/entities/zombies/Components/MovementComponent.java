@@ -9,4 +9,7 @@ public class MovementComponent {
     public void move(StateComponent state , double x , int y) {}
     public double getPositionX() { return x; }
     public int getPositionY() {return y;}
+
+
+    //TODO: this class needs an update method
 }

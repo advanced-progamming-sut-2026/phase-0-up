@@ -2,6 +2,7 @@ package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
 import models.entities.plants.abilities.triggers.TriggerStrategy;
+import models.entities.projectiles.DamageType;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
 import models.entities.zombies.Zombie;
@@ -95,7 +96,9 @@ public class BowlingBulbAbility extends PlantAbility {
                 damageToShoot,
                 1.0,
                 0.0,
-                owner
+                owner,
+                0.0,
+                DamageType.STANDARD
         );
 
         projectile.setBounceCount(3);

@@ -80,6 +80,11 @@ public class Cell {
             return new Result(false, "This cell is already occupied!");
         }
 
+        if (!isPlantable) return new Result(false, "This cell is not plantable!");
+
+        if (newPlant.isAquatic() && !isFlooded) return new Result(false, "This plant must be planted in water!");
+        if (!newPlant.isAquatic() && isFlooded) return new Result(false, "You can't plant this on water!");
+
         this.currentPlant = newPlant;
         return new Result(true, "Plant placed successfully.");
     }

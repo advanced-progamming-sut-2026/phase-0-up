@@ -2,6 +2,7 @@ package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
 import models.entities.plants.abilities.triggers.TriggerStrategy;
+import models.entities.projectiles.DamageType;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
 import models.entities.zombies.Zombie;
@@ -15,19 +16,25 @@ public class ShootProjectileAbility extends PlantAbility {
     private int shotCount;
     private double speedX;
     private ShootDirection direction;
+    private int pierceCount;
+    private double maxRange;
+    private DamageType damageType;
 
     private int remainingShotsInBurst;
     private int burstDelayTicks;
     private int burstTimer;
 
     public ShootProjectileAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
-                                  int damage, int shotCount, double speed, int burstDelayTicks) {
+                                  int damage, int shotCount, double speed, int burstDelayTicks, int pierceCount,
+                                  double maxRange, DamageType damageType) {
         super(actionInterval, triggerStrategy);
         this.projectileType = projectileType;
         this.damage = damage;
         this.shotCount = shotCount;
         this.speedX = speed;
-
+        this.pierceCount = pierceCount;
+        this.maxRange = maxRange;
+        this.damageType = damageType;
 
         this.burstDelayTicks = burstDelayTicks;
         this.remainingShotsInBurst = 0;
@@ -82,8 +89,12 @@ public class ShootProjectileAbility extends PlantAbility {
                 damage,
                 speedX,
                 0,
-                owner
+                owner,
+                maxRange,
+                damageType
         );
+
+        projectile.setPierceCount(pierceCount);
 
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
     }

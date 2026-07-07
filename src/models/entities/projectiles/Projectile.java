@@ -15,6 +15,7 @@ public class Projectile extends Entity {
     private Plant shooter;
     private ProjectileType type;
     private int damage;
+    private DamageType damageType;
 
     //for piercing projectiles
     private int pierceCount;
@@ -28,7 +29,19 @@ public class Projectile extends Entity {
 
     private int bounceCount;
 
-    public Projectile(double x, double startY, ProjectileType type, int damage, double speedX, double speedY, Plant shooter) {
+    private double startX;
+    //if the projectile doesn't have a maximum range set this field to 0.0
+    private double maxRange;
+
+
+    //splash damage properties
+    private int splashDamage = 0;
+    private double splashRadiusX = 0.0;
+    private int splashRowRadius = 0;
+    private boolean appliesSlowEffect = false;
+
+    public Projectile(double x, double startY, ProjectileType type, int damage,
+                      double speedX, double speedY, Plant shooter, double maxRange, DamageType damageType) {
         super(type.toString(), 0, x, (int) Math.round(startY));
         this.type = type;
         this.damage = damage;
@@ -39,12 +52,28 @@ public class Projectile extends Entity {
         this.speedY = speedY;
         this.pierceCount = 0;
         this.hitTargets = new HashSet<>();
+
+        this.maxRange = maxRange;
+        this.startX = x;
+        this.damageType = damageType;
+    }
+
+    public void setSplashProperties(int splashDamage, double splashRadiusX, int splashRowRadius, boolean appliesSlowEffect) {
+        this.splashDamage = splashDamage;
+        this.splashRadiusX = splashRadiusX;
+        this.splashRowRadius = splashRowRadius;
+        this.appliesSlowEffect = appliesSlowEffect;
     }
 
     //TODO: in game engine after finishing the loop on the projectiles check if any of them changed line
     @Override
     public void update(GameSession gameSession) {
         if (isDestroyed) return;
+
+        if (maxRange > 0.0 && Math.abs(this.x - this.startX) >= maxRange) {
+            this.isDestroyed = true;
+            return;
+        }
 
         move();
 
@@ -103,7 +132,7 @@ public class Projectile extends Entity {
     }
 
     public void onHit(Zombie target, GameSession gameSession) {
-        target.getHealth().applyDamage(damage, shooter);
+        target.getHealth().applyDamage(damage, damageType,shooter);
 
         hitTargets.add(target);
 
@@ -113,7 +142,7 @@ public class Projectile extends Entity {
         }
 
         if (this.type == ProjectileType.ICE_PEA) {
-            //TODO: apply snow effect to zombie
+            //TODO: apply slow effect to zombie
         } else if (this.type == ProjectileType.MELON) {
             //(Splash Damage)
             applySplashDamage(target, gameSession);
@@ -137,22 +166,22 @@ public class Projectile extends Entity {
 
                 return;
             }
+        } else if (this.type == ProjectileType.BUTTER){
+            //TODO: apply stun to target
         }
 
         this.isDestroyed = true;
     }
 
     private void applySplashDamage(Zombie primaryTarget, GameSession gameSession) {
+        if (this.splashDamage <= 0) return;
+
         GameMap map = gameSession.getMap();
 
-        int splashDamage = this.damage / 2;
-
-        double splashRadiusX = 1.5;
-
-        for (int rowOffset = -1; rowOffset <= 1; rowOffset++) {
+        for (int rowOffset = -splashRowRadius; rowOffset <= splashRowRadius; rowOffset++) {
             int targetRow = this.y + rowOffset;
 
-            if (targetRow >= 0 && targetRow < Constants.BOARD_ROWS) {
+            if (targetRow >= 0 && targetRow < utils.Constants.BOARD_ROWS) {
                 List<Zombie> zombies = map.getRow(targetRow).getZombies();
 
                 if (zombies != null) {
@@ -160,9 +189,15 @@ public class Projectile extends Entity {
                         if (z.getHealth().isDead() || z == primaryTarget) {
                             continue;
                         }
+
                         double distanceX = Math.abs(z.getMovement().getPositionX() - primaryTarget.getMovement().getPositionX());
+
                         if (distanceX <= splashRadiusX) {
-                            z.getHealth().applyDamage(splashDamage, shooter);
+                            z.getHealth().applyDamage(this.splashDamage, this.damageType, this.shooter);
+
+                            if (this.appliesSlowEffect && z.getMovement() != null) {
+                                //TODO: apply slow effect to zombie
+                            }
                         }
                     }
                 }

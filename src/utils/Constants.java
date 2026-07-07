@@ -5,7 +5,7 @@ public class Constants {
     // ==========================================
     // ۱. سیستم زمان، نقشه و محیط (Time & Board)
     // ==========================================
-    public static final int TICK_IN_SECONDS = 10;       // هر تیک معادل ۱۰ ثانیه درون بازی است
+    public static final int TICKS_PER_SECOND = 10;       // هر تیک معادل ۱۰ ثانیه درون بازی است
     public static final int BOARD_ROWS = 5;             // تعداد ردیف‌های حیاط
     public static final int BOARD_COLS = 9;             // تعداد ستون‌های حیاط
 

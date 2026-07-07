@@ -24,10 +24,12 @@ public class Plant extends Entity {
     protected CompositePlantFoodStrategy plantFoodStrategy;
     protected boolean isFrozen;
 
+    protected boolean isAquatic;
+
     protected StackableComponent  stackableComponent;
 
     public Plant(String name, int id, double x, int y,
-                 PlantHealthComponent health, int level, int cost) {
+                 PlantHealthComponent health, int level, int cost, boolean isAquatic) {
 
         super(name, id, x, y);
 
@@ -38,6 +40,7 @@ public class Plant extends Entity {
         this.tags = new ArrayList<>();
         this.abilities = new ArrayList<>();
         this.thisPlantHasFood = false;
+        this.isAquatic =  isAquatic;
     }
 
     public void addAbility(PlantAbility ability) {
@@ -108,5 +111,9 @@ public class Plant extends Entity {
 
     public void setFrozen(boolean frozen) {
         isFrozen = frozen;
+    }
+
+    public boolean isAquatic() {
+        return isAquatic;
     }
 }
