@@ -7,27 +7,29 @@ public class StateComponent {
     private boolean isSubmerged = false;
     private boolean isDecapitated = false;
     private boolean isHypnotized = false;
-    private float frozenTimer = 0f;
-    private float chilledTimer = 0f;
-    private float butteredTimer = 0f;
+    private int frozenTimer = 0;
+    private int chilledTimer = 0;
+    private int butteredTimer = 0;
     private boolean isTorchLit = false;
 
-    public void update(float deltaTime) {
-        if (frozenTimer > 0) frozenTimer -= deltaTime;
-        if (chilledTimer > 0) chilledTimer -= deltaTime;
-        if (butteredTimer > 0) butteredTimer -= deltaTime;
+    private boolean isPermanentlyFrozen = false;
+
+    public void update() {
+        if (frozenTimer > 0 &&!isPermanentlyFrozen) frozenTimer--;
+        if (chilledTimer > 0) chilledTimer--;
+        if (butteredTimer > 0) butteredTimer--;
     }
 
-    public void applyFreeze(float duration) {
-        this.frozenTimer = duration;
+    public void applyFreeze(int durationInTicks) {
+        this.frozenTimer = durationInTicks;
     }
 
-    public void applyChill(float duration) {
-        this.chilledTimer = duration;
+    public void applyChill(int durationInTicks) {
+        this.chilledTimer = durationInTicks;
     }
 
-    public void applyButter(float duration) {
-        this.butteredTimer = duration;
+    public void applyButter(int durationInTicks) {
+        this.butteredTimer = durationInTicks;
     }
     public ActionState getCurrentAction() { return currentAction; }
     public void setAction(ActionState action) { this.currentAction = action; }
@@ -36,7 +38,6 @@ public class StateComponent {
         return isFrozen() || isButtered() || currentAction == ActionState.EATING || currentAction == ActionState.DYING;
     }
 
-    public boolean isFrozen() { return frozenTimer > 0; }
     public boolean isChilled() { return chilledTimer > 0 && !isFrozen(); }
     public boolean isButtered() { return butteredTimer > 0; }
 
@@ -51,6 +52,18 @@ public class StateComponent {
 
     public boolean isHypnotized() { return isHypnotized; }
     public void setHypnotized(boolean hypnotized) { isHypnotized = hypnotized; }
+
+    public void setFrozen(boolean frozen) {
+        this.isPermanentlyFrozen = frozen;
+        if (!frozen) {
+            this.frozenTimer = 0;
+        }
+    }
+
+    public boolean isFrozen() {
+        return isPermanentlyFrozen || frozenTimer > 0;
+    }
+
 
     public boolean isTorchLit() { return isTorchLit; }
     public void setTorchLit(boolean torchLit) { this.isTorchLit = torchLit; }

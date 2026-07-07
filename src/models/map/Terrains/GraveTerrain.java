@@ -1,6 +1,7 @@
 package models.map.Terrains;
 
 import models.entities.plants.Plant;
+import models.entities.projectiles.DamageType;
 import models.entities.zombies.Zombie;
 
 public class GraveTerrain extends Terrain{
@@ -11,17 +12,22 @@ public class GraveTerrain extends Terrain{
         this.hp = 700;
         this.plantable = false;
         this.symbol = '#';
+        this.blocksProjectiles = true;
     }
 
-    public void getShot(int damage){
-        hp -= damage;
-        if(hp<= 0){
-            hp = 0;
-            isDead = true;
+    @Override
+    public void takeDamage(int damage, DamageType damageType) {
+        if (damageType == DamageType.POISON) return;
+        //poison shots doesn't damage graves
+        this.hp -= damage;
+        if(this.hp <= 0) {
+            this.hp = 0;
+            this.isDead = true;
         }
     }
 
-    public boolean isDead() {
+    @Override
+    public boolean isDestroyed() {
         return isDead;
     }
 
