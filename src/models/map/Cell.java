@@ -1,5 +1,7 @@
 package models.map;
 import models.entities.plants.Plant;
+import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Projectile;
 import models.map.Terrains.Terrain;
 import utils.Result;
 
@@ -95,5 +97,19 @@ public class Cell {
         }
         this.currentPlant = null;
         return new Result(true, "Plant removed successfully.");
+    }
+
+    public void interactWithProjectile(Projectile projectile){
+        if (this.currentPlant != null && this.currentPlant.getName().equals("Torchwood")) {
+            if (projectile.getDamageType() == DamageType.STANDARD) {
+                projectile.setDamageType(DamageType.FIRE);
+                projectile.setDamage(projectile.getDamage() * 2);
+            }
+        }
+
+        if (this.isFlooded && projectile.getDamageType() == DamageType.FIRE) {
+            projectile.setDamageType(DamageType.STANDARD);
+            projectile.setDamage(projectile.getDamage() / 2);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package models.map.Terrains;
 
 import models.entities.plants.Plant;
+import models.entities.projectiles.DamageType;
 import models.entities.zombies.Zombie;
 
 public class FrozenTerrain extends Terrain{
@@ -14,6 +15,21 @@ public class FrozenTerrain extends Terrain{
         this.plantable = true;
         this.isMelted = false;
         this.symbol = '&';
+        this.blocksProjectiles = true;
+    }
+
+    @Override
+    public void takeDamage(int damage, DamageType damageType) {
+        if (isMelted) return;
+
+        if (damageType == DamageType.FIRE) {
+            this.damage(this.hp);
+            return;
+        } else if (damageType == DamageType.ICE) {
+            return;
+        }
+
+        this.damage(damage);
     }
 
     public void setInner(String type , Zombie z , Plant p) {
@@ -47,5 +63,10 @@ public class FrozenTerrain extends Terrain{
         } else {
             p.setFrozen(false);
         }
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        return isMelted;
     }
 }

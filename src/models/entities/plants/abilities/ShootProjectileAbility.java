@@ -20,13 +20,20 @@ public class ShootProjectileAbility extends PlantAbility {
     private double maxRange;
     private DamageType damageType;
 
+    //splash properties
+    private int splashDamage;
+    private double splashRadiusX;
+    private int splashRowRadius;
+    private boolean appliesSlowEffect;
+
     private int remainingShotsInBurst;
     private int burstDelayTicks;
     private int burstTimer;
 
     public ShootProjectileAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
                                   int damage, int shotCount, double speed, int burstDelayTicks, int pierceCount,
-                                  double maxRange, DamageType damageType) {
+                                  double maxRange, DamageType damageType,
+                                  int splashDamage, double splashRadiusX, int splashRowRadius, boolean appliesSlowEffect) {
         super(actionInterval, triggerStrategy);
         this.projectileType = projectileType;
         this.damage = damage;
@@ -35,6 +42,11 @@ public class ShootProjectileAbility extends PlantAbility {
         this.pierceCount = pierceCount;
         this.maxRange = maxRange;
         this.damageType = damageType;
+
+        this.splashDamage = splashDamage;
+        this.splashRadiusX = splashRadiusX;
+        this.splashRowRadius = splashRowRadius;
+        this.appliesSlowEffect = appliesSlowEffect;
 
         this.burstDelayTicks = burstDelayTicks;
         this.remainingShotsInBurst = 0;
@@ -95,6 +107,13 @@ public class ShootProjectileAbility extends PlantAbility {
         );
 
         projectile.setPierceCount(pierceCount);
+
+        projectile.setSplashProperties(
+                this.splashDamage,
+                this.splashRadiusX,
+                this.splashRowRadius,
+                this.appliesSlowEffect
+        );
 
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
     }

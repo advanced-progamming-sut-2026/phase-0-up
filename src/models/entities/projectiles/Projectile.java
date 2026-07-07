@@ -4,10 +4,14 @@ import models.entities.Entity;
 import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
+import models.map.Cell;
 import models.map.GameMap;
+import models.map.Row;
+import models.map.Terrains.Terrain;
 import utils.Constants;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -40,6 +44,8 @@ public class Projectile extends Entity {
     private int splashRowRadius = 0;
     private boolean appliesSlowEffect = false;
 
+    private Set<Terrain> hitTerrains;
+
     public Projectile(double x, double startY, ProjectileType type, int damage,
                       double speedX, double speedY, Plant shooter, double maxRange, DamageType damageType) {
         super(type.toString(), 0, x, (int) Math.round(startY));
@@ -52,6 +58,7 @@ public class Projectile extends Entity {
         this.speedY = speedY;
         this.pierceCount = 0;
         this.hitTargets = new HashSet<>();
+        this.hitTerrains = new HashSet<>();
 
         this.maxRange = maxRange;
         this.startX = x;
@@ -76,51 +83,88 @@ public class Projectile extends Entity {
         }
 
         move();
-
         this.y = (int) Math.round(exactY);
-        GameMap map = gameSession.getMap();
 
+        if (checkOutOfBounds()) return;
+
+        handleTerrainCollisions(gameSession);
+
+        if (!this.isDestroyed) {
+            handleZombieCollisions(gameSession);
+        }
+    }
+
+    private boolean checkOutOfBounds() {
         if (this.y < 0 || this.y >= Constants.BOARD_ROWS) {
-
             if (this.type == ProjectileType.BOWLING_BULB) {
-                if (this.y < 0) {
-                    this.y = 0;
-                    this.exactY = 0;
-                } else {
-                    this.y = Constants.BOARD_ROWS - 1;
-                    this.exactY = this.y;
-                }
+                this.y = (this.y < 0) ? 0 : Constants.BOARD_ROWS - 1;
+                this.exactY = this.y;
                 this.speedY = -this.speedY;
-            }
-            else {
+            } else {
                 this.isDestroyed = true;
-                return;
+                return true;
             }
         }
 
         if (this.x > Constants.BOARD_COLS || this.x < 0) {
             this.isDestroyed = true;
-            return;
+            return true;
         }
+        return false;
+    }
 
-        List<Zombie> zombiesInRow = map.getRow(this.y).getZombies();
+    private void handleTerrainCollisions(GameSession gameSession) {
+        int currentCellIndex = (int) this.x;
+        if (currentCellIndex < 0 || currentCellIndex >= 9) return;
 
-        if (zombiesInRow != null) {
-            double previousX = this.x - speedX;
+        Cell currentCell = gameSession.getMap().getRow(this.y).cellAt(currentCellIndex);
+        currentCell.interactWithProjectile(this);
 
-            for (Zombie z : zombiesInRow) {
-                if (!z.getHealth().isDead() && !hitTargets.contains(z)) {
-                    double zombieX = z.getMovement().getPositionX();
+        if (this.damageType == DamageType.OVERHEAD) return;
 
-                    boolean hitMovingRight = (speedX > 0 && previousX <= zombieX && this.x >= zombieX);
-                    boolean hitMovingLeft  = (speedX < 0 && previousX >= zombieX && this.x <= zombieX);
+        Iterator<Terrain> iterator = currentCell.getTerrain().iterator();
+        while (iterator.hasNext()) {
+            Terrain t = iterator.next();
+            if (t.doesBlockProjectiles() && this.x >= (currentCellIndex + 0.5) && !hitTerrains.contains(t)) {
+                t.takeDamage(this.damage, this.damageType);
+                hitTerrains.add(t);
 
-                    boolean hitStationary = (speedX == 0 && Math.abs(this.x - zombieX) <= 0.5);
+                if (t.isDestroyed()) {
+                    iterator.remove();
+                }
 
-                    if (hitMovingRight || hitMovingLeft || hitStationary) {
-                        onHit(z, gameSession);
-                        if (this.isDestroyed) break;
-                    }
+                if (this.type == ProjectileType.BOWLING_BULB && this.bounceCount > 0) {
+                    performBounce();
+                    return;
+                }
+
+                if (this.pierceCount > 0) {
+                    this.pierceCount--;
+                } else {
+                    this.isDestroyed = true;
+                    return;
+                }
+            }
+        }
+    }
+
+    private void handleZombieCollisions(GameSession gameSession) {
+        List<Zombie> zombiesInRow = gameSession.getMap().getRow(this.y).getZombies();
+        if (zombiesInRow == null) return;
+
+        double previousX = this.x - speedX;
+
+        for (Zombie z : zombiesInRow) {
+            if (!z.getHealth().isDead() && !hitTargets.contains(z)) {
+                double zombieX = z.getMovement().getPositionX();
+
+                boolean hitMovingRight = (speedX > 0 && previousX <= zombieX && this.x >= zombieX);
+                boolean hitMovingLeft  = (speedX < 0 && previousX >= zombieX && this.x <= zombieX);
+                boolean hitStationary = (speedX == 0 && Math.abs(this.x - zombieX) <= 0.5);
+
+                if (hitMovingRight || hitMovingLeft || hitStationary) {
+                    onHit(z, gameSession);
+                    if (this.isDestroyed) break;
                 }
             }
         }
@@ -132,42 +176,29 @@ public class Projectile extends Entity {
     }
 
     public void onHit(Zombie target, GameSession gameSession) {
-        target.getHealth().applyDamage(damage, damageType,shooter);
+        target.getHealth().applyDamage(damage, damageType, shooter);
 
         hitTargets.add(target);
+
+        if (this.type == ProjectileType.ICE_PEA) {
+            target.getState().applyChill(100);
+        } else if (this.type == ProjectileType.BOWLING_BULB){
+            if (bounceCount > 0) {
+
+                performBounce();
+                return;
+            }
+        } else if (this.type == ProjectileType.BUTTER){
+            target.getState().applyButter(80);
+        }
+
+        if (this.splashDamage > 0) {
+            applySplashDamage(target, gameSession);
+        }
 
         if (this.pierceCount > 0){
             pierceCount--;
             return;
-        }
-
-        if (this.type == ProjectileType.ICE_PEA) {
-            //TODO: apply slow effect to zombie
-        } else if (this.type == ProjectileType.MELON) {
-            //(Splash Damage)
-            applySplashDamage(target, gameSession);
-        } else if (this.type == ProjectileType.BOWLING_BULB){
-            if (bounceCount > 0) {
-                bounceCount--;
-
-                boolean canGoUp = (this.y > 0);
-                boolean canGoDown = (this.y < Constants.BOARD_ROWS - 1);
-
-                int direction = 0;
-                if (canGoUp && canGoDown) {
-                    direction = Math.random() > 0.5 ? -1 : 1;
-                } else if (canGoUp) {
-                    direction = -1;
-                } else if (canGoDown) {
-                    direction = 1;
-                }
-
-                this.speedY = direction * 0.5;
-
-                return;
-            }
-        } else if (this.type == ProjectileType.BUTTER){
-            //TODO: apply stun to target
         }
 
         this.isDestroyed = true;
@@ -178,31 +209,75 @@ public class Projectile extends Entity {
 
         GameMap map = gameSession.getMap();
 
+        double epicenterX = primaryTarget.getMovement().getPositionX();
+
         for (int rowOffset = -splashRowRadius; rowOffset <= splashRowRadius; rowOffset++) {
             int targetRow = this.y + rowOffset;
 
             if (targetRow >= 0 && targetRow < utils.Constants.BOARD_ROWS) {
-                List<Zombie> zombies = map.getRow(targetRow).getZombies();
+                Row currentRow = map.getRow(targetRow);
 
+                List<Zombie> zombies = currentRow.getZombies();
                 if (zombies != null) {
                     for (Zombie z : zombies) {
                         if (z.getHealth().isDead() || z == primaryTarget) {
                             continue;
                         }
 
-                        double distanceX = Math.abs(z.getMovement().getPositionX() - primaryTarget.getMovement().getPositionX());
+                        double distanceX = Math.abs(z.getMovement().getPositionX() - epicenterX);
 
                         if (distanceX <= splashRadiusX) {
                             z.getHealth().applyDamage(this.splashDamage, this.damageType, this.shooter);
 
                             if (this.appliesSlowEffect && z.getMovement() != null) {
-                                //TODO: apply slow effect to zombie
+                                z.getState().applyChill(100);
+                            }
+                        }
+                    }
+                }
+
+                for (int col = 0; col < 9; col++) {
+                    Cell cell = currentRow.cellAt(col);
+
+                    double distanceX = Math.abs(cell.getX() + 0.5 - epicenterX);
+
+                    if (distanceX <= splashRadiusX) {
+                        List<Terrain> terrains = cell.getTerrain();
+
+                        Iterator<Terrain> iterator = terrains.iterator();
+                        while (iterator.hasNext()) {
+                            Terrain t = iterator.next();
+
+                            if (t.doesBlockProjectiles()) {
+                                t.takeDamage(this.splashDamage, this.damageType);
+
+                                if (t.isDestroyed()) {
+                                    iterator.remove();
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    private void performBounce() {
+        this.bounceCount--;
+
+        boolean canGoUp = (this.y > 0);
+        boolean canGoDown = (this.y < Constants.BOARD_ROWS - 1);
+
+        int direction = 0;
+        if (canGoUp && canGoDown) {
+            direction = Math.random() > 0.5 ? -1 : 1;
+        } else if (canGoUp) {
+            direction = -1;
+        } else if (canGoDown) {
+            direction = 1;
+        }
+
+        this.speedY = direction * 0.5;
     }
 
     //TODO: remove destroyed projectiles in time system every tick
@@ -216,5 +291,21 @@ public class Projectile extends Entity {
 
     public void setPierceCount(int pierceCount) {
         this.pierceCount = pierceCount;
+    }
+
+    public DamageType getDamageType() {
+        return damageType;
+    }
+
+    public void setDamageType(DamageType damageType) {
+        this.damageType = damageType;
+    }
+
+    public void setDamage(int damage) {
+        this.damage = damage;
+    }
+
+    public int getDamage() {
+        return damage;
     }
 }
