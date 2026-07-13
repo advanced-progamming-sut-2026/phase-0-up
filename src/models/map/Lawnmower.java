@@ -1,6 +1,6 @@
 package models.map;
 
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import utils.Constants;
@@ -74,7 +74,7 @@ public class Lawnmower {
 
             double zombieX = zombie.getMovement().getPositionX();
             if (collidesWithMovementSegment(zombieX, previousX, newX)) {
-                zombie.getHealth().applyDamage(zombie.getHealth().getTotalHP(), DamageType.STANDARD,null);
+                zombie.getHealth().applyDamage(zombie.getHealth().getTotalHP(), Element.NEUTRAL,null);
             }
         }
 

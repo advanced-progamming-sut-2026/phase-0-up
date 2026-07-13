@@ -2,9 +2,10 @@ package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
 import models.entities.plants.abilities.triggers.TriggerStrategy;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
+import models.entities.projectiles.Trajectory;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 
@@ -18,7 +19,8 @@ public class ShootProjectileAbility extends PlantAbility {
     private ShootDirection direction;
     private int pierceCount;
     private double maxRange;
-    private DamageType damageType;
+    private Element element;
+    private Trajectory trajectory;
 
     //splash properties
     private int splashDamage;
@@ -32,7 +34,7 @@ public class ShootProjectileAbility extends PlantAbility {
 
     public ShootProjectileAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
                                   int damage, int shotCount, double speed, int burstDelayTicks, int pierceCount,
-                                  double maxRange, DamageType damageType,
+                                  double maxRange, Element element, Trajectory trajectory,
                                   int splashDamage, double splashRadiusX, int splashRowRadius, boolean appliesSlowEffect) {
         super(actionInterval, triggerStrategy);
         this.projectileType = projectileType;
@@ -41,7 +43,8 @@ public class ShootProjectileAbility extends PlantAbility {
         this.speedX = speed;
         this.pierceCount = pierceCount;
         this.maxRange = maxRange;
-        this.damageType = damageType;
+        this.element = element;
+        this.trajectory = trajectory;
 
         this.splashDamage = splashDamage;
         this.splashRadiusX = splashRadiusX;
@@ -103,7 +106,8 @@ public class ShootProjectileAbility extends PlantAbility {
                 0,
                 owner,
                 maxRange,
-                damageType
+                element,
+                trajectory
         );
 
         projectile.setPierceCount(pierceCount);

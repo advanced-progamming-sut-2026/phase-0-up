@@ -19,7 +19,8 @@ public class Projectile extends Entity {
     private Plant shooter;
     private ProjectileType type;
     private int damage;
-    private DamageType damageType;
+    private Element element;
+    private Trajectory trajectory;
 
     //for piercing projectiles
     private int pierceCount;
@@ -47,7 +48,8 @@ public class Projectile extends Entity {
     private Set<Terrain> hitTerrains;
 
     public Projectile(double x, double startY, ProjectileType type, int damage,
-                      double speedX, double speedY, Plant shooter, double maxRange, DamageType damageType) {
+                      double speedX, double speedY, Plant shooter, double maxRange,
+                      Element element, Trajectory trajectory) {
         super(type.toString(), 0, x, (int) Math.round(startY));
         this.type = type;
         this.damage = damage;
@@ -62,7 +64,8 @@ public class Projectile extends Entity {
 
         this.maxRange = maxRange;
         this.startX = x;
-        this.damageType = damageType;
+        this.element = element;
+        this.trajectory = trajectory;
     }
 
     public void setSplashProperties(int splashDamage, double splashRadiusX, int splashRowRadius, boolean appliesSlowEffect) {
@@ -120,13 +123,13 @@ public class Projectile extends Entity {
         Cell currentCell = gameSession.getMap().getRow(this.y).cellAt(currentCellIndex);
         currentCell.interactWithProjectile(this);
 
-        if (this.damageType == DamageType.OVERHEAD) return;
+        if (this.trajectory == Trajectory.LOBBED) return;
 
         Iterator<Terrain> iterator = currentCell.getTerrain().iterator();
         while (iterator.hasNext()) {
             Terrain t = iterator.next();
             if (t.doesBlockProjectiles() && this.x >= (currentCellIndex + 0.5) && !hitTerrains.contains(t)) {
-                t.takeDamage(this.damage, this.damageType);
+                t.takeDamage(this.damage, this.element);
                 hitTerrains.add(t);
 
                 if (t.isDestroyed()) {
@@ -176,7 +179,7 @@ public class Projectile extends Entity {
     }
 
     public void onHit(Zombie target, GameSession gameSession) {
-        target.getHealth().applyDamage(damage, damageType, shooter);
+        target.getHealth().applyDamage(damage, element, shooter);
 
         hitTargets.add(target);
 
@@ -227,7 +230,7 @@ public class Projectile extends Entity {
                         double distanceX = Math.abs(z.getMovement().getPositionX() - epicenterX);
 
                         if (distanceX <= splashRadiusX) {
-                            z.getHealth().applyDamage(this.splashDamage, this.damageType, this.shooter);
+                            z.getHealth().applyDamage(this.splashDamage, this.element, this.shooter);
 
                             if (this.appliesSlowEffect && z.getMovement() != null) {
                                 z.getState().applyChill(100);
@@ -249,7 +252,7 @@ public class Projectile extends Entity {
                             Terrain t = iterator.next();
 
                             if (t.doesBlockProjectiles()) {
-                                t.takeDamage(this.splashDamage, this.damageType);
+                                t.takeDamage(this.splashDamage, this.element);
 
                                 if (t.isDestroyed()) {
                                     iterator.remove();
@@ -293,12 +296,16 @@ public class Projectile extends Entity {
         this.pierceCount = pierceCount;
     }
 
-    public DamageType getDamageType() {
-        return damageType;
+    public Element getElement() {
+        return element;
     }
 
-    public void setDamageType(DamageType damageType) {
-        this.damageType = damageType;
+    public void setElement(Element element) {
+        this.element = element;
+    }
+
+    public Trajectory getTrajectory() {
+        return trajectory;
     }
 
     public void setDamage(int damage) {

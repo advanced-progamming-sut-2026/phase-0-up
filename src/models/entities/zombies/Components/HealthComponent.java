@@ -1,7 +1,7 @@
 package models.entities.zombies.Components;
 
 import models.entities.plants.Plant;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 
 import java.util.List;
 import java.util.Stack;
@@ -26,12 +26,12 @@ public class HealthComponent {
         layers.push(layer);
     }
 
-    public void applyDamage(int damage, DamageType damageType, Plant attacker) {
+    public void applyDamage(int damage, Element element, Plant attacker) {
         if (isDead()) return;
 
         int remainingDamage = damage;
 
-        if (damageType == DamageType.POISON) {
+        if (element.piercesBaseArmor()) {
             for (HealthLayer layer : layers) {
                 if (layer.getType() == ArmorType.BASE_BODY) {
                     layer.takeDamage(remainingDamage);
@@ -47,7 +47,7 @@ public class HealthComponent {
             }
         }
 
-        //TODO: if damage type is overhead front shields should be ignored
+        //TODO: lobbed (overhead) delivery should ignore front shields; pass Trajectory here when needed
 
 
         layers.removeIf(layer -> layer.getCurrentHp() <= 0);

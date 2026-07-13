@@ -1,7 +1,8 @@
 package models.map;
 import models.entities.plants.Plant;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.projectiles.Projectile;
+import models.entities.projectiles.Trajectory;
 import models.map.Terrains.Terrain;
 import utils.Result;
 
@@ -101,14 +102,14 @@ public class Cell {
 
     public void interactWithProjectile(Projectile projectile){
         if (this.currentPlant != null && this.currentPlant.getName().equals("Torchwood")) {
-            if (projectile.getDamageType() == DamageType.STANDARD) {
-                projectile.setDamageType(DamageType.FIRE);
+            if (projectile.getTrajectory() == Trajectory.DIRECT && projectile.getElement() == Element.NEUTRAL) {
+                projectile.setElement(Element.FIRE);
                 projectile.setDamage(projectile.getDamage() * 2);
             }
         }
 
-        if (this.isFlooded && projectile.getDamageType() == DamageType.FIRE) {
-            projectile.setDamageType(DamageType.STANDARD);
+        if (this.isFlooded && projectile.getElement() == Element.FIRE) {
+            projectile.setElement(Element.NEUTRAL);
             projectile.setDamage(projectile.getDamage() / 2);
         }
     }
