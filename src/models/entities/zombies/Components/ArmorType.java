@@ -7,7 +7,8 @@ public enum ArmorType {
     BRICK(2200 , false),
     CROWN(1600 , true),
     NEWSPAPER(800 , false),
-    SHOULDER_ARMOR(1600 , true);
+    SHOULDER_ARMOR(1600 , true),
+    BARREL(190 , false);
     private int hp;
     private boolean metallic;
 

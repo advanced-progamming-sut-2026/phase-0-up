@@ -18,6 +18,10 @@ public class MovementComponent {
 
     public void setSpeed(double speed) { this.speed = speed; }
 
+    public double getSpeed() {
+        return speed;
+    }
+
     public void startLaneSwitch(int newLaneY) {
         if (!isSwitchingLane && this.y != newLaneY) {
             this.targetY = newLaneY;
@@ -44,4 +48,8 @@ public class MovementComponent {
     public int getPositionY() { return y; }
     public boolean isSwitchingLane() { return isSwitchingLane; }
     //TODO: this class needs an update method which gets called on every tick
+
+    public void setPositionX(double x) {
+        this.x = x;
+    }
 }

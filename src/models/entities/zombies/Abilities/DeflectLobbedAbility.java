@@ -22,4 +22,18 @@ public class DeflectLobbedAbility implements ZombieAbility {
     public void destroyParasol() {
         this.isParasolIntact = false;
     }
+
+    public void handleProjectileHit(Zombie zombie, Projectile projectile) {
+        for (ZombieAbility ability : zombie.getAbilities()) {
+            if (ability instanceof DeflectLobbedAbility) {
+                DeflectLobbedAbility parasol = (DeflectLobbedAbility) ability;
+                if (parasol.canDeflect(projectile)) {
+                    projectile.destroy();
+                    return;
+                }
+            }
+        }
+        zombie.getHealth().applyDamage(projectile.getDamage() , projectile.getDamageType(), projectile.getShooter());
+        projectile.destroy();
+    }
 }

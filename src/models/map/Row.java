@@ -2,6 +2,7 @@ package models.map;
 
 import models.entities.plants.Plant;
 import models.entities.projectiles.Projectile;
+import models.entities.zombies.Components.ArmorType;
 import models.entities.zombies.Zombie;
 import utils.Constants;
 import utils.Result;
@@ -16,6 +17,7 @@ public class Row {
     private List<Zombie> activeZombies;
     private List<Projectile> activeProjectiles;
     private Lawnmower lawnmower;
+    private List<Barrel> activeBarrels;
 
     public Row(int index) {
         cells = new ArrayList<>();
@@ -27,6 +29,7 @@ public class Row {
         activeZombies = new ArrayList<>();
         lawnmower = new Lawnmower(index);
         this.index = index;
+        activeBarrels = new ArrayList<>();
     }
 
     public Cell cellAt(int x){
@@ -91,4 +94,5 @@ public class Row {
         activeProjectiles.remove(p);
     }
 
+    public void addBarrel(Barrel b){ activeBarrels.add(b);}
 }

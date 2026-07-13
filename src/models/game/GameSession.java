@@ -132,6 +132,8 @@ public class GameSession {
         sunAmount += amount;
     }
 
+    public void decreaseSunAmount(int amount) {sunAmount -= amount; }
+
     public void addSun(Sun sun) {
         activeSuns.add(sun);
     }

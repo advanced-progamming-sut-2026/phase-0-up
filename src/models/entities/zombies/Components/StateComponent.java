@@ -2,7 +2,7 @@ package models.entities.zombies.Components;
 
 public class StateComponent {
     private ActionState currentAction = ActionState.WALKING;
-
+    private boolean isReadyForLaser = false;
     private boolean isFlying = false;
     private boolean isSubmerged = false;
     private boolean isDecapitated = false;
@@ -67,4 +67,11 @@ public class StateComponent {
 
     public boolean isTorchLit() { return isTorchLit; }
     public void setTorchLit(boolean torchLit) { this.isTorchLit = torchLit; }
+    public boolean isReadyForLaser() {
+        return isReadyForLaser;
+    }
+
+    public void setReadyForLaser(boolean readyForLaser) {
+        this.isReadyForLaser = readyForLaser;
+    }
 }

@@ -20,17 +20,15 @@ public class EatPlantAbility implements ZombieAbility {
         Plant targetPlant = findTargetPlant(zombie);
 
         if (targetPlant == null || targetPlant.isDead()) {
-            if (zombie.getState().getCurrentAction() == ActionState.IDLE) {
+            if (zombie.getState().getCurrentAction() == ActionState.EATING) {
                 zombie.getState().setAction(ActionState.WALKING);
             }
             tickCounter = 0;
             return;
         }
-
-        zombie.getState().setAction(ActionState.IDLE);
+        zombie.getState().setAction(ActionState.EATING);
 
         tickCounter++;
-
         int requiredTicks = zombie.getState().isChilled() ? (TICKS_PER_ATTACK * 2) : TICKS_PER_ATTACK;
 
         if (tickCounter >= requiredTicks) {
@@ -51,9 +49,10 @@ public class EatPlantAbility implements ZombieAbility {
 
         for (Cell cell : zombie.getGameSession().getMap().getRow(zombieRow).getCells()) {
             Plant plant = cell.getCurrentPlant();
-            if (plant.getY() == zombieRow && !plant.isDead()) {
-                double distance = zombieX - plant.getX();
-                if (distance >= 0 && distance <= COLLISION_THRESHOLD) {
+            if (plant != null && plant.getY() == zombieRow && !plant.isDead()) {
+                double distance = Math.abs(zombieX - plant.getX());
+
+                if (distance <= COLLISION_THRESHOLD) {
                     if (distance < minDistance) {
                         minDistance = distance;
                         closestPlant = plant;

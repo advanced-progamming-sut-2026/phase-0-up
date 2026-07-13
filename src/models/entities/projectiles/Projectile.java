@@ -285,6 +285,8 @@ public class Projectile extends Entity {
         return isDestroyed;
     }
 
+    public void destroy() { this.isDestroyed = true;}
+
     public void setBounceCount(int bounceCount) {
         this.bounceCount = bounceCount;
     }

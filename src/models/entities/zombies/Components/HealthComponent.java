@@ -2,6 +2,9 @@ package models.entities.zombies.Components;
 
 import models.entities.plants.Plant;
 import models.entities.projectiles.DamageType;
+import models.entities.zombies.Abilities.RollTheBarrel;
+import models.entities.zombies.Abilities.ZombieAbility;
+import models.entities.zombies.Zombie;
 
 import java.util.List;
 import java.util.Stack;
@@ -9,13 +12,15 @@ import java.util.Stack;
 public class HealthComponent {
     private Stack<HealthLayer> layers;
     private List<ArmorType> armorTypes;
+    private Zombie currentZombie;
 
-    public HealthComponent(List<ArmorType> armorTypes) {
+    public HealthComponent(List<ArmorType> armorTypes , Zombie currentZombie) {
         layers = new Stack<>();
         this.armorTypes = armorTypes;
         for(ArmorType a : armorTypes){
             addLayer(new HealthLayer(a));
         }
+        this.currentZombie = currentZombie;
     }
 
     public boolean isDead() {
@@ -70,6 +75,16 @@ public class HealthComponent {
     }
     private void applyChillEffectToAttacker(Plant attacker) {}
     private void die() {
+        if(!layers.isEmpty() && layers.peek().getType() == ArmorType.BARREL){
+            for(ZombieAbility a :currentZombie.getAbilities()){
+                if(a instanceof RollTheBarrel){
+                    ((RollTheBarrel) a).onRollerDeath(currentZombie);
+                }
+            }
+        }
+
+
+
 
     }
 
@@ -81,5 +96,13 @@ public class HealthComponent {
         return totalHP;
     }
 
-    //TODO: apply poison overtime damage
+    public boolean hasArmor() {
+        if(layers.size() == 1) return false;
+        else return true;
+    }
+
+    public Stack<HealthLayer> getLayers() {
+        return layers;
+    }
+//TODO: apply poison overtime damage
 }
