@@ -9,6 +9,7 @@ import models.greenhouse.PotState;
 import models.user.AppSession;
 import models.user.Profile;
 import utils.Result;
+import utils.storage.DatabaseManager;
 import views.renderers.MenuRenderer.GreenhouseRenderer;
 
 public class CollectPotCommand implements Command {
@@ -65,5 +66,7 @@ public class CollectPotCommand implements Command {
                 greenhouseRenderer.collect(new Result(true, harvested.getName() + " seed got Boosted"));
             }
         }
+
+        DatabaseManager.getInstance().saveAll();
     }
 }

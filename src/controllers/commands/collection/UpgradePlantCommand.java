@@ -4,6 +4,7 @@ import controllers.commands.Command;
 import controllers.systems.CollectionSystem;
 import models.user.Profile;
 import models.user.User;
+import utils.storage.DatabaseManager;
 import views.renderers.MenuRenderer.CollectionMenuRenderer;
 
 public class UpgradePlantCommand implements Command {
@@ -21,5 +22,6 @@ public class UpgradePlantCommand implements Command {
     public void execute() {
         Profile profile = currentUser.getProfile();
         CollectionSystem.getInstance().upgradePlant(profile, plantName, renderer);
+        DatabaseManager.getInstance().saveAll();
     }
 }

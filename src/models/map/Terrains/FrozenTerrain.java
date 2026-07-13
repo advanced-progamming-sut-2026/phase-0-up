@@ -1,7 +1,7 @@
 package models.map.Terrains;
 
 import models.entities.plants.Plant;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.zombies.Zombie;
 
 public class FrozenTerrain extends Terrain{
@@ -19,13 +19,13 @@ public class FrozenTerrain extends Terrain{
     }
 
     @Override
-    public void takeDamage(int damage, DamageType damageType) {
+    public void takeDamage(int damage, Element element) {
         if (isMelted) return;
 
-        if (damageType == DamageType.FIRE) {
+        if (element == Element.FIRE) {
             this.damage(this.hp);
             return;
-        } else if (damageType == DamageType.ICE) {
+        } else if (element == Element.ICE) {
             return;
         }
 

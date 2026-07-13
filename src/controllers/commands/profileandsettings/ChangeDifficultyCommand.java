@@ -2,6 +2,7 @@ package controllers.commands.profileandsettings;
 
 import controllers.commands.Command;
 import models.user.User;
+import utils.storage.DatabaseManager;
 import views.renderers.MenuRenderer.SettingMenuRenderer;
 
 public class ChangeDifficultyCommand implements Command {
@@ -23,5 +24,6 @@ public class ChangeDifficultyCommand implements Command {
         }
         currentUser.getProfile().setDifficultyLevel(difficulty);
         renderer.changeDL(true , difficulty);
+        DatabaseManager.getInstance().saveAll();
     }
 }

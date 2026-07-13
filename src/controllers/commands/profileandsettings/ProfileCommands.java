@@ -3,6 +3,7 @@ package controllers.commands.profileandsettings;
 import controllers.commands.Command;
 import models.user.User;
 import utils.Result;
+import utils.storage.DatabaseManager;
 import utils.storage.PasswordHasher;
 import utils.validation.*;
 import views.renderers.MenuRenderer.ProfileMenuRenderer;
@@ -30,6 +31,7 @@ public class ProfileCommands implements Command {
             case EMAIL    -> handleEmailChange();
             case PASSWORD -> handlePasswordChange();
         }
+        DatabaseManager.getInstance().saveAll();
     }
 
     private void handleUsernameChange() {

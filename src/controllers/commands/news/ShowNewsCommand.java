@@ -4,6 +4,7 @@ import controllers.commands.Command;
 import controllers.systems.NewsSystem;
 import models.user.Profile;
 import models.user.User;
+import utils.storage.DatabaseManager;
 import views.renderers.MenuRenderer.NewsMenuRenderer;
 
 public class ShowNewsCommand implements Command {
@@ -34,5 +35,7 @@ public class ShowNewsCommand implements Command {
         } else {
             renderer.allNewsRender(profile);
         }
+
+        DatabaseManager.getInstance().saveAll();
     }
 }

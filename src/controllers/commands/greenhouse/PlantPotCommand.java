@@ -7,6 +7,7 @@ import models.greenhouse.Pot;
 import models.user.AppSession;
 import models.user.Profile;
 import utils.Result;
+import utils.storage.DatabaseManager;
 import views.renderers.MenuRenderer.GreenhouseRenderer;
 
 import java.util.Random;
@@ -54,5 +55,7 @@ public class PlantPotCommand implements Command {
 
         greenHouse.plantPot(potX - 1, potY - 1, plantSeed);
         greenhouseRenderer.plantPot(new Result(true, String.format("%s is planted at (%d, %d)", plantSeed.getName(), potX, potY)));
+
+        DatabaseManager.getInstance().saveAll();
     }
 }

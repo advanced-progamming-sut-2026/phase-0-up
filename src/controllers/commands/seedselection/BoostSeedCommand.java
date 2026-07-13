@@ -7,6 +7,7 @@ import models.user.Profile;
 import models.user.User;
 import utils.Constants;
 import utils.registry.PlantRegistry;
+import utils.storage.DatabaseManager;
 import views.renderers.MenuRenderer.PlantMenuRenderer;
 
 import java.util.Map;
@@ -46,5 +47,7 @@ public class BoostSeedCommand implements Command {
         profile.spendGems(Constants.BOOST_PLANT_COST_GEMS);
         profile.setSeedBoosted(seedName, true);
         renderer.successfulBoost(seedName);
+
+        DatabaseManager.getInstance().saveAll();
     }
 }

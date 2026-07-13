@@ -2,9 +2,10 @@ package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
 import models.entities.plants.abilities.triggers.TriggerStrategy;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
+import models.entities.projectiles.Trajectory;
 import models.game.GameSession;
 
 public class MultiDirectionalShootAbility extends PlantAbility {
@@ -79,7 +80,8 @@ public class MultiDirectionalShootAbility extends PlantAbility {
                     dir[1],
                     owner,
                     0.0,
-                    DamageType.STANDARD
+                    Element.NEUTRAL,
+                    Trajectory.DIRECT
             );
             gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
         }

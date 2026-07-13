@@ -2,9 +2,10 @@ package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
 import models.entities.plants.abilities.triggers.TriggerStrategy;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
+import models.entities.projectiles.Trajectory;
 import models.game.GameSession;
 
 import java.util.Random;
@@ -29,6 +30,7 @@ public class KernelPultAbility extends PlantAbility{
 
         ProjectileType typeToShoot = shootButter ? ProjectileType.BUTTER : ProjectileType.CORN_KERNEL;
         int shootDamage = shootButter ? butterDamage : kernelDamage;
+        Element elementToShoot = shootButter ? Element.BUTTER : Element.NEUTRAL;
 
         Projectile projectile = new Projectile(
                 owner.getX() + 0.5,
@@ -39,7 +41,8 @@ public class KernelPultAbility extends PlantAbility{
                 0.0,
                 owner,
                 0.0,
-                DamageType.OVERHEAD);
+                elementToShoot,
+                Trajectory.LOBBED);
 
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
     }

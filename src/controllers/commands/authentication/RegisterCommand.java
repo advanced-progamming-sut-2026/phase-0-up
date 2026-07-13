@@ -134,5 +134,6 @@ public class RegisterCommand implements Command {
         String hashedQuestionAnswer = PasswordHasher.hash(questionAnswer);
         DatabaseManager.getInstance().addUser(new User(username, nickname, email, genderType,
                 hashedPassword, questionNumber - 1, hashedQuestionAnswer));
+        DatabaseManager.getInstance().saveAll();
     }
 }

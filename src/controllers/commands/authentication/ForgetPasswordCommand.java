@@ -43,6 +43,7 @@ public class ForgetPasswordCommand implements Command {
         }
 
         processPasswordReset(user);
+        databaseManager.saveAll();
     }
 
     private boolean processSecurityAnswer(User user) {

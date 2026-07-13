@@ -1,7 +1,7 @@
 package models.map.Terrains;
 
 import models.entities.plants.Plant;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.zombies.Zombie;
 
 public abstract class GraveTerrain extends Terrain{
@@ -16,8 +16,8 @@ public abstract class GraveTerrain extends Terrain{
     }
 
     @Override
-    public void takeDamage(int damage, DamageType damageType) {
-        if (damageType == DamageType.POISON) return;
+    public void takeDamage(int damage, Element element) {
+        if (element == Element.POISON) return;
         //poison shots doesn't damage graves
         this.hp -= damage;
         if(this.hp <= 0) {

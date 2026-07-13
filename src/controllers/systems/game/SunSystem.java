@@ -3,7 +3,7 @@ package controllers.systems.game;
 import models.entities.collectibles.Sun;
 import models.entities.collectibles.SunType;
 import models.entities.plants.Plant;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.game.gamemodes.GameMode;
@@ -152,7 +152,7 @@ public class SunSystem {
 
                 int zombieColumn = columnFromX(zombie.getMovement().getPositionX());
                 if (Math.abs(zombieColumn - centerColumn) <= radius) {
-                    zombie.getHealth().applyDamage(damage, DamageType.STANDARD,null);
+                    zombie.getHealth().applyDamage(damage, Element.NEUTRAL,null);
                 }
             }
         }

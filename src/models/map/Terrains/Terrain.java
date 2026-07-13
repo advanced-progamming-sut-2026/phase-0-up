@@ -1,7 +1,7 @@
 package models.map.Terrains;
 
 import models.entities.plants.Plant;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.zombies.Zombie;
 
 public abstract class Terrain {
@@ -17,7 +17,7 @@ public abstract class Terrain {
     public abstract void effect(Zombie z , Plant p);
 
 
-    public void takeDamage(int damage, DamageType damageType) {
+    public void takeDamage(int damage, Element element) {
         // default: terrains doesn't take damage
     }
 

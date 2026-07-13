@@ -2,9 +2,10 @@ package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
 import models.entities.plants.abilities.triggers.TriggerStrategy;
-import models.entities.projectiles.DamageType;
+import models.entities.projectiles.Element;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
+import models.entities.projectiles.Trajectory;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 
@@ -18,13 +19,13 @@ public class ShootProjectileAbility extends PlantAbility {
     private ShootDirection direction;
     private int pierceCount;
     private double maxRange;
-    private DamageType damageType;
+    private Element element;
+    private Trajectory trajectory;
 
     //splash properties
     private int splashDamage;
     private double splashRadiusX;
     private int splashRowRadius;
-    private boolean appliesSlowEffect;
 
     private int remainingShotsInBurst;
     private int burstDelayTicks;
@@ -32,8 +33,8 @@ public class ShootProjectileAbility extends PlantAbility {
 
     public ShootProjectileAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
                                   int damage, int shotCount, double speed, int burstDelayTicks, int pierceCount,
-                                  double maxRange, DamageType damageType,
-                                  int splashDamage, double splashRadiusX, int splashRowRadius, boolean appliesSlowEffect) {
+                                  double maxRange, Element element, Trajectory trajectory,
+                                  int splashDamage, double splashRadiusX, int splashRowRadius) {
         super(actionInterval, triggerStrategy);
         this.projectileType = projectileType;
         this.damage = damage;
@@ -41,12 +42,12 @@ public class ShootProjectileAbility extends PlantAbility {
         this.speedX = speed;
         this.pierceCount = pierceCount;
         this.maxRange = maxRange;
-        this.damageType = damageType;
+        this.element = element;
+        this.trajectory = trajectory;
 
         this.splashDamage = splashDamage;
         this.splashRadiusX = splashRadiusX;
         this.splashRowRadius = splashRowRadius;
-        this.appliesSlowEffect = appliesSlowEffect;
 
         this.burstDelayTicks = burstDelayTicks;
         this.remainingShotsInBurst = 0;
@@ -103,7 +104,8 @@ public class ShootProjectileAbility extends PlantAbility {
                 0,
                 owner,
                 maxRange,
-                damageType
+                element,
+                trajectory
         );
 
         projectile.setPierceCount(pierceCount);
@@ -111,8 +113,7 @@ public class ShootProjectileAbility extends PlantAbility {
         projectile.setSplashProperties(
                 this.splashDamage,
                 this.splashRadiusX,
-                this.splashRowRadius,
-                this.appliesSlowEffect
+                this.splashRowRadius
         );
 
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
