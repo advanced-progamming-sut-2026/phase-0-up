@@ -1,6 +1,9 @@
 package controllers.commands.authentication;
 
 import controllers.commands.Command;
+import controllers.commands.menu.EnterMenuCommand;
+import controllers.engine.MenuType;
+import models.user.AppSession;
 import models.user.Gender;
 import models.user.User;
 import utils.Result;
@@ -10,6 +13,7 @@ import utils.storage.PasswordHasher;
 import utils.validation.*;
 import views.InputHandler;
 import views.OutputHandler;
+import views.renderers.MenuRenderer.AllMenuRenderer;
 import views.renderers.MenuRenderer.SignUpMenuRenderer;
 
 public class RegisterCommand implements Command {
@@ -20,10 +24,12 @@ public class RegisterCommand implements Command {
     private final String email;
     private final String gender;
     private final SignUpMenuRenderer signUpMenuRenderer;
+    private final AppSession appSession;
+    private final AllMenuRenderer allMenuRenderer;
 
     private record SecurityQuestionData(int questionNumber, String answer) {}
 
-    public RegisterCommand(String input, SignUpMenuRenderer signUpMenuRenderer) {
+    public RegisterCommand(String input, SignUpMenuRenderer signUpMenuRenderer , AppSession appSession , AllMenuRenderer allMenuRenderer) {
         this.username = SignUpMenuRegex.SIGN_UP.getGroup(input, "username");
         this.password = SignUpMenuRegex.SIGN_UP.getGroup(input, "password");
         this.passwordConfirm = SignUpMenuRegex.SIGN_UP.getGroup(input, "passwordConfirm");
@@ -31,6 +37,8 @@ public class RegisterCommand implements Command {
         this.email = SignUpMenuRegex.SIGN_UP.getGroup(input, "email");
         this.gender = SignUpMenuRegex.SIGN_UP.getGroup(input, "gender");
         this.signUpMenuRenderer = signUpMenuRenderer;
+        this.appSession = appSession;
+        this.allMenuRenderer = allMenuRenderer;
     }
 
     @Override
@@ -50,6 +58,8 @@ public class RegisterCommand implements Command {
         registerNewUser(genderType, securityData.questionNumber(), securityData.answer());
 
         signUpMenuRenderer.register(new Result(true, "User successfully registered"));
+        EnterMenuCommand enterMenuCommand = new EnterMenuCommand(appSession , MenuType.LOGIN_MENU.getMenuName() , allMenuRenderer);
+        enterMenuCommand.execute();
     }
 
     private boolean validateCredentials() {
