@@ -1,7 +1,7 @@
 package models.entities.zombies.Abilities;
 
-import models.entities.plants.classification.Lobbers;
 import models.entities.projectiles.Projectile;
+import models.entities.projectiles.Trajectory;
 import models.entities.zombies.Zombie;
 
 public class DeflectLobbedAbility implements ZombieAbility {
@@ -14,7 +14,7 @@ public class DeflectLobbedAbility implements ZombieAbility {
 
 
     public boolean canDeflect(Projectile projectile) {
-        return isParasolIntact && (projectile.getShooter() instanceof Lobbers);
+        return isParasolIntact && (projectile.getTrajectory() == Trajectory.LOBBED);
     }
 
     public boolean isParasolIntact() { return isParasolIntact; }
@@ -33,7 +33,7 @@ public class DeflectLobbedAbility implements ZombieAbility {
                 }
             }
         }
-        zombie.getHealth().applyDamage(projectile.getDamage() , projectile.getDamageType(), projectile.getShooter());
+        zombie.getHealth().applyDamage(projectile.getDamage() , projectile.getElement(), projectile.getShooter());
         projectile.destroy();
     }
 }
