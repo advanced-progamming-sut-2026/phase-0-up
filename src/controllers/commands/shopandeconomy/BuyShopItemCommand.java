@@ -10,6 +10,7 @@ import models.shop.Shop;
 import models.shop.ShopItem;
 import models.user.Profile;
 import utils.Result;
+import utils.storage.DatabaseManager;
 import views.renderers.ShopRenderer;
 
 import java.util.Random;
@@ -79,6 +80,8 @@ public class BuyShopItemCommand implements Command {
                 for(int i = 0 ; i < count; i++) exchangeGemToCoin();
         }
         renderer.successOfBuyingAProduct(new Result(true , "your shopping finished successfully!"));
+
+        DatabaseManager.getInstance().saveAll();
     }
 
     private void buyARandomSeedPackInDaily(String name) {

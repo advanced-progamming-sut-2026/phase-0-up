@@ -26,7 +26,6 @@ public class ShootProjectileAbility extends PlantAbility {
     private int splashDamage;
     private double splashRadiusX;
     private int splashRowRadius;
-    private boolean appliesSlowEffect;
 
     private int remainingShotsInBurst;
     private int burstDelayTicks;
@@ -35,7 +34,7 @@ public class ShootProjectileAbility extends PlantAbility {
     public ShootProjectileAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
                                   int damage, int shotCount, double speed, int burstDelayTicks, int pierceCount,
                                   double maxRange, Element element, Trajectory trajectory,
-                                  int splashDamage, double splashRadiusX, int splashRowRadius, boolean appliesSlowEffect) {
+                                  int splashDamage, double splashRadiusX, int splashRowRadius) {
         super(actionInterval, triggerStrategy);
         this.projectileType = projectileType;
         this.damage = damage;
@@ -49,7 +48,6 @@ public class ShootProjectileAbility extends PlantAbility {
         this.splashDamage = splashDamage;
         this.splashRadiusX = splashRadiusX;
         this.splashRowRadius = splashRowRadius;
-        this.appliesSlowEffect = appliesSlowEffect;
 
         this.burstDelayTicks = burstDelayTicks;
         this.remainingShotsInBurst = 0;
@@ -115,8 +113,7 @@ public class ShootProjectileAbility extends PlantAbility {
         projectile.setSplashProperties(
                 this.splashDamage,
                 this.splashRadiusX,
-                this.splashRowRadius,
-                this.appliesSlowEffect
+                this.splashRowRadius
         );
 
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);

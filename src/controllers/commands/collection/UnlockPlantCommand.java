@@ -5,6 +5,7 @@ import controllers.systems.CollectionSystem;
 import models.user.Profile;
 import models.user.User;
 import utils.registry.PlantRegistry;
+import utils.storage.DatabaseManager;
 import views.renderers.MenuRenderer.CollectionMenuRenderer;
 
 public class UnlockPlantCommand implements Command {
@@ -24,5 +25,6 @@ public class UnlockPlantCommand implements Command {
     public void execute() {
         Profile profile = currentUser.getProfile();
         CollectionSystem.getInstance().purchasePlant(profile, plantName, renderer);
+        DatabaseManager.getInstance().saveAll();
     }
 }

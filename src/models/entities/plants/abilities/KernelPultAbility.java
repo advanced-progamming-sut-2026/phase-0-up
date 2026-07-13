@@ -30,6 +30,7 @@ public class KernelPultAbility extends PlantAbility{
 
         ProjectileType typeToShoot = shootButter ? ProjectileType.BUTTER : ProjectileType.CORN_KERNEL;
         int shootDamage = shootButter ? butterDamage : kernelDamage;
+        Element elementToShoot = shootButter ? Element.BUTTER : Element.NEUTRAL;
 
         Projectile projectile = new Projectile(
                 owner.getX() + 0.5,
@@ -40,7 +41,7 @@ public class KernelPultAbility extends PlantAbility{
                 0.0,
                 owner,
                 0.0,
-                Element.NEUTRAL,
+                elementToShoot,
                 Trajectory.LOBBED);
 
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);

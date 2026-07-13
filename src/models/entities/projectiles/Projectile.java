@@ -43,7 +43,6 @@ public class Projectile extends Entity {
     private int splashDamage = 0;
     private double splashRadiusX = 0.0;
     private int splashRowRadius = 0;
-    private boolean appliesSlowEffect = false;
 
     private Set<Terrain> hitTerrains;
 
@@ -68,11 +67,10 @@ public class Projectile extends Entity {
         this.trajectory = trajectory;
     }
 
-    public void setSplashProperties(int splashDamage, double splashRadiusX, int splashRowRadius, boolean appliesSlowEffect) {
+    public void setSplashProperties(int splashDamage, double splashRadiusX, int splashRowRadius) {
         this.splashDamage = splashDamage;
         this.splashRadiusX = splashRadiusX;
         this.splashRowRadius = splashRowRadius;
-        this.appliesSlowEffect = appliesSlowEffect;
     }
 
     //TODO: in game engine after finishing the loop on the projectiles check if any of them changed line
@@ -183,16 +181,11 @@ public class Projectile extends Entity {
 
         hitTargets.add(target);
 
-        if (this.type == ProjectileType.ICE_PEA) {
-            target.getState().applyChill(100);
-        } else if (this.type == ProjectileType.BOWLING_BULB){
-            if (bounceCount > 0) {
+        element.applyOnHit(target.getState());
 
-                performBounce();
-                return;
-            }
-        } else if (this.type == ProjectileType.BUTTER){
-            target.getState().applyButter(80);
+        if (this.type == ProjectileType.BOWLING_BULB && bounceCount > 0) {
+            performBounce();
+            return;
         }
 
         if (this.splashDamage > 0) {
@@ -231,10 +224,7 @@ public class Projectile extends Entity {
 
                         if (distanceX <= splashRadiusX) {
                             z.getHealth().applyDamage(this.splashDamage, this.element, this.shooter);
-
-                            if (this.appliesSlowEffect && z.getMovement() != null) {
-                                z.getState().applyChill(100);
-                            }
+                            this.element.applyOnHit(z.getState());
                         }
                     }
                 }
