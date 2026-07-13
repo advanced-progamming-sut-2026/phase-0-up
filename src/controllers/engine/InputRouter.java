@@ -92,7 +92,7 @@ public class InputRouter {
                 break;
             case SIGNUP_MENU :
                 if (SignUpMenuRegex.SIGN_UP.matches(input)) {
-                    new RegisterCommand(input, signUpMenuRenderer).execute();
+                    new RegisterCommand(input, signUpMenuRenderer , appSession ,allMenuRenderer).execute();
                     return;
                 }
                 break;

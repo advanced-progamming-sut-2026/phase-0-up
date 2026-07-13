@@ -315,4 +315,8 @@ public class Projectile extends Entity {
     public int getDamage() {
         return damage;
     }
+
+    public Plant getShooter() {
+        return shooter;
+    }
 }

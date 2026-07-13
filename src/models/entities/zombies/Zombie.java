@@ -72,4 +72,8 @@ public class Zombie{
     public Plant getTargetPlantInFront() {
         return gameSession.getMap().getRow(movement.getPositionY()).cellAt((int) movement.getPositionX()).getCurrentPlant();
     }
+
+    public int getEatDamage() {
+        return eatDamage;
+    }
 }

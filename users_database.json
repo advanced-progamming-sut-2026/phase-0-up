@@ -1,0 +1,170 @@
+{
+  "Amir": {
+    "username": "Amir",
+    "nickname": "Amir",
+    "email": "amirlari@gmail.com",
+    "gender": "MALE",
+    "hashPassword": "043849449ad614ee29edd20f226bfa82bccee8cf4138551b79b7957a4d986270",
+    "securityQuestionIndex": 0,
+    "securityAnswerHash": "05f514fae7ca5710f9e9289a20a5c9b372af781bfc94dd23d9cb8a044122460f",
+    "profile": {
+      "gameNumbers": 0,
+      "coins": 2000,
+      "gems": 100,
+      "plantFoodCount": 0,
+      "difficultyLevel": 3,
+      "bestNumberOfMeowPoints": 0,
+      "newsList": [],
+      "unlockedPlants": [],
+      "lockedPlants": [],
+      "ownedSeedPackets": {},
+      "plantsLevels": {},
+      "boostedSeeds": [],
+      "myGreenHouse": {
+        "pots": [
+          [
+            {
+              "x": 0,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ]
+        ],
+        "rows": 4,
+        "cols": 5
+      },
+      "activeQuests": [],
+      "completedQuests": [],
+      "lastChapter": 1,
+      "lastLevel": 1,
+      "unlockedChapters": [],
+      "passedMiniGames": {},
+      "dailyQuestsDone": 0,
+      "noneDailyQuestsDone": 0,
+      "hasBoughtDailyOfferToday": false,
+      "seenZombieAliases": []
+    },
+    "stayLoggedIn": true
+  }
+}
