@@ -112,7 +112,7 @@ public class Constants {
 
     public static final String[] SECURITY_QUESTIONS = {
             "1. What was the name of your first pet?",
-            "2. In what city were you born?",
+            "2. Which city you were born in?",
             "3. What was your favorite childhood book?",
             "4. What was the model of your first car?",
             "5. What was your best friend's name in high school?"

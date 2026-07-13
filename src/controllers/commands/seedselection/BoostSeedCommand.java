@@ -1,7 +1,6 @@
 package controllers.commands.seedselection;
 
 import controllers.commands.Command;
-import models.game.SeedPacket;
 import models.templates.PlantTemplate;
 import models.user.AppSession;
 import models.user.Profile;
@@ -26,23 +25,17 @@ public class BoostSeedCommand implements Command {
     public void execute() {
         PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(seedName);
         if(template == null){
-             return;
+            return;
         }
         User user = appSession.getCurrentUser();
         Profile profile = user.getProfile();
-        Map<SeedPacket, Integer> seeds = profile.getOwnedSeedPackets();
-        SeedPacket seed = null;
-        for(SeedPacket s: seeds.keySet()){
-            if(s.getPlantType().equals(seedName)){
-                seed = s;
-            }
-        }
-
-        if(seed == null){
+        Map<String, Integer> seeds = profile.getOwnedSeedPackets();
+        String key = seedName.toLowerCase().trim();
+        if (seeds == null || seeds.getOrDefault(key, 0) <= 0) {
             renderer.plantNotSelected(seedName);
             return;
         }
-        if(seed.isBoosted()){
+        if (profile.isSeedBoosted(seedName)) {
             renderer.alreadyBoosted(seedName);
             return;
         }
@@ -51,7 +44,7 @@ public class BoostSeedCommand implements Command {
             return;
         }
         profile.spendGems(Constants.BOOST_PLANT_COST_GEMS);
-        seed.setBoosted(true);
+        profile.setSeedBoosted(seedName, true);
         renderer.successfulBoost(seedName);
     }
 }

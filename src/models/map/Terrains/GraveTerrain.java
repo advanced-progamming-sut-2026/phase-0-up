@@ -4,7 +4,7 @@ import models.entities.plants.Plant;
 import models.entities.projectiles.DamageType;
 import models.entities.zombies.Zombie;
 
-public class GraveTerrain extends Terrain{
+public abstract class GraveTerrain extends Terrain{
     protected int hp;
     protected boolean isDead = false;
 
@@ -35,4 +35,6 @@ public class GraveTerrain extends Terrain{
     public void effect(Zombie z, Plant p) {
 
     }
+
+    public abstract void getShot(int damage);
 }
