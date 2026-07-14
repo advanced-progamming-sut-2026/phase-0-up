@@ -36,4 +36,9 @@ public abstract class PlantAbility {
         return triggerStrategy.canTrigger(owner, gameSession);
     }
     public abstract void execute(Plant owner,  GameSession gameSession);
+
+    // Called once when the owning plant dies, before removal. Default: no death behavior.
+    public void onOwnerDeath(Plant owner, GameSession gameSession) {
+        // no-op
+    }
 }

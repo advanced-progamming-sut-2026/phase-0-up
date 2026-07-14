@@ -28,6 +28,9 @@ public class Plant extends Entity {
 
     protected StackableComponent  stackableComponent;
 
+    protected boolean isProtector;
+    private boolean deathTriggered;
+
     public Plant(String name, int id, double x, int y,
                  PlantHealthComponent health, int level, int cost, boolean isAquatic) {
 
@@ -50,6 +53,20 @@ public class Plant extends Entity {
     public boolean isDead() {
         return health == null || health.isDead();
     }
+
+    // Fires each ability's death effect once (e.g. Explode-o-nut). Call before removing a dead plant.
+    public void onDeath(GameSession gameSession) {
+        if (deathTriggered) return;
+        deathTriggered = true;
+        if (abilities != null) {
+            for (PlantAbility ability : abilities) {
+                ability.onOwnerDeath(this, gameSession);
+            }
+        }
+    }
+
+    public boolean isProtector() { return isProtector; }
+    public void setProtector(boolean protector) { this.isProtector = protector; }
 
 
     public void triggerPlantFood() {

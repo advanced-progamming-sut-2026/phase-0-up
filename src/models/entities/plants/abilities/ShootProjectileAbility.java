@@ -33,7 +33,7 @@ public class ShootProjectileAbility extends PlantAbility {
 
     public ShootProjectileAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
                                   int damage, int shotCount, double speed, int burstDelayTicks, int pierceCount,
-                                  double maxRange, Element element, Trajectory trajectory,
+                                  double maxRange, Element element, Trajectory trajectory, ShootDirection direction,
                                   int splashDamage, double splashRadiusX, int splashRowRadius) {
         super(actionInterval, triggerStrategy);
         this.projectileType = projectileType;
@@ -44,6 +44,7 @@ public class ShootProjectileAbility extends PlantAbility {
         this.maxRange = maxRange;
         this.element = element;
         this.trajectory = trajectory;
+        this.direction = direction;
 
         this.splashDamage = splashDamage;
         this.splashRadiusX = splashRadiusX;

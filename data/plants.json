@@ -2,6 +2,7 @@
   {
     "id": 1,
     "name": "Sunflower",
+    "abilityParams": { "sunAmountsByStage": [50], "stageUpTicks": [], "doubleSunChance": 0.0, "spawnCount": 1 },
     "category": "SUN_PRODUCER",
     "tags": ["DAY"],
     "cost": 50,
@@ -22,6 +23,7 @@
   {
     "id": 2,
     "name": "Twin Sunflower",
+    "abilityParams": { "sunAmountsByStage": [100], "stageUpTicks": [], "doubleSunChance": 0.0, "spawnCount": 1 },
     "category": "SUN_PRODUCER",
     "tags": ["DAY"],
     "cost": 125,
@@ -42,6 +44,7 @@
   {
     "id": 3,
     "name": "Sun-shroom",
+    "abilityParams": { "sunAmountsByStage": [25, 50, 75], "stageUpTicks": [240, 720], "doubleSunChance": 0.0, "spawnCount": 1 },
     "category": "SUN_PRODUCER",
     "tags": ["SHROOM", "WARM_UP", "NIGHT"],
     "cost": 25,
@@ -62,6 +65,7 @@
   {
     "id": 4,
     "name": "Primal Sunflower",
+    "abilityParams": { "sunAmountsByStage": [75], "stageUpTicks": [], "doubleSunChance": 0.0, "spawnCount": 1 },
     "category": "SUN_PRODUCER",
     "tags": [],
     "cost": 75,
@@ -82,6 +86,7 @@
   {
     "id": 5,
     "name": "Gold Bloom",
+    "abilityParams": { "sunAmount": 375, "spawnCount": 1 },
     "category": "SUN_PRODUCER",
     "tags": [],
     "cost": 0,
@@ -102,6 +107,7 @@
   {
     "id": 6,
     "name": "Peashooter",
+    "abilityParams": { "projectileType": "NORMAL_PEA", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["PEA"],
     "cost": 100,
@@ -122,6 +128,7 @@
   {
     "id": 7,
     "name": "Repeater",
+    "abilityParams": { "projectileType": "NORMAL_PEA", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 2, "speedX": 0.5, "burstDelayTicks": 2, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["PEA"],
     "cost": 200,
@@ -142,6 +149,7 @@
   {
     "id": 8,
     "name": "Threepeater",
+    "abilityParams": { "projectileType": "NORMAL_PEA", "speedX": 0.5, "rowOffsets": [-1, 0, 1] },
     "category": "SHOOTER",
     "tags": ["PEA"],
     "cost": 300,
@@ -162,6 +170,7 @@
   {
     "id": 9,
     "name": "Snow Pea",
+    "abilityParams": { "projectileType": "ICE_PEA", "element": "ICE", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["ICE", "PEA"],
     "cost": 150,
@@ -182,6 +191,7 @@
   {
     "id": 10,
     "name": "Rotobaga",
+    "abilityParams": { "projectileType": "RUTABAGA", "directionSpeeds": [[0.5, 0.5], [0.5, -0.5], [-0.5, 0.5], [-0.5, -0.5]], "shotCount": 1 },
     "category": "SHOOTER",
     "tags": [],
     "cost": 150,
@@ -202,6 +212,7 @@
   {
     "id": 11,
     "name": "Pea Pod",
+    "abilityParams": { "projectileType": "NORMAL_PEA", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["PEA", "STACK"],
     "cost": 125,
@@ -222,6 +233,10 @@
   {
     "id": 12,
     "name": "Split Pea",
+    "abilityParams": { "projectileType": "NORMAL_PEA", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
+    "extraAbilities": [
+      { "abilityType": "SHOOT_PROJECTILE", "actionInterval": 1.5, "abilityParams": { "projectileType": "NORMAL_PEA", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "BACKWARD", "shotCount": 2, "speedX": -0.5, "burstDelayTicks": 2, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 } }
+    ],
     "category": "SHOOTER",
     "tags": ["PEA"],
     "cost": 125,
@@ -242,6 +257,7 @@
   {
     "id": 13,
     "name": "Citron",
+    "abilityParams": { "projectileType": "PLASMA_BALL", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 99, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["CHARGE"],
     "cost": 350,
@@ -262,6 +278,7 @@
   {
     "id": 14,
     "name": "Caulipower",
+    "abilityParams": { "priorityStrategy": "RANDOM", "priorityRange": 0.0 },
     "category": "HOMING",
     "tags": ["MAGIC", "CHARGE"],
     "cost": 250,
@@ -282,6 +299,7 @@
   {
     "id": 15,
     "name": "Electric Blueberry",
+    "abilityParams": { "priorityStrategy": "RANDOM", "priorityRange": 0.0 },
     "category": "HOMING",
     "tags": ["CHARGE"],
     "cost": 150,
@@ -302,6 +320,7 @@
   {
     "id": 16,
     "name": "Bowling Bulb",
+    "abilityParams": { "cyanReloadTicks": 20, "blueReloadTicks": 50, "orangeReloadTicks": 100 },
     "category": "SHOOTER",
     "tags": ["CHARGE"],
     "cost": 200,
@@ -322,6 +341,7 @@
   {
     "id": 17,
     "name": "Cactus",
+    "abilityParams": { "projectileType": "THORN", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 3, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "STRIKE_THROUGH",
     "tags": [],
     "cost": 175,
@@ -342,6 +362,7 @@
   {
     "id": 18,
     "name": "Fire Peashooter",
+    "abilityParams": { "projectileType": "FIRE_PEA", "element": "FIRE", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["FIRE", "PEA"],
     "cost": 175,
@@ -362,6 +383,7 @@
   {
     "id": 19,
     "name": "Starfruit",
+    "abilityParams": { "projectileType": "STAR", "directionSpeeds": [[0.5, 0.0], [0.0, 0.5], [0.0, -0.5], [-0.4, 0.4], [-0.4, -0.4]], "shotCount": 1 },
     "category": "SHOOTER",
     "tags": [],
     "cost": 150,
@@ -382,6 +404,7 @@
   {
     "id": 20,
     "name": "Goo Peashooter",
+    "abilityParams": { "projectileType": "GOO", "element": "POISON", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["POISON"],
     "cost": 125,
@@ -402,6 +425,7 @@
   {
     "id": 21,
     "name": "Mega Gatling Pea",
+    "abilityParams": { "projectileType": "NORMAL_PEA", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 4, "speedX": 0.5, "burstDelayTicks": 2, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["PEA"],
     "cost": 400,
@@ -422,6 +446,7 @@
   {
     "id": 22,
     "name": "Sea-shroom",
+    "abilityParams": { "projectileType": "SPORE", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 3.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["SHROOM", "WATER"],
     "cost": 0,
@@ -442,6 +467,7 @@
   {
     "id": 23,
     "name": "Puff-shroom",
+    "abilityParams": { "projectileType": "SPORE", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 3.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["SHROOM"],
     "cost": 0,
@@ -462,6 +488,7 @@
   {
     "id": 24,
     "name": "Fume-shroom",
+    "abilityParams": { "projectileType": "FUME", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 99, "maxRange": 4.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "STRIKE_THROUGH",
     "tags": ["SHROOM"],
     "cost": 125,
@@ -482,6 +509,7 @@
   {
     "id": 25,
     "name": "Cabbage-pult",
+    "abilityParams": { "projectileType": "CABBAGE", "element": "NEUTRAL", "trajectory": "LOBBED", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "LOBBER",
     "tags": [],
     "cost": 100,
@@ -502,6 +530,7 @@
   {
     "id": 26,
     "name": "Kernel-pult",
+    "abilityParams": { "kernelDamage": 20, "butterDamage": 40, "speedX": 0.5 },
     "category": "LOBBER",
     "tags": [],
     "cost": 100,
@@ -522,6 +551,7 @@
   {
     "id": 27,
     "name": "Melon-pult",
+    "abilityParams": { "projectileType": "MELON", "element": "NEUTRAL", "trajectory": "LOBBED", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 80, "splashRadiusX": 1.0, "splashRowRadius": 0 },
     "category": "LOBBER",
     "tags": ["AOE"],
     "cost": 325,
@@ -542,6 +572,7 @@
   {
     "id": 28,
     "name": "Winter Melon",
+    "abilityParams": { "projectileType": "WINTER_MELON", "element": "ICE", "trajectory": "LOBBED", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 80, "splashRadiusX": 1.0, "splashRowRadius": 0 },
     "category": "LOBBER",
     "tags": ["ICE", "AOE"],
     "cost": 500,
@@ -562,6 +593,7 @@
   {
     "id": 29,
     "name": "Pepper-pult",
+    "abilityParams": { "projectileType": "PEPPER", "element": "FIRE", "trajectory": "LOBBED", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 50, "splashRadiusX": 1.0, "splashRowRadius": 0 },
     "category": "LOBBER",
     "tags": ["FIRE", "AOE"],
     "cost": 200,
@@ -573,19 +605,6 @@
     "abilityValue": 1.0,
     "plantFoodType": "PROJECTILE_BURST",
     "plantFoodValue": 250.0,
-    "abilityParams": {
-      "projectileType": "PEPPER",
-      "element": "FIRE",
-      "trajectory": "LOBBED",
-      "shotCount": 1,
-      "speedX": 0.5,
-      "burstDelayTicks": 0,
-      "pierceCount": 0,
-      "maxRange": 0.0,
-      "splashDamage": 50,
-      "splashRadiusX": 1.0,
-      "splashRowRadius": 0
-    },
     "upgrades": [
       { "level": 2, "type": "BUFF_DAMAGE", "value": 15.0, "specialTag": "" },
       { "level": 3, "type": "SPECIAL_MECHANIC", "value": 1.0, "specialTag": "WARM_RADIUS_EXT" },
@@ -595,6 +614,7 @@
   {
     "id": 30,
     "name": "Potato Mine",
+    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 0, "explosionColRadius": 0 },
     "category": "EXPLOSIVE",
     "tags": ["TRAP", "CHARGE"],
     "cost": 25,
@@ -606,11 +626,6 @@
     "abilityValue": 1.0,
     "plantFoodType": "SPAWN_CLONES",
     "plantFoodValue": 2.0,
-    "abilityParams": {
-      "element": "NEUTRAL",
-      "explosionRowRadius": 0,
-      "explosionColRadius": 0
-    },
     "upgrades": [
       { "level": 2, "type": "BUFF_ACTION_INTERVAL", "value": -3.0, "specialTag": "ARM_TIME_REDUCTION" },
       { "level": 3, "type": "BUFF_RECHARGE", "value": -5.0, "specialTag": "" },
@@ -620,6 +635,7 @@
   {
     "id": 31,
     "name": "Primal Potato Mine",
+    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 1, "explosionColRadius": 1 },
     "category": "EXPLOSIVE",
     "tags": ["TRAP", "CHARGE"],
     "cost": 50,
@@ -631,11 +647,6 @@
     "abilityValue": 9.0,
     "plantFoodType": "SPAWN_CLONES",
     "plantFoodValue": 2.0,
-    "abilityParams": {
-      "element": "NEUTRAL",
-      "explosionRowRadius": 1,
-      "explosionColRadius": 1
-    },
     "upgrades": [
       { "level": 2, "type": "BUFF_ACTION_INTERVAL", "value": -1.0, "specialTag": "ARM_TIME_REDUCTION" },
       { "level": 3, "type": "BUFF_RECHARGE", "value": -3.0, "specialTag": "" },
@@ -645,6 +656,7 @@
   {
     "id": 32,
     "name": "Cherry Bomb",
+    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 1, "explosionColRadius": 1 },
     "category": "EXPLOSIVE",
     "tags": [],
     "cost": 150,
@@ -665,6 +677,7 @@
   {
     "id": 33,
     "name": "Squash",
+    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 0, "explosionColRadius": 0 },
     "category": "EXPLOSIVE",
     "tags": ["TRAP"],
     "cost": 50,
@@ -685,6 +698,7 @@
   {
     "id": 34,
     "name": "Grapeshot",
+    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 1, "explosionColRadius": 1 },
     "category": "EXPLOSIVE",
     "tags": [],
     "cost": 150,
@@ -705,6 +719,7 @@
   {
     "id": 35,
     "name": "Jalapeno",
+    "abilityParams": { "element": "FIRE", "explosionRowRadius": 0, "explosionColRadius": 9 },
     "category": "EXPLOSIVE",
     "tags": ["FIRE"],
     "cost": 125,
@@ -725,6 +740,7 @@
   {
     "id": 36,
     "name": "Doom-shroom",
+    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 4, "explosionColRadius": 9 },
     "category": "EXPLOSIVE",
     "tags": ["SHROOM"],
     "cost": 125,
@@ -745,6 +761,7 @@
   {
     "id": 37,
     "name": "Tangle Kelp",
+    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 0, "explosionColRadius": 0 },
     "category": "EXPLOSIVE",
     "tags": ["TRAP", "WATER"],
     "cost": 25,
@@ -765,6 +782,7 @@
   {
     "id": 38,
     "name": "Iceberg Lettuce",
+    "abilityParams": { "freezeDurationTicks": 150 },
     "category": "EXPLOSIVE",
     "tags": ["TRAP", "ICE"],
     "cost": 0,
@@ -772,7 +790,7 @@
     "damage": 0,
     "actionInterval": 0.0,
     "recharge": 20.0,
-    "abilityType": "DELAYED_EXPLOSIVE",
+    "abilityType": "FREEZE_ON_CONTACT",
     "abilityValue": 1.0,
     "plantFoodType": "MAP_WIDE_FREEZE",
     "plantFoodValue": 10.0,
@@ -785,6 +803,7 @@
   {
     "id": 39,
     "name": "Bonk Choy",
+    "abilityParams": { "element": "NEUTRAL", "damageByStage": [15], "rowRadiusByStage": [0], "colRadiusByStage": [1], "stageUpTicks": [] },
     "category": "MELEE",
     "tags": [],
     "cost": 150,
@@ -805,6 +824,7 @@
   {
     "id": 40,
     "name": "Phat Beet",
+    "abilityParams": { "element": "NEUTRAL", "damageByStage": [15], "rowRadiusByStage": [1], "colRadiusByStage": [1], "stageUpTicks": [] },
     "category": "MELEE",
     "tags": ["AOE"],
     "cost": 150,
@@ -825,6 +845,7 @@
   {
     "id": 41,
     "name": "Chomper",
+    "abilityParams": { "element": "NEUTRAL", "damageByStage": [99999], "rowRadiusByStage": [0], "colRadiusByStage": [1], "stageUpTicks": [] },
     "category": "MELEE",
     "tags": [],
     "cost": 150,
@@ -832,7 +853,7 @@
     "damage": 99999,
     "actionInterval": 40.0,
     "recharge": 5.0,
-    "abilityType": "DELAYED_EXPLOSIVE",
+    "abilityType": "MELEE_ATTACK",
     "abilityValue": 1.0,
     "plantFoodType": "PULL_UNDERWATER",
     "plantFoodValue": 3.0,
@@ -845,6 +866,10 @@
   {
     "id": 42,
     "name": "Wasabi Whip",
+    "abilityParams": { "element": "FIRE", "damageByStage": [40], "rowRadiusByStage": [0], "colRadiusByStage": [1], "stageUpTicks": [] },
+    "extraAbilities": [
+      { "abilityType": "WARMTH", "actionInterval": 1.0, "abilityParams": { "rowRadius": 1, "colRadius": 1 } }
+    ],
     "category": "MELEE",
     "tags": ["FIRE"],
     "cost": 150,
@@ -865,6 +890,7 @@
   {
     "id": 43,
     "name": "Kiwibeast",
+    "abilityParams": { "element": "NEUTRAL", "damageByStage": [15, 30, 45], "rowRadiusByStage": [0, 1, 1], "colRadiusByStage": [1, 1, 2], "stageUpTicks": [240, 720] },
     "category": "MELEE",
     "tags": ["AOE", "WARM_UP"],
     "cost": 175,
@@ -885,6 +911,7 @@
   {
     "id": 44,
     "name": "Wall-nut",
+    "abilityParams": {},
     "category": "WALL_NUT",
     "tags": [],
     "cost": 50,
@@ -905,6 +932,7 @@
   {
     "id": 45,
     "name": "Tall-nut",
+    "abilityParams": {},
     "category": "WALL_NUT",
     "tags": [],
     "cost": 125,
@@ -925,14 +953,15 @@
   {
     "id": 46,
     "name": "Endurian",
+    "abilityParams": { "element": "NEUTRAL", "damageByStage": [20], "rowRadiusByStage": [0], "colRadiusByStage": [0], "stageUpTicks": [] },
     "category": "WALL_NUT",
     "tags": [],
     "cost": 100,
     "baseHp": 3000,
     "damage": 20,
-    "actionInterval": 0.0,
+    "actionInterval": 1.0,
     "recharge": 15.0,
-    "abilityType": "PASSIVE_SHIELD",
+    "abilityType": "MELEE_ATTACK",
     "abilityValue": 20.0,
     "plantFoodType": "GRANT_PERMANENT_ARMOR",
     "plantFoodValue": 3000.0,
@@ -945,6 +974,7 @@
   {
     "id": 47,
     "name": "Garlic",
+    "abilityParams": {},
     "category": "WALL_NUT",
     "tags": ["MOVE_ZOMBIE"],
     "cost": 50,
@@ -952,7 +982,7 @@
     "damage": 0,
     "actionInterval": 0.0,
     "recharge": 20.0,
-    "abilityType": "PASSIVE_SHIELD",
+    "abilityType": "REPEL_ZOMBIE",
     "abilityValue": 0.0,
     "plantFoodType": "KNOCKBACK_BLAST",
     "plantFoodValue": 0.0,
@@ -965,6 +995,7 @@
   {
     "id": 48,
     "name": "Sweet Potato",
+    "abilityParams": {},
     "category": "WALL_NUT",
     "tags": ["MOVE_ZOMBIE"],
     "cost": 150,
@@ -972,7 +1003,7 @@
     "damage": 0,
     "actionInterval": 0.0,
     "recharge": 20.0,
-    "abilityType": "PASSIVE_SHIELD",
+    "abilityType": "ATTRACT_ZOMBIE",
     "abilityValue": 0.0,
     "plantFoodType": "GRANT_PERMANENT_ARMOR",
     "plantFoodValue": 3000.0,
@@ -985,6 +1016,7 @@
   {
     "id": 49,
     "name": "Explode-o-nut",
+    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 1, "explosionColRadius": 1 },
     "category": "WALL_NUT",
     "tags": ["EXPLOSIVE"],
     "cost": 50,
@@ -992,7 +1024,7 @@
     "damage": 1800,
     "actionInterval": 0.0,
     "recharge": 20.0,
-    "abilityType": "PASSIVE_SHIELD",
+    "abilityType": "DEATH_EXPLOSIVE",
     "abilityValue": 1800.0,
     "plantFoodType": "GRANT_PERMANENT_ARMOR",
     "plantFoodValue": 4000.0,
@@ -1005,6 +1037,8 @@
   {
     "id": 50,
     "name": "Pumpkin",
+    "abilityParams": {},
+    "isProtector": true,
     "category": "WALL_NUT",
     "tags": ["STACK"],
     "cost": 150,
@@ -1025,14 +1059,15 @@
   {
     "id": 51,
     "name": "Sun Bean",
+    "abilityParams": { "sunAmountsByStage": [5], "stageUpTicks": [], "doubleSunChance": 0.0, "spawnCount": 1 },
     "category": "WALL_NUT",
     "tags": ["SUN"],
     "cost": 50,
     "baseHp": 1000,
     "damage": 0,
-    "actionInterval": 0.0,
+    "actionInterval": 1.0,
     "recharge": 20.0,
-    "abilityType": "PASSIVE_SHIELD",
+    "abilityType": "PRODUCE_SUN",
     "abilityValue": 5.0,
     "plantFoodType": "GRANT_PERMANENT_ARMOR",
     "plantFoodValue": 1000.0,

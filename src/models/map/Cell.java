@@ -14,6 +14,7 @@ public class Cell {
     private double x;
     private int y;
     private Plant currentPlant;
+    private Plant protector;
     private List<Terrain> terrain;
     private boolean isPlantable;
     private boolean isFlooded;
@@ -51,6 +52,19 @@ public class Cell {
         return currentPlant;
     }
 
+    public Plant getProtector(){
+        return protector;
+    }
+
+    public boolean hasProtector(){
+        return protector != null;
+    }
+
+    // Zombies bite the protective cover (Pumpkin) first, then the base plant.
+    public Plant getDefendingPlant(){
+        return (protector != null) ? protector : currentPlant;
+    }
+
     public int getY() {
         return y;
     }
@@ -64,6 +78,10 @@ public class Cell {
     }
 
     public Result addPlant(Plant newPlant){
+        if (newPlant.isProtector()) {
+            return addProtector(newPlant);
+        }
+
         if (this.hasPlant()) {
 
             if (this.currentPlant.getStackableComponent() != null) {
@@ -98,6 +116,24 @@ public class Cell {
         }
         this.currentPlant = null;
         return new Result(true, "Plant removed successfully.");
+    }
+
+    public Result removeProtector(){
+        if(this.protector == null){
+            return new Result(false , "This cell has no protective cover.");
+        }
+        this.protector = null;
+        return new Result(true, "Protective cover removed.");
+    }
+
+    private Result addProtector(Plant newPlant){
+        if (protector != null) return new Result(false, "This cell is already protected!");
+        if (!isPlantable) return new Result(false, "This cell is not plantable!");
+        if (newPlant.isAquatic() && !isFlooded) return new Result(false, "This plant must be planted in water!");
+        if (!newPlant.isAquatic() && isFlooded) return new Result(false, "You can't plant this on water!");
+
+        this.protector = newPlant;
+        return new Result(true, "Protective cover placed.");
     }
 
     public void interactWithProjectile(Projectile projectile){
