@@ -2,6 +2,7 @@ package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
 import models.entities.plants.abilities.triggers.TriggerStrategy;
+import models.entities.zombies.Zombie;
 import models.game.GameSession;
 
 public abstract class PlantAbility {
@@ -39,6 +40,11 @@ public abstract class PlantAbility {
 
     // Called once when the owning plant dies, before removal. Default: no death behavior.
     public void onOwnerDeath(Plant owner, GameSession gameSession) {
+        // no-op
+    }
+
+    // Called each time a zombie lands a bite on the owning plant. Default: no on-eaten behavior.
+    public void onOwnerEaten(Plant owner, Zombie eater, GameSession gameSession) {
         // no-op
     }
 }

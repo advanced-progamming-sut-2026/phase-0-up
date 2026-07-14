@@ -5,6 +5,7 @@ import models.entities.plants.abilities.PlantAbility;
 import models.entities.plants.FoodStrategies.CompositePlantFoodStrategy;
 import models.entities.plants.components.PlantHealthComponent;
 import models.entities.plants.components.StackableComponent;
+import models.entities.zombies.Zombie;
 import models.game.GameSession;
 
 import java.util.ArrayList;
@@ -29,7 +30,10 @@ public class Plant extends Entity {
     protected StackableComponent  stackableComponent;
 
     protected boolean isProtector;
+    protected boolean isPlatform;
     private boolean deathTriggered;
+
+    protected String category;
 
     public Plant(String name, int id, double x, int y,
                  PlantHealthComponent health, int level, int cost, boolean isAquatic) {
@@ -65,8 +69,23 @@ public class Plant extends Entity {
         }
     }
 
+    // Fires each ability's on-eaten effect when a zombie bites this plant (Hypno-shroom, Garlic).
+    public void onEaten(Zombie eater, GameSession gameSession) {
+        if (abilities != null) {
+            for (PlantAbility ability : abilities) {
+                ability.onOwnerEaten(this, eater, gameSession);
+            }
+        }
+    }
+
     public boolean isProtector() { return isProtector; }
     public void setProtector(boolean protector) { this.isProtector = protector; }
+
+    public boolean isPlatform() { return isPlatform; }
+    public void setPlatform(boolean platform) { this.isPlatform = platform; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
 
     public void triggerPlantFood() {

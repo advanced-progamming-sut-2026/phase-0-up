@@ -1,33 +1,28 @@
 package models.entities.plants.abilities;
 
 import models.entities.plants.Plant;
-import models.entities.plants.abilities.triggers.TriggerStrategy;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import utils.Constants;
 
-import java.util.List;
 import java.util.Random;
 
-// Forces zombies biting the plant into a random adjacent lane (Garlic). Pair with a contact trigger.
+// Forces the zombie biting the plant into a random adjacent lane (Garlic).
 public class RepelZombieAbility extends PlantAbility {
     private final Random random = new Random();
 
-    public RepelZombieAbility(int actionInterval, TriggerStrategy triggerStrategy) {
-        super(actionInterval, triggerStrategy);
+    public RepelZombieAbility() {
+        super(0, null); // reacts to being eaten, not the tick loop
     }
 
     @Override
     public void execute(Plant owner, GameSession gameSession) {
-        List<Zombie> zombies = gameSession.getMap().getRow(owner.getY()).getZombies();
-        if (zombies == null) return;
+        // no tick behavior
+    }
 
-        for (Zombie z : zombies) {
-            if (!z.getHealth().isDead()
-                    && Math.abs(z.getMovement().getPositionX() - owner.getX()) <= 0.5) {
-                z.getMovement().startLaneSwitch(randomAdjacentLane(owner.getY()));
-            }
-        }
+    @Override
+    public void onOwnerEaten(Plant owner, Zombie eater, GameSession gameSession) {
+        eater.getMovement().startLaneSwitch(randomAdjacentLane(owner.getY()));
     }
 
     private int randomAdjacentLane(int y) {
