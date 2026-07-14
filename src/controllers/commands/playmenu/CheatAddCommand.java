@@ -2,6 +2,7 @@ package controllers.commands.playmenu;
 
 import controllers.commands.Command;
 import models.user.Profile;
+import utils.storage.DatabaseManager;
 import views.renderers.MenuRenderer.PlayMenuRenderer;
 
 public class CheatAddCommand implements Command {
@@ -26,5 +27,7 @@ public class CheatAddCommand implements Command {
             profile.addGems(n);
         }
         renderer.cheatRenderForAddingCoinsAndGems(n , currencyName);
+
+        DatabaseManager.getInstance().saveAll();
     }
 }

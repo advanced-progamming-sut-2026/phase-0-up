@@ -782,7 +782,7 @@
   {
     "id": 38,
     "name": "Iceberg Lettuce",
-    "abilityParams": { "freezeDurationTicks": 150 },
+    "abilityParams": { "freezeDurationTicks": 50 },
     "category": "EXPLOSIVE",
     "tags": ["TRAP", "ICE"],
     "cost": 0,
@@ -1080,6 +1080,7 @@
   {
     "id": 52,
     "name": "Torchwood",
+    "abilityParams": { "element": "FIRE", "damageMultiplier": 2 },
     "category": "MODIFIER",
     "tags": ["FIRE"],
     "cost": 175,
@@ -1087,7 +1088,7 @@
     "damage": 0,
     "actionInterval": 0.0,
     "recharge": 5.0,
-    "abilityType": "MODIFIER_UTILITY",
+    "abilityType": "PASSIVE_MODIFIER",
     "abilityValue": 2.0,
     "plantFoodType": "PROJECTILE_BURST",
     "plantFoodValue": 3.0,
@@ -1100,6 +1101,7 @@
   {
     "id": 53,
     "name": "Magnet-shroom",
+    "abilityParams": { "range": 4.0 },
     "category": "HOMING",
     "tags": ["SHROOM", "MAGIC"],
     "cost": 100,
@@ -1107,7 +1109,7 @@
     "damage": 0,
     "actionInterval": 10.0,
     "recharge": 15.0,
-    "abilityType": "MODIFIER_UTILITY",
+    "abilityType": "MAGNET",
     "abilityValue": 1.0,
     "plantFoodType": "KNOCKBACK_BLAST",
     "plantFoodValue": 5.0,
@@ -1120,6 +1122,7 @@
   {
     "id": 54,
     "name": "Hypno-shroom",
+    "abilityParams": {},
     "category": "MODIFIER",
     "tags": ["SHROOM", "MAGIC"],
     "cost": 125,
@@ -1127,7 +1130,7 @@
     "damage": 0,
     "actionInterval": 0.0,
     "recharge": 20.0,
-    "abilityType": "MODIFIER_UTILITY",
+    "abilityType": "HYPNOTIZE_ON_EATEN",
     "abilityValue": 1.0,
     "plantFoodType": "RANDOM_HYPNOTIZE",
     "plantFoodValue": 1.0,
@@ -1140,6 +1143,7 @@
   {
     "id": 55,
     "name": "Cat-tail",
+    "abilityParams": { "priorityStrategy": "CLOSEST_IN_RANGE", "priorityRange": 9.0 },
     "category": "HOMING",
     "tags": [],
     "cost": 175,
@@ -1147,7 +1151,7 @@
     "damage": 15,
     "actionInterval": 1.5,
     "recharge": 20.0,
-    "abilityType": "SHOOT_PROJECTILE",
+    "abilityType": "DAMAGE_RANDOM_TARGET",
     "abilityValue": 1.0,
     "plantFoodType": "PROJECTILE_BURST",
     "plantFoodValue": 40.0,
@@ -1180,6 +1184,7 @@
   {
     "id": 57,
     "name": "Ice-shroom",
+    "abilityParams": { "freezeDurationTicks": 30 },
     "category": "EXPLOSIVE",
     "tags": ["SHROOM", "ICE"],
     "cost": 75,
@@ -1187,7 +1192,7 @@
     "damage": 0,
     "actionInterval": 0.0,
     "recharge": 50.0,
-    "abilityType": "INSTANT_EXPLOSIVE",
+    "abilityType": "INSTANT_FREEZE",
     "abilityValue": 45.0,
     "plantFoodType": "NONE",
     "plantFoodValue": 0.0,
@@ -1200,6 +1205,8 @@
   {
     "id": 58,
     "name": "Lily Pad",
+    "abilityParams": {},
+    "isPlatform": true,
     "category": "MODIFIER",
     "tags": ["WATER", "STACK"],
     "cost": 25,
@@ -1207,7 +1214,7 @@
     "damage": 0,
     "actionInterval": 0.0,
     "recharge": 5.0,
-    "abilityType": "MODIFIER_UTILITY",
+    "abilityType": "PASSIVE_SHIELD",
     "abilityValue": 0.0,
     "plantFoodType": "SPAWN_CLONES",
     "plantFoodValue": 4.0,
@@ -1220,6 +1227,7 @@
   {
     "id": 59,
     "name": "Hot Potato",
+    "abilityParams": { "rowRadius": 0, "colRadius": 0 },
     "category": "EXPLOSIVE",
     "tags": ["FIRE"],
     "cost": 0,
@@ -1227,7 +1235,7 @@
     "damage": 0,
     "actionInterval": 0.0,
     "recharge": 5.0,
-    "abilityType": "INSTANT_EXPLOSIVE",
+    "abilityType": "WARMTH",
     "abilityValue": 1.0,
     "plantFoodType": "NONE",
     "plantFoodValue": 0.0,
@@ -1240,6 +1248,7 @@
   {
     "id": 60,
     "name": "Grave Buster",
+    "abilityParams": {},
     "category": "EXPLOSIVE",
     "tags": [],
     "cost": 0,
@@ -1247,7 +1256,7 @@
     "damage": 99999,
     "actionInterval": 0.0,
     "recharge": 10.0,
-    "abilityType": "INSTANT_EXPLOSIVE",
+    "abilityType": "GRAVE_BUSTER",
     "abilityValue": 1.0,
     "plantFoodType": "NONE",
     "plantFoodValue": 0.0,
@@ -1260,6 +1269,7 @@
   {
     "id": 61,
     "name": "Enlighten-mint",
+    "abilityParams": {},
     "category": "SUN_PRODUCER",
     "tags": [],
     "cost": 0,
@@ -1280,6 +1290,7 @@
   {
     "id": 62,
     "name": "Appease-mint",
+    "abilityParams": {},
     "category": "SHOOTER",
     "tags": [],
     "cost": 0,
@@ -1300,6 +1311,7 @@
   {
     "id": 63,
     "name": "Arma-mint",
+    "abilityParams": {},
     "category": "LOBBER",
     "tags": [],
     "cost": 0,
@@ -1320,6 +1332,7 @@
   {
     "id": 64,
     "name": "Bombard-mint",
+    "abilityParams": {},
     "category": "EXPLOSIVE",
     "tags": [],
     "cost": 0,
@@ -1340,6 +1353,7 @@
   {
     "id": 65,
     "name": "Enforce-mint",
+    "abilityParams": {},
     "category": "MELEE",
     "tags": [],
     "cost": 0,
@@ -1360,6 +1374,7 @@
   {
     "id": 66,
     "name": "Reinforce-mint",
+    "abilityParams": {},
     "category": "WALL_NUT",
     "tags": [],
     "cost": 0,
@@ -1380,6 +1395,7 @@
   {
     "id": 67,
     "name": "Enchant-mint",
+    "abilityParams": {},
     "category": "MODIFIER",
     "tags": [],
     "cost": 0,
@@ -1400,6 +1416,7 @@
   {
     "id": 68,
     "name": "Pierce-mint",
+    "abilityParams": {},
     "category": "STRIKE_THROUGH",
     "tags": [],
     "cost": 0,
@@ -1420,6 +1437,7 @@
   {
     "id": 69,
     "name": "catTail-mint",
+    "abilityParams": {},
     "category": "HOMING",
     "tags": [],
     "cost": 0,
