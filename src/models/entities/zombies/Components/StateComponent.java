@@ -74,4 +74,13 @@ public class StateComponent {
     public void setReadyForLaser(boolean readyForLaser) {
         this.isReadyForLaser = readyForLaser;
     }
+
+    public void setFrozenTimer(int v) {
+        this.frozenTimer = v;
+    }
+
+    public void setChilledTimer(int i) {
+        this.chilledTimer = i;
+    }
+
 }

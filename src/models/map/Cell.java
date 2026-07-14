@@ -44,10 +44,6 @@ public class Cell {
         this.terrain.add(terrain);
     }
 
-    public boolean isPlantable() {
-        return isPlantable;
-    }
-
     public Plant getCurrentPlant(){
         return currentPlant;
     }
@@ -148,5 +144,19 @@ public class Cell {
             projectile.setElement(Element.NEUTRAL);
             projectile.setDamage(projectile.getDamage() / 2);
         }
+    }
+
+    public boolean isPlantable() {
+        if (!this.isPlantable) {
+            return false;
+        }
+        if (this.terrain != null) {
+            for (Terrain t : this.terrain) {
+                if (!t.isPlantable() && !t.isDestroyed()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

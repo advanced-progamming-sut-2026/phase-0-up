@@ -50,7 +50,7 @@ public class Zombie{
         this.wavePointCost = wavePointCost;
         this.glowing = glowing;
         this.state = new StateComponent();
-        this.health = new HealthComponent(armorTypes);
+        this.health = new HealthComponent(armorTypes , this);
         this.movement = new MovementComponent(speed , startX , startY , state);
         this.gameSession = gameSession;
     }
@@ -75,5 +75,9 @@ public class Zombie{
 
     public int getEatDamage() {
         return eatDamage;
+    }
+
+    public String getAlias() {
+        return alias;
     }
 }

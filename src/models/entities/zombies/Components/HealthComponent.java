@@ -1,7 +1,6 @@
 package models.entities.zombies.Components;
 
 import models.entities.plants.Plant;
-import models.entities.projectiles.DamageType;
 import models.entities.zombies.Abilities.RollTheBarrel;
 import models.entities.zombies.Abilities.ZombieAbility;
 import models.entities.zombies.Zombie;
