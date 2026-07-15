@@ -6,14 +6,10 @@ import models.entities.projectiles.Element;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
 import models.entities.projectiles.Trajectory;
-import models.entities.zombies.Zombie;
 import models.game.GameSession;
-import models.map.Row;
 import utils.Constants;
 
-import java.util.List;
-
-public class MultiLaneShootAbility extends PlantAbility {
+public class MultiLaneShootAbility extends PlantAbility implements Burstable {
     private ProjectileType projectileType;
     private int damage;
     private double speed;
@@ -22,7 +18,14 @@ public class MultiLaneShootAbility extends PlantAbility {
     //for example for threepeater is {-1, 0, 1}
     private int[] rowOffsets;
 
-    public MultiLaneShootAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType, int damage, double speed, int[] rowOffsets) {
+    private int remainingShotsInBurst;
+    private int burstTimer;
+    private boolean plantFoodBurst;
+    private static final int BURST_DELAY_TICKS = 3;
+    private static final int PLANT_FOOD_BURST_DELAY_TICKS = 1;
+
+    public MultiLaneShootAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
+                                 int damage, double speed, int[] rowOffsets) {
         super(actionInterval,  triggerStrategy);
         this.projectileType = projectileType;
         this.damage = damage;
@@ -30,13 +33,47 @@ public class MultiLaneShootAbility extends PlantAbility {
         this.rowOffsets = rowOffsets;
     }
 
+    @Override
+    public boolean canExecute(Plant owner, GameSession gameSession) {
+        if (remainingShotsInBurst > 0) {
+            return false;
+        }
+        return super.canExecute(owner, gameSession);
+    }
+
+    @Override
+    public void update(Plant owner, GameSession gameSession) {
+        if (remainingShotsInBurst > 0) {
+            if (burstTimer > 0) {
+                burstTimer--;
+            } else {
+                fireAllLanes(owner, gameSession);
+                remainingShotsInBurst--;
+                if (remainingShotsInBurst > 0) {
+                    burstTimer = plantFoodBurst ? PLANT_FOOD_BURST_DELAY_TICKS : BURST_DELAY_TICKS;
+                }
+            }
+        }
+        super.update(owner, gameSession);
+    }
 
     @Override
     public void execute(Plant owner, GameSession gameSession) {
+        plantFoodBurst = false;
+        fireAllLanes(owner, gameSession);
+    }
+
+    @Override
+    public void queueBurst(int shots) {
+        this.plantFoodBurst = true;
+        this.remainingShotsInBurst += shots;
+    }
+
+    private void fireAllLanes(Plant owner, GameSession gameSession) {
         for (int offset : rowOffsets) {
             int targetY = owner.getY() + offset;
 
-            if (isValidRow(targetY, gameSession)) {
+            if (isValidRow(targetY)) {
                 Projectile projectile = new Projectile(
                         owner.getX() + 0.5,
                         targetY,
@@ -55,20 +92,7 @@ public class MultiLaneShootAbility extends PlantAbility {
         }
     }
 
-
-    private boolean isValidRow(int y, GameSession session) {
+    private boolean isValidRow(int y) {
         return y >= 0 && y < Constants.BOARD_ROWS;
-    }
-
-    private boolean hasZombieInRow(Row row, double plantX) {
-        List<Zombie> zombies = row.getZombies();
-        if (zombies != null) {
-            for (Zombie z : zombies) {
-                if (!z.getHealth().isDead() && z.getMovement().getPositionX() > plantX) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }

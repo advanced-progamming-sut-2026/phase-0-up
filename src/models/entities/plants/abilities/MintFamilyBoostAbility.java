@@ -30,7 +30,7 @@ public class MintFamilyBoostAbility extends PlantAbility {
                     Plant plant = cell.getCurrentPlant();
                     if (plant != null && plant != owner && !plant.isDead()
                             && family.equals(plant.getCategory())) {
-                        plant.triggerPlantFood();
+                        plant.triggerPlantFood(gameSession);
                     }
                 }
             }

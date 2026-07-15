@@ -8,7 +8,7 @@ import models.entities.projectiles.ProjectileType;
 import models.entities.projectiles.Trajectory;
 import models.game.GameSession;
 
-public class MultiDirectionalShootAbility extends PlantAbility {
+public class MultiDirectionalShootAbility extends PlantAbility implements Burstable {
     private ProjectileType projectileType;
     private int damage;
     private double[][] directionSpeeds;
@@ -17,6 +17,8 @@ public class MultiDirectionalShootAbility extends PlantAbility {
     private int remainingShotsInBurst;
     private int burstDelayTicks;
     private int burstTimer;
+    private boolean plantFoodBurst;
+    private static final int PLANT_FOOD_BURST_DELAY_TICKS = 1;
 
     public MultiDirectionalShootAbility(int actionInterval, TriggerStrategy triggerStrategy,
                                         ProjectileType projectileType, int damage,
@@ -51,7 +53,7 @@ public class MultiDirectionalShootAbility extends PlantAbility {
                 remainingShotsInBurst--;
 
                 if (remainingShotsInBurst > 0) {
-                    burstTimer = burstDelayTicks;
+                    burstTimer = plantFoodBurst ? PLANT_FOOD_BURST_DELAY_TICKS : burstDelayTicks;
                 }
             }
         }
@@ -61,6 +63,7 @@ public class MultiDirectionalShootAbility extends PlantAbility {
 
     @Override
     public void execute(Plant owner, GameSession gameSession) {
+        plantFoodBurst = false;
         fireAllDirections(owner, gameSession);
         remainingShotsInBurst = shotCount - 1;
 
@@ -85,5 +88,11 @@ public class MultiDirectionalShootAbility extends PlantAbility {
             );
             gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
         }
+    }
+
+    @Override
+    public void queueBurst(int shots) {
+        this.plantFoodBurst = true;
+        this.remainingShotsInBurst += shots;
     }
 }

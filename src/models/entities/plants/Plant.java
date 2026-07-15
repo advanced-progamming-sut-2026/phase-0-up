@@ -93,10 +93,10 @@ public class Plant extends Entity {
     public void setCategory(String category) { this.category = category; }
 
 
-    public void triggerPlantFood() {
+    public void triggerPlantFood(GameSession gameSession) {
         this.thisPlantHasFood = true;
         if (plantFoodStrategy != null) {
-            plantFoodStrategy.executeEffect(this);
+            plantFoodStrategy.executeEffect(this, gameSession);
         }
     }
 
