@@ -21,6 +21,13 @@ public abstract class AreaExplosiveAbility extends PlantAbility {
         this.element = element;
     }
 
+    // Upgrade (BONUS_SMASH_CHARGES / BONUS_GRAB_TARGETS): widens the blast so more zombies are caught
+    // (Squash crushing two, Tangle Kelp grabbing extra).
+    public void widenArea(int extraRowRadius, int extraColRadius) {
+        this.explosionRowRadius += extraRowRadius;
+        this.explosionColRadius += extraColRadius;
+    }
+
     protected void detonate(Plant owner, GameSession gameSession) {
         AreaAttack.strike(gameSession, owner, explosionRowRadius, explosionColRadius, damage, element);
 

@@ -21,6 +21,9 @@ public abstract class GlobalTargetingAbility extends PlantAbility {
     private int pendingBurstShots;
     private int burstTimer;
     private static final int BURST_INTERVAL = 2;
+    private static final String GARGANTUAR_CATEGORY = "GARGANTUAR";
+
+    private boolean prioritizeGargantuars;
 
     public GlobalTargetingAbility(int actionInterval, TriggerStrategy triggerStrategy,
                                   TargetingPriority priorityStrategy, double priorityRange) {
@@ -47,6 +50,12 @@ public abstract class GlobalTargetingAbility extends PlantAbility {
     // Plant food: fires a rapid burst of `shots` homing hits (Cat-tail).
     public void queueBurst(int shots) {
         this.pendingBurstShots += shots;
+    }
+
+    // Upgrade (PRIORITIZE_GARGANTUARS): when a Gargantuar is on the board, target it first
+    // (Electric Blueberry).
+    public void setPrioritizeGargantuars(boolean prioritize) {
+        this.prioritizeGargantuars = prioritize;
     }
 
     @Override
@@ -102,6 +111,18 @@ public abstract class GlobalTargetingAbility extends PlantAbility {
                         validTargets.add(zombie);
                     }
                 }
+            }
+        }
+
+        if (prioritizeGargantuars) {
+            List<Zombie> gargantuars = new ArrayList<>();
+            for (Zombie zombie : validTargets) {
+                if (GARGANTUAR_CATEGORY.equalsIgnoreCase(zombie.getCategory())) {
+                    gargantuars.add(zombie);
+                }
+            }
+            if (!gargantuars.isEmpty()) {
+                return gargantuars;
             }
         }
         return validTargets;

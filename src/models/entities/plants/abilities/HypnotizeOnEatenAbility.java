@@ -6,8 +6,28 @@ import models.game.GameSession;
 
 // Hypnotizes the zombie that bites the plant, then the plant is consumed (Hypno-shroom).
 public class HypnotizeOnEatenAbility extends PlantAbility {
+    private double zombieHealthMultiplier = 1.0;
+    private double zombieDamageMultiplier = 1.0;
+
     public HypnotizeOnEatenAbility() {
         super(0, null); // reacts to being eaten, not the tick loop
+    }
+
+    // Upgrades (ZOMBIE_HEALTH_MULTIPLIER / ZOMBIE_DAMAGE_MULTIPLIER): buff the hypnotized ally.
+    public void setZombieHealthMultiplier(double multiplier) {
+        this.zombieHealthMultiplier = multiplier;
+    }
+
+    public void setZombieDamageMultiplier(double multiplier) {
+        this.zombieDamageMultiplier = multiplier;
+    }
+
+    public double getZombieHealthMultiplier() {
+        return zombieHealthMultiplier;
+    }
+
+    public double getZombieDamageMultiplier() {
+        return zombieDamageMultiplier;
     }
 
     @Override

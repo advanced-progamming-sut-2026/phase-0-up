@@ -11,10 +11,13 @@ import models.game.GameSession;
 import java.util.Random;
 
 public class KernelPultAbility extends PlantAbility{
+    private static final double BASE_BUTTER_CHANCE = 0.25;
+
     private int kernelDamage;
     private int butterDamage;
     private double speedX;
-    private Random random;
+    private double butterChance = BASE_BUTTER_CHANCE;
+    private final Random random = new Random();
 
     public KernelPultAbility(int actionInterval, TriggerStrategy triggerStrategy, int kernelDamage,
                              int butterDamage, double speedX) {
@@ -24,9 +27,14 @@ public class KernelPultAbility extends PlantAbility{
         this.speedX = speedX;
     }
 
+    // Upgrade (BUTTER_CHANCE_BUFF): raises the odds of lobbing stunning butter instead of a kernel.
+    public void increaseButterChance(double amount) {
+        this.butterChance += amount;
+    }
+
     @Override
     public void execute(Plant owner, GameSession gameSession) {
-        boolean shootButter = random.nextDouble() < 0.25;
+        boolean shootButter = random.nextDouble() < butterChance;
 
         ProjectileType typeToShoot = shootButter ? ProjectileType.BUTTER : ProjectileType.CORN_KERNEL;
         int shootDamage = shootButter ? butterDamage : kernelDamage;

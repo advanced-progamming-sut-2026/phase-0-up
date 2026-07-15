@@ -16,6 +16,11 @@ public class FreezeOnContactAbility extends PlantAbility {
         this.freezeDurationTicks = freezeDurationTicks;
     }
 
+    // Upgrade (FREEZE_DURATION_EXT): keeps stepped-on zombies frozen longer (Iceberg Lettuce).
+    public void extendFreeze(int ticks) {
+        this.freezeDurationTicks += ticks;
+    }
+
     @Override
     public void execute(Plant owner, GameSession gameSession) {
         List<Zombie> zombies = gameSession.getMap().getRow(owner.getY()).getZombies();

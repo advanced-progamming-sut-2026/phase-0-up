@@ -136,6 +136,23 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
         this.shotCount += amount;
     }
 
+    // Upgrade (ADDITIONAL_PIERCE): shots pass through more zombies (Cactus).
+    public void increasePierce(int amount) {
+        this.pierceCount += amount;
+    }
+
+    // Upgrade (TILE_RANGE_EXT): extends how far short-range shots travel (Sea/Puff/Fume-shroom).
+    public void increaseMaxRange(double tiles) {
+        if (this.maxRange > 0.0) {
+            this.maxRange += tiles;
+        }
+    }
+
+    // Upgrade (SPLASH_DAMAGE_BUFF): boosts the area splash of lobbed melons.
+    public void increaseSplashDamage(int amount) {
+        this.splashDamage += amount;
+    }
+
     @Override
     public void queueBurst(int shots) {
         this.plantFoodBurst = true;

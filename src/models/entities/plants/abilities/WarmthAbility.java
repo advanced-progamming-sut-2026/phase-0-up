@@ -22,6 +22,12 @@ public class WarmthAbility extends PlantAbility {
         this.colRadius = colRadius;
     }
 
+    // Upgrade (MELT_AREA_3X3): widens the thaw aura to the surrounding tiles (Hot Potato).
+    public void setRadius(int newRowRadius, int newColRadius) {
+        this.rowRadius = newRowRadius;
+        this.colRadius = newColRadius;
+    }
+
     @Override
     public void execute(Plant owner, GameSession gameSession) {
         GameMap map = gameSession.getMap();

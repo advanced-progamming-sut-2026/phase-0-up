@@ -1,5 +1,7 @@
 package utils.gameinitializers;
 
 public class GameInitializer {
-    public void loadAllData(){}
+    public void loadAllData() {
+        PlantInitializer.loadAllPlants();
+    }
 }

@@ -177,6 +177,7 @@ public class Projectile extends Entity {
     }
 
     public void onHit(Zombie target, GameSession gameSession) {
+
         target.getHealth().applyDamage(damage, element, shooter);
 
         hitTargets.add(target);

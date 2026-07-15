@@ -18,6 +18,11 @@ public class InstantFreezeAbility extends PlantAbility {
         this.hasExecuted = false;
     }
 
+    // Upgrade (FREEZE_DURATION_EXT): keeps the board-wide freeze in effect longer (Ice-shroom).
+    public void extendFreeze(int ticks) {
+        this.freezeDurationTicks += ticks;
+    }
+
     @Override
     public boolean canExecute(Plant owner, GameSession gameSession) {
         return !hasExecuted;

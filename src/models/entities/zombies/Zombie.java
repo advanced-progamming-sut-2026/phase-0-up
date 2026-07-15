@@ -80,4 +80,8 @@ public class Zombie{
     public String getAlias() {
         return alias;
     }
+
+    public String getCategory() {
+        return category;
+    }
 }

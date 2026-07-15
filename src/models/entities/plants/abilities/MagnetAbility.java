@@ -18,6 +18,11 @@ public class MagnetAbility extends PlantAbility {
         this.range = range;
     }
 
+    // Upgrade (TILE_RANGE_EXT): reaches further to strip metal armour (Magnet-shroom).
+    public void increaseRange(double tiles) {
+        this.range += tiles;
+    }
+
     @Override
     public void execute(Plant owner, GameSession gameSession) {
         Zombie target = nearestMetalInRange(owner, gameSession);

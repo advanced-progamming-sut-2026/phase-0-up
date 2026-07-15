@@ -8,10 +8,16 @@ import models.map.Row;
 // Triggers plant-food on every planted plant of the mint's own family (category), then is consumed.
 public class MintFamilyBoostAbility extends PlantAbility {
     private boolean hasExecuted;
+    private int boostDurationTicks;
 
     public MintFamilyBoostAbility() {
         super(0, null);
         this.hasExecuted = false;
+    }
+
+    // Upgrade (DURATION_EXT): lengthens how long the shared plant-food boost lasts.
+    public void extendDuration(int ticks) {
+        this.boostDurationTicks += ticks;
     }
 
     @Override

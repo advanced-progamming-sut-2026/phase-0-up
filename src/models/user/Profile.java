@@ -27,12 +27,16 @@ public class Profile {
     private Map<String, Integer> plantsLevels;
     private Set<String> boostedSeeds;
     private GreenHouse myGreenHouse;
-    private List<Quest> activeQuests;
-    private List<Quest> completedQuests;
+    // Quests and chapters are live game objects rebuilt from the registries at runtime (their graph
+    // reaches Level -> Wave -> Zombie, which holds a back-reference to GameSession and is not
+    // serializable). They are marked transient so the user save only persists real progress data;
+    // progress itself is tracked by the scalar/id fields (lastChapter, lastLevel, quest counters, ...).
+    private transient List<Quest> activeQuests;
+    private transient List<Quest> completedQuests;
     private int lastChapter;
     private int lastLevel;
-    private List<Chapter> unlockedChapters;
-    private Chapter currentChapter;
+    private transient List<Chapter> unlockedChapters;
+    private transient Chapter currentChapter;
     private Map<String, Integer> passedMiniGames;
     private int dailyQuestsDone;
     private int noneDailyQuestsDone;

@@ -26,6 +26,11 @@ public class InstantSunBurstAbility extends PlantAbility{
         return !hasExecuted;
     }
 
+    // Upgrade (SUN_AMOUNT_BUFF): increases the one-shot sun payout (Gold Bloom).
+    public void increaseSunAmount(int amount) {
+        this.sunAmount += amount;
+    }
+
     @Override
     public void execute(Plant owner, GameSession gameSession) {
         for (int i = 0; i < spawnCount; i++) {

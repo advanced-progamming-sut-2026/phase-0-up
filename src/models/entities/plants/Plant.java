@@ -7,9 +7,11 @@ import models.entities.plants.components.PlantHealthComponent;
 import models.entities.plants.components.StackableComponent;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
+import utils.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Plant extends Entity {
     protected int level;
@@ -35,6 +37,11 @@ public class Plant extends Entity {
     private boolean deathTriggered;
 
     protected String category;
+
+    // Upgrade (AUTO_PLANT_FOOD_CHANCE): per-second odds of auto-activating this plant's plant food.
+    private double autoPlantFoodChance;
+    private int autoFoodTickTimer;
+    private final Random random = new Random();
 
     public Plant(String name, int id, double x, int y,
                  PlantHealthComponent health, int level, int cost, boolean isAquatic) {
@@ -113,6 +120,26 @@ public class Plant extends Entity {
                 ability.update(this, gameSession);
             }
         }
+
+        updateAutoPlantFood(gameSession);
+    }
+
+    // Rolls the auto-plant-food chance about once per second (Mega Gatling Pea's level-3 upgrade).
+    private void updateAutoPlantFood(GameSession gameSession) {
+        if (autoPlantFoodChance <= 0) {
+            return;
+        }
+        autoFoodTickTimer++;
+        if (autoFoodTickTimer >= Constants.TICKS_PER_SECOND) {
+            autoFoodTickTimer = 0;
+            if (random.nextDouble() < autoPlantFoodChance) {
+                triggerPlantFood(gameSession);
+            }
+        }
+    }
+
+    public void setAutoPlantFoodChance(double chance) {
+        this.autoPlantFoodChance = chance;
     }
 
     public int getLevel() { return level; }
