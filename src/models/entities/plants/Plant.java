@@ -14,7 +14,9 @@ import java.util.List;
 public class Plant extends Entity {
     protected int level;
     protected int cost;
-
+    private int iceHits = 0;
+    private boolean isFrozen = false;
+    private int iceBlockHp = 0;
     protected List<PlantTags> tags;
 
     protected PlantHealthComponent health;
@@ -23,7 +25,6 @@ public class Plant extends Entity {
 
     protected boolean thisPlantHasFood;
     protected CompositePlantFoodStrategy plantFoodStrategy;
-    protected boolean isFrozen;
 
     protected boolean isAquatic;
 
@@ -151,5 +152,32 @@ public class Plant extends Entity {
 
     public boolean isAquatic() {
         return isAquatic;
+    }
+
+    public void takeIceHit() {
+        if (isFrozen) return;
+
+        this.iceHits++;
+        if (this.iceHits >= 3) {
+            freezePlant();
+        }
+    }
+
+    private void freezePlant() {
+        this.isFrozen = true;
+        this.iceBlockHp = 300;
+        System.out.println(this.getName() + " is completely frozen in ice!");
+    }
+
+    public void damageIceBlock(int damage) {
+        if (!isFrozen) return;
+
+        this.iceBlockHp -= damage;
+        if (this.iceBlockHp <= 0) {
+            this.isFrozen = false;
+            this.iceHits = 0;
+            this.iceBlockHp = 0;
+            System.out.println("Ice block broken! " + this.getName() + " is free!");
+        }
     }
 }

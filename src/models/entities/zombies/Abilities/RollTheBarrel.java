@@ -64,7 +64,7 @@ public class RollTheBarrel implements ZombieAbility {
             int row = roller.getMovement().getPositionY();
             double x = roller.getMovement().getPositionX();
             Barrel b = new Barrel(roller.getHealth().getLayers().pop().getCurrentHp() , x , row);
-            roller.getGameSession().getMap().getRow(row).addBarrel(b);
+            roller.getGameSession().getMap().getRow(row).addObstacle(b);
 
             System.out.println("Roller died! Barrel left behind as a shield at X: " + x);
         }

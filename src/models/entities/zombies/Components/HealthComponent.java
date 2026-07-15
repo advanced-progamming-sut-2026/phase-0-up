@@ -36,7 +36,7 @@ public class HealthComponent {
 
         int remainingDamage = damage;
 
-        if (element.piercesBaseArmor()) {
+        if (element!= null && element.piercesBaseArmor()) {
             for (HealthLayer layer : layers) {
                 if (layer.getType() == ArmorType.BASE_BODY) {
                     layer.takeDamage(remainingDamage);
