@@ -19,7 +19,11 @@ public class Plant extends Entity {
     private int iceHits = 0;
     private boolean isFrozen = false;
     private int iceBlockHp = 0;
+    private boolean hasOctopus = false;
+    private int octopusHp = 0;
     protected List<PlantTags> tags;
+    private boolean isCat = false;
+    private Zombie cursedByWizard = null;
 
     protected PlantHealthComponent health;
 
@@ -207,4 +211,47 @@ public class Plant extends Entity {
             System.out.println("Ice block broken! " + this.getName() + " is free!");
         }
     }
+
+    public void bindWithOctopus() {
+        if (hasOctopus || isDead()) return;
+
+        this.hasOctopus = true;
+        this.octopusHp = 200;
+        System.out.println(this.getName() + " was trapped by an octopus!");
+    }
+
+    public void damageOctopus(int damage) {
+        if (!hasOctopus) return;
+
+        this.octopusHp -= damage;
+        if (this.octopusHp <= 0) {
+            this.hasOctopus = false;
+            this.octopusHp = 0;
+            System.out.println("Octopus destroyed! " + this.getName() + " is free!");
+        }
+    }
+
+    public boolean hasOctopus() { return hasOctopus; }
+
+// نکته مهم: در متدهای شلیک تیر (shoot) یا تولید خورشید در گیاهانت، این شرط را اضافه کن:
+// if (this.isFrozen() || this.hasOctopus()) return; // گیاه در این وضعیت هیچ کاری نمی‌کند!
+
+    public void turnIntoCat(Zombie wizard) {
+        if (isCat || isDead()) return;
+
+        this.isCat = true;
+        this.cursedByWizard = wizard;
+        System.out.println(this.getName() + " was turned into a sheep/cat by Wizard!");
+    }
+
+    public void revertFromCat() {
+        if (!isCat) return;
+
+        this.isCat = false;
+        this.cursedByWizard = null;
+        System.out.println(this.getName() + " reverted back to normal!");
+    }
+
+    public boolean isCat() { return isCat; }
+    public Zombie getCursedByWizard() { return cursedByWizard; }
 }

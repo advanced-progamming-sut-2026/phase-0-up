@@ -31,6 +31,7 @@ public class Projectile extends Entity {
     private double exactY;
 
     private boolean isDestroyed;
+    private boolean isReflectedByJester = false;
 
     private int bounceCount;
 
@@ -87,6 +88,10 @@ public class Projectile extends Entity {
         this.y = (int) Math.round(exactY);
 
         if (checkOutOfBounds()) return;
+
+        if (handleBlockedPlantCollisions(gameSession)) {
+            return;
+        }
 
         handleTerrainCollisions(gameSession);
 
@@ -177,11 +182,28 @@ public class Projectile extends Entity {
     }
 
     public void onHit(Zombie target, GameSession gameSession) {
+        if (target.getState().isImmuneToFire() && this.element == Element.FIRE) {
+            System.out.println("Imp Dragon absorbed the fire projectile without taking damage!");
+            this.isDestroyed = true;
+            return;
+        }
+
+        if (target.getState().isSpinning() && this.trajectory != Trajectory.LOBBED) {
+            this.speedX = -Math.abs(this.speedX);
+            this.isReflectedByJester = true;
+
+            System.out.println("Jester deflected the projectile back to plants!");
+            return;
+        }
+
+        if (target.getState().isSubmerged()) {
+            if (this.trajectory != Trajectory.LOBBED) {
+                return;
+            }
+        }
 
         target.getHealth().applyDamage(damage, element, shooter);
-
         hitTargets.add(target);
-
         element.applyOnHit(target.getState());
 
         if (this.type == ProjectileType.BOWLING_BULB && bounceCount > 0) {
@@ -311,5 +333,42 @@ public class Projectile extends Entity {
 
     public Plant getShooter() {
         return shooter;
+    }
+
+    private boolean handleBlockedPlantCollisions(GameSession gameSession) {
+        if (this.trajectory == Trajectory.LOBBED) {
+            return false;
+        }
+
+        int currentCellIndex = (int) this.x;
+        if (currentCellIndex < 0 || currentCellIndex >= 9) return false;
+
+        Cell currentCell = gameSession.getMap().getRow(this.y).cellAt(currentCellIndex);
+
+        if (currentCell != null && currentCell.hasPlant()) {
+            Plant p = currentCell.getCurrentPlant();
+            if (p != null && (p.isFrozen() || p.hasOctopus())) {
+
+                if (p.hasOctopus()) {
+                    p.damageOctopus(this.damage);
+                } else if (p.isFrozen()) {
+                    // فرض: متد damageIceBlock در کلاس Plant شما تعریف شده است
+                    // p.damageIceBlock(this.damage);
+                }
+
+                this.isDestroyed = true;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean isReflectedByJester() {
+        return isReflectedByJester;
+    }
+
+    public void setReflectedByJester(boolean reflectedByJester) {
+        this.isReflectedByJester = reflectedByJester;
     }
 }

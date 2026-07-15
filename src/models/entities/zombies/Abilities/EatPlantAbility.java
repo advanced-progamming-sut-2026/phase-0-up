@@ -19,7 +19,7 @@ public class EatPlantAbility implements ZombieAbility {
 
         Plant targetPlant = findTargetPlant(zombie);
 
-        if (targetPlant == null || targetPlant.isDead()) {
+        if (targetPlant == null || targetPlant.isDead() && !targetPlant.isCat()) {
             if (zombie.getState().getCurrentAction() == ActionState.EATING) {
                 zombie.getState().setAction(ActionState.WALKING);
             }
