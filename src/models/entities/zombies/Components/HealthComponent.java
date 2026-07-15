@@ -5,6 +5,8 @@ import models.entities.zombies.Abilities.RollTheBarrel;
 import models.entities.zombies.Abilities.ZombieAbility;
 import models.entities.zombies.Zombie;
 import models.entities.projectiles.Element;
+import models.map.Cell;
+import models.map.Row;
 
 import java.util.List;
 import java.util.Stack;
@@ -83,6 +85,16 @@ public class HealthComponent {
             }
         }
 
+        for (Row row : currentZombie.getGameSession().getMap().getRows()) {
+            for (Cell cell : row.getCells()) {
+                if (cell.hasPlant()) {
+                    Plant p = cell.getCurrentPlant();
+                    if (p != null && p.isCat() && p.getCursedByWizard() == currentZombie) {
+                        p.revertFromCat();
+                    }
+                }
+            }
+        }
 
 
 
