@@ -9,10 +9,11 @@ import utils.Constants;
 import java.util.List;
 
 // Damages every live zombie within a (rowRadius x colRadius) tile area around a plant.
-final class AreaAttack {
+public final class AreaAttack {
     private AreaAttack() { }
 
-    static void strike(GameSession gameSession, Plant source, int rowRadius, int colRadius, int damage, Element element) {
+    public static void strike(GameSession gameSession, Plant source, int rowRadius, int colRadius,
+                              int damage, Element element) {
         for (int rowOffset = -rowRadius; rowOffset <= rowRadius; rowOffset++) {
             int row = source.getY() + rowOffset;
             if (row < 0 || row >= Constants.BOARD_ROWS) continue;

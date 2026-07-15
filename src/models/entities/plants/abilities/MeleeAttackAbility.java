@@ -6,7 +6,7 @@ import models.entities.projectiles.Element;
 import models.game.GameSession;
 
 // Repeating melee strike over a (rowRadius x colRadius) area; damage and reach can grow by stage (Kiwibeast).
-public class MeleeAttackAbility extends PlantAbility {
+public class MeleeAttackAbility extends PlantAbility implements Growable {
     private int[] damageByStage;
     private int[] rowRadiusByStage;
     private int[] colRadiusByStage;
@@ -15,6 +15,11 @@ public class MeleeAttackAbility extends PlantAbility {
 
     private int currentStage;
     private int currentAliveTicks;
+
+    // plant food flurry (Bonk Choy, Wasabi Whip)
+    private int flurryTicksRemaining;
+    private int flurryStrikeTimer;
+    private static final int FLURRY_STRIKE_INTERVAL = 2;
 
     public MeleeAttackAbility(int actionInterval, TriggerStrategy triggerStrategy, int[] damageByStage,
                               int[] rowRadiusByStage, int[] colRadiusByStage, int[] stageUpTicks, Element element) {
@@ -37,6 +42,8 @@ public class MeleeAttackAbility extends PlantAbility {
             currentStage++;
         }
 
+        updateFlurry(owner, gameSession);
+
         super.update(owner, gameSession);
     }
 
@@ -45,5 +52,39 @@ public class MeleeAttackAbility extends PlantAbility {
         AreaAttack.strike(gameSession, owner,
                 rowRadiusByStage[currentStage], colRadiusByStage[currentStage],
                 damageByStage[currentStage], element);
+    }
+
+    @Override
+    public void growToMaxStage() {
+        this.currentStage = damageByStage.length - 1;
+    }
+
+    // Plant food: one powerful boosted strike over a slightly wider reach (Phat Beet, Kiwibeast).
+    public void plantFoodStrike(Plant owner, GameSession gameSession, int damageMultiplier) {
+        int strikeDamage = damageByStage[currentStage] * damageMultiplier;
+        int rowR = rowRadiusByStage[currentStage] + 1;
+        int colR = colRadiusByStage[currentStage] + 1;
+        AreaAttack.strike(gameSession, owner, rowR, colR, strikeDamage, element);
+    }
+
+    // Plant food: a rapid flurry of area strikes over a duration (Bonk Choy, Wasabi Whip).
+    public void activatePlantFoodFlurry(int durationTicks) {
+        this.flurryTicksRemaining = durationTicks;
+        this.flurryStrikeTimer = 0;
+    }
+
+    private void updateFlurry(Plant owner, GameSession gameSession) {
+        if (flurryTicksRemaining <= 0) return;
+        flurryTicksRemaining--;
+
+        if (flurryStrikeTimer > 0) {
+            flurryStrikeTimer--;
+            return;
+        }
+
+        int rowR = rowRadiusByStage[currentStage] + 1;
+        int colR = colRadiusByStage[currentStage] + 1;
+        AreaAttack.strike(gameSession, owner, rowR, colR, damageByStage[currentStage], element);
+        flurryStrikeTimer = FLURRY_STRIKE_INTERVAL;
     }
 }

@@ -11,7 +11,7 @@ import models.game.GameSession;
 
 import java.util.List;
 
-public class ShootProjectileAbility extends PlantAbility {
+public class ShootProjectileAbility extends PlantAbility implements Burstable {
     private ProjectileType projectileType;
     private int damage;
     private int shotCount;
@@ -30,6 +30,14 @@ public class ShootProjectileAbility extends PlantAbility {
     private int remainingShotsInBurst;
     private int burstDelayTicks;
     private int burstTimer;
+    private boolean plantFoodBurst;
+    private static final int PLANT_FOOD_BURST_DELAY_TICKS = 1;
+
+    // plant food: staggered giant shots
+    private int pendingGiantShots;
+    private int giantShotTimer;
+    private int giantShotMultiplier = 1;
+    private static final int GIANT_SHOT_DELAY_TICKS = 5;
 
     public ShootProjectileAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
                                   int damage, int shotCount, double speed, int burstDelayTicks, int pierceCount,
@@ -73,16 +81,20 @@ public class ShootProjectileAbility extends PlantAbility {
                 remainingShotsInBurst--;
 
                 if (remainingShotsInBurst > 0) {
-                    burstTimer = burstDelayTicks;
+                    burstTimer = plantFoodBurst ? PLANT_FOOD_BURST_DELAY_TICKS : burstDelayTicks;
                 }
             }
         }
+
+        updateGiantShots(owner, gameSession);
 
         super.update(owner, gameSession);
     }
 
     @Override
     public void execute(Plant owner, GameSession gameSession) {
+
+        plantFoodBurst = false;
 
         fireSingleProjectile(owner, gameSession);
 
@@ -122,5 +134,52 @@ public class ShootProjectileAbility extends PlantAbility {
 
     public void increaseShotCount(int amount) {
         this.shotCount += amount;
+    }
+
+    @Override
+    public void queueBurst(int shots) {
+        this.plantFoodBurst = true;
+        this.remainingShotsInBurst += shots;
+    }
+
+    // Plant food: queues `count` giant shots (boosted damage), fired one at a time with a delay.
+    public void queueGiantShots(int count, int damageMultiplier) {
+        this.pendingGiantShots += count;
+        this.giantShotMultiplier = damageMultiplier;
+    }
+
+    private void updateGiantShots(Plant owner, GameSession gameSession) {
+        if (pendingGiantShots <= 0) return;
+
+        if (giantShotTimer > 0) {
+            giantShotTimer--;
+            return;
+        }
+
+        int originalDamage = this.damage;
+        this.damage = originalDamage * giantShotMultiplier;
+        fireSingleProjectile(owner, gameSession);
+        this.damage = originalDamage;
+
+        pendingGiantShots--;
+        if (pendingGiantShots > 0) {
+            giantShotTimer = GIANT_SHOT_DELAY_TICKS;
+        }
+    }
+
+    // Plant food: permanently upgrades this shooter's projectiles (Cactus electric thorns).
+    public void upgradeToElectric(int damageMultiplier, int pierceCount) {
+        this.projectileType = ProjectileType.PIERCING_SPIKE;
+        this.damage *= damageMultiplier;
+        this.pierceCount = pierceCount;
+    }
+
+    // Plant food: lobs one of this plant's projectiles into the given lane (lobber barrage at random zombies).
+    public void lobInLane(Plant owner, GameSession gameSession, int targetRow) {
+        Projectile projectile = new Projectile(
+                owner.getX() + 0.5, targetRow, projectileType, damage, speedX, 0, owner, maxRange, element, trajectory);
+        projectile.setPierceCount(pierceCount);
+        projectile.setSplashProperties(splashDamage, splashRadiusX, splashRowRadius);
+        gameSession.getMap().getRow(targetRow).addProjectile(projectile);
     }
 }

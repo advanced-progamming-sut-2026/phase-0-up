@@ -8,7 +8,7 @@ import models.game.GameSession;
 
 import java.util.Random;
 
-public class ProduceSunAbility extends PlantAbility {
+public class ProduceSunAbility extends PlantAbility implements Growable {
     private int[] sunAmountsByStage;
     private int[] stageUpTicks;
 
@@ -68,5 +68,10 @@ public class ProduceSunAbility extends PlantAbility {
 
             gameSession.addSun(sun);
         }
+    }
+
+    @Override
+    public void growToMaxStage() {
+        this.currentStage = sunAmountsByStage.length - 1;
     }
 }

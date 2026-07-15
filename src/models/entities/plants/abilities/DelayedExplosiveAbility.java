@@ -16,4 +16,9 @@ public class DelayedExplosiveAbility extends AreaExplosiveAbility {
     public void execute(Plant owner, GameSession gameSession) {
         detonate(owner, gameSession);
     }
+
+    // Plant food: skips the arm delay so the mine is immediately live.
+    public void armInstantly() {
+        this.cooldownTimer = 0;
+    }
 }

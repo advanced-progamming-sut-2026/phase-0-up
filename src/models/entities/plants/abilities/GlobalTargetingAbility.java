@@ -18,6 +18,10 @@ public abstract class GlobalTargetingAbility extends PlantAbility {
     private TargetingPriority priorityStrategy;
     private double priorityRange;
 
+    private int pendingBurstShots;
+    private int burstTimer;
+    private static final int BURST_INTERVAL = 2;
+
     public GlobalTargetingAbility(int actionInterval, TriggerStrategy triggerStrategy,
                                   TargetingPriority priorityStrategy, double priorityRange) {
         super(actionInterval, triggerStrategy);
@@ -26,7 +30,24 @@ public abstract class GlobalTargetingAbility extends PlantAbility {
         this.priorityRange = priorityRange;
     }
 
+    @Override
+    public void update(Plant owner, GameSession gameSession) {
+        if (pendingBurstShots > 0) {
+            if (burstTimer > 0) {
+                burstTimer--;
+            } else {
+                execute(owner, gameSession);
+                pendingBurstShots--;
+                burstTimer = BURST_INTERVAL;
+            }
+        }
+        super.update(owner, gameSession);
+    }
 
+    // Plant food: fires a rapid burst of `shots` homing hits (Cat-tail).
+    public void queueBurst(int shots) {
+        this.pendingBurstShots += shots;
+    }
 
     @Override
     public void execute(Plant owner, GameSession gameSession) {

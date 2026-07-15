@@ -22,6 +22,11 @@ public class PassiveModifierAbility extends PlantAbility {
         // passive: the effect is applied to passing projectiles via applyTo(...)
     }
 
+    // Plant food: upgrades the projectile boost multiplier (Torchwood blue flame, x2 -> x3).
+    public void setDamageMultiplier(int multiplier) {
+        this.damageMultiplier = multiplier;
+    }
+
     // Converts a neutral, direct projectile passing over the plant and scales its damage.
     public void applyTo(Projectile projectile) {
         if (projectile.getTrajectory() == Trajectory.DIRECT && projectile.getElement() == Element.NEUTRAL) {

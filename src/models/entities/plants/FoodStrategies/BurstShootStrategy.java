@@ -1,15 +1,24 @@
 package models.entities.plants.FoodStrategies;
 
 import models.entities.plants.Plant;
-import models.entities.projectiles.ProjectileType;
-import models.entities.projectiles.ShootPattern;
+import models.entities.plants.abilities.Burstable;
+import models.entities.plants.abilities.PlantAbility;
+import models.game.GameSession;
 
-public class BurstShootStrategy implements PlantFoodStrategy{
-    private ProjectileType projectileType;
-    private int projectileCount;
-    private ShootPattern pattern;
+// PROJECTILE_BURST plant-food: makes the plant's shooter fire a rapid extra volley.
+public class BurstShootStrategy implements PlantFoodStrategy {
+    private int burstShots;
 
-    public BurstShootStrategy(ProjectileType type, int count, ShootPattern pattern) {}
+    public BurstShootStrategy(int burstShots) {
+        this.burstShots = burstShots;
+    }
+
     @Override
-    public void executeEffect(Plant sourcePlant) {};
+    public void executeEffect(Plant sourcePlant, GameSession gameSession) {
+        for (PlantAbility ability : sourcePlant.getAbilities()) {
+            if (ability instanceof Burstable) {
+                ((Burstable) ability).queueBurst(burstShots);
+            }
+        }
+    }
 }
