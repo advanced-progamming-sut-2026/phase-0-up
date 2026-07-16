@@ -36,6 +36,7 @@ public class GameEngine {
 
     public void startLoop() {
         sunSystem.reset();
+        gameSession.startMode();
         running = true;
         run();
     }
@@ -53,7 +54,12 @@ public class GameEngine {
         }
     }
 
-    public void advanceOneTick() {}
+    public void advanceOneTick() {
+        // TimeSystem.advance drives the clock and per-tick systems (owned separately); once state has
+        // settled for this tick, evaluate the level's win/lose rules. Kept here, not in TimeSystem,
+        // so time-advancement and rule-evaluation never interfere.
+        gameSession.evaluateModeRules();
+    }
 
 
     private boolean routeAndExecute(String input) {

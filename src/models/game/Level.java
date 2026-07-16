@@ -41,5 +41,40 @@ public class Level {
     public LevelTemplate getTemplate() {
         return template;
     }
-    public boolean isUnlocked() {return unlocked;}
+
+    public Wave[] getWaves() {
+        return waves;
+    }
+
+    public List<String> getAvailablePlants() {
+        return availablePlants;
+    }
+
+    public int getWaveCount() {
+        return waveCount;
+    }
+
+    public int getSeedSlots() {
+        return seedSlots;
+    }
+
+    public char[][] getTerrainLayout() {
+        return terrainLayout;
+    }
+
+    public boolean isUnlocked() {
+        return unlocked;
+    }
+
+    public void setUnlocked(boolean unlocked) {
+        this.unlocked = unlocked;
+    }
+
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
+    }
 }

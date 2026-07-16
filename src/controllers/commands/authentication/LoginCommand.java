@@ -8,6 +8,7 @@ import models.user.AppSession;
 import models.user.User;
 import utils.Result;
 import utils.regex.LoginMenuRegex;
+import utils.gameinitializers.LevelInitializer;
 import utils.storage.DatabaseManager;
 import utils.storage.PasswordHasher;
 import views.renderers.MenuRenderer.AllMenuRenderer;
@@ -46,6 +47,8 @@ public class LoginCommand implements Command {
         }
 
         appSession.setCurrentUser(user);
+        // Chapters/levels aren't persisted; rebuild the campaign graph from progress at login.
+        LevelInitializer.attachCampaign(user.getProfile());
         if (stayLoggedIn) {
             clearAllStayLoggedInFlags();
             user.setStayLoggedIn(true);

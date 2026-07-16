@@ -1,7 +1,97 @@
 package factories;
 
 import models.game.Level;
+import models.game.Wave;
+import models.game.gamemodes.ConveyorBeltMode;
+import models.game.gamemodes.DeadLineMode;
+import models.game.gamemodes.GameMode;
+import models.game.gamemodes.GameModeType;
+import models.game.gamemodes.LockedPlantsMode;
+import models.game.gamemodes.NightOpsMode;
+import models.game.gamemodes.SaveOurSeedsMode;
+import models.game.gamemodes.StandardMode;
+import models.templates.LevelTemplate;
+import models.templates.LevelTemplate.SpecialRules;
+import models.templates.LevelTemplate.WaveSpec;
+import utils.registry.LevelRegistry;
 
-public class LevelFactory {
-    public static Level createLevel(String id){return null;}
+import java.util.ArrayList;
+import java.util.List;
+
+// Builds a live Level from a registered blueprint: selects the GameMode strategy and hands it its
+// rule data, assembles the Wave[], and computes the final selectable-plant list. This is the single
+// place that wires special-level parameters into a mode, so GameSession and the core loop never
+// branch on level type.
+public final class LevelFactory {
+    private LevelFactory() { }
+
+    public static Level createLevel(String id) {
+        LevelTemplate template = LevelRegistry.getInstance().getLevelTemplateById(id);
+        if (template == null) {
+            return null;
+        }
+
+        GameMode mode = buildGameMode(template);
+        Wave[] waves = buildWaves(template);
+        List<String> availablePlants = resolveAvailablePlants(template);
+
+        return new Level(waves, template, mode, template.getStartingSun(), availablePlants,
+                waves.length, template.getSeedSlots(), template.getTerrainLayout());
+    }
+
+    private static GameMode buildGameMode(LevelTemplate template) {
+        SpecialRules rules = template.getRules();
+        switch (GameModeType.fromJson(template.getMode())) {
+            case LOCKED_PLANTS:
+                return new LockedPlantsMode(
+                        rules != null ? rules.getLockedType() : 1,
+                        rules != null ? rules.getBannedPlants() : null);
+            case NIGHT_OPS:
+                return new NightOpsMode(rules == null || rules.isDisableSkySun());
+            case DEAD_LINE:
+                return new DeadLineMode(rules != null ? rules.getDeadLineColumn() : 0);
+            case SAVE_OUR_SEEDS:
+                return new SaveOurSeedsMode(rules != null ? rules.getProtectedPlants() : null);
+            case CONVEYOR_BELT:
+                return new ConveyorBeltMode();
+            case STANDARD:
+            default:
+                return new StandardMode();
+        }
+    }
+
+    private static Wave[] buildWaves(LevelTemplate template) {
+        List<WaveSpec> specs = template.getWaves();
+        if (specs == null || specs.isEmpty()) {
+            // Fall back to an empty wave sequence sized by waveCount; the WaveSystem can still drive it.
+            int count = Math.max(0, template.getWaveCount());
+            Wave[] waves = new Wave[count];
+            for (int i = 0; i < count; i++) {
+                waves[i] = new Wave(i + 1, i == count - 1, 0, 0, new ArrayList<>());
+            }
+            return waves;
+        }
+
+        Wave[] waves = new Wave[specs.size()];
+        for (int i = 0; i < specs.size(); i++) {
+            WaveSpec spec = specs.get(i);
+            boolean last = spec.isFinal() || i == specs.size() - 1;
+            waves[i] = new Wave(i + 1, last, spec.getBudget(), spec.getDelay(), spec.getZombies());
+        }
+        return waves;
+    }
+
+    // Selectable plants = authored list minus any banned plants, so Locked Plants is enforced even
+    // if the authored availablePlants list wasn't pre-trimmed.
+    private static List<String> resolveAvailablePlants(LevelTemplate template) {
+        List<String> available = new ArrayList<>();
+        if (template.getAvailablePlants() != null) {
+            available.addAll(template.getAvailablePlants());
+        }
+        SpecialRules rules = template.getRules();
+        if (rules != null && rules.getBannedPlants() != null) {
+            available.removeAll(rules.getBannedPlants());
+        }
+        return available;
+    }
 }

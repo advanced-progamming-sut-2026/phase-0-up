@@ -105,6 +105,31 @@ public class GameSession {
         return cell.removePlant();
     };
     public void advanceTime(int ticks) {};
+
+    // --- GameMode seam ---------------------------------------------------------------------------
+    // Rule evaluation is deliberately kept OUT of advanceTime so it never overlaps with
+    // TimeSystem.advance (which owns the clock). The engine calls startMode() once at level start
+    // and evaluateModeRules() each tick after the systems have run.
+    public void startMode() {
+        if (mode != null) {
+            mode.onStart(this);
+        }
+    }
+
+    public void evaluateModeRules() {
+        if (mode == null || state != GameState.PLAYING) {
+            return;
+        }
+        mode.onTick(this);
+        if (mode.checkLose(this)) {
+            state = GameState.LOST;
+            onLose();
+        } else if (mode.checkWin(this)) {
+            state = GameState.WON;
+            onWin();
+        }
+    }
+
     public Result plantFood(int x, int y){
         if (!map.isValidCoordinate(x, y)) {
             return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
@@ -122,7 +147,9 @@ public class GameSession {
         return new Result(true, "Fed plant food to " + target.getName() + " at (" + x + ", " + y + ").");
 
     };
-    public void onWin(){};
+    public void onWin(){
+        controllers.systems.CampaignSystem.getInstance().completeLevel(player, level);
+    };
     public void onLose(){};
     public boolean isCooldownRemoved() {
         return cooldownRemoved;
