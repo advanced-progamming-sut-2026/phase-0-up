@@ -9,7 +9,7 @@ public class EatPlantAbility implements ZombieAbility {
     private int tickCounter = 0;
     private static final int TICKS_PER_ATTACK = 3;
 
-    private static final double COLLISION_THRESHOLD = 30.0;
+    private static final double COLLISION_THRESHOLD = 0.3;
 
     @Override
     public void execute(Zombie zombie) {
@@ -19,7 +19,7 @@ public class EatPlantAbility implements ZombieAbility {
 
         Plant targetPlant = findTargetPlant(zombie);
 
-        if (targetPlant == null || targetPlant.isDead()) {
+        if (targetPlant == null || targetPlant.isDead() && !targetPlant.isCat()) {
             if (zombie.getState().getCurrentAction() == ActionState.EATING) {
                 zombie.getState().setAction(ActionState.WALKING);
             }
@@ -35,6 +35,7 @@ public class EatPlantAbility implements ZombieAbility {
             if (targetPlant.getHealth() != null) {
                 targetPlant.getHealth().takeDamage(zombie.getEatDamage());
             }
+            targetPlant.onEaten(zombie, zombie.getGameSession());
 
             tickCounter = 0;
         }
@@ -48,7 +49,7 @@ public class EatPlantAbility implements ZombieAbility {
         double minDistance = Double.MAX_VALUE;
 
         for (Cell cell : zombie.getGameSession().getMap().getRow(zombieRow).getCells()) {
-            Plant plant = cell.getCurrentPlant();
+            Plant plant = cell.getDefendingPlant(); // eats the protective cover (Pumpkin) first, if any
             if (plant != null && plant.getY() == zombieRow && !plant.isDead()) {
                 double distance = Math.abs(zombieX - plant.getX());
 

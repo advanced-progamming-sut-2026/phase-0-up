@@ -12,7 +12,7 @@ public class FrozenTerrain extends Terrain{
     private boolean isMelted;
 
     public FrozenTerrain() {
-        this.plantable = true;
+        this.plantable = false;
         this.isMelted = false;
         this.symbol = '&';
         this.blocksProjectiles = true;

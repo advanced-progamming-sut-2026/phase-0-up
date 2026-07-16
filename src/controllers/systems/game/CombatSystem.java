@@ -47,6 +47,7 @@ public class CombatSystem {
     }
     private void processDeaths(GameSession session){
         //TODO: call onDeath method and then remove.
+        //TODO: remove protector if dead.
     }
     private void updateZombieStates(GameSession session){}
 }

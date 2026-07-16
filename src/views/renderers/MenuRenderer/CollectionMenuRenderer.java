@@ -63,9 +63,23 @@ public class CollectionMenuRenderer {
         OutputHandler.showMessage("cost: " + template.getCost());
         OutputHandler.showMessage("recharge: " + template.getRecharge());
         OutputHandler.showMessage("base hp: " + template.getBaseHp());
-        OutputHandler.showMessage("sun production rate: " + template.getSunProductionRate());
-        OutputHandler.showMessage("base ability: " + template.getBaseAbility());
-        OutputHandler.showMessage("plant food effect: " + template.getPlantFoodEffect());
+        OutputHandler.showMessage("damage: " + template.getDamage());
+        OutputHandler.showMessage("base ability: " + template.getAbilityType());
+        OutputHandler.showMessage("plant food: " + formatPlantFood(template));
+    }
+
+    private String formatPlantFood(PlantTemplate template) {
+        if (template.getPlantFood() == null || template.getPlantFood().isEmpty()) {
+            return "none";
+        }
+        StringBuilder effects = new StringBuilder();
+        for (PlantTemplate.PlantFoodSpec spec : template.getPlantFood()) {
+            if (effects.length() > 0) {
+                effects.append(", ");
+            }
+            effects.append(spec.getType());
+        }
+        return effects.toString();
     }
     public void renderAllZombies(ZombieRegistry registry){
         Map<String, ZombieTemplate> all = registry.getZombieTemplatesByAlias();

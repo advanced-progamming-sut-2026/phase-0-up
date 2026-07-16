@@ -17,7 +17,7 @@ public class Row {
     private List<Zombie> activeZombies;
     private List<Projectile> activeProjectiles;
     private Lawnmower lawnmower;
-    private List<Barrel> activeBarrels;
+    private List<Obstacle> activeObstacles;
 
     public Row(int index) {
         cells = new ArrayList<>();
@@ -29,7 +29,7 @@ public class Row {
         activeZombies = new ArrayList<>();
         lawnmower = new Lawnmower(index);
         this.index = index;
-        activeBarrels = new ArrayList<>();
+        this.activeObstacles = new ArrayList<>();
     }
 
     public Cell cellAt(int x){
@@ -94,5 +94,27 @@ public class Row {
         activeProjectiles.remove(p);
     }
 
-    public void addBarrel(Barrel b){ activeBarrels.add(b);}
+    public void addObstacle(Obstacle o) {
+        activeObstacles.add(o);
+    }
+
+    public void removeObstacle(Obstacle o) {
+        activeObstacles.remove(o);
+    }
+
+    public List<Obstacle> getActiveObstacles() {
+        return activeObstacles;
+    }
+
+    public Obstacle frontObstacle() {
+        if (activeObstacles.isEmpty()) return null;
+
+        Obstacle front = activeObstacles.getFirst();
+        for (Obstacle o : activeObstacles) {
+            if (!o.isDestroyed() && o.getX() < front.getX()) {
+                front = o;
+            }
+        }
+        return front;
+    }
 }

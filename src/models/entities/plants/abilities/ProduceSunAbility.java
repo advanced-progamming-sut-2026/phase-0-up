@@ -8,7 +8,7 @@ import models.game.GameSession;
 
 import java.util.Random;
 
-public class ProduceSunAbility extends PlantAbility {
+public class ProduceSunAbility extends PlantAbility implements Growable {
     private int[] sunAmountsByStage;
     private int[] stageUpTicks;
 
@@ -67,6 +67,36 @@ public class ProduceSunAbility extends PlantAbility {
             Sun sun = new Sun(targetX, owner.getY(), targetY, SunType.NORMAL, currentSunAmount, true, 100);
 
             gameSession.addSun(sun);
+        }
+    }
+
+    @Override
+    public void growToMaxStage() {
+        this.currentStage = sunAmountsByStage.length - 1;
+    }
+
+    // Upgrade (DOUBLE_SUN_CHANCE): sets the probability that a production run yields double sun.
+    public void setDoubleSunChance(double chance) {
+        this.doubleSunChance = chance;
+    }
+
+    // Upgrade (GROW_TIME_REDUCTION): shortens every stage-up threshold, capped at 0.
+    public void reduceStageUpTicks(int ticks) {
+        if (stageUpTicks == null) {
+            return;
+        }
+        for (int i = 0; i < stageUpTicks.length; i++) {
+            stageUpTicks[i] = Math.max(0, stageUpTicks[i] - ticks);
+        }
+    }
+
+    // Upgrade (SUN_AMOUNT_BUFF / SUN_DROP_INCREMENT): adds to the sun produced at every stage.
+    public void increaseSunAmounts(int amount) {
+        if (sunAmountsByStage == null) {
+            return;
+        }
+        for (int i = 0; i < sunAmountsByStage.length; i++) {
+            sunAmountsByStage[i] += amount;
         }
     }
 }

@@ -73,7 +73,7 @@ public class ToggleSeedCommand implements Command {
             renderer.noEmptySlot();
             return;
         }
-        gameSession.addSeed(new SeedPacket(plantName, template.getRecharge()));
+        gameSession.addSeed(new SeedPacket(plantName, (int) Math.round(template.getRecharge())));
         renderer.successfulAdd(plantName);
     }
 

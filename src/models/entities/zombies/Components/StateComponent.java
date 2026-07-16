@@ -11,6 +11,8 @@ public class StateComponent {
     private int chilledTimer = 0;
     private int butteredTimer = 0;
     private boolean isTorchLit = false;
+    private boolean isSpinning = false;
+    private boolean isImmuneToFire = false;
 
     private boolean isPermanentlyFrozen = false;
 
@@ -74,4 +76,17 @@ public class StateComponent {
     public void setReadyForLaser(boolean readyForLaser) {
         this.isReadyForLaser = readyForLaser;
     }
+
+    public void setFrozenTimer(int v) {
+        this.frozenTimer = v;
+    }
+
+    public void setChilledTimer(int i) {
+        this.chilledTimer = i;
+    }
+
+    public boolean isSpinning() { return isSpinning; }
+    public void setSpinning(boolean spinning) { isSpinning = spinning; }
+    public boolean isImmuneToFire() { return isImmuneToFire; }
+    public void setImmuneToFire(boolean immuneToFire) { isImmuneToFire = immuneToFire; }
 }

@@ -5,16 +5,25 @@ import models.entities.plants.abilities.PlantAbility;
 import models.entities.plants.FoodStrategies.CompositePlantFoodStrategy;
 import models.entities.plants.components.PlantHealthComponent;
 import models.entities.plants.components.StackableComponent;
+import models.entities.zombies.Zombie;
 import models.game.GameSession;
+import utils.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Plant extends Entity {
     protected int level;
     protected int cost;
-
+    private int iceHits = 0;
+    private boolean isFrozen = false;
+    private int iceBlockHp = 0;
+    private boolean hasOctopus = false;
+    private int octopusHp = 0;
     protected List<PlantTags> tags;
+    private boolean isCat = false;
+    private Zombie cursedByWizard = null;
 
     protected PlantHealthComponent health;
 
@@ -22,14 +31,21 @@ public class Plant extends Entity {
 
     protected boolean thisPlantHasFood;
     protected CompositePlantFoodStrategy plantFoodStrategy;
-    protected boolean isFrozen;
 
     protected boolean isAquatic;
 
     protected StackableComponent  stackableComponent;
 
     protected boolean isProtector;
+    protected boolean isPlatform;
     private boolean deathTriggered;
+
+    protected String category;
+
+    // Upgrade (AUTO_PLANT_FOOD_CHANCE): per-second odds of auto-activating this plant's plant food.
+    private double autoPlantFoodChance;
+    private int autoFoodTickTimer;
+    private final Random random = new Random();
 
     public Plant(String name, int id, double x, int y,
                  PlantHealthComponent health, int level, int cost, boolean isAquatic) {
@@ -65,14 +81,29 @@ public class Plant extends Entity {
         }
     }
 
+    // Fires each ability's on-eaten effect when a zombie bites this plant (Hypno-shroom, Garlic).
+    public void onEaten(Zombie eater, GameSession gameSession) {
+        if (abilities != null) {
+            for (PlantAbility ability : abilities) {
+                ability.onOwnerEaten(this, eater, gameSession);
+            }
+        }
+    }
+
     public boolean isProtector() { return isProtector; }
     public void setProtector(boolean protector) { this.isProtector = protector; }
 
+    public boolean isPlatform() { return isPlatform; }
+    public void setPlatform(boolean platform) { this.isPlatform = platform; }
 
-    public void triggerPlantFood() {
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+
+    public void triggerPlantFood(GameSession gameSession) {
         this.thisPlantHasFood = true;
         if (plantFoodStrategy != null) {
-            plantFoodStrategy.executeEffect(this);
+            plantFoodStrategy.executeEffect(this, gameSession);
         }
     }
 
@@ -93,6 +124,26 @@ public class Plant extends Entity {
                 ability.update(this, gameSession);
             }
         }
+
+        updateAutoPlantFood(gameSession);
+    }
+
+    // Rolls the auto-plant-food chance about once per second (Mega Gatling Pea's level-3 upgrade).
+    private void updateAutoPlantFood(GameSession gameSession) {
+        if (autoPlantFoodChance <= 0) {
+            return;
+        }
+        autoFoodTickTimer++;
+        if (autoFoodTickTimer >= Constants.TICKS_PER_SECOND) {
+            autoFoodTickTimer = 0;
+            if (random.nextDouble() < autoPlantFoodChance) {
+                triggerPlantFood(gameSession);
+            }
+        }
+    }
+
+    public void setAutoPlantFoodChance(double chance) {
+        this.autoPlantFoodChance = chance;
     }
 
     public int getLevel() { return level; }
@@ -133,4 +184,74 @@ public class Plant extends Entity {
     public boolean isAquatic() {
         return isAquatic;
     }
+
+    public void takeIceHit() {
+        if (isFrozen) return;
+
+        this.iceHits++;
+        if (this.iceHits >= 3) {
+            freezePlant();
+        }
+    }
+
+    private void freezePlant() {
+        this.isFrozen = true;
+        this.iceBlockHp = 300;
+        System.out.println(this.getName() + " is completely frozen in ice!");
+    }
+
+    public void damageIceBlock(int damage) {
+        if (!isFrozen) return;
+
+        this.iceBlockHp -= damage;
+        if (this.iceBlockHp <= 0) {
+            this.isFrozen = false;
+            this.iceHits = 0;
+            this.iceBlockHp = 0;
+            System.out.println("Ice block broken! " + this.getName() + " is free!");
+        }
+    }
+
+    public void bindWithOctopus() {
+        if (hasOctopus || isDead()) return;
+
+        this.hasOctopus = true;
+        this.octopusHp = 200;
+        System.out.println(this.getName() + " was trapped by an octopus!");
+    }
+
+    public void damageOctopus(int damage) {
+        if (!hasOctopus) return;
+
+        this.octopusHp -= damage;
+        if (this.octopusHp <= 0) {
+            this.hasOctopus = false;
+            this.octopusHp = 0;
+            System.out.println("Octopus destroyed! " + this.getName() + " is free!");
+        }
+    }
+
+    public boolean hasOctopus() { return hasOctopus; }
+
+// نکته مهم: در متدهای شلیک تیر (shoot) یا تولید خورشید در گیاهانت، این شرط را اضافه کن:
+// if (this.isFrozen() || this.hasOctopus()) return; // گیاه در این وضعیت هیچ کاری نمی‌کند!
+
+    public void turnIntoCat(Zombie wizard) {
+        if (isCat || isDead()) return;
+
+        this.isCat = true;
+        this.cursedByWizard = wizard;
+        System.out.println(this.getName() + " was turned into a sheep/cat by Wizard!");
+    }
+
+    public void revertFromCat() {
+        if (!isCat) return;
+
+        this.isCat = false;
+        this.cursedByWizard = null;
+        System.out.println(this.getName() + " reverted back to normal!");
+    }
+
+    public boolean isCat() { return isCat; }
+    public Zombie getCursedByWizard() { return cursedByWizard; }
 }
