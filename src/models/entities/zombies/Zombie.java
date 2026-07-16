@@ -54,7 +54,9 @@ public class Zombie{
         this.movement = new MovementComponent(speed , startX , startY , state);
         this.gameSession = gameSession;
     }
-
+    public String getAlias() {return alias;}
+    public String getCategory() {return category;}
+    public int getId() {return id;}
     public void addAbility(ZombieAbility ability) {}
     public StateComponent getState() { return state; }
     public MovementComponent getMovement() { return movement; }
@@ -75,13 +77,5 @@ public class Zombie{
 
     public int getEatDamage() {
         return eatDamage;
-    }
-
-    public String getAlias() {
-        return alias;
-    }
-
-    public String getCategory() {
-        return category;
     }
 }

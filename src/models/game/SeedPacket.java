@@ -1,5 +1,7 @@
 package models.game;
 
+import utils.Constants;
+
 public class SeedPacket {
     private String plantType;
     private int cooldownDuration;
@@ -21,9 +23,26 @@ public class SeedPacket {
         isBoosted = boosted;
     }
 
-    public boolean isReady(){return true;}
-    public void updateLastPlantedTick(){}
-
+    public boolean isReady(long currentTick){
+        if (lastPlantedTick < 0){
+            return true;
+        }
+        return currentTick - lastPlantedTick >= (long) cooldownDuration * Constants.TICKS_PER_SECOND;
+    }
+    public void updateLastPlantedTick(long currentTick){
+        this.lastPlantedTick = currentTick;
+    }
+    public double getRemainingCooldownSeconds(long currentTick) {
+        if (isReady(currentTick)) {
+            return 0;
+        }
+        long totalCooldownTicks = (long) cooldownDuration * Constants.TICKS_PER_SECOND;
+        long remainingTicks = totalCooldownTicks - (currentTick - lastPlantedTick);
+        return remainingTicks / (double) Constants.TICKS_PER_SECOND;
+    }
+    public int getCooldownDuration() {
+        return cooldownDuration;
+    }
     public String getPlantType() {
         return plantType;
     }
