@@ -87,7 +87,7 @@ public class GameSession {
             seed.updateLastPlantedTick(timeTicks);
         }
         if (seed.isBoosted()) {
-            newPlant.triggerPlantFood();
+            newPlant.triggerPlantFood(this);
             seed.setBoosted(false);
             player.setSeedBoosted(plantType, false);
         }
@@ -117,7 +117,7 @@ public class GameSession {
         if (target == null) {
             return new Result(false, "There is no plant at (" + x + ", " + y + ").");
         }
-        target.triggerPlantFood();
+        target.triggerPlantFood(this);
         decreasePlantFoodCount(1);
         return new Result(true, "Fed plant food to " + target.getName() + " at (" + x + ", " + y + ").");
 
