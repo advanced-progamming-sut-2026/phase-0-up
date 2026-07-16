@@ -1,12 +1,9 @@
 package controllers.commands.seedselection;
 
 import controllers.commands.Command;
-import controllers.engine.InputRouter;
 import controllers.engine.MenuType;
 import models.game.GameSession;
-import models.game.gamemodes.GameMode;
 import models.user.AppSession;
-import views.OutputHandler;
 import views.renderers.MenuRenderer.PlantMenuRenderer;
 
 public class StartLevelCommand implements Command {
@@ -20,10 +17,9 @@ public class StartLevelCommand implements Command {
     @Override
     public void execute() {
         PlantMenuRenderer renderer = new PlantMenuRenderer();
-        GameMode mode = gameSession.getMode();
-        if(mode != null){
-            mode.onStart(gameSession);
-        }
+        // The mode is started by GameEngine.startLoop (via GameSession.startMode), which runs right
+        // after this command. Starting it here too fired every mode's onStart twice -- Save Our Seeds
+        // would try to pre-place its protected plants on top of themselves.
         appSession.setCurrentMenu(MenuType.IN_GAME);
         renderer.gameStarted();
     }

@@ -30,12 +30,21 @@ public final class LevelInitializer {
         LevelRegistry.getInstance().registerAll(templates);
     }
 
+    // How many chapters the registry defines. Used to stop progression from running past the last one.
+    public static int chapterCount() {
+        Map<String, List<LevelTemplate>> byChapter = new LinkedHashMap<>();
+        for (LevelTemplate template : LevelRegistry.getInstance().getAll()) {
+            byChapter.computeIfAbsent(chapterKeyOf(template), k -> new ArrayList<>()).add(template);
+        }
+        return byChapter.size();
+    }
+
     // Builds every chapter from the registry (templates grouped by their "chapter" field, in order)
     // and returns them as fresh, locked Chapters. Callers apply unlock flags via applyProgress.
     public static List<Chapter> buildChapters() {
         Map<String, List<LevelTemplate>> byChapter = new LinkedHashMap<>();
         for (LevelTemplate template : LevelRegistry.getInstance().getAll()) {
-            byChapter.computeIfAbsent(template.getChapter(), k -> new ArrayList<>()).add(template);
+            byChapter.computeIfAbsent(chapterKeyOf(template), k -> new ArrayList<>()).add(template);
         }
 
         List<Chapter> chapters = new ArrayList<>();
@@ -87,8 +96,19 @@ public final class LevelInitializer {
                 // Past chapters are fully unlocked; the current chapter unlocks up to lastLevel.
                 boolean unlock = (c + 1) < lastChapter || (l + 1) <= lastLevel;
                 levels[l].setUnlocked(unlock);
+                // Anything strictly before the progress pointer has been cleared. Without this a
+                // rebuilt campaign would report every level as uncompleted (Chapter.isComplete()
+                // would never be true), since only lastChapter/lastLevel survive a save.
+                levels[l].setCompleted((c + 1) < lastChapter || (l + 1) < lastLevel);
             }
         }
+    }
+
+    // Chapter templates are grouped by this key; a template with no chapter would otherwise land under
+    // a null key and produce a Chapter whose getName() NPEs in EnterChapterCommand.
+    private static String chapterKeyOf(LevelTemplate template) {
+        String chapter = template.getChapter();
+        return chapter == null || chapter.isBlank() ? EnvironmentType.ANCIENT_EGYPT.name() : chapter;
     }
 
     private static EnvironmentType environmentOf(String chapter) {

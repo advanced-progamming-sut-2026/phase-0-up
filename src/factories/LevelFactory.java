@@ -45,7 +45,8 @@ public final class LevelFactory {
             case LOCKED_PLANTS:
                 return new LockedPlantsMode(
                         rules != null ? rules.getLockedType() : 1,
-                        rules != null ? rules.getBannedPlants() : null);
+                        rules != null ? rules.getLockedSlots() : 0,
+                        rules != null ? rules.getForcedPlants() : null);
             case NIGHT_OPS:
                 return new NightOpsMode(rules == null || rules.isDisableSkySun());
             case DEAD_LINE:
@@ -81,16 +82,12 @@ public final class LevelFactory {
         return waves;
     }
 
-    // Selectable plants = authored list minus any banned plants, so Locked Plants is enforced even
-    // if the authored availablePlants list wasn't pre-trimmed.
+    // The level's plant pool -- the single source of truth for what may be selected. A "Locked Plants"
+    // level simply ships a smaller pool, so no separate ban list is needed.
     private static List<String> resolveAvailablePlants(LevelTemplate template) {
         List<String> available = new ArrayList<>();
         if (template.getAvailablePlants() != null) {
             available.addAll(template.getAvailablePlants());
-        }
-        SpecialRules rules = template.getRules();
-        if (rules != null && rules.getBannedPlants() != null) {
-            available.removeAll(rules.getBannedPlants());
         }
         return available;
     }

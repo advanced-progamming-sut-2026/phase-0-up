@@ -135,4 +135,9 @@ public class Constants {
     // =====================================================
     public static final int DEFAULT_SEED_SLOTS = 8;
 
+    // گیاهان اولیه‌ی هر پروفایل (همان استخر گیاهان مرحله‌ی اول فصل اول)
+    public static final String[] STARTING_PLANTS = {
+            "Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea"
+    };
+
 }

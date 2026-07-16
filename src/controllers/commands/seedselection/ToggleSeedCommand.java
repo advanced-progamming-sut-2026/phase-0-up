@@ -49,10 +49,13 @@ public class ToggleSeedCommand implements Command {
             }
         }
 
-        boolean unlocked = owned != null && owned.getOrDefault(plantName, 0) > 0;
+        // Profile keys are lower-cased while the level pool uses display names -> compare ignoring case.
+        boolean unlocked = owned != null && owned.entrySet().stream()
+                .anyMatch(e -> e.getKey().equalsIgnoreCase(plantName) && e.getValue() > 0);
         LevelTemplate levelTemplate = gameSession.getLevel().getTemplate();
         List<String> available = levelTemplate.getAvailablePlants();
-        boolean allowedInLevel = available != null && available.contains(plantName);
+        boolean allowedInLevel = available != null
+                && available.stream().anyMatch(p -> p.equalsIgnoreCase(plantName));
         return unlocked && allowedInLevel;
     }
 
@@ -85,6 +88,11 @@ public class ToggleSeedCommand implements Command {
         }
         if(!gameSession.isSeedSelected(plantName)){
             renderer.notSelected(plantName);
+            return;
+        }
+        // Locked Plants can pin a seed in place; every other mode allows removal.
+        if(gameSession.getMode() != null && !gameSession.getMode().isSeedRemovable(plantName)){
+            renderer.isLocked(plantName);
             return;
         }
         gameSession.removeSeed(plantName);
