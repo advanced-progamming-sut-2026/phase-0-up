@@ -1,9 +1,15 @@
 package models.game;
 
+import factories.PlantFactory;
 import models.entities.collectibles.Sun;
+import models.entities.plants.Plant;
 import models.game.gamemodes.GameMode;
+import models.map.Cell;
 import models.map.GameMap;
+import models.templates.PlantTemplate;
 import models.user.Profile;
+import utils.Result;
+import utils.registry.PlantRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +28,7 @@ public class GameSession {
     private GameState state;
     private int zombiesKilled;
     private int plantsLost;
+    private boolean cooldownRemoved;
 
     public GameSession(Profile player, Level level) {
         this.player = player;
@@ -37,17 +44,92 @@ public class GameSession {
         state = GameState.PLAYING;
         zombiesKilled = 0;
         plantsLost = 0;
+        cooldownRemoved = false;
     }
 
     public List<SeedPacket> getSelectedSeeds() {
         return selectedSeeds;
     }
-    public void plant(int x, int y, String plant) {};
-    public void pluck(int x, int y){};
+    public Result plant(int x, int y, String plantType) {
+        if (!map.isValidCoordinate(x, y)) {
+            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+        }
+        SeedPacket seed = getSelectedSeed(plantType);
+        if (seed == null) {
+            return new Result(false, "Plant \"" + plantType + "\" has not been selected for this level.");
+        }
+        if (!cooldownRemoved && !seed.isReady(timeTicks)) {
+            return new Result(false, "Plant \"" + plantType + "\" is still recharging ("
+                    + String.format("%.1f", seed.getRemainingCooldownSeconds(timeTicks)) + "s left).");
+        }
+        PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(plantType);
+        if (template == null) {
+            return new Result(false, "Plant \"" + plantType + "\" does not exist.");
+        }
+        if (sunAmount < template.getCost()) {
+            return new Result(false, "Not enough sun to plant \"" + plantType + "\".");
+        }
+
+        int plantLevel = player.getPlantsLevels().getOrDefault(plantType.toLowerCase().trim(), 1);
+        Plant newPlant = PlantFactory.createPlant(plantType, plantLevel, x, y);
+        if (newPlant == null) {
+            return new Result(false, "Plant \"" + plantType + "\" could not be created.");
+        }
+
+        Cell cell = map.getCell(x, y);
+        Result placement = cell.addPlant(newPlant);
+        if (!placement.success()) {
+            return placement;
+        }
+
+        decreaseSunAmount(template.getCost());
+        if (!cooldownRemoved) {
+            seed.updateLastPlantedTick(timeTicks);
+        }
+        if (seed.isBoosted()) {
+            newPlant.triggerPlantFood();
+            seed.setBoosted(false);
+            player.setSeedBoosted(plantType, false);
+        }
+
+        return new Result(true, "Plant \"" + plantType + "\" planted at (" + x + ", " + y + ").");
+    };
+    public Result pluck(int x, int y){
+        if (!map.isValidCoordinate(x, y)) {
+            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+        }
+        Cell cell = map.getCell(x, y);
+        if (cell.hasProtector()) {
+            return cell.removeProtector();
+        }
+        return cell.removePlant();
+    };
     public void advanceTime(int ticks) {};
-    public void plantFood(int x, int y){};
+    public Result plantFood(int x, int y){
+        if (!map.isValidCoordinate(x, y)) {
+            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+        }
+        if (plantFoodCount <= 0) {
+            return new Result(false, "You don't have any plant food.");
+        }
+        Cell cell = map.getCell(x, y);
+        Plant target = cell.getDefendingPlant();
+        if (target == null) {
+            return new Result(false, "There is no plant at (" + x + ", " + y + ").");
+        }
+        target.triggerPlantFood();
+        decreasePlantFoodCount(1);
+        return new Result(true, "Fed plant food to " + target.getName() + " at (" + x + ", " + y + ").");
+
+    };
     public void onWin(){};
     public void onLose(){};
+    public boolean isCooldownRemoved() {
+        return cooldownRemoved;
+    }
+    public void removeCooldownRestriction() {
+        this.cooldownRemoved = true;
+    }
     public Profile getPlayer() {
         return player;
     }
@@ -140,5 +222,9 @@ public class GameSession {
     public void increasePlantFoodCount(int amount) {
         plantFoodCount += amount;
         if(plantFoodCount > 3) plantFoodCount = 3;
+    }
+    public void decreasePlantFoodCount(int amount) {
+        plantFoodCount -= amount;
+        if (plantFoodCount < 0) plantFoodCount = 0;
     }
 }

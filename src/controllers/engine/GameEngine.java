@@ -1,8 +1,6 @@
 package controllers.engine;
 
-import controllers.commands.ingame.AddSunCheatCommand;
-import controllers.commands.ingame.CollectSunCommand;
-import controllers.commands.ingame.ShowSunCommand;
+import controllers.commands.ingame.*;
 import controllers.systems.game.*;
 import models.game.GameSession;
 import models.game.GameState;
@@ -10,10 +8,12 @@ import utils.Result;
 import utils.regex.InGameRegex;
 import views.InputHandler;
 import views.renderers.InGameRenderer;
+import views.renderers.MapRenderer;
 
 public class GameEngine {
     private GameSession gameSession;
     private final InGameRenderer inGameRenderer;
+    private final MapRenderer mapRenderer;
     private CombatSystem combatSystem;
     private MovementSystem movementSystem;
     private SunSystem sunSystem;
@@ -25,6 +25,7 @@ public class GameEngine {
     public GameEngine(GameSession gameSession) {
         this.gameSession = gameSession;
         this.inGameRenderer = new InGameRenderer();
+        this.mapRenderer = new MapRenderer();
         this.combatSystem = new CombatSystem();
         this.movementSystem = new MovementSystem();
         this.sunSystem = new SunSystem();
@@ -79,7 +80,50 @@ public class GameEngine {
             advanceTime(ticks);
             return true;
         }
-
+        if (InGameRegex.PLANT_SEED.matches(input)) {
+            String plantType = InGameRegex.PLANT_SEED.getGroup(input, "type");
+            int x = Integer.parseInt(InGameRegex.PLANT_SEED.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.PLANT_SEED.getGroup(input, "y"));
+            new PlantSeedCommand(gameSession, inGameRenderer, plantType, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.PLUCK_PLANT.matches(input)) {
+            int x = Integer.parseInt(InGameRegex.PLUCK_PLANT.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.PLUCK_PLANT.getGroup(input, "y"));
+            new PluckPlantCommand(gameSession, inGameRenderer, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.FEED_PLANT.matches(input)) {
+            int x = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "y"));
+            new FeedPlantCommand(gameSession, inGameRenderer, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.CHEAT_REMOVE_COOLDOWN.matches(input)) {
+            new RemoveCooldownCheatCommand(gameSession, inGameRenderer).execute();
+            return true;
+        }
+        if (InGameRegex.RELEASE_THE_NUKE.matches(input)) {
+            new ReleaseTheNukeCheatCommand(gameSession, inGameRenderer).execute();
+            return true;
+        }
+        if (InGameRegex.SHOW_MAP.matches(input)) {
+            new ShowMapStatusCommand(ShowMapStatusAction.SHOW_MAP, gameSession, mapRenderer, inGameRenderer, 0, 0)
+                    .execute();
+            return true;
+        }
+        if (InGameRegex.SHOW_PLANTS_STATUS.matches(input)) {
+            new ShowMapStatusCommand(ShowMapStatusAction.SHOW_PLANTS_STATUS, gameSession, mapRenderer,
+                    inGameRenderer, 0, 0).execute();
+            return true;
+        }
+        if (InGameRegex.SHOW_TILE_STATUS.matches(input)) {
+            int x = Integer.parseInt(InGameRegex.SHOW_TILE_STATUS.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.SHOW_TILE_STATUS.getGroup(input, "y"));
+            new ShowMapStatusCommand(ShowMapStatusAction.SHOW_TILE_STATUS, gameSession, mapRenderer, inGameRenderer,
+                    x, y).execute();
+            return true;
+        }
         return false;
     }
 

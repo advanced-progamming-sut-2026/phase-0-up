@@ -1,6 +1,8 @@
 package models.map;
 
 import models.entities.collectibles.Collectible;
+import models.entities.projectiles.Element;
+import models.entities.zombies.Zombie;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,5 +32,23 @@ public class GameMap {
 
     public List<Collectible> getActiveCollectibles() {
         return activeCollectibles;
+    }
+
+    public boolean isValidCoordinate(int x, int y) {
+        return x >= 0 && x < colCount && y >= 0 && y < rowCount;
+    }
+    public List<Zombie> killAllZombies() {
+        List<Zombie> killedZombies = new ArrayList<>();
+        for (Row row : rows) {
+            List<Zombie> zombiesInRow = new ArrayList<>(row.getZombies());
+            for (Zombie zombie : zombiesInRow) {
+                if (!zombie.getHealth().isDead()) {
+                    zombie.getHealth().applyDamage(zombie.getHealth().getTotalHP(), Element.NEUTRAL, null);
+                }
+                killedZombies.add(zombie);
+            }
+            row.getZombies().removeAll(zombiesInRow);
+        }
+        return killedZombies;
     }
 }
