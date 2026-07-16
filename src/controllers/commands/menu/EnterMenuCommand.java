@@ -40,6 +40,14 @@ public class EnterMenuCommand implements Command {
                     allMenuRenderer.enterMenu(new Result(true, "Entered login menu!"));
                     return;
                 }
+            case LOGIN_MENU:
+                if(appSession.getCurrentUser() != null){
+                    if (type == MenuType.MAIN_MENU){
+                        appSession.setCurrentMenu(type);
+                        allMenuRenderer.enterMenu(new Result(true , String.format("Entered %s menu!", type.getMenuName())));
+                        return;
+                    }
+                }
             case MAIN_MENU :
                 if (type == MenuType.PLAY_MENU ||
                     type == MenuType.SETTINGS_MENU ||

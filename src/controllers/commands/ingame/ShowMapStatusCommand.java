@@ -1,14 +1,131 @@
 package controllers.commands.ingame;
 
 import controllers.commands.Command;
+import models.entities.plants.Plant;
+import models.entities.zombies.Zombie;
 import models.game.GameSession;
+import models.game.SeedPacket;
+import models.map.Cell;
+import models.map.Terrains.Terrain;
+import models.templates.PlantTemplate;
+import utils.Result;
+import utils.registry.PlantRegistry;
+import views.renderers.InGameRenderer;
+import views.renderers.MapRenderer;
 
 public class ShowMapStatusCommand implements Command {
     private ShowMapStatusAction action;
     private GameSession gameSession;
+    private final MapRenderer mapRenderer;
+    private final InGameRenderer renderer;
     private int tileX;
     private int tileY;
 
+    public ShowMapStatusCommand(ShowMapStatusAction action, GameSession gameSession, MapRenderer mapRenderer,
+                                InGameRenderer renderer, int tileX, int tileY) {
+        this.action = action;
+        this.gameSession = gameSession;
+        this.mapRenderer = mapRenderer;
+        this.renderer = renderer;
+        this.tileX = tileX;
+        this.tileY = tileY;
+    }
+
     @Override
-    public void execute() {}
+    public void execute() {
+        switch (action) {
+            case SHOW_MAP -> mapRenderer.renderGameSession(gameSession);
+            case SHOW_PLANTS_STATUS -> showPlantsStatus();
+            case SHOW_TILE_STATUS -> showTileStatus();
+        }
+    }
+
+    private void showPlantsStatus() {
+        if (gameSession.getSelectedSeeds().isEmpty()) {
+            renderer.render(new Result(true, "No plants have been selected for this level."));
+            return;
+        }
+
+        StringBuilder status = new StringBuilder();
+        for (SeedPacket seed : gameSession.getSelectedSeeds()) {
+            if (status.length() > 0) {
+                status.append('\n');
+            }
+            status.append(formatSeedStatus(seed));
+        }
+        renderer.render(new Result(true, status.toString()));
+    }
+
+    private String formatSeedStatus(SeedPacket seed) {
+        PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(seed.getPlantType());
+        int cost = template != null ? template.getCost() : 0;
+        long currentTick = gameSession.getTimeTicks();
+
+        StringBuilder line = new StringBuilder();
+        line.append(seed.getPlantType()).append(" - cost: ").append(cost).append(" sun - ");
+        if (gameSession.isCooldownRemoved() || seed.isReady(currentTick)) {
+            line.append("ready to plant");
+        } else {
+            line.append("recharging, ")
+                    .append(String.format("%.1f", seed.getRemainingCooldownSeconds(currentTick)))
+                    .append("s remaining");
+        }
+        return line.toString();
+    }
+    private void showTileStatus() {
+        if (!gameSession.getMap().isValidCoordinate(tileX, tileY)) {
+            renderer.render(new Result(false, "Invalid coordinates (" + tileX + ", " + tileY + ")."));
+            return;
+        }
+        Cell cell = gameSession.getMap().getCell(tileX, tileY);
+        renderer.render(new Result(true, buildTileStatus(cell)));
+    }
+    private String buildTileStatus(Cell cell) {
+        StringBuilder status = new StringBuilder();
+        status.append("Tile (").append(tileX).append(", ").append(tileY).append("):");
+
+        status.append("\n  Terrain: ").append(formatTerrain(cell));
+
+        Plant plant = cell.getCurrentPlant();
+        if (plant != null) {
+            status.append("\n  Plant: ").append(plant.getName())
+                    .append(" - health: ").append(plant.getHealth().getCurrentHp()).append('/')
+                    .append(plant.getHealth().getMaxHp());
+        } else {
+            status.append("\n  Plant: none");
+        }
+
+        if (cell.hasProtector()) {
+            status.append("\n  Protector: ").append(cell.getProtector().getName());
+        }
+
+        Zombie zombieHere = findZombieAt(cell);
+        if (zombieHere != null) {
+            status.append("\n  Zombie: ").append(zombieHere.getAlias())
+                    .append(" - health: ").append(zombieHere.getHealth().getTotalHP());
+        } else {
+            status.append("\n  Zombie: none");
+        }
+
+        return status.toString();
+    }
+
+    private String formatTerrain(Cell cell) {
+        for (Terrain terrain : cell.getTerrain()) {
+            if (!terrain.isDestroyed()) {
+                return terrain.getClass().getSimpleName() + " (" + terrain.getSymbol() + ")";
+            }
+        }
+        return cell.isPlantable() ? "normal ground" : "not plantable";
+    }
+
+    private Zombie findZombieAt(Cell cell) {
+        for (Zombie zombie : gameSession.getMap().getRow(tileY).getZombies()) {
+            if (!zombie.getHealth().isDead() && (int) zombie.getMovement().getPositionX() == tileX) {
+                return zombie;
+            }
+        }
+        return null;
+    }
+
 }

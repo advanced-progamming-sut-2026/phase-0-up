@@ -98,7 +98,7 @@ public class InputRouter {
                 break;
             case LOGIN_MENU:
                 if (LoginMenuRegex.LOGIN.matches(input)) {
-                    new LoginCommand(input, appSession, loginMenuRenderer).execute();
+                    new LoginCommand(input, appSession, loginMenuRenderer , allMenuRenderer).execute();
                     return;
                 } else if (LoginMenuRegex.FORGET_PASSWORD.matches(input)) {
                     new ForgetPasswordCommand(input, appSession, loginMenuRenderer).execute();

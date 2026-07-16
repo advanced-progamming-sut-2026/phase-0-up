@@ -34,6 +34,8 @@ public class ExitMenuCommand implements Command {
                 allMenuRenderer.menuExit("Main Menu");
                 break;
             case COLLECTION_MENU:
+            case LEADERBOARD:
+            case TRAVEL_LOG_MENU:
                 appSession.setCurrentMenu(MenuType.PLAY_MENU);
                 allMenuRenderer.menuExit("Play Menu");
                 break;
