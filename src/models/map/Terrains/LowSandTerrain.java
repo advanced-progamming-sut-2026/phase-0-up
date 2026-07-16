@@ -23,7 +23,10 @@ public class LowSandTerrain extends Terrain{
     @Override
     public void effect(Zombie z, Plant p) {
         Zombie zombie = null;
-        if(flooded) zombie = ZombieFactory.createZombie("ZombieDefault" , currentCell.getX() , currentCell.getY());
+        if(flooded && z != null) {
+            zombie = ZombieFactory.createZombie(
+                    "ZombieDefault", currentCell.getX(), currentCell.getY(), z.getGameSession());
+        }
         currentRow.getZombies().add(zombie);
     }
 }

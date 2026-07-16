@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import models.user.User;
+import utils.storage.records.UserRecord;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -30,15 +31,20 @@ public class DatabaseManager {
         return instance;
     }
 
+    // The save file only ever holds plain-data UserRecords, never live domain objects. This is what
+    // guarantees no entity / GameSession / Random can be dragged into (or choke) serialization.
     public void saveAll(){
+        Map<String, UserRecord> records = new HashMap<>();
+        for (Map.Entry<String, User> entry : users.entrySet()) {
+            records.put(entry.getKey(), UserRecord.from(entry.getValue()));
+        }
         try (Writer writer = new FileWriter(DB_FILE_PATH)) {
-            gson.toJson(users, writer);
+            gson.toJson(records, writer);
             System.out.println("Data saved successfully to " + DB_FILE_PATH);
         } catch (IOException e) {
             System.err.println("Error saving data to file: " + e.getMessage());
             e.printStackTrace();
         }
-
     }
 
     public void loadAll(){
@@ -48,16 +54,18 @@ public class DatabaseManager {
             return;
         }
         try (Reader reader = new FileReader(dbFile)) {
-            Type type = new TypeToken<Map<String, User>>() {}.getType();
-            Map<String, User> loadedUsers = gson.fromJson(reader, type);
+            Type type = new TypeToken<Map<String, UserRecord>>() {}.getType();
+            Map<String, UserRecord> records = gson.fromJson(reader, type);
 
-            if (loadedUsers != null) {
-                this.users = loadedUsers;
+            this.users = new HashMap<>();
+            if (records != null) {
+                for (Map.Entry<String, UserRecord> entry : records.entrySet()) {
+                    if (entry.getValue() != null) {
+                        this.users.put(entry.getKey(), entry.getValue().toUser());
+                    }
+                }
                 System.out.println("Data loaded successfully from " + DB_FILE_PATH);
-            } else {
-                this.users = new HashMap<>();
             }
-
         } catch (IOException e) {
             System.err.println("Error loading data from file: " + e.getMessage());
             e.printStackTrace();

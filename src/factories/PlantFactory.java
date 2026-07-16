@@ -18,14 +18,12 @@ import utils.registry.PlantRegistry;
 // (which would need deep-copying each ability's mutable per-tick state), every call builds brand-new
 // abilities from the template, folds in the requested level's upgrades, and wires up plant food.
 //
-// Handled data-driven notes / known limitations:
+// Data-driven notes:
 //   * recharge lives on the seed packet, not the Plant (see UpgradeResolver.effectiveRecharge).
-//   * MODIFIER_UTILITY (Imitater) and AUTO_PLANTFOOD_ON_ENTER / RESET_FAMILY_COOLDOWNS are seed-layer
-//     concerns and intentionally build no in-grid ability here.
-//   * A few SPECIAL_MECHANIC tags depend on subsystems that don't exist yet and are no-ops for now:
-//     CHILL_DURATION_EXT / POISON_TICK_BUFF (projectiles carry no status duration), GROWTH_STAGE_MAX_UP
-//     (no data for a 4th stage), GRAPE_BOUNCE_EXT, WARM_RADIUS_EXT (Pepper-pult has no warmth ability).
-//   * Sea/Puff-shroom have a 60s lifespan in the design that the JSON does not encode (no lifespan field).
+//   * MODIFIER_UTILITY (Imitater) and the AUTO_PLANTFOOD_ON_ENTER / RESET_FAMILY_COOLDOWNS upgrade tags
+//     are seed-layer concerns and intentionally build no in-grid ability / effect here.
+//   * Every other SPECIAL_MECHANIC tag is now wired (chill/poison status, hypno buffs, growth stage,
+//     grape bounce, pepper warmth, lifespan), and Sea/Puff-shroom carry a "lifespan" field in the JSON.
 public final class PlantFactory {
     private PlantFactory() { }
 
@@ -37,6 +35,9 @@ public final class PlantFactory {
 
         EffectiveStats stats = UpgradeResolver.resolve(template, level);
         PlantHealthComponent health = new PlantHealthComponent(stats.getMaxHp());
+        if (template.getLifespan() > 0) {
+            health.setLimitedLifespan(template.getLifespan());
+        }
         boolean aquatic = hasTag(template, PlantTags.WATER);
 
         Plant plant = new Plant(template.getName(), template.getId(), x + 0.5, y,

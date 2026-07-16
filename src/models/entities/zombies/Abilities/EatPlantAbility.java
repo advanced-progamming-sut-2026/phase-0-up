@@ -7,7 +7,8 @@ import models.map.Cell;
 
 public class EatPlantAbility implements ZombieAbility {
     private int tickCounter = 0;
-    private static final int TICKS_PER_ATTACK = 3;
+    // Fallback cadence if a zombie's eatSpeed wasn't set; otherwise the zombie's own eatSpeed is used.
+    private static final int DEFAULT_TICKS_PER_ATTACK = 10;
 
     private static final double COLLISION_THRESHOLD = 0.3;
 
@@ -29,7 +30,8 @@ public class EatPlantAbility implements ZombieAbility {
         zombie.getState().setAction(ActionState.EATING);
 
         tickCounter++;
-        int requiredTicks = zombie.getState().isChilled() ? (TICKS_PER_ATTACK * 2) : TICKS_PER_ATTACK;
+        int baseTicks = zombie.getEatSpeed() > 0 ? zombie.getEatSpeed() : DEFAULT_TICKS_PER_ATTACK;
+        int requiredTicks = zombie.getState().isChilled() ? (baseTicks * 2) : baseTicks;
 
         if (tickCounter >= requiredTicks) {
             if (targetPlant.getHealth() != null) {

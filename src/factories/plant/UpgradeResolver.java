@@ -10,6 +10,7 @@ import models.entities.plants.abilities.InstantFreezeAbility;
 import models.entities.plants.abilities.InstantSunBurstAbility;
 import models.entities.plants.abilities.KernelPultAbility;
 import models.entities.plants.abilities.MagnetAbility;
+import models.entities.plants.abilities.MeleeAttackAbility;
 import models.entities.plants.abilities.MintFamilyBoostAbility;
 import models.entities.plants.abilities.PlantAbility;
 import models.entities.plants.abilities.ProduceSunAbility;
@@ -112,12 +113,27 @@ public final class UpgradeResolver {
             case "AUTO_PLANT_FOOD_CHANCE": plant.setAutoPlantFoodChance(value); break;
             case "TILE_RANGE_EXT": applyTileRangeExt(plant, value); break;
             case "FREEZE_DURATION_EXT": applyFreezeDurationExt(plant, ticks); break;
+            case "CHILL_DURATION_EXT":
+                set(plant, ShootProjectileAbility.class, a -> a.increaseChillDuration(ticks)); break;
+            case "POISON_TICK_BUFF":
+                set(plant, ShootProjectileAbility.class, a -> a.increasePoisonDps((int) value)); break;
+            case "GROWTH_STAGE_MAX_UP":
+                set(plant, MeleeAttackAbility.class, MeleeAttackAbility::addGrowthStage); break;
+            case "GRAPE_BOUNCE_EXT":
+                set(plant, AreaExplosiveAbility.class, a -> a.widenArea(0, (int) value)); break;
+            case "WARM_RADIUS_EXT":
+                set(plant, WarmthAbility.class, a -> a.increaseRadius((int) value)); break;
+            case "LIFESPAN_EXT":
+                if (plant.getHealth() != null) {
+                    plant.getHealth().extendLifespan((int) value);
+                }
+                break;
             case "DEATH_EXPLOSION_AOE":
                 plant.addAbility(new DeathExplosiveAbility(TORCHWOOD_DEATH_EXPLOSION_DAMAGE, 1, 1, Element.FIRE));
                 break;
             case "EXPLODE_ON_FINISH":
                 plant.addAbility(new DeathExplosiveAbility((int) value, 1, 1, Element.NEUTRAL)); break;
-            default: break; // tags needing systems not yet built (see PlantFactory notes) fall through
+            default: break; // AUTO_PLANTFOOD_ON_ENTER / RESET_FAMILY_COOLDOWNS are seed-layer concerns
         }
     }
 

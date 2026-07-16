@@ -27,7 +27,7 @@ public class NecromancyTerrain extends Terrain{
 
     @Override
     public void effect(Zombie z, Plant p) {
-        Zombie zombie = ZombieFactory.createZombie("ZombieDefault" , cell.getX() , cell.getY());
+        Zombie zombie = ZombieFactory.createZombie("ZombieDefault" , cell.getX() , cell.getY() , gameSession);
         gameSession.getMap().getRow(cell.getY()).getZombies().add(zombie);
     }
 }

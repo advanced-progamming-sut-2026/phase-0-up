@@ -19,6 +19,7 @@ public class PlantTemplate {
     private int cost;
     private int baseHp;
     private int damage;
+    private int lifespan;
     private double actionInterval;
     private double recharge;
     private AbilityType abilityType;
@@ -37,6 +38,8 @@ public class PlantTemplate {
     public int getCost() { return cost; }
     public int getBaseHp() { return baseHp; }
     public int getDamage() { return damage; }
+    // Limited lifespan in seconds (Sea/Puff-shroom); 0 means the plant lives indefinitely.
+    public int getLifespan() { return lifespan; }
     public double getActionInterval() { return actionInterval; }
     public double getRecharge() { return recharge; }
     public AbilityType getAbilityType() { return abilityType; }

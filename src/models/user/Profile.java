@@ -27,16 +27,16 @@ public class Profile {
     private Map<String, Integer> plantsLevels;
     private Set<String> boostedSeeds;
     private GreenHouse myGreenHouse;
-    // Quests and chapters are live game objects rebuilt from the registries at runtime (their graph
-    // reaches Level -> Wave -> Zombie, which holds a back-reference to GameSession and is not
-    // serializable). They are marked transient so the user save only persists real progress data;
-    // progress itself is tracked by the scalar/id fields (lastChapter, lastLevel, quest counters, ...).
-    private transient List<Quest> activeQuests;
-    private transient List<Quest> completedQuests;
+    // Quests and chapters are live game objects rebuilt from the registries at runtime; they are never
+    // persisted. Persistence goes exclusively through ProfileRecord, which lists only plain progress
+    // data, so these (and the Level -> Wave -> Zombie -> GameSession graph they reach) can't leak into
+    // a save file. Runtime progress is tracked by the scalar/id fields (lastChapter, lastLevel, ...).
+    private List<Quest> activeQuests;
+    private List<Quest> completedQuests;
     private int lastChapter;
     private int lastLevel;
-    private transient List<Chapter> unlockedChapters;
-    private transient Chapter currentChapter;
+    private List<Chapter> unlockedChapters;
+    private Chapter currentChapter;
     private Map<String, Integer> passedMiniGames;
     private int dailyQuestsDone;
     private int noneDailyQuestsDone;
@@ -280,5 +280,35 @@ public class Profile {
         String key = plantName.toLowerCase().trim();
         int currentLevel = plantsLevels.getOrDefault(key, 1);
         plantsLevels.put(key, currentLevel + 1);
+    }
+
+    // --- Restore setters (used when rebuilding a profile from its saved record) ---
+
+    public void setGameNumbers(int gameNumbers) {
+        this.gameNumbers = gameNumbers;
+    }
+
+    public void setCoins(int coins) {
+        this.coins = coins;
+    }
+
+    public void setGems(int gems) {
+        this.gems = gems;
+    }
+
+    public void setPlantFoodCount(int plantFoodCount) {
+        this.plantFoodCount = plantFoodCount;
+    }
+
+    public void setDailyQuestsDone(int dailyQuestsDone) {
+        this.dailyQuestsDone = dailyQuestsDone;
+    }
+
+    public void setNoneDailyQuestsDone(int noneDailyQuestsDone) {
+        this.noneDailyQuestsDone = noneDailyQuestsDone;
+    }
+
+    public void setMyGreenHouse(GreenHouse myGreenHouse) {
+        this.myGreenHouse = myGreenHouse;
     }
 }

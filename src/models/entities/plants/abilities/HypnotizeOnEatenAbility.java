@@ -38,6 +38,7 @@ public class HypnotizeOnEatenAbility extends PlantAbility {
     @Override
     public void onOwnerEaten(Plant owner, Zombie eater, GameSession gameSession) {
         eater.getState().setHypnotized(true);
+        eater.applyHypnoBuffs(zombieHealthMultiplier, zombieDamageMultiplier);
         if (owner.getHealth() != null) {
             owner.getHealth().takeDamage(owner.getHealth().getMaxHp());
         }

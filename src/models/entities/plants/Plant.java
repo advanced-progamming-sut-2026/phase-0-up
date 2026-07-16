@@ -118,6 +118,12 @@ public class Plant extends Entity {
             health.update();
         }
 
+    //while frozen in ice, trapped by an octopus, or cursed into a cat the plant is incapacitated:
+    //its abilities and auto plant-food do nothing until it is freed (see damageIceBlock/damageOctopus/revertFromCat).
+        if (isDisabled()) {
+            return;
+        }
+
     //each component updates its cooldown and if cooldown is finished it executes the ability.
         if (abilities != null) {
             for (PlantAbility ability : abilities) {
@@ -126,6 +132,11 @@ public class Plant extends Entity {
         }
 
         updateAutoPlantFood(gameSession);
+    }
+
+    // A plant is incapacitated while frozen solid, trapped by an octopus, or cursed into a cat.
+    public boolean isDisabled() {
+        return isFrozen || hasOctopus || isCat;
     }
 
     // Rolls the auto-plant-food chance about once per second (Mega Gatling Pea's level-3 upgrade).
@@ -233,8 +244,8 @@ public class Plant extends Entity {
 
     public boolean hasOctopus() { return hasOctopus; }
 
-// نکته مهم: در متدهای شلیک تیر (shoot) یا تولید خورشید در گیاهانت، این شرط را اضافه کن:
-// if (this.isFrozen() || this.hasOctopus()) return; // گیاه در این وضعیت هیچ کاری نمی‌کند!
+    // Note: abilities are gated centrally in update() via isDisabled() (frozen / octopus / cat),
+    // so individual shoot / produce-sun abilities do not need their own guard.
 
     public void turnIntoCat(Zombie wizard) {
         if (isCat || isDead()) return;

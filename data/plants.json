@@ -16,7 +16,7 @@
     "upgrades": [
       { "level": 2, "type": "BUFF_ACTION_INTERVAL", "value": -2.0, "specialTag": "" },
       { "level": 3, "type": "BUFF_HP", "value": 150.0, "specialTag": "" },
-      { "level": 4, "type": "SPECIAL_MECHANIC", "value": 1.0, "specialTag": "DOUBLE_SUN_CHANCE" }
+      { "level": 4, "type": "SPECIAL_MECHANIC", "value": 0.25, "specialTag": "DOUBLE_SUN_CHANCE" }
     ]
   },
   {
@@ -56,7 +56,7 @@
     "upgrades": [
       { "level": 2, "type": "SPECIAL_MECHANIC", "value": -5.0, "specialTag": "GROW_TIME_REDUCTION" },
       { "level": 3, "type": "BUFF_HP", "value": 150.0, "specialTag": "" },
-      { "level": 4, "type": "SPECIAL_MECHANIC", "value": 1.0, "specialTag": "DOUBLE_SUN_CHANCE" }
+      { "level": 4, "type": "SPECIAL_MECHANIC", "value": 0.25, "specialTag": "DOUBLE_SUN_CHANCE" }
     ]
   },
   {
@@ -425,6 +425,7 @@
   {
     "id": 22,
     "name": "Sea-shroom",
+    "lifespan": 60,
     "abilityParams": { "projectileType": "SPORE", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 3.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["SHROOM", "WATER"],
@@ -445,6 +446,7 @@
   {
     "id": 23,
     "name": "Puff-shroom",
+    "lifespan": 60,
     "abilityParams": { "projectileType": "SPORE", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 3.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["SHROOM"],
@@ -565,6 +567,9 @@
   {
     "id": 29,
     "name": "Pepper-pult",
+    "extraAbilities": [
+      { "abilityType": "WARMTH", "actionInterval": 1.0, "abilityParams": { "rowRadius": 1, "colRadius": 1 } }
+    ],
     "abilityParams": { "projectileType": "PEPPER", "element": "FIRE", "trajectory": "LOBBED", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 50, "splashRadiusX": 1.0, "splashRowRadius": 0 },
     "category": "LOBBER",
     "tags": ["FIRE", "AOE"],

@@ -30,6 +30,11 @@ public class StateComponent {
         this.chilledTimer = durationInTicks;
     }
 
+    // Snow Pea's CHILL_DURATION_EXT upgrade lengthens the chill already applied by the ice hit.
+    public void extendChill(int extraTicks) {
+        this.chilledTimer += extraTicks;
+    }
+
     public void applyButter(int durationInTicks) {
         this.butteredTimer = durationInTicks;
     }

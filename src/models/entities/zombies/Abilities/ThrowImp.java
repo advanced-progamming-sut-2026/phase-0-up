@@ -18,7 +18,8 @@ public class ThrowImp implements ZombieAbility{
     public void execute(Zombie zombie) {
         if(zombie.getHealth().getTotalHP() > 50) return;
         if(!hasThrownImp){
-            Zombie z = ZombieFactory.createZombie("ZombieImp" , 2.5 , zombie.getMovement().getPositionY());
+            Zombie z = ZombieFactory.createZombie(
+                    "ZombieImp", 2.5, zombie.getMovement().getPositionY(), zombie.getGameSession());
             zombie.getGameSession().getMap().getRow(z.getMovement().getPositionY()).getZombies().add(z);
             setHasThrownImp(true);
         }

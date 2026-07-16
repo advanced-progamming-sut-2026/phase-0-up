@@ -28,6 +28,12 @@ public class WarmthAbility extends PlantAbility {
         this.colRadius = newColRadius;
     }
 
+    // Upgrade (WARM_RADIUS_EXT): extends the warmth aura outward (Pepper-pult).
+    public void increaseRadius(int delta) {
+        this.rowRadius += delta;
+        this.colRadius += delta;
+    }
+
     @Override
     public void execute(Plant owner, GameSession gameSession) {
         GameMap map = gameSession.getMap();

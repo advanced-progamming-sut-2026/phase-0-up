@@ -5,6 +5,8 @@ import models.entities.plants.abilities.triggers.TriggerStrategy;
 import models.entities.projectiles.Element;
 import models.game.GameSession;
 
+import java.util.Arrays;
+
 // Repeating melee strike over a (rowRadius x colRadius) area; damage and reach can grow by stage (Kiwibeast).
 public class MeleeAttackAbility extends PlantAbility implements Growable {
     private int[] damageByStage;
@@ -57,6 +59,28 @@ public class MeleeAttackAbility extends PlantAbility implements Growable {
     @Override
     public void growToMaxStage() {
         this.currentStage = damageByStage.length - 1;
+    }
+
+    // Upgrade (GROWTH_STAGE_MAX_UP): appends one more growth stage (Kiwibeast "Max Size +1"),
+    // extrapolating damage/reach from the current top stage.
+    public void addGrowthStage() {
+        int n = damageByStage.length;
+        if (n == 0) {
+            return;
+        }
+        int lastDamage = damageByStage[n - 1];
+        int damageStep = n >= 2 ? lastDamage - damageByStage[n - 2] : lastDamage;
+        damageByStage = push(damageByStage, lastDamage + damageStep);
+        rowRadiusByStage = push(rowRadiusByStage, rowRadiusByStage[rowRadiusByStage.length - 1]);
+        colRadiusByStage = push(colRadiusByStage, colRadiusByStage[colRadiusByStage.length - 1] + 1);
+        int lastTick = stageUpTicks.length > 0 ? stageUpTicks[stageUpTicks.length - 1] : 240;
+        stageUpTicks = push(stageUpTicks, lastTick + 480);
+    }
+
+    private static int[] push(int[] arr, int value) {
+        int[] result = Arrays.copyOf(arr, arr.length + 1);
+        result[arr.length] = value;
+        return result;
     }
 
     // Plant food: one powerful boosted strike over a slightly wider reach (Phat Beet, Kiwibeast).

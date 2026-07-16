@@ -82,4 +82,11 @@ public class PlantHealthComponent {
     public void setLimitedLifespan(int seconds) {
         this.lifespanTicks = seconds * Constants.TICKS_PER_SECOND;
     }
+
+    // Upgrade (LIFESPAN_EXT): adds seconds to a plant that already has a limited lifespan.
+    public void extendLifespan(int seconds) {
+        if (lifespanTicks > 0) {
+            lifespanTicks += seconds * Constants.TICKS_PER_SECOND;
+        }
+    }
 }

@@ -39,6 +39,12 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
     private int giantShotMultiplier = 1;
     private static final int GIANT_SHOT_DELAY_TICKS = 5;
 
+    // status effects carried by each shot (Snow Pea chill extension, Goo poison-over-time)
+    private int chillBonusTicks;
+    private int poisonDps;
+    private static final int BASE_POISON_DPS = 10;
+    private static final int POISON_DURATION_TICKS = 50;
+
     public ShootProjectileAbility(int actionInterval, TriggerStrategy triggerStrategy, ProjectileType projectileType,
                                   int damage, int shotCount, double speed, int burstDelayTicks, int pierceCount,
                                   double maxRange, Element element, Trajectory trajectory, ShootDirection direction,
@@ -61,6 +67,9 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
         this.burstDelayTicks = burstDelayTicks;
         this.remainingShotsInBurst = 0;
         this.burstTimer = 0;
+
+        // poison shooters (Goo Peashooter) inflict a damage-over-time by default
+        this.poisonDps = (element == Element.POISON) ? BASE_POISON_DPS : 0;
     }
 
     @Override
@@ -129,11 +138,28 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
                 this.splashRowRadius
         );
 
+        if (chillBonusTicks > 0) {
+            projectile.setChillBonusTicks(chillBonusTicks);
+        }
+        if (poisonDps > 0) {
+            projectile.setPoison(poisonDps, POISON_DURATION_TICKS);
+        }
+
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
     }
 
     public void increaseShotCount(int amount) {
         this.shotCount += amount;
+    }
+
+    // Upgrade (CHILL_DURATION_EXT): each ice shot chills for longer (Snow Pea).
+    public void increaseChillDuration(int ticks) {
+        this.chillBonusTicks += ticks;
+    }
+
+    // Upgrade (POISON_TICK_BUFF): stronger poison-over-time per second (Goo Peashooter).
+    public void increasePoisonDps(int amount) {
+        this.poisonDps += amount;
     }
 
     // Upgrade (ADDITIONAL_PIERCE): shots pass through more zombies (Cactus).

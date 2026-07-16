@@ -45,6 +45,11 @@ public class Projectile extends Entity {
     private double splashRadiusX = 0.0;
     private int splashRowRadius = 0;
 
+    // status effects carried to the target on hit
+    private int chillBonusTicks = 0;   // Snow Pea CHILL_DURATION_EXT
+    private int poisonDps = 0;          // Goo Peashooter poison-over-time
+    private int poisonDurationTicks = 0;
+
     private Set<Terrain> hitTerrains;
 
     public Projectile(double x, double startY, ProjectileType type, int damage,
@@ -74,6 +79,15 @@ public class Projectile extends Entity {
         this.splashRowRadius = splashRowRadius;
     }
 
+    public void setChillBonusTicks(int ticks) {
+        this.chillBonusTicks = ticks;
+    }
+
+    public void setPoison(int dps, int durationTicks) {
+        this.poisonDps = dps;
+        this.poisonDurationTicks = durationTicks;
+    }
+
     //TODO: in game engine after finishing the loop on the projectiles check if any of them changed line
     @Override
     public void update(GameSession gameSession) {
@@ -95,7 +109,9 @@ public class Projectile extends Entity {
 
         handleTerrainCollisions(gameSession);
 
-        if (!this.isDestroyed) {
+        // A Jester-reflected projectile is travelling back toward the lawn: it passes over zombies
+        // and only strikes plants (handled above in handleBlockedPlantCollisions).
+        if (!this.isDestroyed && !this.isReflectedByJester) {
             handleZombieCollisions(gameSession);
         }
     }
@@ -205,6 +221,13 @@ public class Projectile extends Entity {
         target.getHealth().applyDamage(damage, element, shooter);
         hitTargets.add(target);
         element.applyOnHit(target.getState());
+
+        if (chillBonusTicks > 0 && element == Element.ICE) {
+            target.getState().extendChill(chillBonusTicks);
+        }
+        if (poisonDps > 0) {
+            target.getHealth().applyPoison(poisonDps, poisonDurationTicks);
+        }
 
         if (this.type == ProjectileType.BOWLING_BULB && bounceCount > 0) {
             performBounce();
@@ -352,10 +375,16 @@ public class Projectile extends Entity {
                 if (p.hasOctopus()) {
                     p.damageOctopus(this.damage);
                 } else if (p.isFrozen()) {
-                    // فرض: متد damageIceBlock در کلاس Plant شما تعریف شده است
-                    // p.damageIceBlock(this.damage);
+                    p.damageIceBlock(this.damage);
                 }
 
+                this.isDestroyed = true;
+                return true;
+            }
+
+            // A Jester-reflected projectile flies back toward the lawn and strikes the player's own plant.
+            if (p != null && !p.isDead() && this.isReflectedByJester) {
+                p.getHealth().takeDamage(this.damage);
                 this.isDestroyed = true;
                 return true;
             }

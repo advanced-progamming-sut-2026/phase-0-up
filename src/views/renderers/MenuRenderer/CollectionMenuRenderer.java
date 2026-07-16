@@ -22,7 +22,7 @@ public class CollectionMenuRenderer {
     private String formatZombie(ZombieTemplate template) {
         return template.getAlias()
                 + " | hp: " + template.getBaseHp()
-                + " | armor: " + template.getArmorHp()
+                + " | armor: " + template.getArmors()
                 + " | speed: " + template.getSpeed();
     }
 
@@ -113,13 +113,12 @@ public class CollectionMenuRenderer {
         }
         OutputHandler.showMessage("Zombie details:");
         OutputHandler.showMessage("alias: " + template.getAlias());
-        OutputHandler.showMessage("category: " + template.getCategory());
+        OutputHandler.showMessage("objclass: " + template.getObjclass());
         OutputHandler.showMessage("base hp: " + template.getBaseHp());
-        OutputHandler.showMessage("armor hp: " + template.getArmorHp());
-        OutputHandler.showMessage("eat damage: " + template.getEatDamage());
-        OutputHandler.showMessage("eat speed: " + template.getEatSpeed());
+        OutputHandler.showMessage("armor: " + template.getArmors());
+        OutputHandler.showMessage("eat dps: " + template.getEatDps());
         OutputHandler.showMessage("speed: " + template.getSpeed());
-        OutputHandler.showMessage("behavior: " + template.getBehavior());
+        OutputHandler.showMessage("wave point cost: " + template.getWavePointCost());
     }
     public void notExist(String plantName){
         OutputHandler.showError("Plant '" + plantName +"' does not exist.");}

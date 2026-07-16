@@ -50,8 +50,8 @@ public class RollTheBarrel implements ZombieAbility {
         int row = roller.getMovement().getPositionY();
         double currentX = roller.getMovement().getPositionX();
 
-        Zombie z1 = ZombieFactory.createZombie("ZombieImp" , currentX-10 , row);
-        Zombie z2 = ZombieFactory.createZombie("ZombieImp" , currentX+10 , row);
+        Zombie z1 = ZombieFactory.createZombie("ZombieImp" , currentX-10 , row , roller.getGameSession());
+        Zombie z2 = ZombieFactory.createZombie("ZombieImp" , currentX+10 , row , roller.getGameSession());
         roller.getGameSession().getMap().getRow(row).getZombies().add(z1);
         roller.getGameSession().getMap().getRow(row).getZombies().add(z2);
 
