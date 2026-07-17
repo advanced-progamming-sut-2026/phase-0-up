@@ -226,9 +226,13 @@ public class WaveSystem {
             return bought;
         }
 
+        // Which totals this pool can hit at all, so the draw can keep the remaining budget on a value
+        // it is still able to finish exactly.
+        boolean[] reachable = reachableSums(pool, budget);
+
         int remaining = budget;
         while (true) {
-            List<ZombieTemplate> affordable = affordable(pool, remaining);
+            List<ZombieTemplate> affordable = spendable(pool, remaining, reachable);
             if (affordable.isEmpty()) {
                 break;
             }
@@ -271,13 +275,47 @@ public class WaveSystem {
         return pool;
     }
 
-    private List<ZombieTemplate> affordable(List<ZombieTemplate> pool, int remaining) {
+    // The zombies worth drawing next, given what is left of the budget.
+    //
+    // The spec wants the spawned zombies' costs to SUM TO the wave's difficulty exactly, so a zombie is
+    // only offered when the budget left after buying it can itself still be spent down to nothing. That
+    // look-ahead is what makes the total land on the budget: the pool mixes costs like 250 and 550 with
+    // a cheapest of 100, so drawing blindly strands a 50-point tail no zombie can absorb -- and no
+    // local "leave room for one more" rule can see it coming, because the tail is decided several picks
+    // earlier by how many odd-50 zombies have been taken.
+    //
+    // If a wave's budget is not reachable from its pool at all, nothing is offered on the first draw;
+    // the fallback then spends it down as far as it goes, which beats refusing to spawn the wave.
+    private List<ZombieTemplate> spendable(List<ZombieTemplate> pool, int remaining, boolean[] reachable) {
+        List<ZombieTemplate> clean = new ArrayList<>();
         List<ZombieTemplate> affordable = new ArrayList<>();
+
         for (ZombieTemplate template : pool) {
-            if (template.getWavePointCost() <= remaining) {
-                affordable.add(template);
+            int cost = template.getWavePointCost();
+            if (cost > remaining) {
+                continue;
+            }
+            affordable.add(template);
+            if (reachable[remaining - cost]) {
+                clean.add(template);
             }
         }
-        return affordable;
+        return clean.isEmpty() ? affordable : clean;
+    }
+
+    // Every total this pool can make, allowing repeats (unbounded coin-change reachability).
+    private boolean[] reachableSums(List<ZombieTemplate> pool, int budget) {
+        boolean[] reachable = new boolean[budget + 1];
+        reachable[0] = true;
+        for (int total = 1; total <= budget; total++) {
+            for (ZombieTemplate template : pool) {
+                int cost = template.getWavePointCost();
+                if (cost <= total && reachable[total - cost]) {
+                    reachable[total] = true;
+                    break;
+                }
+            }
+        }
+        return reachable;
     }
 }

@@ -19,7 +19,7 @@
     "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea", "Repeater"],
     "terrain": [".....#...", "......#..", ".....#...", "......#..", "........."],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1250, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1200, "delay": 25 },
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1800, "delay": 30 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 2350, "delay": 35 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa", "ZombieTombRaiser", "ZombieImp", "ZombieGargantuar"], "budget": 2900, "delay": 40 },
@@ -49,7 +49,7 @@
     "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea", "Repeater", "Cherry Bomb", "Squash"],
     "terrain": ["......#..", "....#.#..", "......#..", "....#.#..", "......#.."],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1750, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1700, "delay": 25 },
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2400, "delay": 30 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 3050, "delay": 35 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 3700, "delay": 40 },
@@ -78,11 +78,11 @@
     "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea", "Repeater"],
     "terrain": ["........&", "......^..", ".........", "......v..", "........&"],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1750, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1700, "delay": 25 },
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2400, "delay": 30 },
-      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 3050, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 3000, "delay": 35 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 3700, "delay": 40 },
-      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 4850, "delay": 45, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 4800, "delay": 45, "isFinal": true }
     ]
   },
   {
@@ -108,13 +108,13 @@
     "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea", "Repeater", "Cherry Bomb", "Squash"],
     "terrain": ["......&.&", "......^..", ".......&.", "......v..", "......&.&"],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2250, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2200, "delay": 25 },
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 3000, "delay": 30 },
-      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 3750, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 3700, "delay": 35 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 4500, "delay": 40 },
-      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 5250, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 5200, "delay": 45 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 6000, "delay": 50 },
-      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 7250, "delay": 55, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 7200, "delay": 55, "isFinal": true }
     ]
   },
   {
@@ -137,11 +137,11 @@
     "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp", "Repeater"],
     "terrain": [".......!!", ".......!!", "......-!!", ".......!!", ".......!!"],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2250, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2200, "delay": 25 },
       { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 3000, "delay": 30 },
-      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 3750, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 3700, "delay": 35 },
       { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 4500, "delay": 40 },
-      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 5750, "delay": 45, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 5700, "delay": 45, "isFinal": true }
     ]
   },
   {
@@ -167,13 +167,13 @@
     "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp", "Repeater", "Cherry Bomb", "Squash"],
     "terrain": ["......!!!", "......!!!", ".....-!!!", "......!!!", "......!!!"],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2750, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2700, "delay": 25 },
       { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 3600, "delay": 30 },
-      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 4450, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 4400, "delay": 35 },
       { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 5300, "delay": 40 },
-      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 6150, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 6100, "delay": 45 },
       { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 7000, "delay": 50 },
-      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 8350, "delay": 55, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 8300, "delay": 55, "isFinal": true }
     ]
   },
   {

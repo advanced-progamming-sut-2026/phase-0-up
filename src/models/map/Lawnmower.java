@@ -6,15 +6,21 @@ import models.game.GameSession;
 import utils.Constants;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 
+// A one-use machine parked at the end of a row. The first zombie to reach the end sets it off; it then
+// drives back up the row, killing every zombie it passes, and is spent once it leaves the board. A
+// second zombie reaching the end of that row has nothing left to stop it, and the level is lost
+// (StandardMode.checkLose).
 public class Lawnmower {
     private boolean used;
     private int row;
-    private final double lawnmowerSpeed = 0.6;
     private double positionX;
     private boolean isActiveNow;
+
+    // Everything mown over the whole run, reported in one go when the mower leaves the board.
+    private final List<Zombie> killed = new ArrayList<>();
 
     public Lawnmower(int row) {
         this.used = false;
@@ -43,38 +49,43 @@ public class Lawnmower {
         return isActiveNow;
     }
 
+    public double getPositionX() {
+        return positionX;
+    }
 
+    // Starts the mower rolling from the end of the row. Ignored if it is already running or spent.
     public void activate() {
         if (!used && !isActiveNow) {
             isActiveNow = true;
+            positionX = 0;
         }
     }
 
-    public void active(Zombie[] zombies) {
-        activate();
-    }
-
-
-
-    public void update(GameSession gameSession){
+    // Advances the mower one tick, killing whatever it has driven past.
+    //
+    // Returns its full kill list on the tick it leaves the board -- that is when the run is over and
+    // there is a complete list to report -- and an empty list on every other tick.
+    public List<Zombie> update(GameSession gameSession) {
         if (!isActiveNow || used) {
-            return;
+            return Collections.emptyList();
         }
 
         double newX = positionX + Constants.LAWNMOWER_SPEED;
 
-        List<Zombie> zombies = new ArrayList<>(
-                gameSession.getMap().getRows().get(row).getZombies()
-        );
-        for (Zombie zombie : zombies) {
-            // Only isDead() here, never isTargetable(): the zombie that set the mower off has
-            // usually stepped past x = 0 already, and that one must die like the rest.
+        List<Zombie> rowZombies = gameSession.getMap().getRow(row).getZombies();
+        for (Zombie zombie : new ArrayList<>(rowZombies)) {
+            // Only isDead() here, never isTargetable(): the zombie that set the mower off has stepped
+            // past x = 0 and so counts as off the board, and it must be mown like the rest.
             if (zombie.getHealth().isDead()) {
                 continue;
             }
-
-            if (hasReached(zombie.getMovement().getPositionX(), newX)) {
-                zombie.getHealth().applyDamage(zombie.getHealth().getTotalHP(), Element.NEUTRAL,null);
+            if (hasPassed(zombie.getMovement().getPositionX(), newX)) {
+                zombie.getHealth().applyDamage(zombie.getHealth().getTotalHP(), Element.NEUTRAL, null);
+                // The mower owns what it mows: pull it off the row now so processDeaths never reports
+                // it separately, and hold it for the single summary printed when the run ends. The
+                // zombie keeps its position, so its death line reads the spot it was struck.
+                rowZombies.remove(zombie);
+                killed.add(zombie);
             }
         }
 
@@ -83,20 +94,15 @@ public class Lawnmower {
         if (positionX > Constants.LAWNMOWER_END_POSITION) {
             used = true;
             isActiveNow = false;
+            return List.copyOf(killed);
         }
+        return Collections.emptyList();
     }
 
-
-    // Everything from the left edge up to the mower's leading edge dies -- not just what falls inside
-    // this tick's step. A strict [previousX, newX] window would spare the very zombie that triggered
-    // the mower, since it breached past x = 0 and so sits behind the mower's starting position.
-    // Sweeping the full row this way is also what the spec asks for: the mower kills every zombie in
-    // its row by the time it leaves the board.
-    private boolean hasReached(double zombieX, double leadingEdge) {
+    // Has the mower driven past this zombie? Everything from the left edge up to the mower's leading
+    // edge counts, not just what falls inside this tick's step: the zombie that triggered the mower
+    // breached past x = 0 and so sits behind its starting position, and it must still be mown.
+    private boolean hasPassed(double zombieX, double leadingEdge) {
         return zombieX <= leadingEdge;
-    }
-
-    public void setPositionX(double positionX) {
-        this.positionX = positionX;
     }
 }

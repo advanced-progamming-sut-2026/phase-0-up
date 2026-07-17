@@ -24,9 +24,10 @@ public class ReleaseTheNukeCheatCommand implements Command {
             return;
         }
 
+        // Same wording as CombatSystem.processDeaths, which is the spec's: no trailing period.
         for (Zombie zombie : killedZombies) {
             renderer.render(new Result(true, "Zombie of type " + zombie.getAlias() + " is dead at ("
-                    + (int) zombie.getMovement().getPositionX() + ", " + zombie.getMovement().getPositionY() + ")."));
+                    + (int) zombie.getMovement().getPositionX() + ", " + zombie.getMovement().getPositionY() + ")"));
         }
         renderer.render(new Result(true,
                 "The nuke has been released. " + killedZombies.size() + " zombies were destroyed."));

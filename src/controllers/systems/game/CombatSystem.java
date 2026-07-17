@@ -39,7 +39,7 @@ public class CombatSystem {
         plantAttack(session, currentTick);
         resolveProjectiles(session);
         updateZombieStates(session);
-        checkLawnmowers(session);
+        checkLawnmowers(session, events);
         processDeaths(session, events);
 
         return events;
@@ -72,37 +72,56 @@ public class CombatSystem {
             }
         }
     }
-    private void checkLawnmowers(GameSession session){
+    // Sets off any mower whose row has been breached, then drives every running mower one step.
+    //
+    // The mower reports only once it has driven off the board, which is when its kill list is complete
+    // -- that is the tick the summary is printed on. A mower still crossing the row has not spent
+    // itself yet, so a second breach mid-run is simply mown down too; the level is only lost once the
+    // mower is gone (StandardMode.checkLose).
+    private void checkLawnmowers(GameSession session, List<Result> events){
         for (Row row : session.getMap().getRows()){
             Lawnmower lawnmower = row.getLawnmower();
 
             if(lawnmower == null || lawnmower.isUsed()){
                 continue;
             }
-            if(!lawnmower.isActiveNow()){
-                tryActivateLawnmower(lawnmower, row.getZombies());
+            if(!lawnmower.isActiveNow() && hasBreached(row)){
+                lawnmower.activate();
             }
-            // Drive a running mower -- including one that triggered on this very tick, so the zombie
-            // that set it off is mown on the same tick rather than getting a free step first.
-            lawnmower.update(session);
+
+            List<Zombie> killed = lawnmower.update(session);
+            if (killed.isEmpty()) {
+                continue;
+            }
+
+            // The mower has already pulled these zombies off the row as it passed them; it reports the
+            // whole run here, in one go, the tick it drives off the board. Spacing is the spec's: "the
+            // row <r>is triggered" has no space before "is".
+            events.add(new Result(true, "The lawn mower in the row " + row.getIndex()
+                    + "is triggered and killed these zombies:"));
+            for (Zombie zombie : killed) {
+                reportZombieDeath(session, zombie, events);
+            }
         }
     }
-    // Deliberately tests only isDead(), NOT Zombie.isTargetable(): that rule also excludes zombies
-    // off either end of the grid, and a breach is precisely the case where one has reached or stepped
-    // past x = 0. Zombie speeds almost never land exactly on the threshold, so a breaching zombie is
-    // usually already at a negative x -- guarding here would stop the mower from ever firing for it,
-    // and StandardMode.checkLose only ends the level once the mower is spent, so the row would stall
-    // with a zombie sitting past the house forever.
-    private void tryActivateLawnmower(Lawnmower lawnmower , List<Zombie> zombies){
-        for(Zombie z : zombies){
+    // Has a live zombie reached the end of this row?
+    //
+    // Deliberately tests only isDead(), NOT Zombie.isTargetable(): that rule also excludes zombies off
+    // either end of the grid, and a breach is precisely the case where one has reached or stepped past
+    // x = 0. Zombie speeds almost never land exactly on the threshold, so a breaching zombie is usually
+    // already at a negative x -- guarding here would stop the mower from ever firing for it, and
+    // StandardMode.checkLose only ends the level once the mower is spent, so the row would stall with a
+    // zombie sitting past the house forever.
+    private boolean hasBreached(Row row){
+        for(Zombie z : row.getZombies()){
             if (z.getHealth().isDead()){
                 continue;
             }
             if(z.getMovement().getPositionX() <= Constants.LAWNMOWER_ACTIVATION_THRESHOLD){
-                lawnmower.activate();
-                return;
+                return true;
             }
         }
+        return false;
     }
     // Clears out everything that died this tick and reports it. Runs last, so every entity has already
     // had its turn and nothing is removed out from under a system still iterating it.
@@ -134,15 +153,23 @@ public class CombatSystem {
                 if (!zombie.getHealth().isDead()) {
                     continue;
                 }
-                events.add(new Result(true, "Zombie of type " + zombie.getAlias() + " is dead at ("
-                        + (int) zombie.getMovement().getPositionX() + ", "
-                        + zombie.getMovement().getPositionY() + ")."));
                 row.getZombies().remove(zombie);
-                session.recordZombieKilled();
-                dropPlantFood(session, zombie, events);
-                rollLootDrop(session, events);
+                reportZombieDeath(session, zombie, events);
             }
         }
+    }
+
+    // One place every zombie death passes through, whichever system did the killing: prints the death
+    // line (spec has no trailing period -- "Zombie of type <type> is dead at (<x>, y>)"), tallies the
+    // kill, and rolls the glowing-zombie plant food and the 10% loot drop. Removal from the row is the
+    // caller's job, since the mower and processDeaths remove at different points in their flow.
+    private void reportZombieDeath(GameSession session, Zombie zombie, List<Result> events) {
+        events.add(new Result(true, "Zombie of type " + zombie.getAlias() + " is dead at ("
+                + (int) zombie.getMovement().getPositionX() + ", "
+                + zombie.getMovement().getPositionY() + ")"));
+        session.recordZombieKilled();
+        dropPlantFood(session, zombie, events);
+        rollLootDrop(session, events);
     }
 
     // A glowing zombie hands the player a plant food as it dies. Whether it glows was settled at spawn

@@ -75,7 +75,23 @@ public class GameEngine {
             inGameRenderer.render(combatEvent);
         }
 
+        GameState before = gameSession.getState();
         gameSession.evaluateModeRules();
+        announceOutcome(before, gameSession.getState());
+    }
+
+    // The level ends exactly once, so the banner is printed on the transition out of PLAYING rather
+    // than from the state itself (which stays WON/LOST for every later tick).
+    private void announceOutcome(GameState before, GameState after) {
+        if (before != GameState.PLAYING || after == GameState.PLAYING) {
+            return;
+        }
+        if (after == GameState.WON) {
+            inGameRenderer.render(new Result(true,
+                    "Dear humanz, zis is not done yet; we will come back to eat your brainz, humanz."));
+        } else if (after == GameState.LOST) {
+            inGameRenderer.render(new Result(false, "The zombie ate your brain; LOSER!!!"));
+        }
     }
 
 
