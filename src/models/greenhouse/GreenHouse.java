@@ -45,6 +45,25 @@ public class GreenHouse {
         return pots[y][x];
     }
 
+    // Opens the next locked pot in reading order (left to right, top to bottom) and reports whether
+    // there was one left to open. Row 0 ships unlocked, so this is how every later pot is earned --
+    // bought from the shop, or dropped by a zombie.
+    public boolean unlockNextPot() {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (pots[i][j].isLocked()) {
+                    pots[i][j].setState(PotState.EMPTY);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isFull() {
+        return getUnlockedPots().size() >= rows * cols;
+    }
+
     public void plantPot(int x, int y, GreenHousePlant plant){
         Pot pot = pots[y][x];
         pot.setOnPot(plant);

@@ -2,22 +2,13 @@ package controllers.engine;
 
 import controllers.commands.ingame.*;
 import controllers.systems.game.*;
-import models.entities.plants.Plant;
-import models.entities.projectiles.Projectile;
-import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.game.GameState;
-import models.map.Cell;
-import models.map.Row;
 import utils.Result;
 import utils.regex.InGameRegex;
 import views.InputHandler;
 import views.renderers.InGameRenderer;
 import views.renderers.MapRenderer;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 public class GameEngine {
     private GameSession gameSession;
@@ -63,44 +54,26 @@ public class GameEngine {
         }
     }
 
+    // One frame of the game. The engine only orders the systems and renders what they report; the
+    // per-entity work lives in the systems themselves.
+    //
+    // Order matters. The clock moves first, because every system below reads the session's tick.
+    // Waves run before combat so a zombie that arrives this tick is ticked in the same frame. Win/lose
+    // is evaluated last, once state has settled -- kept here rather than inside a system so
+    // time-advancement and rule-evaluation never interfere.
     public void advanceOneTick() {
         timeSystem.advance(gameSession, 1);
+        long currentTick = gameSession.getTimeTicks();
 
-        sunSystem.onTick(gameSession);
-
-        for(Row row : gameSession.getMap().getRows()){
-            for(Cell cell : row.getCells()){
-                cell.getCurrentPlant().update(gameSession);
-            }
+        for (Result sunEvent : sunSystem.onTick(gameSession)) {
+            inGameRenderer.render(sunEvent);
         }
-
-        for(Row row : gameSession.getMap().getRows()){
-            for (Projectile projectile : row.getActiveProjectiles()) {
-                projectile.update(gameSession);
-            }
-        }
-
-        for(Row row : gameSession.getMap().getRows()) {
-            for (Zombie zombie : row.getZombies()) {
-                zombie.update(gameSession);
-            }
-        }
-
-        waveSystem.maybeStartWave(gameSession);
-
-        //TODO: add a cleanupDestroyedEntities to combat system for removing dead and destroyed entities.
-        // TimeSystem.advance drives the clock and per-tick systems (owned separately); once state has
-        // settled for this tick, evaluate the level's win/lose rules. Kept here, not in TimeSystem,
-        // so time-advancement and rule-evaluation never interfere.
-        // Order matters: advance the clock, run the per-tick systems against it, then -- once state
-        // has settled for this tick -- evaluate the level's win/lose rules. Rule evaluation is kept
-        // here rather than inside a system so time-advancement and rule-evaluation never interfere.
-        gameSession.tick();
-
-        for (Result waveEvent : waveSystem.processTick(gameSession, gameSession.getTimeTicks())) {
+        for (Result waveEvent : waveSystem.processTick(gameSession, currentTick)) {
             inGameRenderer.render(waveEvent);
         }
-        combatSystem.processTick(gameSession, gameSession.getTimeTicks());
+        for (Result combatEvent : combatSystem.processTick(gameSession, currentTick)) {
+            inGameRenderer.render(combatEvent);
+        }
 
         gameSession.evaluateModeRules();
     }

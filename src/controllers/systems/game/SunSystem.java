@@ -29,9 +29,19 @@ public class SunSystem {
             Constants.NORMAL_SUN_PROBABILITY + Constants.SPECIAL_SUN_PROBABILITY;
 
 
-    public void onTick(GameSession gameSession) {
-        maybeSpawnSkySun(gameSession);
-        updateActiveSuns(gameSession);
+    // Called once per tick by the engine. Returns what happened (a new sun dropping, a sun touching
+    // down) for the caller to render. Both helpers already build these Results; without handing them
+    // back the messages were assembled and dropped on the floor, so the player never saw a sun land.
+    public List<Result> onTick(GameSession gameSession) {
+        List<Result> events = new ArrayList<>();
+
+        Result spawned = maybeSpawnSkySun(gameSession);
+        if (spawned != null) {
+            events.add(spawned);
+        }
+        events.addAll(updateActiveSuns(gameSession));
+
+        return events;
     }
 
     public double dropRate(long elapsedTime){

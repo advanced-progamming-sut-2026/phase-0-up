@@ -142,6 +142,16 @@ public class GameSession {
         currentWave++;
     }
 
+    // Death tallies, written by CombatSystem.processDeaths as it clears the board. Quest conditions
+    // and the end-of-level summary read them back.
+    public void recordZombieKilled() {
+        zombiesKilled++;
+    }
+
+    public void recordPlantLost() {
+        plantsLost++;
+    }
+
     // --- GameMode seam ---------------------------------------------------------------------------
     // Rule evaluation is deliberately kept OUT of advanceTime so it never overlaps with
     // TimeSystem.advance (which owns the clock). The engine calls startMode() once at level start
@@ -286,7 +296,9 @@ public class GameSession {
     }
     public void increasePlantFoodCount(int amount) {
         plantFoodCount += amount;
-        if(plantFoodCount > 3) plantFoodCount = 3;
+        if(plantFoodCount > utils.Constants.MAX_PLANT_FOOD_CAPACITY) {
+            plantFoodCount = utils.Constants.MAX_PLANT_FOOD_CAPACITY;
+        }
     }
     public void decreasePlantFoodCount(int amount) {
         plantFoodCount -= amount;

@@ -9,6 +9,7 @@ import utils.Constants;
 import utils.registry.ZombieRegistry;
 
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 // Spawns a live Zombie from a registered blueprint. The template's core stats map straight onto the
@@ -18,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 // TODO: scale zombie HP / eat damage by the player's difficulty level.
 public final class ZombieFactory {
     private static final AtomicInteger ID_SEQUENCE = new AtomicInteger(1);
+    private static final Random RANDOM = new Random();
 
     private ZombieFactory() { }
 
@@ -33,6 +35,14 @@ public final class ZombieFactory {
         int eatDamage = template.getEatDps();
         int eatSpeed = Constants.TICKS_PER_SECOND;
 
+        // 5% of the zombies that walk on glow, and a glowing one hands the player a plant food when it
+        // dies. Rolled here because this is the one place zombies are born, so an ability that spawns
+        // one mid-level gets the same odds as a wave does. Only blueprints that allow it can glow:
+        // CanSpawnPlantFood is false for Gargantuars, Imps and the Dark Imp Dragon, which never carry
+        // plant food.
+        boolean glowing = template.isCanSpawnPlantFood()
+                && RANDOM.nextDouble() < Constants.GLOWING_ZOMBIE_PROBABILITY;
+
         return new Zombie(
                 ID_SEQUENCE.getAndIncrement(),
                 categoryOf(template.getObjclass()),
@@ -47,7 +57,7 @@ public final class ZombieFactory {
                 template.isCanSpawnPlantFood(),
                 abilities,
                 template.getWavePointCost(),
-                false,
+                glowing,
                 gameSession);
     }
 

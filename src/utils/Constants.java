@@ -55,6 +55,7 @@ public class Constants {
     // ۴. دراپ‌ها و جوایز (Loot Drops)
     // ==========================================
     public static final double ZOMBIE_DROP_PROBABILITY = 0.10;     // ۱۰ درصد احتمال دراپ هنگام مرگ زامبی
+    public static final double GLOWING_ZOMBIE_PROBABILITY = 0.05;  // ۵ درصد احتمال درخشان بودن زامبی هنگام ظهور
     public static final int DROP_COIN_AMOUNT = 50;
     public static final int DROP_DIAMOND_AMOUNT = 1;
     public static final int DROP_POT_AMOUNT = 1;                   // گلدان برای گلخانه

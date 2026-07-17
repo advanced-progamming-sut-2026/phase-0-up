@@ -44,10 +44,15 @@ public class Row {
         this.lawnmower = lawnmower;
     }
 
+    // The plant a zombie walking down this row meets first: the rightmost one still standing.
+    //
+    // Skips plants that are dead but not yet swept up. A plant stays in its cell until the end of the
+    // tick it died in, and returning it would have a zombie stop to eat a corpse while the live plant
+    // behind it went untouched.
     public Plant frontPlant(){
         for(int i = cells.size() - 1; i >= 0; i--){
             Cell cell = cells.get(i);
-            if(cell.hasPlant()){
+            if(cell.hasPlant() && !cell.getCurrentPlant().isDead()){
                 return cell.getCurrentPlant();
             }
         }
@@ -55,15 +60,23 @@ public class Row {
     }
 
 
+    // The zombie furthest along this row -- the natural target for anything shooting down it.
+    //
+    // Only counts zombies that are alive and on the grid. Without that filter the leftmost entry wins
+    // outright, so a corpse still awaiting cleanup (or one that breached past the house) would shadow
+    // the live zombie actually leading the charge, and a lone zombie still walking on from the right
+    // edge would be reported as "in front" before it had arrived.
     public Zombie frontZombie(){
-        if (!hasZombie()) return null;
-        Zombie frontZombie = activeZombies.getFirst();
+        Zombie front = null;
         for (Zombie z : activeZombies){
-            if (z.getMovement().getPositionX() < frontZombie.getMovement().getPositionX()){
-                frontZombie = z;
+            if (!z.isTargetable()){
+                continue;
+            }
+            if (front == null || z.getMovement().getPositionX() < front.getMovement().getPositionX()){
+                front = z;
             }
         }
-        return frontZombie;
+        return front;
     }
 
     public void addProjectile(Projectile p){

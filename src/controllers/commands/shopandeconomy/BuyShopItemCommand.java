@@ -2,13 +2,12 @@ package controllers.commands.shopandeconomy;
 
 import controllers.commands.Command;
 import models.entities.plants.Plant;
-import models.greenhouse.Pot;
-import models.greenhouse.PotState;
 import models.shop.Currency;
 import models.shop.DailyOffer;
 import models.shop.Shop;
 import models.shop.ShopItem;
 import models.user.Profile;
+import utils.Constants;
 import utils.Result;
 import utils.storage.DatabaseManager;
 import views.renderers.ShopRenderer;
@@ -61,7 +60,7 @@ public class BuyShopItemCommand implements Command {
                     return;}
             }
             if(itemId == 0 ){
-                if(profile.getMyGreenHouse().getUnlockedPots().size() == 20) {
+                if(profile.getMyGreenHouse().isFull()) {
                     renderer.successOfBuyingAProduct(new Result(false, "the capacity of your greenhouse is full!"));
                     return;}
                 for(int i = 0 ; i < count; i++) buyAPot();
@@ -121,15 +120,11 @@ public class BuyShopItemCommand implements Command {
         profile.addPlantFood(1);
     }
 
+    // The greenhouse works out which pot is next -- the same call a zombie's pot drop uses, so the two
+    // cannot disagree about the order. The old walk from getUnlockedPots().getLast() threw on an empty
+    // greenhouse and assumed the unlocked pots were always contiguous.
     private void buyAPot() {
-        profile.spendCoins(2000);
-        Pot lastPot = profile.getMyGreenHouse().getUnlockedPots().getLast();
-
-        if(lastPot.getX() != 4) {
-            profile.getMyGreenHouse()
-                    .getPot(lastPot.getX() + 1, lastPot.getY()).setState(PotState.EMPTY);
-        }
-        else
-            profile.getMyGreenHouse().getPot(0, lastPot.getY() + 1).setState(PotState.EMPTY);
+        profile.spendCoins(Constants.GREENHOUSE_POT_COST_COINS);
+        profile.getMyGreenHouse().unlockNextPot();
     }
 }
