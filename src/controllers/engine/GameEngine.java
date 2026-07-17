@@ -2,13 +2,22 @@ package controllers.engine;
 
 import controllers.commands.ingame.*;
 import controllers.systems.game.*;
+import models.entities.plants.Plant;
+import models.entities.projectiles.Projectile;
+import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.game.GameState;
+import models.map.Cell;
+import models.map.Row;
 import utils.Result;
 import utils.regex.InGameRegex;
 import views.InputHandler;
 import views.renderers.InGameRenderer;
 import views.renderers.MapRenderer;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class GameEngine {
     private GameSession gameSession;
@@ -55,6 +64,31 @@ public class GameEngine {
     }
 
     public void advanceOneTick() {
+        timeSystem.advance(gameSession, 1);
+
+        sunSystem.onTick(gameSession);
+
+        for(Row row : gameSession.getMap().getRows()){
+            for(Cell cell : row.getCells()){
+                cell.getCurrentPlant().update(gameSession);
+            }
+        }
+
+        for(Row row : gameSession.getMap().getRows()){
+            for (Projectile projectile : row.getActiveProjectiles()) {
+                projectile.update(gameSession);
+            }
+        }
+
+        for(Row row : gameSession.getMap().getRows()) {
+            for (Zombie zombie : row.getZombies()) {
+                zombie.update(gameSession);
+            }
+        }
+
+        waveSystem.maybeStartWave(gameSession);
+
+        //TODO: add a cleanupDestroyedEntities to combat system for removing dead and destroyed entities.
         // TimeSystem.advance drives the clock and per-tick systems (owned separately); once state has
         // settled for this tick, evaluate the level's win/lose rules. Kept here, not in TimeSystem,
         // so time-advancement and rule-evaluation never interfere.

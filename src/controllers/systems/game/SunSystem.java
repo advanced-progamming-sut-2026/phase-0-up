@@ -30,6 +30,11 @@ public class SunSystem {
             Constants.NORMAL_SUN_PROBABILITY + Constants.SPECIAL_SUN_PROBABILITY;
 
 
+    public void onTick(GameSession gameSession) {
+        maybeSpawnSkySun(gameSession);
+        updateActiveSuns(gameSession);
+    }
+
     public double dropRate(long elapsedTime){
         return Math.max(6 + 0.05 * elapsedTime , 12);
     }
