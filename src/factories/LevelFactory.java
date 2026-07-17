@@ -2,7 +2,6 @@ package factories;
 
 import models.game.Level;
 import models.game.Wave;
-import models.game.gamemodes.ConveyorBeltMode;
 import models.game.gamemodes.DeadLineMode;
 import models.game.gamemodes.GameMode;
 import models.game.gamemodes.GameModeType;
@@ -53,8 +52,6 @@ public final class LevelFactory {
                 return new DeadLineMode(rules != null ? rules.getDeadLineColumn() : 0);
             case SAVE_OUR_SEEDS:
                 return new SaveOurSeedsMode(rules != null ? rules.getProtectedPlants() : null);
-            case CONVEYOR_BELT:
-                return new ConveyorBeltMode();
             case STANDARD:
             default:
                 return new StandardMode();

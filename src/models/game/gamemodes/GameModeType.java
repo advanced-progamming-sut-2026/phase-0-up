@@ -4,14 +4,10 @@ package models.game.gamemodes;
 // LevelFactory switches on this to instantiate the right mode with its rule data.
 public enum GameModeType {
     STANDARD,
-    CONVEYOR_BELT,
     LOCKED_PLANTS,
     NIGHT_OPS,
     DEAD_LINE,
-    SAVE_OUR_SEEDS,
-    LOVE_YOUR_PLANTS,
-    TIMED_WAR,
-    PLANT_WHAT_YOU_GET;
+    SAVE_OUR_SEEDS;
 
     public static GameModeType fromJson(String raw) {
         if (raw == null) {

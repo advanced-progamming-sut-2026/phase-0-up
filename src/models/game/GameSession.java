@@ -122,7 +122,25 @@ public class GameSession {
         }
         return cell.removePlant();
     };
-    public void advanceTime(int ticks) {};
+    // --- Clock -----------------------------------------------------------------------------------
+    // The session owns the clock; the systems are driven by the engine, which ticks the clock once
+    // per frame and then runs each system against the new value. Nothing here runs a system, so
+    // advancing time from anywhere else can never double-drive them.
+    public void tick() {
+        timeTicks++;
+    }
+
+    public void advanceTime(int ticks) {
+        for (int i = 0; i < ticks; i++) {
+            tick();
+        }
+    }
+
+    // Called by the WaveSystem when a wave actually launches. currentWave is the count of waves
+    // started so far, which is what StandardMode.checkWin compares against the level's wave count.
+    public void advanceWave() {
+        currentWave++;
+    }
 
     // --- GameMode seam ---------------------------------------------------------------------------
     // Rule evaluation is deliberately kept OUT of advanceTime so it never overlaps with
