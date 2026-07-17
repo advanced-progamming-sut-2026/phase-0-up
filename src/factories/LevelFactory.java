@@ -2,7 +2,6 @@ package factories;
 
 import models.game.Level;
 import models.game.Wave;
-import models.game.gamemodes.ConveyorBeltMode;
 import models.game.gamemodes.DeadLineMode;
 import models.game.gamemodes.GameMode;
 import models.game.gamemodes.GameModeType;
@@ -45,15 +44,14 @@ public final class LevelFactory {
             case LOCKED_PLANTS:
                 return new LockedPlantsMode(
                         rules != null ? rules.getLockedType() : 1,
-                        rules != null ? rules.getBannedPlants() : null);
+                        rules != null ? rules.getLockedSlots() : 0,
+                        rules != null ? rules.getForcedPlants() : null);
             case NIGHT_OPS:
                 return new NightOpsMode(rules == null || rules.isDisableSkySun());
             case DEAD_LINE:
                 return new DeadLineMode(rules != null ? rules.getDeadLineColumn() : 0);
             case SAVE_OUR_SEEDS:
                 return new SaveOurSeedsMode(rules != null ? rules.getProtectedPlants() : null);
-            case CONVEYOR_BELT:
-                return new ConveyorBeltMode();
             case STANDARD:
             default:
                 return new StandardMode();
@@ -81,16 +79,12 @@ public final class LevelFactory {
         return waves;
     }
 
-    // Selectable plants = authored list minus any banned plants, so Locked Plants is enforced even
-    // if the authored availablePlants list wasn't pre-trimmed.
+    // The level's plant pool -- the single source of truth for what may be selected. A "Locked Plants"
+    // level simply ships a smaller pool, so no separate ban list is needed.
     private static List<String> resolveAvailablePlants(LevelTemplate template) {
         List<String> available = new ArrayList<>();
         if (template.getAvailablePlants() != null) {
             available.addAll(template.getAvailablePlants());
-        }
-        SpecialRules rules = template.getRules();
-        if (rules != null && rules.getBannedPlants() != null) {
-            available.removeAll(rules.getBannedPlants());
         }
         return available;
     }

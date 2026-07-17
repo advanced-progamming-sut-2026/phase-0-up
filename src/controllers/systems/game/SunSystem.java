@@ -8,7 +8,6 @@ import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.game.gamemodes.GameMode;
 import models.game.gamemodes.NightOpsMode;
-import models.game.gamemodes.PlantWhatYouGet;
 import models.map.Cell;
 import models.map.Row;
 import utils.Constants;
@@ -100,7 +99,9 @@ public class SunSystem {
 
     private boolean canSpawnSkySun(GameSession gameSession){
         GameMode mode = gameSession.getMode();
-        if(mode instanceof NightOpsMode || mode instanceof PlantWhatYouGet){
+        // Ask the mode: the level's own rule (levels.json "disableSkySun") wins over the chapter
+        // default below. Testing instanceof here ignored the flag and hard-coded the answer.
+        if(mode != null && !mode.allowsSkySun()){
             return false;
         }
         if(gameSession.getLevel() == null || gameSession.getLevel().getTemplate() == null){

@@ -7,7 +7,7 @@ import java.util.List;
 // Blueprint for a single level, parsed straight from data/levels.json by Gson.
 // Normal levels use only the flat fields; the optional nested "rules" object carries the
 // special-level parameters (Locked Plants / Night Ops / Dead Line / Save Our Seeds) so the
-// 20-odd standard levels stay uncluttered.
+// standard levels stay uncluttered.
 public class LevelTemplate {
     private String id;
     private String chapter;
@@ -16,9 +16,8 @@ public class LevelTemplate {
     private String name;
     private int startingSun;
     private List<String> availablePlants;
-    private int firstWaveBudget;
     private int waveCount;
-    private char[][] terrainLayout;
+    private List<String> terrain;
     private int seedSlots;
     private List<WaveSpec> waves;
     private SpecialRules rules;
@@ -51,16 +50,26 @@ public class LevelTemplate {
         return availablePlants;
     }
 
+    // Derived from the authored waves so the wave-1 budget can never drift from the wave list.
     public int getFirstWaveBudget() {
-        return firstWaveBudget;
+        return waves == null || waves.isEmpty() ? 0 : waves.get(0).getBudget();
     }
 
     public int getWaveCount() {
-        return waveCount;
+        return waves != null && !waves.isEmpty() ? waves.size() : waveCount;
     }
 
+    // "terrain" is authored as one string per row (9 chars, '.' = plain ground) because a JSON grid
+    // of single-character arrays is unreadable; it is widened here to the char[][] the map layer uses.
     public char[][] getTerrainLayout() {
-        return terrainLayout;
+        if (terrain == null || terrain.isEmpty()) {
+            return null;
+        }
+        char[][] layout = new char[terrain.size()][];
+        for (int i = 0; i < terrain.size(); i++) {
+            layout[i] = terrain.get(i).toCharArray();
+        }
+        return layout;
     }
 
     public int getSeedSlots() {
@@ -75,8 +84,8 @@ public class LevelTemplate {
         return rules;
     }
 
-    // One authored wave: which zombie aliases spawn, the point budget, and the delay (seconds)
-    // before it starts. Consumed by LevelFactory to build the Wave[] the WaveSystem later drives.
+    // One authored wave: which zombie aliases may spawn, the point budget the WaveSystem spends on
+    // them, and the delay (seconds) before it starts.
     public static class WaveSpec {
         private List<String> zombies;
         private int budget;
@@ -100,21 +109,29 @@ public class LevelTemplate {
         }
     }
 
-    // Optional special-level parameters. Every field is inert unless the matching GameMode reads it,
-    // so a level only activates the rules its mode cares about.
+    // Optional special-level parameters. Every field is inert unless the matching GameMode reads it.
+    //
+    // Note: "which plants may be picked" is deliberately NOT here. That is the level's availablePlants
+    // pool, which every level already has and the seed menu already enforces; a Locked Plants level is
+    // simply a level with a smaller pool. This only carries what a pool cannot express.
     public static class SpecialRules {
-        private List<String> bannedPlants;   // Locked Plants: plants removed from selection
-        private int lockedType;              // Locked Plants: 1 = family-lock, 2 = forced loadout
+        private int lockedType;              // Locked Plants: 1 = locked slots, 2 = forced loadout
+        private int lockedSlots;             // Locked Plants: seed slots shut from the start
+        private List<String> forcedPlants;   // Locked Plants: pre-selected, non-removable seeds
         private boolean disableSkySun;       // Night Ops: overrides the chapter's sky-sun default
-        private int deadLineColumn;          // Dead Line: X threshold a zombie may not cross
+        private int deadLineColumn;          // Dead Line: X threshold no zombie may cross
         private List<PrePlacedPlant> protectedPlants; // Save Our Seeds: must-survive plants
-
-        public List<String> getBannedPlants() {
-            return bannedPlants;
-        }
 
         public int getLockedType() {
             return lockedType;
+        }
+
+        public int getLockedSlots() {
+            return lockedSlots;
+        }
+
+        public List<String> getForcedPlants() {
+            return forcedPlants;
         }
 
         public boolean isDisableSkySun() {

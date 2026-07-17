@@ -13,6 +13,9 @@ public class PlantRegistry {
 
     private final Map<String, PlantTemplate> plantTemplatesByName = new HashMap<>();
     private final Map<Integer, PlantTemplate> plantTemplatesById = new HashMap<>();
+    // Callers disagree on casing: levels.json and the menus use the display name ("Wall-nut"), while
+    // Profile.unlockPlant stores it lower-cased. This index makes every lookup case-insensitive.
+    private final Map<String, PlantTemplate> plantTemplatesByLowerName = new HashMap<>();
 
     private PlantRegistry() { }
 
@@ -24,7 +27,15 @@ public class PlantRegistry {
     }
 
     public PlantTemplate getTemplateByName(String plantName) {
-        return plantTemplatesByName.get(plantName);
+        if (plantName == null) {
+            return null;
+        }
+        PlantTemplate exact = plantTemplatesByName.get(plantName);
+        return exact != null ? exact : plantTemplatesByLowerName.get(normalize(plantName));
+    }
+
+    public static String normalize(String plantName) {
+        return plantName == null ? null : plantName.toLowerCase().trim();
     }
 
     public PlantTemplate getTemplateById(int id) {
@@ -38,6 +49,7 @@ public class PlantRegistry {
     public void register(PlantTemplate plantTemplate) {
         if (plantTemplate != null && plantTemplate.getName() != null) {
             plantTemplatesByName.put(plantTemplate.getName(), plantTemplate);
+            plantTemplatesByLowerName.put(normalize(plantTemplate.getName()), plantTemplate);
             plantTemplatesById.put(plantTemplate.getId(), plantTemplate);
         }
     }

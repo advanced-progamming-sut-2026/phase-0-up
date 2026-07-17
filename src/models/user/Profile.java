@@ -74,8 +74,14 @@ public class Profile {
         initializeStartingPlants();
     }
 
+    // Every profile starts owning the basic loadout, which is exactly the pool the first level of
+    // chapter 1 offers -- without these a new player cannot select any seed and no level is playable.
+    // Further plants are unlocked through the shop (see CollectionSystem.buyPlant).
     private void initializeStartingPlants() {
-        //TODO: unlock default plants for each profile;
+        for (String plant : Constants.STARTING_PLANTS) {
+            unlockPlant(plant);
+            ownedSeedPackets.merge(plant.toLowerCase().trim(), 1, Integer::sum);
+        }
     }
 
     // --- Getters & Setters ---

@@ -20,13 +20,19 @@ public class LowSandTerrain extends Terrain{
         else flooded = false;
     }
 
+    // A low beach only lets zombies surface while water is actually on it, and the tile floods/drains
+    // during the level -- so the flooded state is read live rather than from construction time.
     @Override
     public void effect(Zombie z, Plant p) {
-        Zombie zombie = null;
-        if(flooded && z != null) {
-            zombie = ZombieFactory.createZombie(
-                    "ZombieDefault", currentCell.getX(), currentCell.getY(), z.getGameSession());
+        flooded = currentCell.isFlooded();
+        if (!flooded || z == null) {
+            return;
         }
-        currentRow.getZombies().add(zombie);
+        Zombie zombie = ZombieFactory.createZombie(
+                "ZombieDefault", currentCell.getX(), currentCell.getY(), z.getGameSession());
+        if (zombie != null) {
+            // Guarded: adding an un-created zombie put a null into the row and NPE'd every later pass.
+            currentRow.getZombies().add(zombie);
+        }
     }
 }

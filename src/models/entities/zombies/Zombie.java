@@ -105,9 +105,14 @@ public class Zombie extends Entity {
         return gameSession;
     }
 
+    // A zombie spawns one cell beyond the right edge and can be shoved past either end mid-fight, so
+    // its column is only a valid cell index part of the time; off the board there is nothing to eat.
     public Plant getTargetPlantInFront() {
-        return gameSession.getMap().getRow(movement.getPositionY())
-                .cellAt((int) movement.getPositionX()).getCurrentPlant();
+        int column = (int) Math.floor(movement.getPositionX());
+        if (!gameSession.getMap().isValidCoordinate(column, movement.getPositionY())) {
+            return null;
+        }
+        return gameSession.getMap().getRow(movement.getPositionY()).cellAt(column).getCurrentPlant();
     }
 
     public int getEatDamage() {

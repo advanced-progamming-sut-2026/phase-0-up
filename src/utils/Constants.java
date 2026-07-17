@@ -40,6 +40,17 @@ public class Constants {
     public static final double FLAG_WAVE_MULTIPLIER = 2.0;         // ۲ برابر سختی برای اَبَرموج (موج آخر)
     public static final double NEXT_WAVE_HP_THRESHOLD = 0.75;      // شروع موج بعد وقتی ۷۵٪ جان موج قبل رفته باشد
 
+    // زامبی‌ها از یک خانه بیرون لبه‌ی راست وارد می‌شوند و به سمت چپ راه می‌روند
+    public static final double ZOMBIE_SPAWN_X = 9.5;
+    public static final int DEFAULT_WAVE_DELAY_SECONDS = 25;       // وقتی levels.json تاخیری تعیین نکرده
+    public static final int DEFAULT_FIRST_WAVE_BUDGET = 1000;      // وقتی levels.json بودجه‌ای تعیین نکرده
+
+    // فرصت اولیه‌ی بازیکن برای ساختن دفاع؛ عمداً بیشتر از فاصله‌ی بین دو موج (بیشترین مقدار در
+    // levels.json برابر ۵۵ ثانیه است) تا موج اول دیرتر از بقیه‌ی موج‌ها برسد
+    public static final int FIRST_WAVE_DELAY_SECONDS = 60;
+    // زامبی‌های یک موج قطره‌ای وارد می‌شوند، نه همه با هم
+    public static final int ZOMBIE_SPAWN_INTERVAL_SECONDS = 2;
+
     // ==========================================
     // ۴. دراپ‌ها و جوایز (Loot Drops)
     // ==========================================
@@ -102,7 +113,6 @@ public class Constants {
     // ==========================================
     // ۸. مینی‌گیم‌ها و مراحل ویژه (Minigames)
     // ==========================================
-    public static final int CONVEYOR_BELT_INTERVAL_SECONDS = 12;   // زمان رسیدن گیاه جدید روی تسمه نقاله
     public static final int BEGHOULED_MATCH_SUN_REWARD = 50;       // پاداش خورشید در ترکیب ۳‌تایی Beghouled
 
     // ==========================================
@@ -134,5 +144,10 @@ public class Constants {
     // ۱۰. منوی انتخاب گیاه (Plant Selection Menu)
     // =====================================================
     public static final int DEFAULT_SEED_SLOTS = 8;
+
+    // گیاهان اولیه‌ی هر پروفایل (همان استخر گیاهان مرحله‌ی اول فصل اول)
+    public static final String[] STARTING_PLANTS = {
+            "Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea"
+    };
 
 }

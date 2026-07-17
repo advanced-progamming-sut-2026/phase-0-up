@@ -3,6 +3,7 @@ import controllers.engine.MenuType;
 import models.user.AppSession;
 import models.user.User;
 import utils.gameinitializers.GameInitializer;
+import utils.gameinitializers.LevelInitializer;
 import utils.storage.DatabaseManager;
 
 public class Main {
@@ -19,6 +20,9 @@ public class Main {
         if (autoLoggedInUser != null) {
             System.out.println("Auto-logging User: " + autoLoggedInUser.getUsername());
             appSession.setCurrentUser(autoLoggedInUser);
+            // Chapters/levels are never persisted, so an auto-logged-in user needs the same campaign
+            // rebuild LoginCommand does -- without it currentChapter stays null and picking a level NPEs.
+            LevelInitializer.attachCampaign(autoLoggedInUser.getProfile());
             appSession.setCurrentMenu(MenuType.MAIN_MENU);
         }
 

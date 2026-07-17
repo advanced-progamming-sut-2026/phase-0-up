@@ -35,7 +35,6 @@ import views.renderers.MenuRenderer.*;
 
 public class InputRouter {
     private final AppSession appSession;
-    private GameSession gameSession;
 
     private boolean running;
 
@@ -58,7 +57,12 @@ public class InputRouter {
     public InputRouter(AppSession appSession) {
         this.running = true;
         this.appSession = appSession;
-        gameSession = appSession.getCurrentGameSession();
+    }
+
+    // Read live: the router is built at startup, long before a level is chosen, so caching the
+    // session here would pin it to null forever (ChooseLevelCommand only sets it on the AppSession).
+    private GameSession gameSession() {
+        return appSession.getCurrentGameSession();
     }
 
     public void startLoop() {
@@ -140,6 +144,10 @@ public class InputRouter {
     }
 
     private boolean handlePlantMenuExecute(String input){
+        GameSession gameSession = gameSession();
+        if(gameSession == null){
+            return false;
+        }
         if(SeedSelectionRegex.SHOW_ALL_PLANTS.matches(input)){
             new ShowSeedsCommand(gameSession, true, plantMenuRenderer).execute();
             return true;

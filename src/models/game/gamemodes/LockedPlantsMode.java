@@ -3,28 +3,47 @@ package models.game.gamemodes;
 import java.util.ArrayList;
 import java.util.List;
 
-// Special level: some plants are banned from selection. The authoritative restriction is the level's
-// availablePlants list (already enforced by the seed-selection menu); this mode carries the banned
-// set for display and a defensive isPlantAllowed check. lockedType distinguishes the doc's two
-// variants (1 = a family is locked down, 2 = the player is forced into a fixed loadout).
+// Special level: the loadout is constrained beyond the level's plant pool.
+// Which plants may be picked is already the level's availablePlants list, so this mode only carries
+// what a pool cannot express -- the two variants from the doc:
+//   type 1 -> lockedSlots: seed slots are shut from the start, so fewer plants fit in the loadout.
+//   type 2 -> forcedPlants: seeds are pre-selected and the player may not remove them.
 public class LockedPlantsMode extends StandardMode {
     private final int type;
-    private final List<String> bannedPlants;
+    private final int lockedSlots;
+    private final List<String> forcedPlants;
 
-    public LockedPlantsMode(int type, List<String> bannedPlants) {
+    public LockedPlantsMode(int type, int lockedSlots, List<String> forcedPlants) {
         this.type = type;
-        this.bannedPlants = bannedPlants != null ? bannedPlants : new ArrayList<>();
+        this.lockedSlots = Math.max(0, lockedSlots);
+        this.forcedPlants = forcedPlants != null ? forcedPlants : new ArrayList<>();
     }
 
     public int getType() {
         return type;
     }
 
-    public List<String> getBannedPlants() {
-        return bannedPlants;
+    public int getLockedSlots() {
+        return lockedSlots;
     }
 
-    public boolean isPlantAllowed(String plantName) {
-        return !bannedPlants.contains(plantName);
+    public List<String> getForcedPlants() {
+        return forcedPlants;
+    }
+
+    @Override
+    public int adjustSeedSlots(int baseSlots) {
+        // Never lock every slot away, or the level becomes unwinnable.
+        return Math.max(1, baseSlots - lockedSlots);
+    }
+
+    @Override
+    public boolean isSeedRemovable(String plantType) {
+        return !forcedPlants.contains(plantType);
+    }
+
+    @Override
+    public List<String> preSelectedPlants() {
+        return forcedPlants;
     }
 }

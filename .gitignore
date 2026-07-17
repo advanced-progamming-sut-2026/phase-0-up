@@ -10,3 +10,6 @@
 out/
 target/
 *.class
+
+# گراف دانش (graphify) - خروجی تولیدشده، نیازی به کامیت ندارد
+graphify-out/

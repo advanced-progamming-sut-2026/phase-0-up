@@ -92,6 +92,15 @@ public class GameEngine {
         // TimeSystem.advance drives the clock and per-tick systems (owned separately); once state has
         // settled for this tick, evaluate the level's win/lose rules. Kept here, not in TimeSystem,
         // so time-advancement and rule-evaluation never interfere.
+        // Order matters: advance the clock, run the per-tick systems against it, then -- once state
+        // has settled for this tick -- evaluate the level's win/lose rules. Rule evaluation is kept
+        // here rather than inside a system so time-advancement and rule-evaluation never interfere.
+        gameSession.tick();
+
+        for (Result waveEvent : waveSystem.processTick(gameSession, gameSession.getTimeTicks())) {
+            inGameRenderer.render(waveEvent);
+        }
+
         gameSession.evaluateModeRules();
     }
 

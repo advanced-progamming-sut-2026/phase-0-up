@@ -13,4 +13,9 @@ public class NightOpsMode extends StandardMode {
     public boolean isSkySunDisabled() {
         return disableSkySun;
     }
+
+    @Override
+    public boolean allowsSkySun() {
+        return !disableSkySun;
+    }
 }

@@ -1,170 +1,238 @@
 [
   {
     "id": "s1l1", "chapter": "ANCIENT_EGYPT", "levelNumber": 1, "mode": "STANDARD",
-    "name": "Ancient Egypt - Day 1", "startingSun": 50, "seedSlots": 6,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine"],
+    "name": "Ancient Egypt - Day 1",
+    "startingSun": 50, "seedSlots": 7,
+    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea"],
+    "terrain": [".........", "......#..", ".........", "......#..", "........."],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieDefault"], "budget": 300, "delay": 20 },
-      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 500, "delay": 30, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1000, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1500, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 2000, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa", "ZombieTombRaiser", "ZombieImp", "ZombieGargantuar"], "budget": 3000, "delay": 40, "isFinal": true }
     ]
   },
   {
     "id": "s1l2", "chapter": "ANCIENT_EGYPT", "levelNumber": 2, "mode": "STANDARD",
-    "name": "Ancient Egypt - Day 2", "startingSun": 75, "seedSlots": 7,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea", "Cherry Bomb"],
+    "name": "Ancient Egypt - Day 2",
+    "startingSun": 75, "seedSlots": 8,
+    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea", "Repeater"],
+    "terrain": [".....#...", "......#..", ".....#...", "......#..", "........."],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 400, "delay": 20 },
-      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieExplorer"], "budget": 600, "delay": 30 },
-      { "zombies": ["ZombieArmor2", "ZombieRa", "ZombieExplorer"], "budget": 900, "delay": 35, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1250, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1800, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 2350, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa", "ZombieTombRaiser", "ZombieImp", "ZombieGargantuar"], "budget": 2900, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa", "ZombieTombRaiser", "ZombieImp", "ZombieGargantuar"], "budget": 3950, "delay": 45, "isFinal": true }
     ]
   },
   {
     "id": "s1l3", "chapter": "ANCIENT_EGYPT", "levelNumber": 3, "mode": "LOCKED_PLANTS",
-    "name": "Ancient Egypt - Locked Plants", "startingSun": 100, "seedSlots": 5,
+    "name": "Ancient Egypt - Locked Plants",
+    "startingSun": 100, "seedSlots": 8,
     "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine"],
-    "rules": {
-      "lockedType": 1,
-      "bannedPlants": ["Cherry Bomb", "Repeater", "Snow Pea"]
-    },
+    "terrain": [".........", "....#.#..", ".........", "....#.#..", "........."],
+    "rules": { "lockedType": 2, "lockedSlots": 2, "forcedPlants": ["Sunflower", "Wall-nut"] },
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 450, "delay": 20 },
-      { "zombies": ["ZombieArmor1", "ZombieArmor2", "ZombieExplorer"], "budget": 800, "delay": 30, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1500, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2100, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 2700, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 3300, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa", "ZombieTombRaiser", "ZombieImp", "ZombieGargantuar"], "budget": 3900, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa", "ZombieTombRaiser", "ZombieImp", "ZombieGargantuar"], "budget": 5000, "delay": 50, "isFinal": true }
     ]
   },
   {
     "id": "s1l4", "chapter": "ANCIENT_EGYPT", "levelNumber": 4, "mode": "STANDARD",
-    "name": "Ancient Egypt - Day 4", "startingSun": 75, "seedSlots": 8,
+    "name": "Ancient Egypt - Day 4",
+    "startingSun": 125, "seedSlots": 8,
     "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea", "Repeater", "Cherry Bomb", "Squash"],
+    "terrain": ["......#..", "....#.#..", "......#..", "....#.#..", "......#.."],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieRa"], "budget": 600, "delay": 20 },
-      { "zombies": ["ZombieArmor2", "ZombieExplorer", "ZombieTombRaiser"], "budget": 900, "delay": 30 },
-      { "zombies": ["ZombieGargantuar", "ZombieArmor2", "ZombieImp"], "budget": 1400, "delay": 40, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1750, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2400, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 3050, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 3700, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa"], "budget": 4350, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa", "ZombieTombRaiser", "ZombieImp", "ZombieGargantuar"], "budget": 5000, "delay": 50 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa", "ZombieTombRaiser", "ZombieImp", "ZombieGargantuar"], "budget": 6150, "delay": 55, "isFinal": true }
     ]
   },
-
   {
     "id": "s2l1", "chapter": "FROSTBITE_CAVES", "levelNumber": 1, "mode": "STANDARD",
-    "name": "Frostbite Caves - Day 1", "startingSun": 75, "seedSlots": 7,
+    "name": "Frostbite Caves - Day 1",
+    "startingSun": 50, "seedSlots": 7,
     "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea"],
+    "terrain": [".........", ".......&.", ".........", ".......&.", "........."],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieIceAgeDodo"], "budget": 400, "delay": 20 },
-      { "zombies": ["ZombieArmor1", "ZombieIceAgeHunter"], "budget": 700, "delay": 30, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1500, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2100, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 2700, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 3800, "delay": 40, "isFinal": true }
     ]
   },
   {
     "id": "s2l2", "chapter": "FROSTBITE_CAVES", "levelNumber": 2, "mode": "STANDARD",
-    "name": "Frostbite Caves - Day 2", "startingSun": 75, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea", "Cherry Bomb", "Repeater"],
+    "name": "Frostbite Caves - Day 2",
+    "startingSun": 75, "seedSlots": 8,
+    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea", "Repeater"],
+    "terrain": ["........&", "......^..", ".........", "......v..", "........&"],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 600, "delay": 20 },
-      { "zombies": ["ZombieIceAgeTroglobite", "ZombieIceAgeHunter"], "budget": 1000, "delay": 35, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1750, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2400, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 3050, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 3700, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 4850, "delay": 45, "isFinal": true }
     ]
   },
   {
     "id": "s2l3", "chapter": "FROSTBITE_CAVES", "levelNumber": 3, "mode": "NIGHT_OPS",
-    "name": "Frostbite Caves - Night Ops", "startingSun": 150, "seedSlots": 7,
-    "availablePlants": ["Sunflower", "Twin Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea"],
-    "rules": {
-      "disableSkySun": true
-    },
+    "name": "Frostbite Caves - Night Ops",
+    "startingSun": 150, "seedSlots": 8,
+    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea", "Repeater", "Cherry Bomb"],
+    "terrain": [".......&.", "........&", ".......&.", "........&", ".......&."],
+    "rules": { "disableSkySun": true },
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieIceAgeDodo"], "budget": 500, "delay": 25 },
-      { "zombies": ["ZombieIceAgeHunter", "ZombieIceAgeTroglobite"], "budget": 1000, "delay": 35, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2000, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2700, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 3400, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 4100, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 4800, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 6000, "delay": 50, "isFinal": true }
     ]
   },
   {
     "id": "s2l4", "chapter": "FROSTBITE_CAVES", "levelNumber": 4, "mode": "STANDARD",
-    "name": "Frostbite Caves - Day 4", "startingSun": 75, "seedSlots": 8,
+    "name": "Frostbite Caves - Day 4",
+    "startingSun": 125, "seedSlots": 8,
     "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea", "Repeater", "Cherry Bomb", "Squash"],
+    "terrain": ["......&.&", "......^..", ".......&.", "......v..", "......&.&"],
     "waves": [
-      { "zombies": ["ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieArmor1"], "budget": 800, "delay": 20 },
-      { "zombies": ["ZombieIceAgeTroglobite", "ZombieIceAgeHunter"], "budget": 1200, "delay": 35 },
-      { "zombies": ["ZombieGargantuar", "ZombieIceAgeTroglobite"], "budget": 1600, "delay": 40, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2250, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 3000, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 3750, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 4500, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 5250, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 6000, "delay": 50 },
+      { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 7250, "delay": 55, "isFinal": true }
     ]
   },
-
   {
     "id": "s3l1", "chapter": "BIG_WAVE_BEACH", "levelNumber": 1, "mode": "STANDARD",
-    "name": "Big Wave Beach - Day 1", "startingSun": 75, "seedSlots": 7,
+    "name": "Big Wave Beach - Day 1",
+    "startingSun": 50, "seedSlots": 7,
     "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp"],
+    "terrain": [".......!!", ".......!!", ".......!!", ".......!!", ".......!!"],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 400, "delay": 20 },
-      { "zombies": ["ZombieBeachSnorkel", "ZombieDefault"], "budget": 700, "delay": 30, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2000, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2700, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 3400, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 4600, "delay": 40, "isFinal": true }
     ]
   },
   {
     "id": "s3l2", "chapter": "BIG_WAVE_BEACH", "levelNumber": 2, "mode": "STANDARD",
-    "name": "Big Wave Beach - Day 2", "startingSun": 75, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp", "Snow Pea", "Repeater"],
+    "name": "Big Wave Beach - Day 2",
+    "startingSun": 75, "seedSlots": 8,
+    "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp", "Repeater"],
+    "terrain": [".......!!", ".......!!", "......-!!", ".......!!", ".......!!"],
     "waves": [
-      { "zombies": ["ZombieBeachFisherman", "ZombieBeachSnorkel"], "budget": 600, "delay": 20 },
-      { "zombies": ["ZombieBeachOctopus", "ZombieBeachFisherman"], "budget": 1000, "delay": 35, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2250, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 3000, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 3750, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 4500, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 5750, "delay": 45, "isFinal": true }
     ]
   },
   {
     "id": "s3l3", "chapter": "BIG_WAVE_BEACH", "levelNumber": 3, "mode": "DEAD_LINE",
-    "name": "Big Wave Beach - Dead Line", "startingSun": 100, "seedSlots": 7,
-    "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Snow Pea", "Repeater"],
-    "rules": {
-      "deadLineColumn": 2
-    },
+    "name": "Big Wave Beach - Dead Line",
+    "startingSun": 100, "seedSlots": 8,
+    "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp", "Repeater", "Cherry Bomb"],
+    "terrain": [".......!!", ".......!!", ".......!!", ".......!!", ".......!!"],
+    "rules": { "deadLineColumn": 2 },
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 500, "delay": 25 },
-      { "zombies": ["ZombieBeachSnorkel", "ZombieBeachOctopus"], "budget": 1100, "delay": 35, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2500, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 3300, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 4100, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 4900, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 5700, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 7000, "delay": 50, "isFinal": true }
     ]
   },
   {
     "id": "s3l4", "chapter": "BIG_WAVE_BEACH", "levelNumber": 4, "mode": "STANDARD",
-    "name": "Big Wave Beach - Day 4", "startingSun": 75, "seedSlots": 8,
+    "name": "Big Wave Beach - Day 4",
+    "startingSun": 125, "seedSlots": 8,
     "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp", "Repeater", "Cherry Bomb", "Squash"],
+    "terrain": ["......!!!", "......!!!", ".....-!!!", "......!!!", "......!!!"],
     "waves": [
-      { "zombies": ["ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 800, "delay": 20 },
-      { "zombies": ["ZombieBeachOctopus", "ZombieBeachSnorkel"], "budget": 1200, "delay": 35 },
-      { "zombies": ["ZombieGargantuar", "ZombieBeachOctopus"], "budget": 1600, "delay": 40, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2750, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 3600, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 4450, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 5300, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1"], "budget": 6150, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 7000, "delay": 50 },
+      { "zombies": ["ZombieDefault", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieArmor1", "ZombieBeachOctopus", "ZombieGargantuar"], "budget": 8350, "delay": 55, "isFinal": true }
     ]
   },
-
   {
     "id": "s4l1", "chapter": "DARK_AGES", "levelNumber": 1, "mode": "STANDARD",
-    "name": "Dark Ages - Night 1", "startingSun": 100, "seedSlots": 7,
+    "name": "Dark Ages - Day 1",
+    "startingSun": 100, "seedSlots": 7,
     "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom"],
+    "terrain": [".........", ".......?.", ".........", ".......?.", "........."],
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 400, "delay": 20 },
-      { "zombies": ["ZombieDarkJuggler", "ZombieDarkArmor3"], "budget": 700, "delay": 30, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 2500, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 3300, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard"], "budget": 4100, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"], "budget": 5400, "delay": 40, "isFinal": true }
     ]
   },
   {
     "id": "s4l2", "chapter": "DARK_AGES", "levelNumber": 2, "mode": "STANDARD",
-    "name": "Dark Ages - Night 2", "startingSun": 100, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom", "Fume-shroom", "Repeater"],
+    "name": "Dark Ages - Day 2",
+    "startingSun": 100, "seedSlots": 8,
+    "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom", "Fume-shroom"],
+    "terrain": ["......0..", ".......?.", "......0..", ".......?.", "........."],
     "waves": [
-      { "zombies": ["ZombieDarkArmor3", "ZombieDarkJuggler"], "budget": 600, "delay": 20 },
-      { "zombies": ["ZombieWizard", "ZombieDarkJuggler"], "budget": 1000, "delay": 35, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 2750, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 3600, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard"], "budget": 4450, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"], "budget": 5300, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"], "budget": 6650, "delay": 45, "isFinal": true }
     ]
   },
   {
     "id": "s4l3", "chapter": "DARK_AGES", "levelNumber": 3, "mode": "SAVE_OUR_SEEDS",
-    "name": "Dark Ages - Save Our Seeds", "startingSun": 75, "seedSlots": 6,
-    "availablePlants": ["Peashooter", "Wall-nut", "Puff-shroom", "Fume-shroom", "Repeater"],
-    "rules": {
-      "protectedPlants": [
-        { "plant": "Sunflower", "x": 0, "y": 1 },
-        { "plant": "Sunflower", "x": 0, "y": 3 }
-      ]
-    },
+    "name": "Dark Ages - Save Our Seeds",
+    "startingSun": 100, "seedSlots": 8,
+    "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom", "Fume-shroom", "Repeater"],
+    "terrain": [".........", ".......?.", ".........", ".......?.", "........."],
+    "rules": { "protectedPlants": [ { "plant": "Sunflower", "x": 0, "y": 1 }, { "plant": "Sunflower", "x": 0, "y": 3 } ] },
     "waves": [
-      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 500, "delay": 25 },
-      { "zombies": ["ZombieDarkJuggler", "ZombieWizard"], "budget": 1000, "delay": 35, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 3000, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 3900, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard"], "budget": 4800, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard"], "budget": 5700, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"], "budget": 6600, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"], "budget": 8000, "delay": 50, "isFinal": true }
     ]
   },
   {
     "id": "s4l4", "chapter": "DARK_AGES", "levelNumber": 4, "mode": "STANDARD",
-    "name": "Dark Ages - Night 4", "startingSun": 100, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom", "Fume-shroom", "Cherry Bomb", "Repeater"],
+    "name": "Dark Ages - Day 4",
+    "startingSun": 100, "seedSlots": 8,
+    "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom", "Fume-shroom", "Repeater", "Cherry Bomb"],
+    "terrain": ["......0?.", ".......?.", "......0..", ".......?.", "......0?."],
     "waves": [
-      { "zombies": ["ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard"], "budget": 800, "delay": 20 },
-      { "zombies": ["ZombieDarkKing", "ZombieWizard"], "budget": 1300, "delay": 35 },
-      { "zombies": ["ZombieDarkImpDragon", "ZombieDarkKing"], "budget": 1800, "delay": 40, "isFinal": true }
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 3250, "delay": 25 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 4200, "delay": 30 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard"], "budget": 5150, "delay": 35 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard"], "budget": 6100, "delay": 40 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard"], "budget": 7050, "delay": 45 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"], "budget": 8000, "delay": 50 },
+      { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"], "budget": 9450, "delay": 55, "isFinal": true }
     ]
   }
 ]

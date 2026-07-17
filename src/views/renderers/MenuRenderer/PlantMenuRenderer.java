@@ -26,7 +26,11 @@ public class PlantMenuRenderer {
         LevelTemplate levelTemplate = session.getLevel().getTemplate();
         List<String> profilePlants = profile.getUnlockedPlants();
         List<String> levelPlants = levelTemplate.getAvailablePlants();
-        List<String> available = profilePlants.stream().filter(levelPlants::contains).collect(Collectors.toList());
+        // The profile stores plant names lower-cased while the level pool uses display names, so the
+        // two are matched case-insensitively; the level's spelling is kept for display.
+        List<String> available = levelPlants == null ? List.of() : levelPlants.stream()
+                .filter(levelPlant -> profilePlants.stream().anyMatch(owned -> owned.equalsIgnoreCase(levelPlant)))
+                .collect(Collectors.toList());
 
 
         if (available.isEmpty()) {
@@ -62,7 +66,15 @@ public class PlantMenuRenderer {
 
     private boolean isOwned(Profile profile, String plantName) {
         Map<String, Integer> owned = profile.getOwnedSeedPackets();
-        return owned != null && owned.getOrDefault(plantName, 0) > 0;
+        if (owned == null) {
+            return false;
+        }
+        for (Map.Entry<String, Integer> entry : owned.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(plantName) && entry.getValue() > 0) {
+                return true;
+            }
+        }
+        return false;
     }
     public void plantNotSelected(String seedName){OutputHandler.showError("Plant '" + seedName + "' is not selected.");}
     public void alreadyBoosted(String seedName){OutputHandler.showError("Plant '" +seedName + "' is already boosted.");}
