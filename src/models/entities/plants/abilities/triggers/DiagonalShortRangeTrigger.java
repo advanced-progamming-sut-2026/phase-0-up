@@ -21,7 +21,7 @@ public class DiagonalShortRangeTrigger implements TriggerStrategy {
 
         if (ownerY > 0 && map.getRow(ownerY - 1).getZombies() != null) {
             for (Zombie z : map.getRow(ownerY - 1).getZombies()) {
-                if (!z.getHealth().isDead() && Math.abs(z.getMovement().getPositionX() - ownerX) <= range) {
+                if (z.isTargetable() && Math.abs(z.getMovement().getPositionX() - ownerX) <= range) {
                     return true;
                 }
             }
@@ -29,7 +29,7 @@ public class DiagonalShortRangeTrigger implements TriggerStrategy {
 
         if (ownerY < Constants.BOARD_ROWS - 1 && map.getRow(ownerY + 1).getZombies() != null) {
             for (Zombie z : map.getRow(ownerY + 1).getZombies()) {
-                if (!z.getHealth().isDead() && Math.abs(z.getMovement().getPositionX() - ownerX) <= range) {
+                if (z.isTargetable() && Math.abs(z.getMovement().getPositionX() - ownerX) <= range) {
                     return true;
                 }
             }

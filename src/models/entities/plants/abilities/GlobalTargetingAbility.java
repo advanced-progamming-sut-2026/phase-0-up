@@ -107,7 +107,7 @@ public abstract class GlobalTargetingAbility extends PlantAbility {
             List<Zombie> zombiesInRow = map.getRow(i).getZombies();
             if (zombiesInRow != null){
                 for (Zombie zombie : zombiesInRow){
-                    if (!zombie.getHealth().isDead()){
+                    if (zombie.isTargetable()){
                         validTargets.add(zombie);
                     }
                 }

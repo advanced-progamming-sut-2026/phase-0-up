@@ -28,7 +28,7 @@ public class AttractZombieAbility extends PlantAbility {
         if (zombies == null) return;
 
         for (Zombie z : zombies) {
-            if (!z.getHealth().isDead()) {
+            if (z.isTargetable()) {
                 z.getMovement().startLaneSwitch(toLane);
             }
         }

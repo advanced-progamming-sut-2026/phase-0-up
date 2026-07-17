@@ -18,7 +18,7 @@ public class GlobalTrigger implements TriggerStrategy {
             List<Zombie> zombies = map.getRow(i).getZombies();
             if (zombies != null) {
                 for (Zombie z : zombies) {
-                    if (!z.getHealth().isDead()) {
+                    if (z.isTargetable()) {
                         return true;
                     }
                 }

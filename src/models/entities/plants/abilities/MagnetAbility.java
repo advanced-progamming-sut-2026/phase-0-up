@@ -40,7 +40,7 @@ public class MagnetAbility extends PlantAbility {
             if (zombies == null) continue;
 
             for (Zombie z : zombies) {
-                if (z.getHealth().isDead() || !hasMetalOnTop(z)) continue;
+                if (!z.isTargetable() || !hasMetalOnTop(z)) continue;
 
                 double dx = z.getMovement().getPositionX() - owner.getX();
                 double dy = row - owner.getY();

@@ -15,6 +15,7 @@ public class CombatSystem {
         zombieAttack(session);
         plantAttack(session, currentTick);
         resolveProjectiles(session);
+        checkLawnmowers(session);
     }
 
 
@@ -26,14 +27,23 @@ public class CombatSystem {
         for (Row row : session.getMap().getRows()){
             Lawnmower lawnmower = row.getLawnmower();
 
-            if(lawnmower.isUsed()){
+            if(lawnmower == null || lawnmower.isUsed()){
                 continue;
             }
             if(!lawnmower.isActiveNow()){
                 tryActivateLawnmower(lawnmower, row.getZombies());
             }
+            // Drive a running mower -- including one that triggered on this very tick, so the zombie
+            // that set it off is mown on the same tick rather than getting a free step first.
+            lawnmower.update(session);
         }
     }
+    // Deliberately tests only isDead(), NOT Zombie.isTargetable(): that rule also excludes zombies
+    // off either end of the grid, and a breach is precisely the case where one has reached or stepped
+    // past x = 0. Zombie speeds almost never land exactly on the threshold, so a breaching zombie is
+    // usually already at a negative x -- guarding here would stop the mower from ever firing for it,
+    // and StandardMode.checkLose only ends the level once the mower is spent, so the row would stall
+    // with a zombie sitting past the house forever.
     private void tryActivateLawnmower(Lawnmower lawnmower , List<Zombie> zombies){
         for(Zombie z : zombies){
             if (z.getHealth().isDead()){

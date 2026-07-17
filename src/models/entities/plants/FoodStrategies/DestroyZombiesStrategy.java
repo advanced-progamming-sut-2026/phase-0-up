@@ -28,7 +28,7 @@ public class DestroyZombiesStrategy implements PlantFoodStrategy {
             List<Zombie> zombies = gameSession.getMap().getRow(row).getZombies();
             if (zombies == null) continue;
             for (Zombie z : zombies) {
-                if (!z.getHealth().isDead()) {
+                if (z.isTargetable()) {
                     targets.add(z);
                 }
             }

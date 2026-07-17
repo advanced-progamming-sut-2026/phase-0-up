@@ -144,10 +144,9 @@ public class SunSystem {
             }
 
             for (Zombie zombie : row.getZombies()) {
-                if (zombie.getHealth() == null || zombie.getHealth().isDead()) {
-                    continue;
-                }
-                if (zombie.getMovement() == null) {
+                // A radioactive burst is a board effect like any plant's: it cannot reach a zombie
+                // that has spawned beyond the right edge but not walked on yet.
+                if (!zombie.isTargetable()) {
                     continue;
                 }
 

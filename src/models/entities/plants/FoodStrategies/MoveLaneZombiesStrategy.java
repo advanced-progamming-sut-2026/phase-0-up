@@ -18,7 +18,7 @@ public class MoveLaneZombiesStrategy implements PlantFoodStrategy {
         if (zombies == null) return;
 
         for (Zombie z : zombies) {
-            if (!z.getHealth().isDead()) {
+            if (z.isTargetable()) {
                 z.getMovement().startLaneSwitch(randomAdjacentLane(sourcePlant.getY()));
             }
         }

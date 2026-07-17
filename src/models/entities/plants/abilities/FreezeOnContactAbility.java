@@ -26,7 +26,7 @@ public class FreezeOnContactAbility extends PlantAbility {
         List<Zombie> zombies = gameSession.getMap().getRow(owner.getY()).getZombies();
         if (zombies != null) {
             for (Zombie z : zombies) {
-                if (!z.getHealth().isDead()
+                if (z.isTargetable()
                         && Math.abs(z.getMovement().getPositionX() - owner.getX()) <= 0.5) {
                     z.getState().applyFreeze(freezeDurationTicks);
                 }

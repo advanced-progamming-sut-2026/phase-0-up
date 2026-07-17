@@ -9,6 +9,7 @@ import models.entities.zombies.Components.HealthComponent;
 import models.entities.zombies.Components.MovementComponent;
 import models.entities.zombies.Components.StateComponent;
 import models.game.GameSession;
+import utils.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,6 +104,23 @@ public class Zombie extends Entity {
 
     public GameSession getGameSession() {
         return gameSession;
+    }
+
+    // Whether the zombie is standing on the grid. It spawns one cell beyond the right edge and walks
+    // in, and can be shoved past either end mid-fight, so for part of its life it is off the board:
+    // not a target, and with nothing under it to eat.
+    public boolean isOnBoard() {
+        double x = movement.getPositionX();
+        return x >= 0 && x < Constants.BOARD_COLS;
+    }
+
+    // The single rule for "may a plant act on this zombie": it must be alive AND on the grid.
+    //
+    // The board half matters because a zombie joins its row the moment it spawns, one cell beyond the
+    // right edge, and only then walks in. Every plant-side scan -- triggers, abilities and plant-food
+    // strategies alike -- goes through here, so nothing reaches a zombie that has not arrived yet.
+    public boolean isTargetable() {
+        return !health.isDead() && isOnBoard();
     }
 
     // A zombie spawns one cell beyond the right edge and can be shoved past either end mid-fight, so

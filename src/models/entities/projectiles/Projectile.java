@@ -177,7 +177,9 @@ public class Projectile extends Entity {
         double previousX = this.x - speedX;
 
         for (Zombie z : zombiesInRow) {
-            if (!z.getHealth().isDead() && !hitTargets.contains(z)) {
+            // isTargetable() also rules out a zombie that has spawned beyond the right edge but not
+            // walked on: a pea must fly past where it will appear, not stop dead in mid-air on it.
+            if (z.isTargetable() && !hitTargets.contains(z)) {
                 double zombieX = z.getMovement().getPositionX();
 
                 boolean hitMovingRight = (speedX > 0 && previousX <= zombieX && this.x >= zombieX);
@@ -262,7 +264,8 @@ public class Projectile extends Entity {
                 List<Zombie> zombies = currentRow.getZombies();
                 if (zombies != null) {
                     for (Zombie z : zombies) {
-                        if (z.getHealth().isDead() || z == primaryTarget) {
+                        // Splash reaches the board, not the queue waiting to walk onto it.
+                        if (!z.isTargetable() || z == primaryTarget) {
                             continue;
                         }
 

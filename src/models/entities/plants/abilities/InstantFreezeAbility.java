@@ -37,7 +37,7 @@ public class InstantFreezeAbility extends PlantAbility {
             if (zombies == null) continue;
 
             for (Zombie z : zombies) {
-                if (!z.getHealth().isDead()) {
+                if (z.isTargetable()) {
                     z.getState().applyFreeze(freezeDurationTicks);
                 }
             }

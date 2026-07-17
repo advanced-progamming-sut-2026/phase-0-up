@@ -23,7 +23,7 @@ public class KnockbackBlastStrategy implements PlantFoodStrategy {
         if (zombies == null) return;
 
         for (Zombie z : zombies) {
-            if (!z.getHealth().isDead()) {
+            if (z.isTargetable()) {
                 z.getHealth().applyDamage(damage, Element.NEUTRAL, sourcePlant);
                 double pushedX = z.getMovement().getPositionX() + PUSH_DISTANCE;
                 z.getMovement().setPositionX(Math.min(pushedX, Constants.BOARD_COLS));

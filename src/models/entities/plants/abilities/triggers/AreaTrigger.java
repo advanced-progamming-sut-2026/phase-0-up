@@ -30,7 +30,7 @@ public class AreaTrigger implements TriggerStrategy {
             if (zombies == null) continue;
 
             for (Zombie z : zombies) {
-                if (!z.getHealth().isDead()
+                if (z.isTargetable()
                         && Math.abs(z.getMovement().getPositionX() - owner.getX()) <= colRadius + 0.5) {
                     return true;
                 }

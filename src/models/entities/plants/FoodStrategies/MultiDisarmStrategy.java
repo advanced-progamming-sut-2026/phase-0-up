@@ -24,7 +24,7 @@ public class MultiDisarmStrategy implements PlantFoodStrategy {
 
             for (Zombie z : zombies) {
                 if (disarmed >= count) break;
-                if (!z.getHealth().isDead() && z.getHealth().tryRemoveMetallicArmor()) {
+                if (z.isTargetable() && z.getHealth().tryRemoveMetallicArmor()) {
                     disarmed++;
                 }
             }

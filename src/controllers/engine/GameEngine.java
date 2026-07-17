@@ -63,6 +63,7 @@ public class GameEngine {
         for (Result waveEvent : waveSystem.processTick(gameSession, gameSession.getTimeTicks())) {
             inGameRenderer.render(waveEvent);
         }
+        combatSystem.processTick(gameSession, gameSession.getTimeTicks());
 
         gameSession.evaluateModeRules();
     }

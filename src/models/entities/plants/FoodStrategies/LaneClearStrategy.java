@@ -21,7 +21,7 @@ public class LaneClearStrategy implements PlantFoodStrategy {
         if (zombies == null) return;
 
         for (Zombie z : zombies) {
-            if (!z.getHealth().isDead()) {
+            if (z.isTargetable()) {
                 z.getHealth().applyDamage(damage, Element.NEUTRAL, sourcePlant);
             }
         }

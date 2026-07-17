@@ -21,7 +21,7 @@ public class ForwardShortRangeTrigger implements TriggerStrategy {
 
             for (Zombie z : zombiesInRow) {
                 double zombieX = z.getMovement().getPositionX();
-                if (!z.getHealth().isDead() && zombieX > ownerX && zombieX <= ownerX + range) {
+                if (z.isTargetable() && zombieX > ownerX && zombieX <= ownerX + range) {
                     return true;
                 }
             }

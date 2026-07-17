@@ -14,7 +14,7 @@ public class ContactTrigger implements TriggerStrategy {
         if (zombies == null) return false;
 
         for (Zombie z : zombies) {
-            if (!z.getHealth().isDead()
+            if (z.isTargetable()
                     && Math.abs(z.getMovement().getPositionX() - owner.getX()) <= 0.5) {
                 return true;
             }

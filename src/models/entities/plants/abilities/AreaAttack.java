@@ -22,7 +22,7 @@ public final class AreaAttack {
             if (zombies == null) continue;
 
             for (Zombie z : zombies) {
-                if (z.getHealth().isDead()) continue;
+                if (!z.isTargetable()) continue;
                 if (Math.abs(z.getMovement().getPositionX() - source.getX()) <= colRadius + 0.5) {
                     z.getHealth().applyDamage(damage, element, source);
                 }

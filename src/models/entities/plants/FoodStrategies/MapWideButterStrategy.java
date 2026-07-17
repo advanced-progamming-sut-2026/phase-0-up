@@ -22,7 +22,7 @@ public class MapWideButterStrategy implements PlantFoodStrategy {
             if (zombies == null) continue;
 
             for (Zombie z : zombies) {
-                if (!z.getHealth().isDead()) {
+                if (z.isTargetable()) {
                     z.getState().applyButter(butterDurationTicks);
                 }
             }
