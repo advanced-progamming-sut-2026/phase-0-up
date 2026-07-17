@@ -20,6 +20,7 @@ public class GameEngine {
     private TimeSystem timeSystem;
     private WaveSystem waveSystem;
     private QuestSystem questSystem;
+    private EnvironmentSystem environmentSystem;
     private boolean running;
 
     public GameEngine(GameSession gameSession) {
@@ -32,6 +33,7 @@ public class GameEngine {
         this.timeSystem = new TimeSystem();
         this.waveSystem = new WaveSystem();
         this.questSystem = new QuestSystem();
+        this.environmentSystem = new EnvironmentSystem();
     }
 
     public void startLoop() {
@@ -74,6 +76,9 @@ public class GameEngine {
         for (Result combatEvent : combatSystem.processTick(gameSession, currentTick)) {
             inGameRenderer.render(combatEvent);
         }
+        // Terrain reacts after the entities have moved, so it sees where they actually ended up
+        // (a zombie that just stepped onto a slider tile, ice that a fire plant is now beside, ...).
+        environmentSystem.tick(gameSession);
 
         GameState before = gameSession.getState();
         gameSession.evaluateModeRules();
@@ -172,6 +177,9 @@ public class GameEngine {
             return;
         }
         for (int i = 0; i < ticks; i++) {
+            if (gameSession.getState() != GameState.PLAYING) {
+                break;   // the level ended (won/lost) mid-advance; stop simulating further ticks
+            }
             advanceOneTick();
         }
     }

@@ -196,6 +196,8 @@ public class Plant extends Entity {
         return isAquatic;
     }
 
+    // Chill accumulates in three levels; the third one freezes the plant solid in a 600-HP ice block.
+    // This is what a Frostbite freezing wind and a Hunter's ice throw feed into.
     public void takeIceHit() {
         if (isFrozen) return;
 
@@ -205,22 +207,51 @@ public class Plant extends Entity {
         }
     }
 
+    public int getIceHits() { return iceHits; }
+    public int getChillLevel() { return isFrozen ? 3 : iceHits; }
+    public int getIceBlockHp() { return iceBlockHp; }
+
+    // A plant counts as a "fire plant" for melting nearby ice if it shoots a FIRE projectile.
+    public boolean isFirePlant() {
+        for (PlantAbility ability : abilities) {
+            if (ability instanceof models.entities.plants.abilities.ShootProjectileAbility
+                    && ((models.entities.plants.abilities.ShootProjectileAbility) ability).getElement()
+                        == models.entities.projectiles.Element.FIRE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void freezePlant() {
         this.isFrozen = true;
-        this.iceBlockHp = 300;
+        this.iceBlockHp = Constants.FROZEN_HP;   // 600, matching the Frostbite ice-block rule
         System.out.println(this.getName() + " is completely frozen in ice!");
     }
 
-    public void damageIceBlock(int damage) {
+    // Fire wipes an ice block out in one hit (a fire projectile, or heat); anything else chips at its
+    // 600 HP. When it breaks, the plant is free and its chill resets.
+    public void damageIceBlock(int damage, models.entities.projectiles.Element element) {
         if (!isFrozen) return;
 
-        this.iceBlockHp -= damage;
+        if (element == models.entities.projectiles.Element.FIRE) {
+            this.iceBlockHp = 0;
+        } else {
+            this.iceBlockHp -= damage;
+        }
+
         if (this.iceBlockHp <= 0) {
             this.isFrozen = false;
             this.iceHits = 0;
             this.iceBlockHp = 0;
             System.out.println("Ice block broken! " + this.getName() + " is free!");
         }
+    }
+
+    // Passive melt from a neighbouring fire plant (60 HP/s). Never a fire element, so it always chips
+    // rather than instantly clearing.
+    public void meltIceBlock(int amount) {
+        damageIceBlock(amount, models.entities.projectiles.Element.NEUTRAL);
     }
 
     public void bindWithOctopus() {

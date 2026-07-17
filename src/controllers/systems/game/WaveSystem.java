@@ -3,6 +3,7 @@ package controllers.systems.game;
 import factories.ZombieFactory;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
+import models.game.EnvironmentType;
 import models.game.Level;
 import models.game.Wave;
 import models.templates.ZombieTemplate;
@@ -34,6 +35,7 @@ import java.util.Random;
 // explicit budget per wave -- an authored number always wins, which is what levels.json ships today.
 public class WaveSystem {
     private final Random random;
+    private final EnvironmentSystem environmentSystem;
     private final Deque<PendingSpawn> pendingSpawns = new ArrayDeque<>();
     private long lastWaveTick;
     private long lastSpawnTick;
@@ -47,9 +49,11 @@ public class WaveSystem {
         this(new Random());
     }
 
-    // Seeded variant so a wave sequence can be reproduced in a test.
+    // Seeded variant so a wave sequence can be reproduced in a test. The environment's wave-start
+    // weather (Frostbite's freezing wind) shares this seed so the whole wave is reproducible.
     public WaveSystem(Random random) {
         this.random = random != null ? random : new Random();
+        this.environmentSystem = new EnvironmentSystem(this.random);
     }
 
     public Wave getActiveWave() {
@@ -122,6 +126,10 @@ public class WaveSystem {
                 ? "The final wave has come."
                 : "Wave " + wave.getNumber() + " started."));
 
+        // Season weather fires as the wave lands (Frostbite's freezing wind chills plants in random
+        // rows). Kept behind the environment seam so this method stays season-agnostic.
+        events.addAll(environmentSystem.onWaveStart(gameSession, wave));
+
         // Buy the whole wave up front so its total HP -- the denominator for the 75% threshold --
         // counts every zombie it will ever field, then trickle them on rather than dumping them at
         // once. A zombie still queued is alive and full HP, so it holds the threshold down until it
@@ -131,11 +139,37 @@ public class WaveSystem {
             pendingSpawns.add(new PendingSpawn(zombie, wave.getNumber()));
         }
 
+        applyEgyptTornado(gameSession, wave, events);
+
         gameSession.advanceWave();
         activeWave = wave;
         lastWaveTick = currentTick;
         // The wave's first zombie arrives with the banner rather than one interval later.
         lastSpawnTick = currentTick - spawnIntervalTicks(gameSession);
+    }
+
+    // Ancient Egypt, final wave only: a tornado drops 1-4 of the wave's zombies straight onto the lawn
+    // 1-4 columns ahead of the normal spawn point, instead of having them walk in from the edge. Those
+    // zombies are pulled out of the trickle queue and placed immediately at the tornado column; the
+    // rest of the wave still streams in as usual.
+    private void applyEgyptTornado(GameSession gameSession, Wave wave, List<Result> events) {
+        if (!wave.isFinal()
+                || EnvironmentSystem.environmentOf(gameSession) != EnvironmentType.ANCIENT_EGYPT
+                || pendingSpawns.isEmpty()) {
+            return;
+        }
+        int count = Math.min(1 + random.nextInt(4), pendingSpawns.size());
+        for (int i = 0; i < count; i++) {
+            PendingSpawn pending = pendingSpawns.poll();
+            Zombie zombie = pending.zombie();
+            int lane = zombie.getMovement().getPositionY();
+
+            int columnsAhead = 1 + random.nextInt(4);            // 1..4 columns ahead of the edge
+            zombie.getMovement().setPositionX(Constants.ZOMBIE_SPAWN_X - columnsAhead);
+            gameSession.getMap().getRow(lane).getZombies().add(zombie);
+
+            events.add(spawnLine(zombie, pending.waveNumber(), lane));
+        }
     }
 
     // Walks one queued zombie onto its lane per interval, so a wave arrives as a stream.
@@ -150,8 +184,12 @@ public class WaveSystem {
         gameSession.getMap().getRow(lane).getZombies().add(zombie);
         lastSpawnTick = currentTick;
 
-        events.add(new Result(true, "Zombie " + zombie.getAlias() + " spawned at wave " + pending.waveNumber()
-                + " in lane " + lane + " which costed " + zombie.getWavePointCost() + "."));
+        events.add(spawnLine(zombie, pending.waveNumber(), lane));
+    }
+
+    private Result spawnLine(Zombie zombie, int waveNumber, int lane) {
+        return new Result(true, "Zombie " + zombie.getAlias() + " spawned at wave " + waveNumber
+                + " in lane " + lane + " which costed " + zombie.getWavePointCost() + ".");
     }
 
     // An authored budget wins outright; otherwise wave 1's budget is scaled by this wave's position

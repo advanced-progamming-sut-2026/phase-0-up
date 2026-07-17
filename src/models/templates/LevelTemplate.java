@@ -21,6 +21,7 @@ public class LevelTemplate {
     private int seedSlots;
     private List<WaveSpec> waves;
     private SpecialRules rules;
+    private List<FrozenZombie> frozenZombies;   // Frostbite: zombies that start the level frozen in ice
 
     public String getId() {
         return id;
@@ -82,6 +83,10 @@ public class LevelTemplate {
 
     public SpecialRules getRules() {
         return rules;
+    }
+
+    public List<FrozenZombie> getFrozenZombies() {
+        return frozenZombies != null ? frozenZombies : java.util.Collections.emptyList();
     }
 
     // One authored wave: which zombie aliases may spawn, the point budget the WaveSystem spends on
@@ -155,6 +160,27 @@ public class LevelTemplate {
 
         public String getPlant() {
             return plant;
+        }
+
+        public int getX() {
+            return x;
+        }
+
+        public int getY() {
+            return y;
+        }
+    }
+
+    // A zombie a Frostbite level starts with, encased in an ice block at (x, y). It stays put and
+    // inert until the block melts (a fire plant beside it, or enough normal shots), then thaws and
+    // walks like any other zombie.
+    public static class FrozenZombie {
+        private String zombie;
+        private int x;
+        private int y;
+
+        public String getZombie() {
+            return zombie;
         }
 
         public int getX() {

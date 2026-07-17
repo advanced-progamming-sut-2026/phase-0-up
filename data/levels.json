@@ -83,6 +83,10 @@
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 3000, "delay": 35 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 3700, "delay": 40 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 4800, "delay": 45, "isFinal": true }
+    ],
+    "frozenZombies": [
+      { "zombie": "ZombieIceAgeHunter", "x": 3, "y": 2 },
+      { "zombie": "ZombieDefault", "x": 5, "y": 2 }
     ]
   },
   {
@@ -115,6 +119,11 @@
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter"], "budget": 5200, "delay": 45 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 6000, "delay": 50 },
       { "zombies": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeDodo", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieGargantuar"], "budget": 7200, "delay": 55, "isFinal": true }
+    ],
+    "frozenZombies": [
+      { "zombie": "ZombieIceAgeTroglobite", "x": 2, "y": 0 },
+      { "zombie": "ZombieIceAgeHunter", "x": 3, "y": 2 },
+      { "zombie": "ZombieDefault", "x": 2, "y": 4 }
     ]
   },
   {

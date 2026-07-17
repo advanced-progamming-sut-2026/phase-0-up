@@ -378,7 +378,8 @@ public class Projectile extends Entity {
                 if (p.hasOctopus()) {
                     p.damageOctopus(this.damage);
                 } else if (p.isFrozen()) {
-                    p.damageIceBlock(this.damage);
+                    // A fire projectile shatters the ice outright; anything else chips its 600 HP.
+                    p.damageIceBlock(this.damage, this.element);
                 }
 
                 this.isDestroyed = true;

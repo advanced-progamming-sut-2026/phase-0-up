@@ -15,6 +15,11 @@ import java.util.List;
 public class MapRenderer {
     public void renderAllTheMap(GameSession activeSession){
         GameMap map = activeSession.getMap();
+        if (map.hasTide()) {
+            int floor = map.getTideFloodFloor();
+            OutputHandler.showMessage("Tide: columns " + floor + "+ may flood; columns 0-" + (floor - 1)
+                    + " are always safe.");
+        }
         for (Row row : map.getRows()) {
             OutputHandler.showMessage(buildRowLine(row));
         }

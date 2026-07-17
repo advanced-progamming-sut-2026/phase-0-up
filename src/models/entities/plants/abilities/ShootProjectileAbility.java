@@ -148,6 +148,10 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
     }
 
+    public Element getElement() {
+        return element;
+    }
+
     public void increaseShotCount(int amount) {
         this.shotCount += amount;
     }

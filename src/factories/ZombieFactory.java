@@ -1,8 +1,10 @@
 package factories;
 
+import controllers.systems.game.EnvironmentSystem;
 import factories.zombie.ZombieBehaviorFactory;
 import models.entities.zombies.Abilities.ZombieAbility;
 import models.entities.zombies.Zombie;
+import models.game.EnvironmentType;
 import models.game.GameSession;
 import models.templates.ZombieTemplate;
 import utils.Constants;
@@ -43,7 +45,7 @@ public final class ZombieFactory {
         boolean glowing = template.isCanSpawnPlantFood()
                 && RANDOM.nextDouble() < Constants.GLOWING_ZOMBIE_PROBABILITY;
 
-        return new Zombie(
+        Zombie zombie = new Zombie(
                 ID_SEQUENCE.getAndIncrement(),
                 categoryOf(template.getObjclass()),
                 template.getBaseHp(),
@@ -59,6 +61,13 @@ public final class ZombieFactory {
                 template.getWavePointCost(),
                 glowing,
                 gameSession);
+
+        // Frostbite Caves rule: every zombie here shrugs off the "frozen" effect from ice attacks.
+        // Set once at birth so it covers wave spawns and any zombie an ability spawns mid-level.
+        if (EnvironmentSystem.environmentOf(gameSession) == EnvironmentType.FROSTBITE_CAVES) {
+            zombie.getState().setFreezeImmune(true);
+        }
+        return zombie;
     }
 
     // Normalizes an objclass into a short category token ("ZombieGargantuarProps" -> "Gargantuar"),

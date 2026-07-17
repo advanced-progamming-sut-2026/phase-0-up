@@ -49,6 +49,10 @@ public class GameSession {
 
         // Terrain and any forced loadout must exist before the player reaches seed selection.
         MapInitializer.applyTerrain(this, level.getTerrainLayout());
+        if (level.getTemplate() != null) {
+            MapInitializer.applyFrozenZombies(this, level.getTemplate().getFrozenZombies());
+        }
+        map.captureBaseWaterline();   // fixes the beach's resting waterline for the tide system
         applyPreSelectedSeeds();
     }
 

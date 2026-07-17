@@ -15,6 +15,7 @@ public class StateComponent {
     private boolean isImmuneToFire = false;
 
     private boolean isPermanentlyFrozen = false;
+    private boolean freezeImmune = false;
 
     public void update() {
         if (frozenTimer > 0 &&!isPermanentlyFrozen) frozenTimer--;
@@ -22,9 +23,19 @@ public class StateComponent {
         if (butteredTimer > 0) butteredTimer--;
     }
 
+    // An ice attack (Snow Pea, Hunter's ice, a Jester-reflected ice shot) freezes a zombie solid --
+    // unless it is freeze-immune. Every zombie in Frostbite Caves is immune: the spec says they do not
+    // freeze when hit by ice. This guards the timed freeze from attacks; a FrostbiteTerrain block that
+    // pre-freezes a zombie still uses setFrozen and is unaffected.
     public void applyFreeze(int durationInTicks) {
+        if (freezeImmune) {
+            return;
+        }
         this.frozenTimer = durationInTicks;
     }
+
+    public boolean isFreezeImmune() { return freezeImmune; }
+    public void setFreezeImmune(boolean immune) { this.freezeImmune = immune; }
 
     public void applyChill(int durationInTicks) {
         this.chilledTimer = durationInTicks;

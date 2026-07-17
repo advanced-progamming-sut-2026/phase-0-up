@@ -1,9 +1,12 @@
 package utils.gameinitializers;
 
+import factories.ZombieFactory;
+import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.map.Cell;
 import models.map.GameMap;
 import models.map.Row;
+import models.templates.LevelTemplate;
 import models.map.Terrains.FrozenTerrain;
 import models.map.Terrains.GraveInDarkAgesTerrain;
 import models.map.Terrains.GravesInDarkAgesTypes;
@@ -14,6 +17,7 @@ import models.map.Terrains.SlipDirection;
 import models.map.Terrains.SlipTerrain;
 import models.map.Terrains.WaterTerrain;
 
+import java.util.List;
 import java.util.Random;
 
 // Turns a level's authored terrain layout into real Terrain objects on the session's map.
@@ -76,5 +80,31 @@ public final class MapInitializer {
 
     private static GravesInDarkAgesTypes randomGraveType() {
         return RANDOM.nextBoolean() ? GravesInDarkAgesTypes.SUNNY : GravesInDarkAgesTypes.FOODY;
+    }
+
+    // Places each authored pre-frozen zombie: spawns the zombie on its tile, drops an ice block over
+    // it, and freezes it inside. The block melts by the normal Frostbite rules (a neighbouring fire
+    // plant, or shots), and when it does the zombie thaws and starts walking. Runs after applyTerrain
+    // so the ice block sits on top of whatever the layout already put on the tile.
+    public static void applyFrozenZombies(GameSession session, List<LevelTemplate.FrozenZombie> frozenZombies) {
+        if (session == null || frozenZombies == null || frozenZombies.isEmpty()) {
+            return;
+        }
+        GameMap map = session.getMap();
+        for (LevelTemplate.FrozenZombie spec : frozenZombies) {
+            int x = spec.getX();
+            int y = spec.getY();
+            if (!map.isValidCoordinate(x, y)) {
+                continue;
+            }
+            Zombie zombie = ZombieFactory.createZombie(spec.getZombie(), x + 0.5, y, session);
+            if (zombie == null) {
+                continue;
+            }
+            FrozenTerrain block = new FrozenTerrain();
+            map.getRow(y).cellAt(x).addTerrain(block);
+            block.setInner("zombie", zombie, null);   // freezes the zombie solid
+            map.getRow(y).getZombies().add(zombie);
+        }
     }
 }

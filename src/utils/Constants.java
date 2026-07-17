@@ -40,6 +40,11 @@ public class Constants {
     public static final double FLAG_WAVE_MULTIPLIER = 2.0;         // ۲ برابر سختی برای اَبَرموج (موج آخر)
     public static final double NEXT_WAVE_HP_THRESHOLD = 0.75;      // شروع موج بعد وقتی ۷۵٪ جان موج قبل رفته باشد
 
+    // ساحل امواج: جزر و مد چند ستون بیشتر را می‌پوشاند و پس می‌کشد
+    public static final int TIDE_MAX_RISE = 2;                     // حداکثر ستون‌های اضافه‌ی زیر آب
+    public static final int TIDE_SAFE_COLUMNS = 3;                 // این تعداد ستون سمت چپ هرگز غرق نمی‌شوند
+    public static final double LOW_TIDE_SURFACE_PROBABILITY = 0.5; // احتمال ظهور زامبی از ساحل پست غرق‌شده
+
     // زامبی‌ها از یک خانه بیرون لبه‌ی راست وارد می‌شوند و به سمت چپ راه می‌روند
     public static final double ZOMBIE_SPAWN_X = 9.5;
     public static final int DEFAULT_WAVE_DELAY_SECONDS = 25;       // وقتی levels.json تاخیری تعیین نکرده

@@ -9,7 +9,8 @@ public class SlipTerrain extends Terrain{
     public SlipTerrain(SlipDirection direction) {
         this.plantable = false;
         this.direction = direction;
-        this.symbol = '%';
+        // Match the layout char MapInitializer reads: '^' slides up a row, 'v' slides down.
+        this.symbol = direction == SlipDirection.UP ? '^' : 'v';
     }
 
     @Override

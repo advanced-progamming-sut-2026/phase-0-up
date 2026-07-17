@@ -56,11 +56,18 @@ public class FrozenTerrain extends Terrain{
         this.damage(6);
     }
 
+    // Frees whatever the block held once it melts. A plain obstacle block (an authored '&' with no
+    // inner plant or zombie) has a null type -- there is nothing to free, so it just melts away.
     @Override
     public void effect(Zombie z, Plant p) {
-        if(type.equals("zombie")){
-            z.getState().setFrozen(false);
-        } else {
+        if (type == null) {
+            return;
+        }
+        if (type.equals("zombie")) {
+            if (z != null) {
+                z.getState().setFrozen(false);
+            }
+        } else if (p != null) {
             p.setFrozen(false);
         }
     }

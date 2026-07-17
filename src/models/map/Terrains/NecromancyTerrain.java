@@ -25,9 +25,14 @@ public class NecromancyTerrain extends Terrain{
         else this.plantable = true;
     }
 
+    // Raises a zombie from beneath this tile. The live wave-start path is EnvironmentSystem.applyNecromancy
+    // (which also rolls the odds and reports it); this stays as the terrain's own hook and simply guards
+    // against a null so it can never drop a null into the row.
     @Override
     public void effect(Zombie z, Plant p) {
-        Zombie zombie = ZombieFactory.createZombie("ZombieDefault" , cell.getX() , cell.getY() , gameSession);
-        gameSession.getMap().getRow(cell.getY()).getZombies().add(zombie);
+        Zombie zombie = ZombieFactory.createZombie("ZombieDefault", cell.getX(), cell.getY(), gameSession);
+        if (zombie != null) {
+            gameSession.getMap().getRow(cell.getY()).getZombies().add(zombie);
+        }
     }
 }

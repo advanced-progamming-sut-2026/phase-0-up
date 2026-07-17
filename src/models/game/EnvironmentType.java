@@ -21,4 +21,18 @@ public enum EnvironmentType {
     public boolean hasWaterTerrain() {
         return hasWaterTerrain;
     }
+
+    // Maps a level's authored "chapter" string (levels.json) onto its season. Anything unknown or
+    // blank falls back to Ancient Egypt, mirroring LevelInitializer's chapter grouping, so callers
+    // never get a null season.
+    public static EnvironmentType fromChapter(String chapter) {
+        if (chapter == null || chapter.isBlank()) {
+            return ANCIENT_EGYPT;
+        }
+        try {
+            return valueOf(chapter.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ANCIENT_EGYPT;
+        }
+    }
 }
