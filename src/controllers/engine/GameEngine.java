@@ -15,7 +15,6 @@ public class GameEngine {
     private final InGameRenderer inGameRenderer;
     private final MapRenderer mapRenderer;
     private CombatSystem combatSystem;
-    private MovementSystem movementSystem;
     private SunSystem sunSystem;
     private TimeSystem timeSystem;
     private WaveSystem waveSystem;
@@ -28,17 +27,19 @@ public class GameEngine {
         this.inGameRenderer = new InGameRenderer();
         this.mapRenderer = new MapRenderer();
         this.combatSystem = new CombatSystem();
-        this.movementSystem = new MovementSystem();
         this.sunSystem = new SunSystem();
         this.timeSystem = new TimeSystem();
         this.waveSystem = new WaveSystem();
         this.questSystem = new QuestSystem();
         this.environmentSystem = new EnvironmentSystem();
+        this.combatSystem.setQuestSystem(questSystem);   // combat reports kills/losses to the quest tally
     }
 
     public void startLoop() {
         sunSystem.reset();
         gameSession.startMode();
+        gameSession.applySeedBoosts();   // carry seed-selection boosts into the live seed packets
+        questSystem.startTrackingLevel(gameSession);
         running = true;
         run();
     }
@@ -46,7 +47,11 @@ public class GameEngine {
 
     private void run() {
         while (running && gameSession.getState() == GameState.PLAYING) {
-            String input = InputHandler.readLine().trim();
+            String input = InputHandler.readLine();
+            if (input == null) {   // stdin closed (EOF) -> leave the game loop instead of spinning
+                running = false;
+                break;
+            }
             if (input.isEmpty()) {
                 continue;
             }
@@ -94,8 +99,19 @@ public class GameEngine {
         if (after == GameState.WON) {
             inGameRenderer.render(new Result(true,
                     "Dear humanz, zis is not done yet; we will come back to eat your brainz, humanz."));
+            // The level is won: evaluate quests against it and announce any that just completed (their
+            // rewards are granted straight to the profile).
+            for (Result quest : questSystem.evaluateAndComplete(gameSession.getPlayer(), gameSession, true)) {
+                inGameRenderer.render(quest);
+            }
         } else if (after == GameState.LOST) {
             inGameRenderer.render(new Result(false, "The zombie ate your brain; LOSER!!!"));
+            // A loss still ends a level: quests are evaluated so the cross-level counters settle (the
+            // max-difficulty win streak breaks) and any quest that doesn't need a win -- chapter kills,
+            // the mowerless last-stand kills -- can still complete on what happened this level.
+            for (Result quest : questSystem.evaluateAndComplete(gameSession.getPlayer(), gameSession, false)) {
+                inGameRenderer.render(quest);
+            }
         }
     }
 

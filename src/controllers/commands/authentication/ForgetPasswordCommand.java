@@ -48,7 +48,11 @@ public class ForgetPasswordCommand implements Command {
 
     private boolean processSecurityAnswer(User user) {
         loginMenuRenderer.showSecurityQuestion(user);
-        String input = InputHandler.readLine().trim();
+        String input = InputHandler.readLine();
+        if (input == null) {   // EOF: abort the reset
+            return false;
+        }
+        input = input.trim();
 
         if (!LoginMenuRegex.ANSWER_SECURITY.matches(input)) {
             loginMenuRenderer.forgetPasswordRender(new Result(false, "Invalid answer format!"));
@@ -67,7 +71,11 @@ public class ForgetPasswordCommand implements Command {
 
     private void processPasswordReset(User user) {
         loginMenuRenderer.forgetPasswordRender(new Result(true, "Enter new password:"));
-        String newPassword = InputHandler.readLine().trim();
+        String newPassword = InputHandler.readLine();
+        if (newPassword == null) {   // EOF: abort the reset
+            return;
+        }
+        newPassword = newPassword.trim();
 
         Result validationResult = new PasswordValidator().validate(newPassword);
         if (!validationResult.success()) {

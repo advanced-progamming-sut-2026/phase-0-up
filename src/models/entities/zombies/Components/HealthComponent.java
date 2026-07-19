@@ -25,6 +25,11 @@ public class HealthComponent {
     private int poisonDurationTicks;
     private int poisonTickTimer;
 
+    // The last plant to deal damage to this zombie -- i.e. who gets credit for the kill. Environmental
+    // damage (lawn mower, radioactive sun, poison ticks) passes a null attacker and does not overwrite
+    // it, so a plant that softened the zombie up still keeps the attribution.
+    private Plant lastAttacker;
+
     public HealthComponent(int baseHp, List<ArmorType> armorTypes, Zombie currentZombie) {
         layers = new Stack<>();
         this.armorTypes = armorTypes;
@@ -43,12 +48,22 @@ public class HealthComponent {
         return layers.isEmpty() || getTotalHP() <= 0;
     }
 
+    // The plant credited with this zombie's death (the last one to damage it), or null if only
+    // environmental damage ever hit it.
+    public Plant getLastAttacker() {
+        return lastAttacker;
+    }
+
     public void addLayer(HealthLayer layer) {
         layers.push(layer);
     }
 
     public void applyDamage(int damage, Element element, Plant attacker) {
         if (isDead()) return;
+
+        if (attacker != null) {
+            lastAttacker = attacker;   // remember who to credit for the eventual kill
+        }
 
         if (element != null && element.piercesBaseArmor()) {
             applyToBaseBody(damage);

@@ -29,6 +29,13 @@ public class GameSession {
     private GameState state;
     private int zombiesKilled;
     private int plantsLost;
+    private int lawnmowerKills;
+    // Quest tracking captured on the session: what was planted (cumulative), and how many kills landed
+    // within 30s of the first wave.
+    private final List<String> plantedNames = new ArrayList<>();
+    private final List<String> plantedCategories = new ArrayList<>();
+    private long firstWaveTick = -1;
+    private int killsInFirst30s;
     private boolean cooldownRemoved;
 
     public GameSession(Profile player, Level level) {
@@ -72,6 +79,15 @@ public class GameSession {
     public List<SeedPacket> getSelectedSeeds() {
         return selectedSeeds;
     }
+
+    // Carries the boost the player bought in the seed-selection menu (BoostSeedCommand sets it on the
+    // profile) into the live SeedPacket, so a boosted plant actually fires its plant-food when placed.
+    // Run once at game start -- it covers boosting a seed either before or after it was selected.
+    public void applySeedBoosts() {
+        for (SeedPacket seed : selectedSeeds) {
+            seed.setBoosted(player.isSeedBoosted(seed.getPlantType()));
+        }
+    }
     public Result plant(int x, int y, String plantType) {
         if (!map.isValidCoordinate(x, y)) {
             return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
@@ -114,6 +130,9 @@ public class GameSession {
             player.setSeedBoosted(plantType, false);
         }
 
+        plantedNames.add(newPlant.getName() == null ? "" : newPlant.getName());
+        plantedCategories.add(newPlant.getCategory() == null ? "" : newPlant.getCategory());
+
         return new Result(true, "Plant \"" + plantType + "\" planted at (" + x + ", " + y + ").");
     };
     public Result pluck(int x, int y){
@@ -144,16 +163,38 @@ public class GameSession {
     // started so far, which is what StandardMode.checkWin compares against the level's wave count.
     public void advanceWave() {
         currentWave++;
+        if (currentWave == 1) {
+            firstWaveTick = timeTicks;   // the clock reference for the Quick Action quest
+        }
     }
 
     // Death tallies, written by CombatSystem.processDeaths as it clears the board. Quest conditions
     // and the end-of-level summary read them back.
     public void recordZombieKilled() {
         zombiesKilled++;
+        if (firstWaveTick >= 0 && timeTicks - firstWaveTick <= 30L * utils.Constants.TICKS_PER_SECOND) {
+            killsInFirst30s++;
+        }
     }
+
+    public java.util.List<String> getPlantedNames() { return plantedNames; }
+    public java.util.List<String> getPlantedCategories() { return plantedCategories; }
+    public int getKillsInFirst30s() { return killsInFirst30s; }
 
     public void recordPlantLost() {
         plantsLost++;
+    }
+
+    // Zombies mown down by lawn mowers, tracked separately from the overall kill count for the
+    // "Mowing Time" quest.
+    public void recordLawnmowerKills(int count) {
+        if (count > 0) {
+            lawnmowerKills += count;
+        }
+    }
+
+    public int getLawnmowerKills() {
+        return lawnmowerKills;
     }
 
     // --- GameMode seam ---------------------------------------------------------------------------

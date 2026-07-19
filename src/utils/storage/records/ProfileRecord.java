@@ -36,6 +36,9 @@ public class ProfileRecord {
     private int noneDailyQuestsDone;
     private boolean hasBoughtDailyOfferToday;
     private Set<String> seenZombieAliases;
+    private Set<String> completedQuestIds;   // plain ids of finished quests -> survive a save/reload
+    private int winStreakAtMaxDifficulty;    // Win After Win: running streak, persisted across levels
+    private Map<String, Integer> zombieKillsByChapter;   // Chapter Hunter: kills tallied per chapter
 
     public static ProfileRecord from(Profile p) {
         ProfileRecord r = new ProfileRecord();
@@ -59,6 +62,9 @@ public class ProfileRecord {
         r.noneDailyQuestsDone = p.getNoneDailyQuestsDone();
         r.hasBoughtDailyOfferToday = p.isHasBoughtDailyOfferToday();
         r.seenZombieAliases = new HashSet<>(p.getSeenZombieAliases());
+        r.completedQuestIds = new HashSet<>(p.getCompletedQuestIds());
+        r.winStreakAtMaxDifficulty = p.getWinStreakAtMaxDifficulty();
+        r.zombieKillsByChapter = new HashMap<>(p.getZombieKillsByChapter());
         return r;
     }
 
@@ -75,6 +81,7 @@ public class ProfileRecord {
         p.setDailyQuestsDone(dailyQuestsDone);
         p.setNoneDailyQuestsDone(noneDailyQuestsDone);
         p.setHasBoughtDailyOfferToday(hasBoughtDailyOfferToday);
+        p.setWinStreakAtMaxDifficulty(winStreakAtMaxDifficulty);
         if (myGreenHouse != null) {
             p.setMyGreenHouse(myGreenHouse);
         }
@@ -86,6 +93,8 @@ public class ProfileRecord {
         replace(p.getOwnedSeedPackets(), ownedSeedPackets);
         replace(p.getPlantsLevels(), plantsLevels);
         replace(p.getPassedMiniGames(), passedMiniGames);
+        replace(p.getCompletedQuestIds(), completedQuestIds);
+        replace(p.getZombieKillsByChapter(), zombieKillsByChapter);
         return p;
     }
 

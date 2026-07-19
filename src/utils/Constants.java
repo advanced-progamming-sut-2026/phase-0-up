@@ -13,6 +13,10 @@ public class Constants {
     public static final double LAWNMOWER_ACTIVATION_THRESHOLD = 0.0;
     public static final double LAWNMOWER_END_POSITION = 9.0;
 
+    // A zombie standing in column 0 (the tile nearest the house) sits at x in [0, 1). Killing one here
+    // in a row whose mower is already spent is what the Almost Victorious quest counts.
+    public static final double FIRST_COLUMN_MAX_X = 1.0;
+
 
     // ==========================================
     // ۲. مکانیک‌های خورشید (Sun Mechanics)
@@ -139,6 +143,9 @@ public class Constants {
     public static final int DEFAULT_INITIAL_GEMS = 100;
     public static final int DEFAULT_PLANT_FOOD_COUNT = 0;
     public static final int DEFAULT_DIFFICULTY_LEVEL = 3;
+    // Difficulty runs 1..5 (ChangeDifficultyCommand's accepted range); 5 is "maximum difficulty",
+    // the bar the Win After Win quest measures a winning streak against.
+    public static final int MAX_DIFFICULTY_LEVEL = 5;
     public static final int DEFAULT_BEST_MEOW_POINTS = 0;
     public static final int DEFAULT_LAST_CHAPTER = 1;
     public static final int DEFAULT_LAST_LEVEL = 1;

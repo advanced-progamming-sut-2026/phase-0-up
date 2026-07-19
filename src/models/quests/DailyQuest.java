@@ -1,11 +1,11 @@
 package models.quests;
 
-public class DailyQuest extends Quest{
-    @Override
-    public boolean isComplete(QuestContext ctx) {
-        return false;
-    }
+import models.quests.Reward.Reward;
 
-    public DailyQuest() {
+// A daily, repeatable quest -- the "log in every day" tier. Medium/low priority by nature.
+public class DailyQuest extends Quest {
+    public DailyQuest(String id, String name, String description, QuestPriority priority,
+                      Reward reward, String variables) {
+        super(id, name, description, Category.DAILY, priority, reward, variables);
     }
 }

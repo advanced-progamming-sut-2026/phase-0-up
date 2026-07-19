@@ -33,6 +33,9 @@ public class Profile {
     // a save file. Runtime progress is tracked by the scalar/id fields (lastChapter, lastLevel, ...).
     private List<Quest> activeQuests;
     private List<Quest> completedQuests;
+    // Ids of quests already completed (and rewarded). Plain strings, so unlike the live Quest objects
+    // above this is safe to persist alongside the other scalar progress data.
+    private Set<String> completedQuestIds;
     private int lastChapter;
     private int lastLevel;
     private List<Chapter> unlockedChapters;
@@ -42,6 +45,11 @@ public class Profile {
     private int noneDailyQuestsDone;
     private boolean hasBoughtDailyOfferToday;
     private Set<String> seenZombieAliases;
+    // Cross-level quest progress. Unlike the per-level tally the QuestSystem keeps in memory, these
+    // survive a save/reload (persisted via ProfileRecord): the running streak of wins at maximum
+    // difficulty (Win After Win) and the zombies felled so far in each chapter (Chapter Hunter).
+    private int winStreakAtMaxDifficulty;
+    private Map<String, Integer> zombieKillsByChapter;
 
     public Profile() {
         this.gameNumbers = Constants.DEFAULT_GAME_NUMBERS;
@@ -55,12 +63,15 @@ public class Profile {
         this.dailyQuestsDone = Constants.DEFAULT_DAILY_QUESTS_DONE;
         this.noneDailyQuestsDone = Constants.DEFAULT_NONE_DAILY_QUESTS_DONE;
         this.hasBoughtDailyOfferToday = Constants.DEFAULT_HAS_BOUGHT_DAILY_OFFER;
+        this.winStreakAtMaxDifficulty = 0;
+        this.zombieKillsByChapter = new HashMap<>();
 
         this.newsList = new ArrayList<>();
         this.unlockedPlants = new ArrayList<>();
         this.lockedPlants = new ArrayList<>();
         this.activeQuests = new ArrayList<>();
         this.completedQuests = new ArrayList<>();
+        this.completedQuestIds = new HashSet<>();
         this.unlockedChapters = new ArrayList<>();
         this.seenZombieAliases = new HashSet<>();
         this.boostedSeeds = new HashSet<>();
@@ -80,8 +91,20 @@ public class Profile {
     private void initializeStartingPlants() {
         for (String plant : Constants.STARTING_PLANTS) {
             unlockPlant(plant);
-            ownedSeedPackets.merge(plant.toLowerCase().trim(), 1, Integer::sum);
+            ownedSeedPackets.putIfAbsent(plant.toLowerCase().trim(), 1);   // idempotent
         }
+    }
+
+    // Grants the always-available starter plants if they are missing. Gson deserializes a saved
+    // profile field-by-field and never runs the constructor, so a loaded profile would otherwise have
+    // no unlocked plants at all and every seed would read as "locked" in the seed-selection menu.
+    // Call this once when a user becomes active (login / auto-login). Idempotent.
+    public void ensureStartingPlants() {
+        if (ownedSeedPackets == null) ownedSeedPackets = new java.util.HashMap<>();
+        if (plantsLevels == null) plantsLevels = new java.util.HashMap<>();
+        if (unlockedPlants == null) unlockedPlants = new java.util.ArrayList<>();
+        if (lockedPlants == null) lockedPlants = new java.util.ArrayList<>();
+        initializeStartingPlants();
     }
 
     // --- Getters & Setters ---
@@ -233,6 +256,70 @@ public class Profile {
 
     public void incrementNoneDailyQuestsDone() {
         this.noneDailyQuestsDone++;
+    }
+
+    // Per-quest completion record. A completed quest has already had its reward granted, so this also
+    // guards against granting the same reward twice.
+    public Set<String> getCompletedQuestIds() {
+        if (completedQuestIds == null) {   // a profile deserialized before this field existed
+            completedQuestIds = new HashSet<>();
+        }
+        return completedQuestIds;
+    }
+
+    public boolean hasCompletedQuest(String questId) {
+        return questId != null && getCompletedQuestIds().contains(questId);
+    }
+
+    public void markQuestCompleted(String questId) {
+        if (questId != null) {
+            getCompletedQuestIds().add(questId);
+        }
+    }
+
+    // --- Cross-level quest progress (Win After Win, Chapter Hunter) -------------------------------
+
+    public int getWinStreakAtMaxDifficulty() {
+        return winStreakAtMaxDifficulty;
+    }
+
+    public void setWinStreakAtMaxDifficulty(int winStreakAtMaxDifficulty) {
+        this.winStreakAtMaxDifficulty = winStreakAtMaxDifficulty;
+    }
+
+    // A level just ended: a win at maximum difficulty extends the streak, anything else breaks it.
+    public void recordLevelForWinStreak(boolean won, boolean atMaxDifficulty) {
+        if (won && atMaxDifficulty) {
+            winStreakAtMaxDifficulty++;
+        } else {
+            winStreakAtMaxDifficulty = 0;
+        }
+    }
+
+    public Map<String, Integer> getZombieKillsByChapter() {
+        if (zombieKillsByChapter == null) {   // a profile deserialized before this field existed
+            zombieKillsByChapter = new HashMap<>();
+        }
+        return zombieKillsByChapter;
+    }
+
+    // Credits kills to a chapter's running total and returns the new total, so callers can react to
+    // it reaching a quest threshold without a second lookup.
+    public int addChapterZombieKills(String chapter, int amount) {
+        if (chapter == null || amount <= 0) {
+            return getChapterZombieKills(chapter);
+        }
+        String key = chapter.toLowerCase().trim();
+        int total = getZombieKillsByChapter().getOrDefault(key, 0) + amount;
+        getZombieKillsByChapter().put(key, total);
+        return total;
+    }
+
+    public int getChapterZombieKills(String chapter) {
+        if (chapter == null) {
+            return 0;
+        }
+        return getZombieKillsByChapter().getOrDefault(chapter.toLowerCase().trim(), 0);
     }
 
     public boolean isHasBoughtDailyOfferToday() {

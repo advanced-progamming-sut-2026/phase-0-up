@@ -5,5 +5,6 @@ public class GameInitializer {
         PlantInitializer.loadAllPlants();
         ZombieInitializer.loadAllZombies();
         LevelInitializer.loadAllLevels();
+        QuestInitializer.loadAllQuests();
     }
 }

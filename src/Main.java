@@ -20,6 +20,9 @@ public class Main {
         if (autoLoggedInUser != null) {
             System.out.println("Auto-logging User: " + autoLoggedInUser.getUsername());
             appSession.setCurrentUser(autoLoggedInUser);
+            // A saved profile is deserialized past the constructor, so re-grant the starter plants it
+            // would otherwise be missing (every seed would read as "locked" without this).
+            autoLoggedInUser.getProfile().ensureStartingPlants();
             // Chapters/levels are never persisted, so an auto-logged-in user needs the same campaign
             // rebuild LoginCommand does -- without it currentChapter stays null and picking a level NPEs.
             LevelInitializer.attachCampaign(autoLoggedInUser.getProfile());

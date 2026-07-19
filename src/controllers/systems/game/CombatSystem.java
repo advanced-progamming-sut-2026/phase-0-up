@@ -20,6 +20,7 @@ import java.util.Random;
 //this class should resolve the combat mechanics
 public class CombatSystem {
     private final Random random;
+    private QuestSystem questSystem;   // optional: notified of kills/losses live for quest tracking
 
     public CombatSystem() {
         this(new Random());
@@ -28,6 +29,13 @@ public class CombatSystem {
     // Seeded variant so loot drops can be reproduced in a test.
     public CombatSystem(Random random) {
         this.random = random != null ? random : new Random();
+    }
+
+    // The engine wires its QuestSystem in here so combat can report kills, plant losses and mower
+    // kills to the quest tally as they happen. Optional -- a standalone CombatSystem (a test) runs
+    // fine without one.
+    public void setQuestSystem(QuestSystem questSystem) {
+        this.questSystem = questSystem;
     }
 
     // One frame of combat. Plants act first, then their projectiles fly, then zombies act and move,
@@ -99,6 +107,10 @@ public class CombatSystem {
             // row <r>is triggered" has no space before "is".
             events.add(new Result(true, "The lawn mower in the row " + row.getIndex()
                     + "is triggered and killed these zombies:"));
+            session.recordLawnmowerKills(killed.size());   // for the Mowing Time quest
+            if (questSystem != null) {
+                questSystem.recordLawnmowerKills(killed.size());
+            }
             for (Zombie zombie : killed) {
                 reportZombieDeath(session, zombie, events);
             }
@@ -146,6 +158,9 @@ public class CombatSystem {
                             + (int) cell.getX() + ", " + row.getIndex() + ") is destroyed."));
                     cell.removePlant();
                     session.recordPlantLost();
+                    if (questSystem != null) {
+                        questSystem.recordPlantLost();
+                    }
                 }
             }
 
@@ -168,8 +183,32 @@ public class CombatSystem {
                 + (int) zombie.getMovement().getPositionX() + ", "
                 + zombie.getMovement().getPositionY() + ")"));
         session.recordZombieKilled();
+        if (questSystem != null) {
+            Plant killer = zombie.getHealth().getLastAttacker();
+            questSystem.recordZombieKilled(zombie, killer);
+            recordMowerlessFirstColumnKill(session, zombie, killer);
+        }
         dropPlantFood(session, zombie, events);
         rollLootDrop(session, events);
+    }
+
+    // Credits the Almost Victorious quest when a plant fells a zombie standing in column 0 of a row
+    // whose lawn mower is already spent -- a last-ditch kill with no mower left as a safety net. The
+    // mower's own kills are excluded: they carry no killer plant (killer == null), so requiring a
+    // killer both skips them and matches the quest's intent ("kill" a zombie there with a plant).
+    private void recordMowerlessFirstColumnKill(GameSession session, Zombie zombie, Plant killer) {
+        if (killer == null) {
+            return;
+        }
+        int rowIndex = zombie.getMovement().getPositionY();
+        if (rowIndex < 0 || rowIndex >= session.getMap().getRows().size()) {
+            return;
+        }
+        Lawnmower mower = session.getMap().getRow(rowIndex).getLawnmower();
+        if (mower != null && mower.isUsed()
+                && zombie.getMovement().getPositionX() < Constants.FIRST_COLUMN_MAX_X) {
+            questSystem.recordMowerlessFirstColumnKill();
+        }
     }
 
     // A glowing zombie hands the player a plant food as it dies. Whether it glows was settled at spawn

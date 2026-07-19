@@ -54,6 +54,9 @@ public class RegisterCommand implements Command {
         }
 
         SecurityQuestionData securityData = handleSecurityQuestionInput();
+        if (securityData == null) {   // EOF while picking a security question -> abort registration
+            return;
+        }
 
         registerNewUser(genderType, securityData.questionNumber(), securityData.answer());
 
@@ -101,6 +104,9 @@ public class RegisterCommand implements Command {
         while (true) {
             signUpMenuRenderer.showSecurityQuestions();
             String input = InputHandler.readLine();
+            if (input == null) {   // EOF -> cancel registration
+                return null;
+            }
 
             if (SignUpMenuRegex.SECURITY_QUESTION.matches(input)) {
                 String numberString = SignUpMenuRegex.SECURITY_QUESTION.getGroup(input, "questionNumber");

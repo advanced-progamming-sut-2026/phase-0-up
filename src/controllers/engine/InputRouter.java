@@ -20,6 +20,7 @@ import controllers.commands.menu.ShowCurrentMenuCommand;
 import controllers.commands.seedselection.*;
 import controllers.commands.shopandeconomy.BuyShopItemCommand;
 import controllers.commands.shopandeconomy.ShowShopCommand;
+import controllers.commands.travellog.ShowTravelLogPageCommand;
 import models.game.GameSession;
 import models.shop.Currency;
 import models.shop.Shop;
@@ -53,6 +54,7 @@ public class InputRouter {
     private final MapRenderer mapRenderer = new MapRenderer();
     private final ShopRenderer shopRenderer = new ShopRenderer();
     private final TravelLogRenderer travelLogRenderer = new TravelLogRenderer();
+    private final controllers.systems.game.QuestSystem questSystem = new controllers.systems.game.QuestSystem();
 
     public InputRouter(AppSession appSession) {
         this.running = true;
@@ -67,8 +69,11 @@ public class InputRouter {
 
     public void startLoop() {
         while (running) {
-            String input = InputHandler.readLine().trim();
-
+            String input = InputHandler.readLine();
+            if (input == null) {   // stdin closed (EOF) -> exit instead of spinning
+                running = false;
+                break;
+            }
             routeAndExecute(input);
         }
     }
@@ -137,10 +142,24 @@ public class InputRouter {
             case PLANTS_MENU:
                 if(handlePlantMenuExecute(input)) return;
                 break;
+            case TRAVEL_LOG_MENU:
+                if(handleTravelLogExecute(input)) return;
+                break;
             }
 
 
         allMenuRenderer.invalidCommand();
+    }
+
+    private boolean handleTravelLogExecute(String input){
+        if(TravelLogRegex.PAGE.matches(input)){
+            String page = TravelLogRegex.PAGE.getGroup(input, "page");
+            models.user.Profile profile = appSession.getCurrentUser() == null
+                    ? null : appSession.getCurrentUser().getProfile();
+            new ShowTravelLogPageCommand(page, questSystem, profile, travelLogRenderer).execute();
+            return true;
+        }
+        return false;
     }
 
     private boolean handlePlantMenuExecute(String input){

@@ -1,0 +1,101 @@
+[
+  { "id": "daily_sun_catcher", "name": "Daily Sun Catcher", "description": "Collect a set amount of sun during one day.",
+    "category": "DAILY", "priority": "MEDIUM",
+    "condition": { "type": "COLLECT_SUN", "threshold": 3000 },
+    "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 30 }, "variables": "3000-4000-5000" },
+
+  { "id": "chapter_hunter", "name": "Chapter Hunter", "description": "Defeat 50 zombies from a given chapter.",
+    "category": "MAIN", "priority": "HIGH",
+    "condition": { "type": "CHAPTER_KILL_COUNT", "threshold": 50 },
+    "reward": { "category": "INVENTORY", "item": "SEED_PACKET", "amount": 10 }, "variables": "any game chapter" },
+
+  { "id": "pro_plant_player", "name": "Pro Plant Player", "description": "Kill ten zombies using only one plant type.",
+    "category": "DAILY", "priority": "HIGH",
+    "condition": { "type": "KILL_WITH_SINGLE_PLANT", "threshold": 10 },
+    "reward": { "category": "UNLOCKABLE", "target": "PLANT", "item": "random", "amount": 1 }, "variables": "any offensive plant" },
+
+  { "id": "only_cactus", "name": "Only Cactus", "description": "Kill ten zombies using only the Cactus.",
+    "category": "DAILY", "priority": "HIGH",
+    "condition": { "type": "KILL_WITH_PLANT", "plant": "Cactus", "threshold": 10 },
+    "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 20 }, "variables": "" },
+
+  { "id": "economical_herbivore", "name": "Economical Herbivore", "description": "Win a level without losing more than n plants.",
+    "category": "MAIN", "priority": "HIGH",
+    "condition": { "type": "MAX_PLANTS_LOST", "threshold": 5 },
+    "reward": { "category": "INVENTORY", "item": "SEED_PACKET", "amount": 20 }, "variables": "0-1-2-3-4-5" },
+
+  { "id": "defense_master", "name": "Defense Master", "description": "Finish a level with exactly zero sun.",
+    "category": "EPIC", "priority": "CRITICAL",
+    "condition": { "type": "ZERO_SUN" },
+    "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 200 }, "variables": "" },
+
+  { "id": "quick_action", "name": "Quick Action", "description": "Kill 10 zombies within 30 seconds of the first wave.",
+    "category": "MAIN", "priority": "MEDIUM",
+    "condition": { "type": "KILLS_WITHIN_WINDOW", "threshold": 10 },
+    "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 500 }, "variables": "" },
+
+  { "id": "pro_demolisher", "name": "Pro Demolisher", "description": "Use 3 explosive plants in a single level.",
+    "category": "DAILY", "priority": "LOW",
+    "condition": { "type": "PLANT_CATEGORY_COUNT", "category": "EXPLOSIVE", "threshold": 3 },
+    "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 100 }, "variables": "" },
+
+  { "id": "symmetry", "name": "Symmetry", "description": "The garden must be symmetric at the end of the level.",
+    "category": "DAILY", "priority": "HIGH",
+    "condition": { "type": "SYMMETRIC" },
+    "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 500 }, "variables": "" },
+
+  { "id": "family_massacre", "name": "Family Massacre", "description": "Kill zombies using only plants from one family.",
+    "category": "DAILY", "priority": "MEDIUM",
+    "condition": { "type": "ONLY_FAMILY" },
+    "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 1000 }, "variables": "plant family" },
+
+  { "id": "flourish_in_constraints", "name": "Flourish in Constraints", "description": "Win a level without any plant from a given family.",
+    "category": "DAILY", "priority": "HIGH",
+    "condition": { "type": "WITHOUT_FAMILY", "family": "SHOOTER" },
+    "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 100 }, "variables": "plant family" },
+
+  { "id": "night_or_morning", "name": "Night or Morning", "description": "Finish a day level using only night plants (mushrooms).",
+    "category": "EPIC", "priority": "HIGH",
+    "condition": { "type": "ONLY_MUSHROOMS" },
+    "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 20 }, "variables": "" },
+
+  { "id": "win_after_win", "name": "Win After Win", "description": "Win 5 levels in a row at maximum difficulty.",
+    "category": "DAILY", "priority": "MEDIUM",
+    "condition": { "type": "WIN_STREAK", "threshold": 5 },
+    "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 5000 }, "variables": "" },
+
+  { "id": "almost_victorious", "name": "Almost Victorious", "description": "Kill 10 zombies in the first column of a mowerless row.",
+    "category": "DAILY", "priority": "MEDIUM",
+    "condition": { "type": "MOWERLESS_FIRST_COLUMN", "threshold": 10 },
+    "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 300 }, "variables": "" },
+
+  { "id": "ocd", "name": "OCD", "description": "Win with no symmetry in the garden (except the middle row).",
+    "category": "DAILY", "priority": "MEDIUM",
+    "condition": { "type": "ASYMMETRIC" },
+    "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 800 }, "variables": "" },
+
+  { "id": "cloudy_day", "name": "Cloudy Day", "description": "Win a level using only 3 sun-producing plants.",
+    "category": "DAILY", "priority": "HIGH",
+    "condition": { "type": "ONLY_CATEGORY", "category": "SUN_PRODUCER", "threshold": 3 },
+    "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 10 }, "variables": "" },
+
+  { "id": "one_column_less", "name": "One Column Less", "description": "Win without planting anything in column n.",
+    "category": "DAILY", "priority": "HIGH",
+    "condition": { "type": "EMPTY_COLUMN", "index": 4 },
+    "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 10 }, "variables": "column count" },
+
+  { "id": "defenseless_row", "name": "Defenseless Row", "description": "Win without planting anything in row n.",
+    "category": "DAILY", "priority": "HIGH",
+    "condition": { "type": "EMPTY_ROW", "index": 2 },
+    "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 20 }, "variables": "row count" },
+
+  { "id": "defenseless_cross", "name": "Defenseless Cross", "description": "Win with column n and row n left empty.",
+    "category": "DAILY", "priority": "HIGH",
+    "condition": { "type": "EMPTY_CROSS", "index": 2 },
+    "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 25 }, "variables": "min row/column" },
+
+  { "id": "mowing_time", "name": "Mowing Time", "description": "Kill at least n zombies with the lawn mower.",
+    "category": "EPIC", "priority": "MEDIUM",
+    "condition": { "type": "LAWNMOWER_KILLS", "threshold": 10 },
+    "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 10 }, "variables": "10-20-30-40-50" }
+]

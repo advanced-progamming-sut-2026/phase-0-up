@@ -47,6 +47,9 @@ public class LoginCommand implements Command {
         }
 
         appSession.setCurrentUser(user);
+        // A saved profile is deserialized past the constructor; re-grant its starter plants so seed
+        // selection isn't stuck on "locked" for every plant.
+        user.getProfile().ensureStartingPlants();
         // Chapters/levels aren't persisted; rebuild the campaign graph from progress at login.
         LevelInitializer.attachCampaign(user.getProfile());
         if (stayLoggedIn) {
