@@ -201,6 +201,14 @@ public class InputRouter {
             appSession.setCurrentGameSession(session);
             travelLogRenderer.launchingMinigame("Beghouled", Math.max(1, difficulty));
             new GameEngine(session).startLoop();
+        } else if(game.equals("zombotany")){
+            // Zombotany is a normal level, so it goes through seed selection first; the plants menu's
+            // "start" then launches the game loop (as for any adventure level).
+            models.game.Level level = factories.MinigameFactory.createZombotany(difficulty);
+            GameSession session = new GameSession(user.getProfile(), level);
+            appSession.setCurrentGameSession(session);
+            appSession.setCurrentMenu(MenuType.PLANTS_MENU);
+            travelLogRenderer.launchingMinigame("Zombotany", Math.max(1, difficulty));
         } else {
             travelLogRenderer.minigameUnavailable(game);
         }
