@@ -46,7 +46,8 @@ public class PushIceAbility implements ZombieAbility {
                             if (plant.getHealth() != null) {
                                 plant.getHealth().takeDamage(Integer.MAX_VALUE);
                             }
-                            System.out.println("Troglobite's ice block crushed a plant: " + plant.getName());
+                            troglobite.getGameSession().reportEvent("The Troglobite's ice block crushes "
+                                    + plant.getName() + " at (" + (int) cell.getX() + ", " + rowIdx + ").");
                         }
                     }
                 }
@@ -70,7 +71,8 @@ public class PushIceAbility implements ZombieAbility {
 
                     if (distance <= COLLISION_THRESHOLD) {
                         otherZombie.getHealth().applyDamage(Integer.MAX_VALUE , null , null);
-                        System.out.println("Troglobite's ice block crushed a hypnotized zombie!");
+                        troglobite.getGameSession().reportEvent("The Troglobite's ice block crushes a "
+                                + "hypnotized zombie at (" + (int) otherZombie.getX() + ", " + rowIdx + ").");
                     }
                 }
             }
@@ -79,7 +81,8 @@ public class PushIceAbility implements ZombieAbility {
 
     private void triggerIceDestroyed(Zombie troglobite) {
         this.hasIceBlocks = false;
-        System.out.println("All ice blocks destroyed! Troglobite is now walking and eating normally.");
+        troglobite.getGameSession().reportEvent("The Troglobite's ice blocks are gone at ("
+                + (int) troglobite.getX() + ", " + troglobite.getY() + "); it now walks and eats normally.");
     }
 
     public void onTroglobiteDeath(Zombie troglobite) {
@@ -87,9 +90,10 @@ public class PushIceAbility implements ZombieAbility {
             int row = troglobite.getMovement().getPositionY();
             double x = troglobite.getMovement().getPositionX();
             troglobite.getGameSession().getMap().getRow(row).addObstacle(
-                    new IceBlock(troglobite.getHealth().getTotalHP() , x , row)
+                    new IceBlock(troglobite.getHealth().getTotalHP() , x , row, troglobite.getGameSession())
             );
-            System.out.println("Troglobite died! Ice block left behind as an obstacle at X: " + x);
+            troglobite.getGameSession().reportEvent("The Troglobite falls at (" + (int) x + ", " + row
+                    + "), leaving its ice block behind as an obstacle.");
         }
     }
 

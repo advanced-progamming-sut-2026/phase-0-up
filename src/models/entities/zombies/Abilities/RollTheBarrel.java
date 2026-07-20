@@ -37,7 +37,8 @@ public class RollTheBarrel implements ZombieAbility {
                     if (plant.getHealth() != null) {
                         plant.getHealth().takeDamage(Integer.MAX_VALUE);
                     }
-                    System.out.println("Barrel crushed a plant at X: " + plant.getX());
+                    roller.getGameSession().reportEvent("The rolling barrel crushes " + plant.getName()
+                            + " at (" + (int) plant.getX() + ", " + row + ").");
                 }
             }
         }
@@ -55,18 +56,19 @@ public class RollTheBarrel implements ZombieAbility {
         roller.getGameSession().getMap().getRow(row).getZombies().add(z1);
         roller.getGameSession().getMap().getRow(row).getZombies().add(z2);
 
-        System.out.println("Barrel destroyed! Two Imps spawned in row " + row);
-
+        roller.getGameSession().reportEvent("The barrel bursts open at (" + (int) currentX + ", " + row
+                + ") and two Imps tumble out.");
     }
 
     public void onRollerDeath(Zombie roller) {
         if (isBarrelIntact) {
             int row = roller.getMovement().getPositionY();
             double x = roller.getMovement().getPositionX();
-            Barrel b = new Barrel(roller.getHealth().getLayers().pop().getCurrentHp() , x , row);
+            Barrel b = new Barrel(roller.getHealth().getLayers().pop().getCurrentHp() , x , row, roller.getGameSession());
             roller.getGameSession().getMap().getRow(row).addObstacle(b);
 
-            System.out.println("Roller died! Barrel left behind as a shield at X: " + x);
+            roller.getGameSession().reportEvent("The Barrel Roller falls at (" + (int) x + ", " + row
+                    + "), leaving its barrel behind as a shield.");
         }
     }
 

@@ -112,7 +112,7 @@ public class BuyShopItemCommand implements Command {
         Random rand = new Random();
         int random = rand.nextInt(profile.getUnlockedPlants().size());
         String name = profile.getUnlockedPlants().get(random);
-        profile.addSeedPackets(name, 10);
+        profile.addSeedPackets(name, 5);
     }
 
     private void buyAPlantFood() {

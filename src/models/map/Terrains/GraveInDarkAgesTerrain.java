@@ -57,10 +57,12 @@ public class GraveInDarkAgesTerrain extends GraveTerrain {
             double targetX = cell.getX() + (random.nextDouble() - 0.5);
             double targetY = cell.getY() + random.nextDouble() * 0.6;
             gameSession.addSun(new Sun(targetX, cell.getY(), targetY, SunType.NORMAL, 50, true, 100));
-            System.out.println("A grave crumbles and releases a sun!");
+            gameSession.reportEvent("A grave crumbles at (" + (int) cell.getX() + ", " + cell.getY()
+                    + ") and releases a sun.");
         } else if (type == GravesInDarkAgesTypes.FOODY) {
             gameSession.increasePlantFoodCount(1);
-            System.out.println("A grave crumbles and releases a plant food!");
+            gameSession.reportEvent("A grave crumbles at (" + (int) cell.getX() + ", " + cell.getY()
+                    + ") and releases a plant food.");
         }
     }
 }

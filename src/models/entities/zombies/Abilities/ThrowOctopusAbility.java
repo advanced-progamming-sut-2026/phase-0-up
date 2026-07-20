@@ -23,7 +23,8 @@ public class ThrowOctopusAbility implements ZombieAbility {
             if (target != null) {
                 target.bindWithOctopus();
 
-                System.out.println(zombie.getAlias() + " threw an octopus at " + target.getName());
+                zombie.getGameSession().reportEvent(zombie.getAlias() + " flings an octopus at "
+                        + target.getName() + " at (" + (int) target.getX() + ", " + target.getY() + ").");
                 tickCounter = 0;
             }
         }

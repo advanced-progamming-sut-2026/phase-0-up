@@ -37,6 +37,10 @@ public class GameSession {
     private long firstWaveTick = -1;
     private int killsInFirst30s;
     private boolean cooldownRemoved;
+    // Domain-event queue: the model (plants, zombies, abilities, terrain) records narrative events here
+    // instead of printing them. The engine drains it once per tick and hands each to the view, so the
+    // Model layer never touches the console -- the single MVC seam for in-game narration.
+    private final List<Result> eventLog = new ArrayList<>();
 
     public GameSession(Profile player, Level level) {
         this.player = player;
@@ -201,6 +205,28 @@ public class GameSession {
         }
         return new Result(false, "You can only upgrade plants in the Beghouled mini-game.");
     }
+
+    // --- Domain-event queue (Model -> View bridge) -----------------------------------------------
+    // Any model object reachable from the session (plant, zombie ability, terrain, projectile) records
+    // a narrative line here instead of printing it. The engine drains the queue each tick and renders
+    // the lines, so no Model-layer class ever calls System.out.
+
+    public void reportEvent(String message) {
+        if (message != null && !message.isBlank()) {
+            eventLog.add(new Result(true, message));
+        }
+    }
+
+    // Returns and clears the events queued since the last drain.
+    public List<Result> drainEvents() {
+        if (eventLog.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        List<Result> drained = new ArrayList<>(eventLog);
+        eventLog.clear();
+        return drained;
+    }
+
     // --- Clock -----------------------------------------------------------------------------------
     // The session owns the clock; the systems are driven by the engine, which ticks the clock once
     // per frame and then runs each system against the new value. Nothing here runs a system, so

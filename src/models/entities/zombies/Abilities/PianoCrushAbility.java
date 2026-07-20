@@ -40,7 +40,8 @@ public class PianoCrushAbility implements ZombieAbility {
             }
             if (isBreaker(p)) {
                 zombie.getHealth().applyDamage(Integer.MAX_VALUE, Element.NEUTRAL, null);
-                System.out.println("The piano smashed into a spiky plant and broke apart!");
+                zombie.getGameSession().reportEvent("The piano smashes into a spiky " + p.getName()
+                        + " at (" + (int) cell.getX() + ", " + row + ") and shatters apart.");
                 return;
             }
             if (p.getHealth() != null) {

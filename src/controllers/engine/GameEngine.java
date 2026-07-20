@@ -85,6 +85,13 @@ public class GameEngine {
         // (a zombie that just stepped onto a slider tile, ice that a fire plant is now beside, ...).
         environmentSystem.tick(gameSession);
 
+        // Drain the model's domain-event queue and render it. Plants, zombie abilities, terrain and
+        // projectiles record narrative here during the systems above instead of printing directly, so
+        // the console output all funnels through the view at one controlled point.
+        for (Result modelEvent : gameSession.drainEvents()) {
+            inGameRenderer.render(modelEvent);
+        }
+
         GameState before = gameSession.getState();
         gameSession.evaluateModeRules();
         announceOutcome(before, gameSession.getState());

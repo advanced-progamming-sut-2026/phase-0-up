@@ -29,7 +29,8 @@ public class ArcadePushAbility implements ZombieAbility {
         Plant front = frontPlant(zombie);
         if (front != null && front.getHealth() != null) {
             front.getHealth().takeDamage(PUSH_DAMAGE);
-            System.out.println(zombie.getAlias() + " shoved its arcade machine into a plant!");
+            zombie.getGameSession().reportEvent(zombie.getAlias() + " rams its arcade machine into "
+                    + front.getName() + " at (" + (int) front.getX() + ", " + front.getY() + ").");
         }
     }
 

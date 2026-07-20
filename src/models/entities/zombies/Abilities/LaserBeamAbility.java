@@ -51,6 +51,7 @@ public class LaserBeamAbility implements ZombieAbility {
                 p.getHealth().takeDamage(LASER_DAMAGE);
             }
         }
-        System.out.println(zombie.getAlias() + " fired a laser beam down the lane!");
+        zombie.getGameSession().reportEvent(zombie.getAlias() + " fires a laser beam down the lane from ("
+                + (int) zombieX + ", " + row + ").");
     }
 }

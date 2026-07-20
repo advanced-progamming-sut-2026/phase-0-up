@@ -42,13 +42,13 @@ public class FishThePlants implements ZombieAbility {
 
                 if (targetPlant != null && !targetPlant.isDead()) {
                     if (col == 7) {
-                        destroyHookedPlant(currentCell, targetPlant);
+                        destroyHookedPlant(fisherman, currentCell, targetPlant);
                         return true;
                     }
 
                     Cell rightCell = row.cellAt(col + 1);
                     if (rightCell != null && !rightCell.hasPlant()) {
-                        movePlantToRight(currentCell, rightCell, targetPlant);
+                        movePlantToRight(fisherman, currentCell, rightCell, targetPlant);
                         return true;
                     }
                     return false;
@@ -59,8 +59,9 @@ public class FishThePlants implements ZombieAbility {
         return false;
     }
 
-    private void destroyHookedPlant(Cell cell, Plant plant) {
-        System.out.println("Fisherman Zombie hooked " + plant.getName() + " and threw it into the ocean!");
+    private void destroyHookedPlant(Zombie fisherman, Cell cell, Plant plant) {
+        fisherman.getGameSession().reportEvent("The Fisherman Zombie hooks " + plant.getName()
+                + " at (" + (int) cell.getX() + ", " + cell.getY() + ") and drags it into the ocean.");
 
         if (plant.getHealth() != null) {
             plant.getHealth().takeDamage(Integer.MAX_VALUE);
@@ -69,8 +70,9 @@ public class FishThePlants implements ZombieAbility {
         cell.removePlant();
     }
 
-    private void movePlantToRight(Cell fromCell, Cell toCell, Plant plant) {
-        System.out.println("Fisherman Zombie pulled " + plant.getName() + " one tile to the right!");
+    private void movePlantToRight(Zombie fisherman, Cell fromCell, Cell toCell, Plant plant) {
+        fisherman.getGameSession().reportEvent("The Fisherman Zombie reels " + plant.getName()
+                + " one tile to the right, to (" + (int) toCell.getX() + ", " + toCell.getY() + ").");
         fromCell.removePlant();
 
         toCell.addPlant(plant);
