@@ -126,6 +126,7 @@ public class LevelTemplate {
         private boolean disableSkySun;       // Night Ops: overrides the chapter's sky-sun default
         private int deadLineColumn;          // Dead Line: X threshold no zombie may cross
         private List<PrePlacedPlant> protectedPlants; // Save Our Seeds: must-survive plants
+        private int difficulty;              // Vasebreaker: board difficulty tier (1..3)
 
         public int getLockedType() {
             return lockedType;
@@ -149,6 +150,10 @@ public class LevelTemplate {
 
         public List<PrePlacedPlant> getProtectedPlants() {
             return protectedPlants;
+        }
+
+        public int getDifficulty() {
+            return difficulty;
         }
     }
 

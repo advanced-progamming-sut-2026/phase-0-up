@@ -153,6 +153,45 @@ public class GameEngine {
             new PluckPlantCommand(gameSession, inGameRenderer, x, y).execute();
             return true;
         }
+        if (InGameRegex.BREAK_VASE.matches(input)) {
+            int x = Integer.parseInt(InGameRegex.BREAK_VASE.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.BREAK_VASE.getGroup(input, "y"));
+            new BreakVaseCommand(gameSession, inGameRenderer, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.COLLECT_SEED.matches(input)) {
+            int x = Integer.parseInt(InGameRegex.COLLECT_SEED.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.COLLECT_SEED.getGroup(input, "y"));
+            new CollectSeedCommand(gameSession, inGameRenderer, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.BOWL_NUT.matches(input)) {
+            String type = InGameRegex.BOWL_NUT.getGroup(input, "type");
+            int x = Integer.parseInt(InGameRegex.BOWL_NUT.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.BOWL_NUT.getGroup(input, "y"));
+            new BowlNutCommand(gameSession, inGameRenderer, type, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.SUMMON_ZOMBIE.matches(input)) {
+            String type = InGameRegex.SUMMON_ZOMBIE.getGroup(input, "type");
+            int x = Integer.parseInt(InGameRegex.SUMMON_ZOMBIE.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.SUMMON_ZOMBIE.getGroup(input, "y"));
+            new SummonZombieCommand(gameSession, inGameRenderer, type, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.SWAP_PLANTS.matches(input)) {
+            int x1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x1"));
+            int y1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y1"));
+            int x2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x2"));
+            int y2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y2"));
+            new SwapPlantsCommand(gameSession, inGameRenderer, x1, y1, x2, y2).execute();
+            return true;
+        }
+        if (InGameRegex.UPGRADE_PLANT.matches(input)) {
+            String type = InGameRegex.UPGRADE_PLANT.getGroup(input, "type");
+            new UpgradePlantsCommand(gameSession, inGameRenderer, type).execute();
+            return true;
+        }
         if (InGameRegex.FEED_PLANT.matches(input)) {
             int x = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "x"));
             int y = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "y"));

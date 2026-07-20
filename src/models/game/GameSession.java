@@ -145,6 +145,62 @@ public class GameSession {
         }
         return cell.removePlant();
     };
+
+    // Vasebreaker actions. They only do anything in the Vasebreaker mini-game; every other mode reports
+    // that there is nothing to break/collect, so the in-game commands stay harmless on normal levels.
+    public Result breakVase(int x, int y) {
+        if (!map.isValidCoordinate(x, y)) {
+            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+        }
+        if (mode instanceof models.game.gamemodes.VaseBreakerMode) {
+            return ((models.game.gamemodes.VaseBreakerMode) mode).breakVase(this, x, y);
+        }
+        return new Result(false, "There are no vases to break in this level.");
+    }
+
+    public Result collectSeed(int x, int y) {
+        if (!map.isValidCoordinate(x, y)) {
+            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+        }
+        if (mode instanceof models.game.gamemodes.VaseBreakerMode) {
+            return ((models.game.gamemodes.VaseBreakerMode) mode).collectSeed(this, x, y);
+        }
+        return new Result(false, "There are no seed packets to collect in this level.");
+    }
+
+    // Wall-nut Bowling action: bowl a conveyor nut down a row from behind the red line. No effect
+    // outside the Wall-nut Bowling mini-game.
+    public Result bowlNut(String type, int x, int y) {
+        if (mode instanceof models.game.gamemodes.WallnutBowlingMode) {
+            return ((models.game.gamemodes.WallnutBowlingMode) mode).bowlNut(this, type, x, y);
+        }
+        return new Result(false, "You can only bowl nuts in the Wall-nut Bowling mini-game.");
+    }
+
+    // I, Zombie action: summon one of your zombies to the right of the red line. No effect outside the
+    // I, Zombie mini-game.
+    public Result summonZombie(String type, int x, int y) {
+        if (mode instanceof models.game.gamemodes.IZombieMode) {
+            return ((models.game.gamemodes.IZombieMode) mode).summonZombie(this, type, x, y);
+        }
+        return new Result(false, "You can only summon zombies in the I, Zombie mini-game.");
+    }
+
+    // Beghouled actions: swap two adjacent plants, or upgrade a plant type. (x, y) is (column, row);
+    // the mode works in (row, column). No effect outside the Beghouled mini-game.
+    public Result swapPlants(int x1, int y1, int x2, int y2) {
+        if (mode instanceof models.game.gamemodes.BeghouledMode) {
+            return ((models.game.gamemodes.BeghouledMode) mode).swap(this, y1, x1, y2, x2);
+        }
+        return new Result(false, "You can only swap plants in the Beghouled mini-game.");
+    }
+
+    public Result upgradePlant(String type) {
+        if (mode instanceof models.game.gamemodes.BeghouledMode) {
+            return ((models.game.gamemodes.BeghouledMode) mode).upgrade(this, type);
+        }
+        return new Result(false, "You can only upgrade plants in the Beghouled mini-game.");
+    }
     // --- Clock -----------------------------------------------------------------------------------
     // The session owns the clock; the systems are driven by the engine, which ticks the clock once
     // per frame and then runs each system against the new value. Nothing here runs a system, so

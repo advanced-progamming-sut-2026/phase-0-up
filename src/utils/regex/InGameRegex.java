@@ -12,7 +12,13 @@ public enum InGameRegex implements Regex{
     RELEASE_THE_NUKE("^\\s*release\\s+the\\s+nuke\\s*$"),
     SHOW_MAP("^\\s*show\\s+map\\s*$"),
     SHOW_PLANTS_STATUS("^\\s*show\\s+plants\\s+status\\s*$"),
-    SHOW_TILE_STATUS("^\\s*show\\s+tile\\s+status\\s+-l\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$");
+    SHOW_TILE_STATUS("^\\s*show\\s+tile\\s+status\\s+-l\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$"),
+    BREAK_VASE("^\\s*break\\s+vase\\s+-l\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$"),
+    COLLECT_SEED("^\\s*collect\\s+seed\\s+-l\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$"),
+    BOWL_NUT("^\\s*bowl\\s+-t\\s+(?<type>\\S+)\\s+-l\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$"),
+    SUMMON_ZOMBIE("^\\s*summon\\s+-t\\s+(?<type>\\S+)\\s+-l\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$"),
+    SWAP_PLANTS("^\\s*swap\\s+-l\\s+\\((?<x1>\\d+),\\s*(?<y1>\\d+)\\)\\s+\\((?<x2>\\d+),\\s*(?<y2>\\d+)\\)\\s*$"),
+    UPGRADE_PLANT("^\\s*upgrade\\s+-t\\s+(?<type>.+?)\\s*$");
 
     private final String pattern;
 

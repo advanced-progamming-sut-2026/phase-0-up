@@ -159,7 +159,51 @@ public class InputRouter {
             new ShowTravelLogPageCommand(page, questSystem, profile, travelLogRenderer).execute();
             return true;
         }
+        if(TravelLogRegex.PLAY.matches(input)){
+            launchMinigame(input);
+            return true;
+        }
         return false;
+    }
+
+    // Starts a mini-game from the Travel Log. Mini-games skip seed selection, so the GameEngine loop is
+    // entered directly (as with the normal in-game start), rather than routing through the plants menu.
+    private void launchMinigame(String input){
+        models.user.User user = appSession.getCurrentUser();
+        if(user == null){
+            allMenuRenderer.invalidCommand();
+            return;
+        }
+        String game = TravelLogRegex.PLAY.getGroup(input, "game").toLowerCase().replace("-", "");
+        String diffRaw = TravelLogRegex.PLAY.getGroup(input, "difficulty");
+        int difficulty = diffRaw == null ? 1 : Integer.parseInt(diffRaw);
+        if(game.equals("vasebreaker")){
+            models.game.Level level = factories.MinigameFactory.createVasebreaker(difficulty);
+            GameSession session = new GameSession(user.getProfile(), level);
+            appSession.setCurrentGameSession(session);
+            travelLogRenderer.launchingMinigame("Vasebreaker", Math.max(1, difficulty));
+            new GameEngine(session).startLoop();
+        } else if(game.equals("wallnutbowling") || game.equals("bowling") || game.equals("wallnut")){
+            models.game.Level level = factories.MinigameFactory.createWallnutBowling(difficulty);
+            GameSession session = new GameSession(user.getProfile(), level);
+            appSession.setCurrentGameSession(session);
+            travelLogRenderer.launchingMinigame("Wall-nut Bowling", Math.max(1, difficulty));
+            new GameEngine(session).startLoop();
+        } else if(game.equals("izombie") || game.equals("i,zombie") || game.equals("izombies")){
+            models.game.Level level = factories.MinigameFactory.createIZombie(difficulty);
+            GameSession session = new GameSession(user.getProfile(), level);
+            appSession.setCurrentGameSession(session);
+            travelLogRenderer.launchingMinigame("I, Zombie", Math.max(1, difficulty));
+            new GameEngine(session).startLoop();
+        } else if(game.equals("beghouled") || game.equals("bejeweled")){
+            models.game.Level level = factories.MinigameFactory.createBeghouled(difficulty);
+            GameSession session = new GameSession(user.getProfile(), level);
+            appSession.setCurrentGameSession(session);
+            travelLogRenderer.launchingMinigame("Beghouled", Math.max(1, difficulty));
+            new GameEngine(session).startLoop();
+        } else {
+            travelLogRenderer.minigameUnavailable(game);
+        }
     }
 
     private boolean handlePlantMenuExecute(String input){

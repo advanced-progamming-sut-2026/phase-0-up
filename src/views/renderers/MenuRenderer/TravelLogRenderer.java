@@ -40,4 +40,15 @@ public class TravelLogRenderer {
         OutputHandler.showMessage("No travel-log page named \"" + pageName
                 + "\". Try: main, daily, epic, minigames, all.");
     }
+
+    // Announces a mini-game launch (or that one is not playable yet).
+    public void launchingMinigame(String name, int difficulty) {
+        OutputHandler.showMessage("Launching " + name + " (difficulty " + difficulty
+                + "). Don't let a zombie reach your house!");
+    }
+
+    public void minigameUnavailable(String name) {
+        OutputHandler.showMessage("The \"" + name + "\" mini-game is not playable yet. "
+                + "Available now: vasebreaker.");
+    }
 }

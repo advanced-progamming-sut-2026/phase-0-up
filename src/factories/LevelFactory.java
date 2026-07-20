@@ -9,6 +9,10 @@ import models.game.gamemodes.LockedPlantsMode;
 import models.game.gamemodes.NightOpsMode;
 import models.game.gamemodes.SaveOurSeedsMode;
 import models.game.gamemodes.StandardMode;
+import models.game.gamemodes.BeghouledMode;
+import models.game.gamemodes.IZombieMode;
+import models.game.gamemodes.VaseBreakerMode;
+import models.game.gamemodes.WallnutBowlingMode;
 import models.templates.LevelTemplate;
 import models.templates.LevelTemplate.SpecialRules;
 import models.templates.LevelTemplate.WaveSpec;
@@ -52,6 +56,14 @@ public final class LevelFactory {
                 return new DeadLineMode(rules != null ? rules.getDeadLineColumn() : 0);
             case SAVE_OUR_SEEDS:
                 return new SaveOurSeedsMode(rules != null ? rules.getProtectedPlants() : null);
+            case VASE_BREAKER:
+                return new VaseBreakerMode(rules != null && rules.getDifficulty() > 0 ? rules.getDifficulty() : 1);
+            case WALL_NUT_BOWLING:
+                return new WallnutBowlingMode(rules != null && rules.getDifficulty() > 0 ? rules.getDifficulty() : 1);
+            case I_ZOMBIE:
+                return new IZombieMode(rules != null && rules.getDifficulty() > 0 ? rules.getDifficulty() : 1);
+            case BEGHOULED:
+                return new BeghouledMode(rules != null && rules.getDifficulty() > 0 ? rules.getDifficulty() : 1);
             case STANDARD:
             default:
                 return new StandardMode();

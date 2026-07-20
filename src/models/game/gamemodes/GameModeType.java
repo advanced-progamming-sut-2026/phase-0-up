@@ -7,7 +7,11 @@ public enum GameModeType {
     LOCKED_PLANTS,
     NIGHT_OPS,
     DEAD_LINE,
-    SAVE_OUR_SEEDS;
+    SAVE_OUR_SEEDS,
+    VASE_BREAKER,
+    WALL_NUT_BOWLING,
+    I_ZOMBIE,
+    BEGHOULED;
 
     public static GameModeType fromJson(String raw) {
         if (raw == null) {
