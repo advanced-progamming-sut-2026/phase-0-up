@@ -6,8 +6,11 @@ import models.entities.zombies.Abilities.EatPlantAbility;
 import models.entities.zombies.Abilities.FishThePlants;
 import models.entities.zombies.Abilities.FootballTackleAbility;
 import models.entities.zombies.Abilities.IgnoreObstaclesAbility;
+import models.entities.zombies.Abilities.JalapenoBurnAbility;
 import models.entities.zombies.Abilities.KillPlantsAbility;
 import models.entities.zombies.Abilities.LaserBeamAbility;
+import models.entities.zombies.Abilities.ShootingAbility;
+import models.entities.zombies.Abilities.SquashCrushAbility;
 import models.entities.zombies.Abilities.PianoCrushAbility;
 import models.entities.zombies.Abilities.PushIceAbility;
 import models.entities.zombies.Abilities.RocketLaunchAbility;
@@ -82,6 +85,14 @@ public final class ZombieBehaviorFactory {
                 return abilities(new EatPlantAbility(), new ArcadePushAbility());
             case "ZombieModernAllStarProps":
                 return abilities(new EatPlantAbility(), new FootballTackleAbility());
+            // Zombotany plant-zombies: each carries the behaviour of the plant it mimics.
+            case "ZombieBotanyPeashooterProps":
+                return abilities(new EatPlantAbility(), new ShootingAbility());
+            case "ZombieBotanyJalapenoProps":
+                return abilities(new EatPlantAbility(), new JalapenoBurnAbility());
+            case "ZombieBotanySquashProps":
+                return abilities(new SquashCrushAbility());
+            case "ZombieBotanyWallnutProps":   // just a tanky walker (high HP set on the template)
             case "ZombiePropertySheet":
             default:
                 return abilities(new EatPlantAbility());
