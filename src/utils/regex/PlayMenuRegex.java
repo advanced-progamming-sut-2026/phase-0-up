@@ -7,7 +7,7 @@ public enum PlayMenuRegex implements Regex{
     ENTER_LEADERBOARD("^\\s*menu\\s+leaderboard\\s*$"),
     SHOW_COINS("^\\s*menu\\s+coin-wallet\\s*$"),
     SHOW_GEMS("^\\s*menu\\s+gem-wallet\\s*$"),
-    CHEAT_CODE("^\\s*menu\\s+cheat\\s+add\\s+(?<n>\\d+)\\s+(?<currency>coin|diamond)\\s*$"),
+    CHEAT_CODE("^\\s*menu\\s+cheat\\s+add\\s+(?<n>\\d+)\\s+(?<currency>coin|gem)\\s*$"),
     CHOOSE_LEVEL("^\\s*level\\s+-l\\s+(?<level>\\d+)\\s*$");
 
     private final String pattern;

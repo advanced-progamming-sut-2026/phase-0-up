@@ -29,4 +29,6 @@ public class GreenhouseRenderer {
     public void grow(Result result){
         OutputHandler.showMessage(result.message());
     }
+
+    public void enterShop() {OutputHandler.showMessage("You are now in Shop! :)");}
 }

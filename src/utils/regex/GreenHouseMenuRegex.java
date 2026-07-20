@@ -2,10 +2,10 @@ package utils.regex;
 
 public enum GreenHouseMenuRegex implements Regex {
     ENTER_SHOP("^\\s*enter\\s+shop\\s*$"),
-    PLANT("^\\s*plant\\s+pot\\s+at\\s+\\((?<x>\\d+),\\s+(?<y>\\d+)\\)\\s*$"),
-    COLLECT("^\\s*collect\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$"),
+    PLANT("^\\s*plant\\s+pot\\s+at\\s+\\(\\s*(?<x>\\d+)\\s*,\\s*(?<y>\\d+)\\s*\\)\\s*$"),
+    COLLECT("^\\s*collect\\s+\\(\\s*(?<x>\\d+)\\s*,\\s*(?<y>\\d+)\\s*\\)\\s*$"),
     SHOW_STATUS("^\\s*show\\s+greenhouse\\s*$"),
-    GROW("^\\s*grow\\s+\\((?<x>\\d+),\\s*(?<y>\\d+)\\)\\s*$");
+    GROW("^\\s*grow\\s+\\(\\s*(?<x>\\d+)\\s*,\\s*(?<y>\\d+)\\s*\\)\\s*$");
 
     private final String pattern;
 

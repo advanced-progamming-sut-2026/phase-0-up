@@ -19,6 +19,7 @@ public class ShowEntityDetailsCommand implements Command {
         this.entityName = entityName;
         this.plantRegistry = PlantRegistry.getInstance();
         this.zombieRegistry = ZombieRegistry.getInstance();
+        this.renderer = renderer;
     }
 
     @Override

@@ -27,12 +27,15 @@ public class ExitMenuCommand implements Command {
             case ONLINE_MENU:
             case NEWS_MENU:
             case PROFILE_MENU:
-            case PLANTS_MENU:
-            case SHOP_MENU:
-            case GREENHOUSE_MENU:
                 appSession.setCurrentMenu(MenuType.MAIN_MENU);
                 allMenuRenderer.menuExit("Main Menu");
                 break;
+            case SHOP_MENU:
+                appSession.setCurrentMenu(MenuType.GREENHOUSE_MENU);
+                allMenuRenderer.menuExit("Greenhouse Menu");
+                break;
+            case GREENHOUSE_MENU:
+            case PLANTS_MENU:
             case COLLECTION_MENU:
             case LEADERBOARD:
             case TRAVEL_LOG_MENU:

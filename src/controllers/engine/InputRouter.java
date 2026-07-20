@@ -423,6 +423,7 @@ public class InputRouter {
     }
 
     private void enterShop(){
+        greenhouseRenderer.enterShop();
         appSession.setCurrentMenu(MenuType.SHOP_MENU);
     }
 
