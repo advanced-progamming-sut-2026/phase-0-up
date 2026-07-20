@@ -58,8 +58,11 @@ public class ProduceSunAbility extends PlantAbility implements Growable {
         }
 
         for (int i = 0; i < count; i++) {
-            double offsetX = random.nextDouble() - 0.5;
-            double targetX = owner.getX() + offsetX;
+            // Jitter only forward within the plant's own column: a negative offset used to push the
+            // sun into the previous column, where collectSun (which floors x) could never find it, so
+            // that sun never reached the wallet. Keeping it in-column makes it collectable at the
+            // plant's tile.
+            double targetX = owner.getX() + random.nextDouble() * 0.4;
 
             double offsetY = random.nextDouble() * 0.6;
             double targetY = owner.getY() + offsetY;
@@ -68,6 +71,10 @@ public class ProduceSunAbility extends PlantAbility implements Growable {
 
             gameSession.addSun(sun);
         }
+
+        // Announce the production so the player knows to collect it (project.md's standard line).
+        gameSession.reportEvent("plant " + owner.getName() + " produced a sun at ("
+                + (int) owner.getX() + ", " + owner.getY() + ")");
     }
 
     @Override

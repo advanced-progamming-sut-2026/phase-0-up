@@ -46,10 +46,13 @@ public class CollectionMenuRenderer {
         OutputHandler.showMessage("Acquired plants:");
         PlantRegistry registry = PlantRegistry.getInstance();
         for (Map.Entry<String, Integer> entry : owned.entrySet()) {
-            PlantTemplate template = registry.getTemplateByName(entry.getKey());
+            String plantName = entry.getKey();
+            PlantTemplate template = registry.getTemplateByName(plantName);
             String line = template == null ? entry.getKey() : formatPlant(template);
-            OutputHandler.showMessage(line + " | owned: " + entry.getValue());
+            OutputHandler.showMessage(line + " | owned: " + entry.getValue() +
+                    " | level: " + profile.getPlantsLevels().getOrDefault(plantName, 1));
         }
+
     }
     public void renderPlantDetails(PlantRegistry registry, String plantName){
         PlantTemplate template = registry.getTemplateByName(plantName);

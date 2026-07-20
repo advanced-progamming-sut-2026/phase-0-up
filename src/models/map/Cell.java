@@ -116,7 +116,9 @@ public class Cell {
             return new Result(false, "This cell is already occupied!");
         }
 
-        if (!isPlantable) return new Result(false, "This cell is not plantable!");
+        // Use the terrain-aware check, not the raw field: a live grave (or any non-plantable terrain)
+        // sitting on this tile must block planting.
+        if (!isPlantable()) return new Result(false, "This cell is not plantable!");
 
         if (isFlooded) {
             // on water a plant must be aquatic, or sit on a Lily Pad platform

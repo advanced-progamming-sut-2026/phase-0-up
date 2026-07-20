@@ -367,6 +367,7 @@ public class Profile {
         }
         lockedPlants.remove(formattedName);
         plantsLevels.putIfAbsent(formattedName, 1);
+        ownedSeedPackets.put(formattedName, ownedSeedPackets.getOrDefault(formattedName, 1));
     }
 
     public void levelUpPlant(String plantName) {

@@ -15,8 +15,6 @@ public class GreenHouse {
         initializePots();
     }
 
-    public void increaseSpeed(int x, int y){}
-
     private void initializePots() {
         for (int i = 0; i < rows; i++){
             for (int j = 0; j < cols; j++){
@@ -48,16 +46,16 @@ public class GreenHouse {
     // Opens the next locked pot in reading order (left to right, top to bottom) and reports whether
     // there was one left to open. Row 0 ships unlocked, so this is how every later pot is earned --
     // bought from the shop, or dropped by a zombie.
-    public boolean unlockNextPot() {
+    public Pot unlockNextPot() {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 if (pots[i][j].isLocked()) {
                     pots[i][j].setState(PotState.EMPTY);
-                    return true;
+                    return pots[i][j];
                 }
             }
         }
-        return false;
+        return null;
     }
 
     public boolean isFull() {

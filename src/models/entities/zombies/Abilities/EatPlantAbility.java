@@ -14,7 +14,12 @@ public class EatPlantAbility implements ZombieAbility {
 
     @Override
     public void execute(Zombie zombie) {
-        if (zombie.getState().isUnableToMove()) {
+        // A zombie that is frozen, buttered or dying can't chew. Crucially we must NOT bail merely
+        // because it is already EATING (which also makes isUnableToMove() true) -- that self-block was
+        // stopping the bite loop after the first tick, so a zombie halted at a plant but never damaged
+        // it. Eating is allowed to continue every tick until the plant is gone.
+        if (zombie.getState().isFrozen() || zombie.getState().isButtered()
+                || zombie.getState().getCurrentAction() == ActionState.DYING) {
             return;
         }
 
