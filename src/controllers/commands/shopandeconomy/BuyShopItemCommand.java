@@ -2,6 +2,7 @@ package controllers.commands.shopandeconomy;
 
 import controllers.commands.Command;
 import models.entities.plants.Plant;
+import models.greenhouse.Pot;
 import models.shop.Currency;
 import models.shop.DailyOffer;
 import models.shop.Shop;
@@ -44,6 +45,7 @@ public class BuyShopItemCommand implements Command {
             int random = rand.nextInt(profile.getUnlockedPlants().size());
             String name = profile.getUnlockedPlants().get(random);
             buyARandomSeedPackInDaily(name);
+            renderer.successOfBuyingAProduct(new Result(true, String.format("10 seed packets for %s have been bought!", name)));
         } else {
             ShopItem found = null;
             for(ShopItem s : shop.getPermanentItems()){
@@ -69,17 +71,21 @@ public class BuyShopItemCommand implements Command {
                     renderer.successOfBuyingAProduct(new Result(false, "the capacity of your plant food is full!"));
                     return;}
                 for(int i = 0 ; i < count; i++) buyAPlantFood();
+                renderer.successOfBuyingAProduct(new Result(true, String.format("Bought %d plant food(s)! now you have %d plant food(s)!",
+                        count, profile.getPlantFoodCount())));
             } else if(itemId == 2){
                 for(int i = 0 ; i < count; i++) buyARandomSeedPack();
             } else if(itemId == 3){
                 if(!checkForContainingTheName()){renderer.successOfBuyingAProduct(new Result(false ,
                         "this plant is locked!")); return;}
                 for(int i = 0 ; i < count; i++) buyASelectiveSeedPack();
+                renderer.successOfBuyingAProduct(new Result(true, String.format("%d seed packets for %s have been bought!",
+                        count * 10, plantType)));
             } else if(itemId == 4)
                 for(int i = 0 ; i < count; i++) exchangeGemToCoin();
+                renderer.successOfBuyingAProduct(new Result(true, String.format("%d gems exchanged to %d coins!\n" +
+                        "Now you have %d coins and %d gems!", count * 5, count * 500, profile.getCoins(), profile.getGems())));
         }
-        renderer.successOfBuyingAProduct(new Result(true , "your shopping finished successfully!"));
-
         DatabaseManager.getInstance().saveAll();
     }
 
@@ -112,7 +118,9 @@ public class BuyShopItemCommand implements Command {
         Random rand = new Random();
         int random = rand.nextInt(profile.getUnlockedPlants().size());
         String name = profile.getUnlockedPlants().get(random);
-        profile.addSeedPackets(name, 10);
+        profile.addSeedPackets(name, 5);
+        renderer.successOfBuyingAProduct(new Result(true, String.format("5 seed packets for %s have been bought!",
+                name)));
     }
 
     private void buyAPlantFood() {
@@ -125,6 +133,8 @@ public class BuyShopItemCommand implements Command {
     // greenhouse and assumed the unlocked pots were always contiguous.
     private void buyAPot() {
         profile.spendCoins(Constants.GREENHOUSE_POT_COST_COINS);
-        profile.getMyGreenHouse().unlockNextPot();
+        Pot unlockedPot = profile.getMyGreenHouse().unlockNextPot();
+        renderer.successOfBuyingAProduct(new Result(true,String.format("Pot at (%d, %d) unlocked successfully!",
+                unlockedPot.getX(), unlockedPot.getY())));
     }
 }

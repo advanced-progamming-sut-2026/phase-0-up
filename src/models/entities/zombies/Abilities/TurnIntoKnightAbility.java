@@ -23,7 +23,8 @@ public class TurnIntoKnightAbility implements ZombieAbility {
 
             if (target != null) {
                 turnIntoKnight(target);
-                System.out.println("King Zombie turned a peasant into a Knight with Crown and Shoulder Armor!");
+                king.getGameSession().reportEvent("The King Zombie knights a peasant zombie at ("
+                        + (int) target.getX() + ", " + target.getY() + "), granting it a crown and shoulder armor.");
                 tickCounter = 0;
             }
         }

@@ -23,7 +23,8 @@ public class ThrowIceAbility implements ZombieAbility {
             if (target != null) {
                 target.takeIceHit();
 
-                System.out.println(zombie.getAlias() + " threw ice at " + target.getName());
+                zombie.getGameSession().reportEvent(zombie.getAlias() + " hurls ice at " + target.getName()
+                        + " at (" + (int) target.getX() + ", " + target.getY() + ").");
                 tickCounter = 0;
             }
         }

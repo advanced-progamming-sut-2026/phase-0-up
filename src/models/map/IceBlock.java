@@ -1,11 +1,16 @@
 package models.map;
 
 import models.entities.projectiles.Element;
+import models.game.GameSession;
 
 public class IceBlock extends Obstacle {
 
     public IceBlock(int hp ,double x, int y) {
         super(hp, x, y);
+    }
+
+    public IceBlock(int hp, double x, int y, GameSession gameSession) {
+        super(hp, x, y, gameSession);
     }
 
     @Override
@@ -20,7 +25,7 @@ public class IceBlock extends Obstacle {
         if (this.hp <= 0) {
             this.hp = 0;
             this.isDestroyed = true;
-            System.out.println("Ice block destroyed at X: " + x);
+            report("The ice block is destroyed at (" + (int) x + ", " + y + ").");
         }
     }
 }

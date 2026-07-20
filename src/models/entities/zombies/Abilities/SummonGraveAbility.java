@@ -57,7 +57,8 @@ public class SummonGraveAbility implements ZombieAbility {
         for (int i = 0; i < gravesToSpawn; i++) {
             Cell targetCell = emptyCells.get(i);
             targetCell.addTerrain(new NormalGrave(gameSession , targetCell));
-            System.out.println("Tomb Raiser added a grave terrain at X: " + targetCell.getX() + ", Row: " + targetCell.getY());
+            gameSession.reportEvent("The Tomb Raiser raises a grave at ("
+                    + (int) targetCell.getX() + ", " + targetCell.getY() + ").");
         }
     }
 

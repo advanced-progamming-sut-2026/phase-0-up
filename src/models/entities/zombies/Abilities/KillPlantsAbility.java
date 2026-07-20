@@ -27,7 +27,7 @@ public class KillPlantsAbility implements ZombieAbility {
         }
 
         if (requiresTorch && (zombie.getState().isChilled() || zombie.getState().isFrozen())) {
-            extinguishTorch();
+            extinguishTorch(zombie);
             return;
         }
 
@@ -41,7 +41,10 @@ public class KillPlantsAbility implements ZombieAbility {
                 targetPlant.getHealth().takeDamage(Integer.MAX_VALUE);
             }
 
-            System.out.println(zombie.getAlias() + " killed a plant instantly!");
+            String verb = requiresTorch ? " sets " : " smashes ";
+            String tail = requiresTorch ? " ablaze at (" : " to pieces at (";
+            zombie.getGameSession().reportEvent(zombie.getAlias() + verb + targetPlant.getName() + tail
+                    + (int) targetPlant.getX() + ", " + targetPlant.getY() + ").");
 
             zombie.getState().setAction(ActionState.WALKING);
         }
@@ -80,17 +83,19 @@ public class KillPlantsAbility implements ZombieAbility {
         return closestPlant;
     }
 
-    public void extinguishTorch() {
+    public void extinguishTorch(Zombie zombie) {
         if (this.requiresTorch && this.isTorchLit) {
             this.isTorchLit = false;
-            System.out.println("Torch was extinguished by ice!");
+            zombie.getGameSession().reportEvent(zombie.getAlias() + "'s torch is snuffed out by the ice at ("
+                    + (int) zombie.getX() + ", " + zombie.getY() + ").");
         }
     }
 
-    public void igniteTorch() {
+    public void igniteTorch(Zombie zombie) {
         if (this.requiresTorch && !this.isTorchLit) {
             this.isTorchLit = true;
-            System.out.println("Torch was reignited by fire!");
+            zombie.getGameSession().reportEvent(zombie.getAlias() + "'s torch flares back to life at ("
+                    + (int) zombie.getX() + ", " + zombie.getY() + ").");
         }
     }
 

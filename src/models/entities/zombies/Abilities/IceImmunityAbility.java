@@ -13,12 +13,14 @@ public class IceImmunityAbility implements ZombieAbility {
         if (zombie.getState().isFrozen()) {
             zombie.getState().setFrozen(false);
             zombie.getState().setFrozenTimer(0);
-            System.out.println(zombie.getAlias() + " shrugged off the freeze!");
+            zombie.getGameSession().reportEvent(zombie.getAlias() + " shrugs off the freeze at ("
+                    + (int) zombie.getX() + ", " + zombie.getY() + ").");
         }
 
         if (zombie.getState().isChilled()) {
             zombie.getState().setChilledTimer(0);
-            System.out.println(zombie.getAlias() + " ignored the chill effect!");
+            zombie.getGameSession().reportEvent(zombie.getAlias() + " ignores the chill at ("
+                    + (int) zombie.getX() + ", " + zombie.getY() + ").");
         }
     }
 

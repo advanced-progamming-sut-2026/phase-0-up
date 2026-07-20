@@ -26,13 +26,15 @@ public class SpinAbility implements ZombieAbility {
             if (!jester.getState().isSpinning()) {
                 jester.getState().setSpinning(true);
                 jester.getMovement().setSpeed(normalSpeed * SPIN_SPEED_MULTIPLIER);
-                System.out.println("Jester Zombie started spinning and speeding up!");
+                jester.getGameSession().reportEvent("The Jester Zombie whirls into a spin at ("
+                        + (int) jester.getX() + ", " + jester.getY() + "), ready to deflect shots.");
             }
         } else {
             if (jester.getState().isSpinning()) {
                 jester.getState().setSpinning(false);
                 jester.getMovement().setSpeed(normalSpeed);
-                System.out.println("Jester Zombie stopped spinning and returned to normal speed.");
+                jester.getGameSession().reportEvent("The Jester Zombie stops spinning at ("
+                        + (int) jester.getX() + ", " + jester.getY() + ").");
             }
         }
     }

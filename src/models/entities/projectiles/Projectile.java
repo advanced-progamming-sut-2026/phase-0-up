@@ -201,7 +201,8 @@ public class Projectile extends Entity {
 
     public void onHit(Zombie target, GameSession gameSession) {
         if (target.getState().isImmuneToFire() && this.element == Element.FIRE) {
-            System.out.println("Imp Dragon absorbed the fire projectile without taking damage!");
+            gameSession.reportEvent("The Imp Dragon absorbs a fire projectile at ("
+                    + (int) target.getX() + ", " + target.getY() + ") and takes no damage.");
             this.isDestroyed = true;
             return;
         }
@@ -210,7 +211,8 @@ public class Projectile extends Entity {
             this.speedX = -Math.abs(this.speedX);
             this.isReflectedByJester = true;
 
-            System.out.println("Jester deflected the projectile back to plants!");
+            gameSession.reportEvent("The Jester Zombie deflects a projectile back at the plants at ("
+                    + (int) target.getX() + ", " + target.getY() + ").");
             return;
         }
 

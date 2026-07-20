@@ -27,7 +27,8 @@ public class FootballTackleAbility implements ZombieAbility {
         Plant front = frontPlant(zombie);
         if (front != null && front.getHealth() != null) {
             front.getHealth().takeDamage(SMASH_DAMAGE);
-            System.out.println(zombie.getAlias() + " tackled a plant!");
+            zombie.getGameSession().reportEvent(zombie.getAlias() + " tackles " + front.getName()
+                    + " at (" + (int) front.getX() + ", " + front.getY() + ").");
         }
 
         // sprint only while the lane ahead is clear

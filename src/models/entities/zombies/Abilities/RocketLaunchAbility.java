@@ -23,7 +23,8 @@ public class RocketLaunchAbility implements ZombieAbility {
             double newX = Math.max(MIN_X, zombie.getMovement().getPositionX() - LAUNCH_DISTANCE);
             zombie.getMovement().setPositionX(newX);
             hasLaunched = true;
-            System.out.println(zombie.getAlias() + " rocket-jumped toward the house!");
+            zombie.getGameSession().reportEvent(zombie.getAlias() + " rocket-jumps toward the house, landing at ("
+                    + (int) newX + ", " + zombie.getY() + ").");
         }
     }
 }

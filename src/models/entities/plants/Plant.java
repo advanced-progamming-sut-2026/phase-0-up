@@ -47,6 +47,16 @@ public class Plant extends Entity {
     private int autoFoodTickTimer;
     private final Random random = new Random();
 
+    // Cached each tick in update(), so this plant's status changes (frozen, hexed, etc.) can be
+    // narrated to the view through the session's event queue instead of printing.
+    private GameSession gameSession;
+
+    private void report(String message) {
+        if (gameSession != null) {
+            gameSession.reportEvent(message);
+        }
+    }
+
     public Plant(String name, int id, double x, int y,
                  PlantHealthComponent health, int level, int cost, boolean isAquatic) {
 
@@ -109,6 +119,7 @@ public class Plant extends Entity {
 
     @Override
     public void update(GameSession  gameSession) {
+        this.gameSession = gameSession;   // cache so status-change narration can reach the view
         if (isDead()) {
             return;
         }
@@ -226,7 +237,7 @@ public class Plant extends Entity {
     private void freezePlant() {
         this.isFrozen = true;
         this.iceBlockHp = Constants.FROZEN_HP;   // 600, matching the Frostbite ice-block rule
-        System.out.println(this.getName() + " is completely frozen in ice!");
+        report(this.getName() + " is frozen solid at (" + (int) getX() + ", " + getY() + ").");
     }
 
     // Fire wipes an ice block out in one hit (a fire projectile, or heat); anything else chips at its
@@ -244,7 +255,7 @@ public class Plant extends Entity {
             this.isFrozen = false;
             this.iceHits = 0;
             this.iceBlockHp = 0;
-            System.out.println("Ice block broken! " + this.getName() + " is free!");
+            report("The ice around " + this.getName() + " shatters at (" + (int) getX() + ", " + getY() + "); it is free.");
         }
     }
 
@@ -259,7 +270,7 @@ public class Plant extends Entity {
 
         this.hasOctopus = true;
         this.octopusHp = 200;
-        System.out.println(this.getName() + " was trapped by an octopus!");
+        report(this.getName() + " is snared by an octopus at (" + (int) getX() + ", " + getY() + ").");
     }
 
     public void damageOctopus(int damage) {
@@ -269,7 +280,7 @@ public class Plant extends Entity {
         if (this.octopusHp <= 0) {
             this.hasOctopus = false;
             this.octopusHp = 0;
-            System.out.println("Octopus destroyed! " + this.getName() + " is free!");
+            report("The octopus on " + this.getName() + " is destroyed at (" + (int) getX() + ", " + getY() + "); it is free.");
         }
     }
 
@@ -283,7 +294,7 @@ public class Plant extends Entity {
 
         this.isCat = true;
         this.cursedByWizard = wizard;
-        System.out.println(this.getName() + " was turned into a sheep/cat by Wizard!");
+        report(this.getName() + " is hexed into a cat at (" + (int) getX() + ", " + getY() + ").");
     }
 
     public void revertFromCat() {
@@ -291,7 +302,7 @@ public class Plant extends Entity {
 
         this.isCat = false;
         this.cursedByWizard = null;
-        System.out.println(this.getName() + " reverted back to normal!");
+        report(this.getName() + " shakes off the hex at (" + (int) getX() + ", " + getY() + ") and returns to normal.");
     }
 
     public boolean isCat() { return isCat; }

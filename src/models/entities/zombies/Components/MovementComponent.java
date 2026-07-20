@@ -31,7 +31,8 @@ public class MovementComponent {
 
     public void move() {
         if (state.isUnableToMove()) return;
-        double currentSpeed = state.isChilled() ? this.speed * 0.5 : this.speed;
+        double currentSpeed = (state.isChilled() ? this.speed * 0.5 : this.speed)
+                * utils.Constants.ZOMBIE_SPEED_SCALE;   // global speed knob
         if (isSwitchingLane) {
             this.y = this.targetY;
             this.isSwitchingLane = false;

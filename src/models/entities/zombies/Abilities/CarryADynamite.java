@@ -17,7 +17,7 @@ public class CarryADynamite implements ZombieAbility {
         }
 
         if (zombie.getState().isChilled() || zombie.getState().isFrozen()) {
-            extinguishDynamite();
+            extinguishDynamite(zombie);
             return;
         }
         tickCounter++;
@@ -26,20 +26,24 @@ public class CarryADynamite implements ZombieAbility {
         }
     }
 
-    private void extinguishDynamite() {
+    private void extinguishDynamite(Zombie zombie) {
         this.isLit = false;
-        System.out.println("Dynamite extinguished by ice!");
+        zombie.getGameSession().reportEvent(zombie.getAlias() + "'s dynamite fizzles out in the ice at ("
+                + (int) zombie.getX() + ", " + zombie.getY() + ").");
     }
 
     private void triggerExplosionAndJump(Zombie zombie) {
         this.hasExploded = true;
+        int fromX = (int) zombie.getMovement().getPositionX();
+        int row = zombie.getMovement().getPositionY();
 
         zombie.getMovement().setPositionX(0.0);
 
         double currentSpeed = zombie.getMovement().getSpeed();
         zombie.getMovement().setSpeed(-currentSpeed);
 
-        System.out.println("Dynamite exploded! Prospector jumped to X=0 and reversed direction.");
+        zombie.getGameSession().reportEvent("Boom! " + zombie.getAlias() + "'s dynamite explodes at ("
+                + fromX + ", " + row + ") and blasts it back toward the house.");
     }
 
     public boolean isLit() {

@@ -40,6 +40,10 @@ public class Constants {
     // ==========================================
     // ۳. امواج حمله زامبی‌ها (Wave System)
     // ==========================================
+    // Global multiplier on every zombie's walking speed. 1.0 = normal; >1 = faster, <1 = slower.
+    // Tweak this to speed up or slow down the whole horde to taste.
+    public static final double ZOMBIE_SPEED_SCALE = 0.108;
+
     public static final double WAVE_DIFFICULTY_INCREMENT = 1.25;   // ۲۵ درصد سخت‌تر از موج قبلی
     public static final double FLAG_WAVE_MULTIPLIER = 2.0;         // ۲ برابر سختی برای اَبَرموج (موج آخر)
     public static final double NEXT_WAVE_HP_THRESHOLD = 0.75;      // شروع موج بعد وقتی ۷۵٪ جان موج قبل رفته باشد

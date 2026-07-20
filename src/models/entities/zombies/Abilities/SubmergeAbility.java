@@ -17,12 +17,14 @@ public class SubmergeAbility implements ZombieAbility {
         if (isInWater && !isEating) {
             if (!snorkel.getState().isSubmerged()) {
                 snorkel.getState().setSubmerged(true);
-                System.out.println("Snorkel Zombie dived underwater!");
+                snorkel.getGameSession().reportEvent("The Snorkel Zombie dives underwater at ("
+                        + (int) snorkel.getX() + ", " + snorkel.getY() + ").");
             }
         } else {
             if (snorkel.getState().isSubmerged()) {
                 snorkel.getState().setSubmerged(false);
-                System.out.println("Snorkel Zombie surfaced and is now vulnerable!");
+                snorkel.getGameSession().reportEvent("The Snorkel Zombie surfaces at ("
+                        + (int) snorkel.getX() + ", " + snorkel.getY() + ") and is vulnerable again.");
             }
         }
     }
