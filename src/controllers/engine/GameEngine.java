@@ -104,6 +104,16 @@ public class GameEngine {
         if (before != GameState.PLAYING || after == GameState.PLAYING) {
             return;
         }
+        // Everything a level earns -- loot coins/gems/pots from kills, campaign progress, quest rewards,
+        // news -- lived only in memory until now: nothing in the combat loop touches the database. If the
+        // process died here the whole level's winnings went with it. Persist once, at the one point where
+        // the level is definitively over, rather than on every drop (which would hammer the disk).
+        try {
+            utils.storage.DatabaseManager.getInstance().saveAll();
+        } catch (RuntimeException e) {
+            inGameRenderer.render(new Result(false,
+                    "Your progress could not be saved: " + e.getMessage()));
+        }
         if (after == GameState.WON) {
             inGameRenderer.render(new Result(true,
                     "Dear humanz, zis is not done yet; we will come back to eat your brainz, humanz."));

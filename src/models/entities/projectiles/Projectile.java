@@ -176,7 +176,11 @@ public class Projectile extends Entity {
 
         double previousX = this.x - speedX;
 
-        for (Zombie z : zombiesInRow) {
+        // Iterate a copy. onHit can kill a zombie, and a death effect is free to put new zombies on this
+        // very row (a bursting barrel dropping Imps) -- walking the live list would then throw a
+        // ConcurrentModificationException mid-flight. A piercing shot keeps looping after a kill, so
+        // this is reachable rather than theoretical.
+        for (Zombie z : new java.util.ArrayList<>(zombiesInRow)) {
             // isTargetable() also rules out a zombie that has spawned beyond the right edge but not
             // walked on: a pea must fly past where it will appear, not stop dead in mid-air on it.
             if (z.isTargetable() && !hitTargets.contains(z)) {
@@ -388,9 +392,10 @@ public class Projectile extends Entity {
                 return true;
             }
 
-            // A Jester-reflected projectile flies back toward the lawn and strikes the player's own plant.
+            // A Jester-reflected projectile flies back toward the lawn and strikes the player's own
+            // plant -- carrying its element with it, so a Torchwood-lit pea burns and an ice pea chills.
             if (p != null && !p.isDead() && this.isReflectedByJester) {
-                p.getHealth().takeDamage(this.damage);
+                p.takeElementalHit(this.damage, this.element);
                 this.isDestroyed = true;
                 return true;
             }

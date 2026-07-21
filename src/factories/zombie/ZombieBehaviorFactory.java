@@ -1,7 +1,12 @@
 package factories.zombie;
 
 import models.entities.zombies.Abilities.ArcadePushAbility;
+import models.entities.zombies.Abilities.CarryADynamite;
+import models.entities.zombies.Abilities.ChangeRow;
 import models.entities.zombies.Abilities.DeflectLobbedAbility;
+import models.entities.zombies.Abilities.FireImmunityAbility;
+import models.entities.zombies.Abilities.IceImmunityAbility;
+import models.entities.zombies.Abilities.RollTheBarrel;
 import models.entities.zombies.Abilities.EatPlantAbility;
 import models.entities.zombies.Abilities.FishThePlants;
 import models.entities.zombies.Abilities.FootballTackleAbility;
@@ -13,7 +18,6 @@ import models.entities.zombies.Abilities.ShootingAbility;
 import models.entities.zombies.Abilities.SquashCrushAbility;
 import models.entities.zombies.Abilities.PianoCrushAbility;
 import models.entities.zombies.Abilities.PushIceAbility;
-import models.entities.zombies.Abilities.RocketLaunchAbility;
 import models.entities.zombies.Abilities.SpinAbility;
 import models.entities.zombies.Abilities.StealSunAbility;
 import models.entities.zombies.Abilities.SubmergeAbility;
@@ -41,7 +45,20 @@ public final class ZombieBehaviorFactory {
 
     private ZombieBehaviorFactory() { }
 
+    // Kept so older callers still compile; the alias-aware overload is the real entry point.
     public static List<ZombieAbility> createAbilities(String objclass, GameSession gameSession) {
+        return createAbilities(objclass, null, gameSession);
+    }
+
+    // The alias is needed as well as the objclass because a few blueprints share the generic
+    // "ZombiePropertySheet" objclass with the plain walker -- the Imp Dragon among them -- so their
+    // signature behaviour can only be identified by name.
+    public static List<ZombieAbility> createAbilities(String objclass, String alias,
+                                                      GameSession gameSession) {
+        List<ZombieAbility> byAlias = aliasAbilities(alias);
+        if (byAlias != null) {
+            return byAlias;
+        }
         if (objclass == null) {
             return abilities(new EatPlantAbility());
         }
@@ -69,20 +86,29 @@ public final class ZombieBehaviorFactory {
                 return abilities(new EatPlantAbility(), new SpinAbility(), new DeflectLobbedAbility());
             case "ZombieLostCityJaneProps":
                 return abilities(new EatPlantAbility(), new DeflectLobbedAbility());
+            // Frostbite natives are at home in the cold: an ice hit neither freezes nor slows them, so
+            // each carries IceImmunityAbility on top of its own trick.
             case "ZombieIceAgeHunterProps":
-                return abilities(new EatPlantAbility(), new ThrowIceAbility());
+                return abilities(new EatPlantAbility(), new ThrowIceAbility(), new IceImmunityAbility());
             case "ZombieIceAgeTroglobiteProps":
-                return abilities(new EatPlantAbility(), new PushIceAbility());
+                return abilities(new EatPlantAbility(), new PushIceAbility(), new IceImmunityAbility());
             case "ZombieIceAgeDodoProps":
-                return abilities(new EatPlantAbility(), new IgnoreObstaclesAbility());
+                return abilities(new EatPlantAbility(), new IgnoreObstaclesAbility(),
+                        new IceImmunityAbility());
             case "ZombieCrystalSkullProps":
                 return abilities(new EatPlantAbility(), new LaserBeamAbility());
+            // The pianist crushes what it rolls over AND herds the zombies sharing its lane into the
+            // neighbouring rows as it plays.
             case "ZombiePianoProps":
-                return abilities(new EatPlantAbility(), new PianoCrushAbility());
+                return abilities(new EatPlantAbility(), new PianoCrushAbility(), new ChangeRow());
+            // The Prospector's dynamite blasts it to the far left of the lawn, from where it walks back
+            // toward the house: left-most column, then heading reversed.
             case "ZombieProspectorProps":
-                return abilities(new EatPlantAbility(), new RocketLaunchAbility());
+                return abilities(new EatPlantAbility(), new CarryADynamite());
+            // The Arcade zombie shoves a machine ahead of it: it flattens what it rolls into, and once
+            // the machine is wrecked the Imps riding inside spill out.
             case "ZombieArcadeProps":
-                return abilities(new EatPlantAbility(), new ArcadePushAbility());
+                return abilities(new EatPlantAbility(), new ArcadePushAbility(), new RollTheBarrel());
             case "ZombieModernAllStarProps":
                 return abilities(new EatPlantAbility(), new FootballTackleAbility());
             // Zombotany plant-zombies: each carries the behaviour of the plant it mimics.
@@ -97,6 +123,21 @@ public final class ZombieBehaviorFactory {
             default:
                 return abilities(new EatPlantAbility());
         }
+    }
+
+    // Blueprints whose objclass is the shared generic sheet, so only the alias identifies them.
+    // Returns null when the alias has no special behaviour, letting the objclass switch decide.
+    private static List<ZombieAbility> aliasAbilities(String alias) {
+        if (alias == null) {
+            return null;
+        }
+        String key = alias.toLowerCase();
+        if (key.contains("impdragon")) {
+            // The Imp Dragon breathes fire and swallows it: Projectile checks isImmuneToFire() to make
+            // a fire shot bounce off it harmlessly, and nothing used to switch that flag on.
+            return abilities(new EatPlantAbility(), new FireImmunityAbility());
+        }
+        return null;
     }
 
     private static List<ZombieAbility> abilities(ZombieAbility... items) {

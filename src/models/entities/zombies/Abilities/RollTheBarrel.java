@@ -8,7 +8,13 @@ import models.map.Cell;
 
 public class RollTheBarrel implements ZombieAbility {
     private boolean isBarrelIntact = true;
-    private static final double COLLISION_THRESHOLD = 35.0;
+    // How close a plant must be for the rolling barrel to flatten it, in TILES. The board is nine
+    // columns wide, so the old 35.0 matched every plant in the row and wiped the whole lane on the
+    // first tick -- this is a contact reach, not a screen-space distance.
+    private static final double COLLISION_THRESHOLD = 0.7;
+    // Where the two Imps land relative to the burst barrel, again in tiles (was +/-10, i.e. far off
+    // the board, so they were placed somewhere they could never walk back from).
+    private static final double IMP_SPREAD = 1.0;
 
     @Override
     public void execute(Zombie roller) {
@@ -51,13 +57,21 @@ public class RollTheBarrel implements ZombieAbility {
         int row = roller.getMovement().getPositionY();
         double currentX = roller.getMovement().getPositionX();
 
-        Zombie z1 = ZombieFactory.createZombie("ZombieImp" , currentX-10 , row , roller.getGameSession());
-        Zombie z2 = ZombieFactory.createZombie("ZombieImp" , currentX+10 , row , roller.getGameSession());
-        roller.getGameSession().getMap().getRow(row).getZombies().add(z1);
-        roller.getGameSession().getMap().getRow(row).getZombies().add(z2);
+        // Land both Imps on the board either side of the barrel, and never add a null to the row: a
+        // missing blueprint would otherwise plant a null that every later sweep would trip over.
+        int spawned = 0;
+        double maxX = utils.Constants.BOARD_COLS - 0.5;
+        for (double offset : new double[]{-IMP_SPREAD, IMP_SPREAD}) {
+            double impX = Math.max(0.5, Math.min(maxX, currentX + offset));
+            Zombie imp = ZombieFactory.createZombie("ZombieImp", impX, row, roller.getGameSession());
+            if (imp != null) {
+                roller.getGameSession().getMap().getRow(row).getZombies().add(imp);
+                spawned++;
+            }
+        }
 
         roller.getGameSession().reportEvent("The barrel bursts open at (" + (int) currentX + ", " + row
-                + ") and two Imps tumble out.");
+                + ") and " + spawned + " Imps tumble out.");
     }
 
     public void onRollerDeath(Zombie roller) {

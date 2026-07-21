@@ -51,9 +51,10 @@ public class FrozenTerrain extends Terrain{
         }
     }
 
+    // 60 HP per in-game second, spread over the ticks in a second. Derived from the constants rather
+    // than hard-coded, so the melt rate cannot silently drift if either value is retuned.
     public void meltByTick(){
-        //each second 60 hp and each 10 ticks equal 1 second => each tick 6 hp
-        this.damage(6);
+        this.damage(utils.Constants.MELT_RATE_PER_SECOND / utils.Constants.TICKS_PER_SECOND);
     }
 
     // Frees whatever the block held once it melts. A plain obstacle block (an authored '&' with no

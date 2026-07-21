@@ -31,7 +31,8 @@ public final class ZombieFactory {
             return null;
         }
 
-        List<ZombieAbility> abilities = ZombieBehaviorFactory.createAbilities(template.getObjclass(), gameSession);
+        List<ZombieAbility> abilities = ZombieBehaviorFactory.createAbilities(
+                template.getObjclass(), template.getAlias(), gameSession);
 
         // EatDPS is modelled as one bite per second dealing that much damage.
         int eatDamage = template.getEatDps();

@@ -189,7 +189,27 @@ public class CombatSystem {
             recordMowerlessFirstColumnKill(session, zombie, killer);
         }
         dropPlantFood(session, zombie, events);
+        dropStolenSun(session, zombie, events);
         rollLootDrop(session, events);
+    }
+
+    // A sun-stealing zombie (Ra and friends) spills part of its haul back onto the lawn when it dies --
+    // StealSunAbility decides how much (half of what it took). Without this the ability banked the sun
+    // and the player could never win it back, which is not what the drop-on-death rule says.
+    private void dropStolenSun(GameSession session, Zombie zombie, List<Result> events) {
+        for (models.entities.zombies.Abilities.ZombieAbility ability : zombie.getAbilities()) {
+            if (!(ability instanceof models.entities.zombies.Abilities.StealSunAbility)) {
+                continue;
+            }
+            int refund = ((models.entities.zombies.Abilities.StealSunAbility) ability)
+                    .getSunDropAmountOnDeath();
+            if (refund <= 0) {
+                continue;
+            }
+            session.increaseSunAmount(refund);
+            events.add(new Result(true, "The " + zombie.getAlias() + " drops " + refund
+                    + " of the sun it stole; you have " + session.getSunAmount() + " sun now."));
+        }
     }
 
     // Credits the Almost Victorious quest when a plant fells a zombie standing in column 0 of a row

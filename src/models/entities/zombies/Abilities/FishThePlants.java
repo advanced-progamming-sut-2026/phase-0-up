@@ -71,10 +71,22 @@ public class FishThePlants implements ZombieAbility {
     }
 
     private void movePlantToRight(Zombie fisherman, Cell fromCell, Cell toCell, Plant plant) {
-        fisherman.getGameSession().reportEvent("The Fisherman Zombie reels " + plant.getName()
-                + " one tile to the right, to (" + (int) toCell.getX() + ", " + toCell.getY() + ").");
         fromCell.removePlant();
 
-        toCell.addPlant(plant);
+        // The destination decides the plant's fate. Dragging a land plant onto open water with no Lily
+        // Pad under it drowns it -- Cell.addPlant refuses that placement, and previously the plant was
+        // simply dropped on the floor: gone from the board with no death, no event and no plants-lost
+        // tally (so quests undercounted). Kill it properly instead, and only announce a move that
+        // actually happened.
+        if (!toCell.addPlant(plant).success()) {
+            plant.getHealth().takeDamage(Integer.MAX_VALUE);
+            fisherman.getGameSession().reportEvent("The Fisherman Zombie drags " + plant.getName()
+                    + " off (" + (int) fromCell.getX() + ", " + fromCell.getY()
+                    + ") and it drowns in the water.");
+            fisherman.getGameSession().recordPlantLost();
+            return;
+        }
+        fisherman.getGameSession().reportEvent("The Fisherman Zombie reels " + plant.getName()
+                + " one tile to the right, to (" + (int) toCell.getX() + ", " + toCell.getY() + ").");
     }
 }

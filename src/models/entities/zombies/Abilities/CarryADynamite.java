@@ -37,7 +37,10 @@ public class CarryADynamite implements ZombieAbility {
         int fromX = (int) zombie.getMovement().getPositionX();
         int row = zombie.getMovement().getPositionY();
 
-        zombie.getMovement().setPositionX(0.0);
+        // Land on the CENTRE of the left-most column, not on x = 0. x <= 0 is the house-breach line that
+        // checkLose and the lawn mowers watch, so blasting the zombie to exactly 0 would hand the player
+        // an instant loss instead of putting the zombie on column 0 to walk back out.
+        zombie.getMovement().setPositionX(0.5);
 
         double currentSpeed = zombie.getMovement().getSpeed();
         zombie.getMovement().setSpeed(-currentSpeed);

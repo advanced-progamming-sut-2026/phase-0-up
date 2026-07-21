@@ -259,6 +259,38 @@ public class Plant extends Entity {
         }
     }
 
+    // Damage arriving at this plant with an element behind it -- a Jester-reflected pea being the case
+    // that matters. Raw damage alone would silently throw the element away, so a reflected fire pea
+    // would not burn and a reflected ice pea would not chill.
+    //
+    //   FIRE  -- burns: double damage (the same multiplier IceBlock applies to fire) and it thaws any
+    //            chill the plant had built up, since fire and ice cannot coexist on one plant.
+    //   ICE   -- chills: normal damage plus one chill level, the third of which freezes the plant solid
+    //            (the same accumulation the Frostbite freezing wind feeds).
+    //   other -- plain damage.
+    public void takeElementalHit(int damage, models.entities.projectiles.Element element) {
+        if (element == models.entities.projectiles.Element.FIRE) {
+            getHealth().takeDamage(damage * 2);
+            thaw();
+            report(getName() + " is scorched by a reflected fire shot at ("
+                    + (int) getX() + ", " + getY() + ").");
+            return;
+        }
+        getHealth().takeDamage(damage);
+        if (element == models.entities.projectiles.Element.ICE) {
+            takeIceHit();
+        }
+    }
+
+    // Fire clears any accumulated chill and shatters an ice block outright.
+    private void thaw() {
+        this.iceHits = 0;
+        if (isFrozen) {
+            this.isFrozen = false;
+            this.iceBlockHp = 0;
+        }
+    }
+
     // Passive melt from a neighbouring fire plant (60 HP/s). Never a fire element, so it always chips
     // rather than instantly clearing.
     public void meltIceBlock(int amount) {

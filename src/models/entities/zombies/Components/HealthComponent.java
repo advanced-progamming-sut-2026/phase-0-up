@@ -20,6 +20,10 @@ public class HealthComponent {
     private Stack<HealthLayer> layers;
     private List<ArmorType> armorTypes;
     private Zombie currentZombie;
+    // The total HP this zombie was born with (body + every armor layer). Recorded once, because layers
+    // are POPPED as they are destroyed -- so summing the surviving layers can never recover it. Abilities
+    // that trigger at a fraction of health (the Gargantuar's imp throw at 50%) measure against this.
+    private final int maxTotalHp;
 
     private int poisonDps;
     private int poisonDurationTicks;
@@ -42,6 +46,13 @@ public class HealthComponent {
                 addLayer(new HealthLayer(a));
             }
         }
+        this.maxTotalHp = getTotalHP();
+    }
+
+    // The HP this zombie started with, for fraction-of-health triggers. Never zero, so callers can
+    // divide by it safely.
+    public int getMaxTotalHp() {
+        return maxTotalHp > 0 ? maxTotalHp : 1;
     }
 
     public boolean isDead() {
