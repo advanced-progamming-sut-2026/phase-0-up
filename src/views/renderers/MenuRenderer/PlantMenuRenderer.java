@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public class PlantMenuRenderer {
     public void renderAllPlants(PlantRegistry registry){
         Map<String, PlantTemplate> all = registry.getAllPlantTemplates();
-        OutputHandler.showMessage("All plants:");
+        OutputHandler.showMessage("--- Every plant in the almanac ---");
         for (PlantTemplate template : all.values()) {
             OutputHandler.showMessage(formatTemplate(template));
         }
@@ -34,10 +34,10 @@ public class PlantMenuRenderer {
 
 
         if (available.isEmpty()) {
-            OutputHandler.showMessage("No plants are available in this level.");
+            OutputHandler.showMessage("Not a single plant is available here. Bare-handed it is!");
             return;
         }
-        OutputHandler.showMessage("Available plants in this level:");
+        OutputHandler.showMessage("--- Ready to fight on this lawn ---");
         for (String plantName : available) {
             PlantTemplate template = registry.getTemplateByName(plantName);
             String line = template == null ? plantName : formatTemplate(template);
@@ -76,16 +76,29 @@ public class PlantMenuRenderer {
         }
         return false;
     }
-    public void plantNotSelected(String seedName){OutputHandler.showError("Plant '" + seedName + "' is not selected.");}
-    public void alreadyBoosted(String seedName){OutputHandler.showError("Plant '" +seedName + "' is already boosted.");}
-    public void notEnoughGem(){OutputHandler.showError("Not enough gems to boost this plant.");}
-    public void successfulBoost(String seedName){OutputHandler.showSuccess("Plant '" + seedName + "' has been boosted.");}
-    public void gameStarted(){OutputHandler.showSuccess("Game started.");}
-    public void notExist(String plantName){OutputHandler.showError("Plant '" + plantName +"' does not exist.");}
-    public void isLocked(String plantName){OutputHandler.showError("Plant '" + plantName + "' is locked.");}
-    public void alreadySelected(String plantName){OutputHandler.showError("Plant '"+plantName+"' is already selected.");}
-    public void noEmptySlot(){OutputHandler.showError("There is no empty seed slot.");}
-    public void successfulAdd(String plantName){OutputHandler.showSuccess("Plant '" + plantName + "' added to your seeds.");}
-    public void notSelected(String plantName){OutputHandler.showError("Plant '" + plantName +"' is not selected");}
-    public void successfulRemove(String plantName){OutputHandler.showSuccess("Plant '" + plantName + "' removed from your seeds");}
+    public void plantNotSelected(String seedName){
+        OutputHandler.showError("'" + seedName + "' isn't in your loadout, so there's nothing to do to it.");}
+    public void alreadyBoosted(String seedName){
+        OutputHandler.showError("'" + seedName + "' is already fizzing with plant food. Save your gems!");}
+    public void notEnoughGem(){
+        OutputHandler.showError("Not enough gems for a boost. Those things are precious.");}
+    public void successfulBoost(String seedName){
+        OutputHandler.showSuccess("'" + seedName + "' is supercharged -- it'll fire off its plant food "
+                + "the moment you plant it!");}
+    public void gameStarted(){
+        OutputHandler.showSuccess("The lawn is set. Here they come -- good luck out there!");}
+    public void notExist(String plantName){
+        OutputHandler.showError("No such plant as '" + plantName + "'. Check the almanac!");}
+    public void isLocked(String plantName){
+        OutputHandler.showError("'" + plantName + "' is still locked. Unlock it in the collection first.");}
+    public void alreadySelected(String plantName){
+        OutputHandler.showError("'" + plantName + "' is already on the seed bar.");}
+    public void noEmptySlot(){
+        OutputHandler.showError("Seed bar is full! Drop something before you pick up another.");}
+    public void successfulAdd(String plantName){
+        OutputHandler.showSuccess("'" + plantName + "' loaded onto the seed bar.");}
+    public void notSelected(String plantName){
+        OutputHandler.showError("'" + plantName + "' isn't on the seed bar.");}
+    public void successfulRemove(String plantName){
+        OutputHandler.showSuccess("'" + plantName + "' taken off the seed bar.");}
 }

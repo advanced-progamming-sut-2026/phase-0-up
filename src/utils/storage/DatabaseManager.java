@@ -75,6 +75,12 @@ public class DatabaseManager {
     public User findUser(String username){
         return users.get(username);
     }
+
+    // Every registered player, for whole-game views such as the leaderboard. Returned read-only so
+    // callers can iterate the roster without being able to mutate the live user map.
+    public java.util.Collection<User> getAllUsers(){
+        return java.util.Collections.unmodifiableCollection(users.values());
+    }
     public void addUser(User newUser){
         if (newUser != null && newUser.getUsername() != null) {
             users.put(newUser.getUsername(), newUser);

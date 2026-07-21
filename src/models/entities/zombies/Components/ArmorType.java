@@ -25,4 +25,19 @@ public enum ArmorType {
     public boolean isMetallic() {
         return metallic;
     }
+
+    // Human-readable armor name in camelCase for status readouts: SHOULDER_ARMOR -> "shoulderArmor",
+    // CONE -> "cone", ICE_BLOCK -> "iceBlock". Derived from the enum name so a new armor type gets a
+    // sensible label automatically.
+    public String getDisplayName() {
+        String[] parts = name().toLowerCase().split("_");
+        StringBuilder sb = new StringBuilder(parts[0]);
+        for (int i = 1; i < parts.length; i++) {
+            if (parts[i].isEmpty()) {
+                continue;
+            }
+            sb.append(Character.toUpperCase(parts[i].charAt(0))).append(parts[i].substring(1));
+        }
+        return sb.toString();
+    }
 }

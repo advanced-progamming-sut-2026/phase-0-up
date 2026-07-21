@@ -5,6 +5,7 @@ import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.game.SeedPacket;
+import models.game.gamemodes.GameMode;
 import models.map.Cell;
 import models.map.Terrains.Terrain;
 import models.templates.PlantTemplate;
@@ -12,6 +13,8 @@ import utils.Result;
 import utils.registry.PlantRegistry;
 import views.renderers.InGameRenderer;
 import views.renderers.MapRenderer;
+
+import java.util.Map;
 
 public class ShowMapStatusCommand implements Command {
     private ShowMapStatusAction action;
@@ -41,8 +44,15 @@ public class ShowMapStatusCommand implements Command {
     }
 
     private void showPlantsStatus() {
+        // Vasebreaker keeps its own roster (plants come from vases, not seed packets), so report that
+        // instead. A plant leaves the roster the moment it is placed, so it disappears from here too.
+        GameMode mode = gameSession.getMode();
+        if (mode != null && mode.managesPlantInventory()) {
+            showModeInventoryStatus(mode);
+            return;
+        }
         if (gameSession.getSelectedSeeds().isEmpty()) {
-            renderer.render(new Result(true, "No plants have been selected for this level."));
+            renderer.render(new Result(true, "Your seed bar is empty for this lawn."));
             return;
         }
 
@@ -52,6 +62,25 @@ public class ShowMapStatusCommand implements Command {
                 status.append('\n');
             }
             status.append(formatSeedStatus(seed));
+        }
+        renderer.render(new Result(true, status.toString()));
+    }
+
+    // The plants the player is currently holding in a mode that hands them out itself (Vasebreaker).
+    private void showModeInventoryStatus(GameMode mode) {
+        Map<String, Integer> inventory = mode.plantInventory();
+        if (inventory == null || inventory.isEmpty()) {
+            renderer.render(new Result(true,
+                    "Empty-handed! Crack open a vase and grab whatever falls out."));
+            return;
+        }
+        StringBuilder status = new StringBuilder();
+        for (Map.Entry<String, Integer> entry : inventory.entrySet()) {
+            if (status.length() > 0) {
+                status.append('\n');
+            }
+            status.append(entry.getKey()).append(" x").append(entry.getValue())
+                    .append(" - ready to plant");
         }
         renderer.render(new Result(true, status.toString()));
     }

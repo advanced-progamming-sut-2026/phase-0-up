@@ -34,7 +34,7 @@ public class ForgetPasswordCommand implements Command {
             return;
         }
         if (!user.getEmail().equalsIgnoreCase(email)) {
-            loginMenuRenderer.forgetPasswordRender(new Result(false, "Email does not match the username!"));
+            loginMenuRenderer.forgetPasswordRender(new Result(false, "That email doesn't match this gardener."));
             return;
         }
 
@@ -55,7 +55,7 @@ public class ForgetPasswordCommand implements Command {
         input = input.trim();
 
         if (!LoginMenuRegex.ANSWER_SECURITY.matches(input)) {
-            loginMenuRenderer.forgetPasswordRender(new Result(false, "Invalid answer format!"));
+            loginMenuRenderer.forgetPasswordRender(new Result(false, "That answer isn't in the right format."));
             return false;
         }
 

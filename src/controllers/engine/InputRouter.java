@@ -14,8 +14,12 @@ import controllers.commands.authentication.LogoutCommand;
 import controllers.commands.menu.ExitMenuCommand;
 import controllers.commands.news.NewsViewType;
 import controllers.commands.news.ShowNewsCommand;
+import controllers.commands.leaderboard.ShowLeaderboardCommand;
 import controllers.commands.playmenu.*;
 import controllers.commands.profileandsettings.*;
+import controllers.systems.LeaderboardSystem;
+import models.leaderboard.LbColumn;
+import utils.storage.DatabaseManager;
 import controllers.commands.menu.ShowCurrentMenuCommand;
 import controllers.commands.seedselection.*;
 import controllers.commands.shopandeconomy.BuyShopItemCommand;
@@ -55,6 +59,12 @@ public class InputRouter {
     private final ShopRenderer shopRenderer = new ShopRenderer();
     private final TravelLogRenderer travelLogRenderer = new TravelLogRenderer();
     private final controllers.systems.game.QuestSystem questSystem = new controllers.systems.game.QuestSystem();
+    private final LeaderboardSystem leaderboardSystem = LeaderboardSystem.getInstance();
+
+    // The leaderboard opens sorted by highest score first; this is also the ordering restored whenever
+    // the player runs "leaderboard show".
+    private static final LbColumn DEFAULT_LB_COLUMN = LbColumn.MYOPOINT;
+    private static final boolean DEFAULT_LB_ASCENDING = false;
 
     public InputRouter(AppSession appSession) {
         this.running = true;
@@ -74,6 +84,9 @@ public class InputRouter {
                 running = false;
                 break;
             }
+            if (input.isBlank()) {
+                continue;   // a bare Enter (or a line of spaces/tabs) is not a command -- just re-prompt
+            }
             routeAndExecute(input);
         }
     }
@@ -81,7 +94,7 @@ public class InputRouter {
     private void routeAndExecute(String input) {
         if (AllMenuRegex.EXIT_MENU.matches(input)) {exitMenu(); return;}
         else if (AllMenuRegex.ENTER_MENU.matches(input)) {enterMenu(input); return;}
-        else if (AllMenuRegex.SHOW_CURRENT.matches(input)) {new ShowCurrentMenuCommand(appSession, allMenuRenderer).execute(); return;}
+        else if (AllMenuRegex.SHOW_CURRENT.matches(input)) {new ShowCurrentMenuCommand(appSession, allMenuRenderer, mainMenuRenderer).execute(); return;}
         switch (appSession.getCurrentMenu()){
             case MAIN_MENU :
                 if(MainMenuRegex.LOG_OUT.matches(input)) {logout(); return;}
@@ -145,10 +158,43 @@ public class InputRouter {
             case TRAVEL_LOG_MENU:
                 if(handleTravelLogExecute(input)) return;
                 break;
+            case LEADERBOARD:
+                if(handleLeaderboardExecute(input)) return;
+                break;
             }
 
 
         allMenuRenderer.invalidCommand();
+    }
+
+    // Leaderboard menu: "leaderboard sort -c <column> -o <asc|desc>" re-orders the board on any of the
+    // five columns in either direction (the CLI stand-in for clicking a column header); "leaderboard
+    // show" redraws it in the default order.
+    private boolean handleLeaderboardExecute(String input){
+        if(LeaderboardMenuRegex.SORT.matches(input)){
+            String columnToken = LeaderboardMenuRegex.SORT.getGroup(input, "column");
+            String orderToken = LeaderboardMenuRegex.SORT.getGroup(input, "order");
+            LbColumn column = LbColumn.fromToken(columnToken);
+            if(column == null){
+                leaderboardRenderer.unknownColumn(columnToken);
+                return true;
+            }
+            boolean ascending = orderToken.startsWith("asc");
+            showLeaderboard(column, ascending);
+            return true;
+        }
+        else if(LeaderboardMenuRegex.SHOW.matches(input)){
+            showLeaderboard(DEFAULT_LB_COLUMN, DEFAULT_LB_ASCENDING);
+            return true;
+        }
+        return false;
+    }
+
+    // Fetch + sort + render the board for the given column/direction. Reads the live user roster
+    // straight from the database singleton so the board always reflects the latest saved progress.
+    private void showLeaderboard(LbColumn column, boolean ascending){
+        new ShowLeaderboardCommand(leaderboardSystem, DatabaseManager.getInstance(),
+                column, ascending, leaderboardRenderer).execute();
     }
 
     private boolean handleTravelLogExecute(String input){
@@ -341,6 +387,7 @@ public class InputRouter {
         }
         else if(PlayMenuRegex.ENTER_LEADERBOARD.matches(input)){
             new EnterOtherMenus(MenuType.LEADERBOARD , appSession, playMenuRenderer).execute();
+            showLeaderboard(DEFAULT_LB_COLUMN, DEFAULT_LB_ASCENDING);   // greet with the board itself
             return true;
         }
         else if(PlayMenuRegex.SHOW_COINS.matches(input)){

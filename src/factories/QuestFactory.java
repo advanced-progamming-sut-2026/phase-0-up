@@ -31,19 +31,24 @@ public final class QuestFactory {
         QuestCondition condition = ConditionFactory.create(template.getCondition());
         String category = template.getCategory() == null ? "DAILY" : template.getCategory().toUpperCase();
 
+        // Interpolate placeholders (bare "n", {plant}, {family}, ...) with the condition's real values
+        // now, so the stored description is display-ready and every reader shows the concrete numbers.
+        String description = models.quests.QuestText.interpolate(
+                template.getDescription(), template.getCondition());
+
         Quest quest;
         switch (category) {
             case "MAIN":
-                quest = new MainQuest(template.getId(), template.getName(), template.getDescription(),
+                quest = new MainQuest(template.getId(), template.getName(), description,
                         priority, reward, template.getVariables());
                 break;
             case "EPIC":
-                quest = new EpicQuest(template.getId(), template.getName(), template.getDescription(),
+                quest = new EpicQuest(template.getId(), template.getName(), description,
                         priority, reward, template.getVariables());
                 break;
             case "DAILY":
             default:
-                quest = new DailyQuest(template.getId(), template.getName(), template.getDescription(),
+                quest = new DailyQuest(template.getId(), template.getName(), description,
                         priority, reward, template.getVariables());
         }
         quest.setCondition(condition);

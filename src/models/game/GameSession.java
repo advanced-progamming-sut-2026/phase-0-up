@@ -94,11 +94,17 @@ public class GameSession {
     }
     public Result plant(int x, int y, String plantType) {
         if (!map.isValidCoordinate(x, y)) {
-            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+            return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
+        }
+        // Vasebreaker (and any mode that hands out its own plants) is detached from the seed-packet and
+        // sun economy: availability comes from the mode's hand, and placing consumes it.
+        if (mode != null && mode.managesPlantInventory()) {
+            return plantFromModeInventory(x, y, plantType);
         }
         SeedPacket seed = getSelectedSeed(plantType);
         if (seed == null) {
-            return new Result(false, "Plant \"" + plantType + "\" has not been selected for this level.");
+            return new Result(false, "You didn't bring \"" + plantType + "\" to this lawn. "
+                    + "Pick it during seed selection!");
         }
         if (!cooldownRemoved && !seed.isReady(timeTicks)) {
             return new Result(false, "Plant \"" + plantType + "\" is still recharging ("
@@ -106,16 +112,17 @@ public class GameSession {
         }
         PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(plantType);
         if (template == null) {
-            return new Result(false, "Plant \"" + plantType + "\" does not exist.");
+            return new Result(false, "Never heard of a \"" + plantType + "\". Check the almanac!");
         }
         if (sunAmount < template.getCost()) {
-            return new Result(false, "Not enough sun to plant \"" + plantType + "\".");
+            return new Result(false, "Not enough sun for a \"" + plantType + "\". "
+                    + "Let those sunflowers cook!");
         }
 
         int plantLevel = player.getPlantsLevels().getOrDefault(plantType.toLowerCase().trim(), 1);
         Plant newPlant = PlantFactory.createPlant(plantType, plantLevel, x, y);
         if (newPlant == null) {
-            return new Result(false, "Plant \"" + plantType + "\" could not be created.");
+            return new Result(false, "\"" + plantType + "\" refused to sprout. Odd.");
         }
 
         Cell cell = map.getCell(x, y);
@@ -137,11 +144,44 @@ public class GameSession {
         plantedNames.add(newPlant.getName() == null ? "" : newPlant.getName());
         plantedCategories.add(newPlant.getCategory() == null ? "" : newPlant.getCategory());
 
-        return new Result(true, "Plant \"" + plantType + "\" planted at (" + x + ", " + y + ").");
+        return new Result(true, "\"" + plantType + "\" is in the ground at (" + x + ", " + y
+                + "). Hold the line!");
     };
+
+    // Planting for a mode that owns its plant roster (Vasebreaker). There is no seed packet, no
+    // recharge and no sun cost -- the plant must simply be in the player's hand, and placing it takes
+    // it back out again so it stops appearing in "show plant status".
+    private Result plantFromModeInventory(int x, int y, String plantType) {
+        if (!mode.hasPlantAvailable(plantType)) {
+            return new Result(false, "No \"" + plantType + "\" in hand. "
+                    + "Crack open a vase and grab the seed packet first!");
+        }
+        PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(plantType);
+        if (template == null) {
+            return new Result(false, "Never heard of a \"" + plantType + "\". Check the almanac!");
+        }
+        int plantLevel = player.getPlantsLevels().getOrDefault(plantType.toLowerCase().trim(), 1);
+        Plant newPlant = PlantFactory.createPlant(plantType, plantLevel, x, y);
+        if (newPlant == null) {
+            return new Result(false, "\"" + plantType + "\" refused to sprout. Odd.");
+        }
+        Cell cell = map.getCell(x, y);
+        Result placement = cell.addPlant(newPlant);
+        if (!placement.success()) {
+            return placement;   // cell occupied / not plantable -- the plant stays in hand
+        }
+        mode.consumePlant(plantType);
+
+        plantedNames.add(newPlant.getName() == null ? "" : newPlant.getName());
+        plantedCategories.add(newPlant.getCategory() == null ? "" : newPlant.getCategory());
+
+        return new Result(true, "\"" + plantType + "\" is in the ground at (" + x + ", " + y
+                + "). Hold the line!");
+    }
+
     public Result pluck(int x, int y){
         if (!map.isValidCoordinate(x, y)) {
-            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+            return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
         }
         Cell cell = map.getCell(x, y);
         if (cell.hasProtector()) {
@@ -154,22 +194,22 @@ public class GameSession {
     // that there is nothing to break/collect, so the in-game commands stay harmless on normal levels.
     public Result breakVase(int x, int y) {
         if (!map.isValidCoordinate(x, y)) {
-            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+            return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
         }
         if (mode instanceof models.game.gamemodes.VaseBreakerMode) {
             return ((models.game.gamemodes.VaseBreakerMode) mode).breakVase(this, x, y);
         }
-        return new Result(false, "There are no vases to break in this level.");
+        return new Result(false, "Not a vase in sight on this lawn.");
     }
 
     public Result collectSeed(int x, int y) {
         if (!map.isValidCoordinate(x, y)) {
-            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+            return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
         }
         if (mode instanceof models.game.gamemodes.VaseBreakerMode) {
             return ((models.game.gamemodes.VaseBreakerMode) mode).collectSeed(this, x, y);
         }
-        return new Result(false, "There are no seed packets to collect in this level.");
+        return new Result(false, "No seed packets lying around here.");
     }
 
     // Wall-nut Bowling action: bowl a conveyor nut down a row from behind the red line. No effect
@@ -178,7 +218,7 @@ public class GameSession {
         if (mode instanceof models.game.gamemodes.WallnutBowlingMode) {
             return ((models.game.gamemodes.WallnutBowlingMode) mode).bowlNut(this, type, x, y);
         }
-        return new Result(false, "You can only bowl nuts in the Wall-nut Bowling mini-game.");
+        return new Result(false, "Save the bowling for Wall-nut Bowling!");
     }
 
     // I, Zombie action: summon one of your zombies to the right of the red line. No effect outside the
@@ -187,7 +227,27 @@ public class GameSession {
         if (mode instanceof models.game.gamemodes.IZombieMode) {
             return ((models.game.gamemodes.IZombieMode) mode).summonZombie(this, type, x, y);
         }
-        return new Result(false, "You can only summon zombies in the I, Zombie mini-game.");
+        return new Result(false, "You're on the plant side here -- summoning is an I, Zombie trick.");
+    }
+
+    // "cheat spawn-zombie -t <type> -l (x, y)": drops a zombie of the given type straight onto column x
+    // of row y. A debug cheat, so unlike wave spawns it works on any level/mode and ignores wave-point
+    // budgets. (x, y) is (column, row). Coordinates are validated against the board, so a bad cell
+    // reports an error rather than throwing.
+    public Result spawnZombieCheat(String type, int x, int y) {
+        if (type == null || type.isBlank()) {
+            return new Result(false, "Which zombie? Give me a type to raise.");
+        }
+        if (!map.isValidCoordinate(x, y)) {
+            return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
+        }
+        models.entities.zombies.Zombie zombie = factories.ZombieFactory.createZombie(type, x, y, this);
+        if (zombie == null) {
+            return new Result(false, "No zombie called \"" + type + "\" has ever shambled by.");
+        }
+        map.getRow(y).getZombies().add(zombie);
+        return new Result(true, "A " + zombie.getAlias() + " claws its way up at ("
+                + x + ", " + y + ").");
     }
 
     // Beghouled actions: swap two adjacent plants, or upgrade a plant type. (x, y) is (column, row);
@@ -196,14 +256,14 @@ public class GameSession {
         if (mode instanceof models.game.gamemodes.BeghouledMode) {
             return ((models.game.gamemodes.BeghouledMode) mode).swap(this, y1, x1, y2, x2);
         }
-        return new Result(false, "You can only swap plants in the Beghouled mini-game.");
+        return new Result(false, "Shuffling plants around is a Beghouled trick.");
     }
 
     public Result upgradePlant(String type) {
         if (mode instanceof models.game.gamemodes.BeghouledMode) {
             return ((models.game.gamemodes.BeghouledMode) mode).upgrade(this, type);
         }
-        return new Result(false, "You can only upgrade plants in the Beghouled mini-game.");
+        return new Result(false, "Upgrading mid-lawn is a Beghouled trick.");
     }
 
     // --- Domain-event queue (Model -> View bridge) -----------------------------------------------
@@ -305,25 +365,80 @@ public class GameSession {
 
     public Result plantFood(int x, int y){
         if (!map.isValidCoordinate(x, y)) {
-            return new Result(false, "Invalid coordinates (" + x + ", " + y + ").");
+            return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
         }
         if (plantFoodCount <= 0) {
-            return new Result(false, "You don't have any plant food.");
+            return new Result(false, "Your plant food jar is empty.");
         }
         Cell cell = map.getCell(x, y);
         Plant target = cell.getDefendingPlant();
         if (target == null) {
-            return new Result(false, "There is no plant at (" + x + ", " + y + ").");
+            return new Result(false, "Nothing growing at (" + x + ", " + y + ") to feed.");
         }
         target.triggerPlantFood(this);
         decreasePlantFoodCount(1);
-        return new Result(true, "Fed plant food to " + target.getName() + " at (" + x + ", " + y + ").");
+        return new Result(true, target.getName() + " gulps down the plant food at ("
+                + x + ", " + y + ") -- stand back!");
 
     };
     public void onWin(){
         controllers.systems.CampaignSystem.getInstance().completeLevel(player, level);
+        recordMinigameCompletion();
     };
     public void onLose(){};
+
+    // First-time zombie encounter: the moment a zombie type appears in a level it is added to the
+    // player's seen set, and -- only the first time -- a "New Zombie Encountered" news entry is posted
+    // (which also raises the unread-news badge). Called from ZombieFactory for every zombie born, so
+    // wave, mini-game, cheat and ability spawns are all covered from one place.
+    public void discoverZombie(String alias) {
+        if (player == null || alias == null || alias.isBlank()) {
+            return;
+        }
+        if (player.getSeenZombieAliases().add(alias)) {   // Set.add == true only on first sighting
+            controllers.systems.NewsSystem.getInstance().addZombieUnlockNews(player, alias);
+        }
+    }
+
+    // Clearing a mini-game level counts as unlocking the next one. Records the completion against the
+    // player's mini-game tally (also what the leaderboard reads) and, while there are still harder
+    // levels to open (up to MINIGAME_LEVELS), posts a "New Minigame Unlocked" news entry. Campaign
+    // levels have no mini-game mode, so this is a no-op for them.
+    private void recordMinigameCompletion() {
+        if (player == null) {
+            return;
+        }
+        String name = minigameName();
+        if (name == null) {
+            return;
+        }
+        int cleared = player.getPassedMiniGames().getOrDefault(name, 0);
+        if (cleared >= utils.Constants.MINIGAME_LEVELS) {
+            return;   // all levels of this mini-game already cleared -- nothing new to unlock
+        }
+        int next = cleared + 1;
+        player.getPassedMiniGames().put(name, next);
+        controllers.systems.NewsSystem.getInstance()
+                .addMinigameUnlockNews(player, name + " level " + next);
+    }
+
+    // The display name of the mini-game this level runs, or null for a normal campaign level. Uses the
+    // game mode -- the same instanceof seam GameSession already uses for the mini-game actions above.
+    private String minigameName() {
+        if (mode instanceof models.game.gamemodes.VaseBreakerMode) {
+            return "Vasebreaker";
+        }
+        if (mode instanceof models.game.gamemodes.IZombieMode) {
+            return "I, Zombie";
+        }
+        if (mode instanceof models.game.gamemodes.WallnutBowlingMode) {
+            return "Wall-nut Bowling";
+        }
+        if (mode instanceof models.game.gamemodes.BeghouledMode) {
+            return "Beghouled";
+        }
+        return null;
+    }
     public boolean isCooldownRemoved() {
         return cooldownRemoved;
     }
@@ -364,6 +479,12 @@ public class GameSession {
     }
 
     public void addSeed(SeedPacket seed){
+        // A mode that hands out its own plants (Vasebreaker) is fully detached from seed selection: no
+        // seed packet may ever enter the loadout, so the pre-game plant menu can have no effect here
+        // even if something tried to route through it.
+        if (mode != null && mode.managesPlantInventory()) {
+            return;
+        }
         selectedSeeds.add(seed);
     }
 

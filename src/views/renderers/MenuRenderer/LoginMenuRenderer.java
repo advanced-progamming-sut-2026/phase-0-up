@@ -14,7 +14,7 @@ public class LoginMenuRenderer {
     }
 
     public void showSecurityQuestion(User user) {
-        OutputHandler.showMessage("Answer your security question");
+        OutputHandler.showMessage("Prove it's really you -- answer your security question:");
         OutputHandler.showMessage(user.getSecurityQuestion().substring(3));
     }
 

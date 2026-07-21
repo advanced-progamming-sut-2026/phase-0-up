@@ -15,6 +15,14 @@ import java.util.Set;
 
 public class Profile {
     private int gameNumbers;
+    // Currency labels used when publishing a balance change.
+    public static final String COINS = "Coins";
+    public static final String DIAMONDS = "Diamonds";
+
+    // Listens for balance changes on every profile. Registered once by the controller layer at start-up
+    // (Main) and backed by a view renderer; transient/static so it is never serialized with a profile.
+    private static CurrencyObserver currencyObserver;
+
     private int coins;
     private int gems;
     private int plantFoodCount;
@@ -117,16 +125,24 @@ public class Profile {
         this.gameNumbers++;
     }
 
+    // Wires the view-side listener for balance changes. Called by the controller layer at start-up;
+    // passing null detaches it (the model then simply publishes to nobody).
+    public static void setCurrencyObserver(CurrencyObserver observer) {
+        currencyObserver = observer;
+    }
+
     public int getCoins() {
         return coins;
     }
 
     public void addCoins(int n) {
         this.coins += n;
+        reportCoins();
     }
 
     public void spendCoins(int n) {
         this.coins -= n;
+        reportCoins();
     }
 
     public int getGems() {
@@ -135,10 +151,35 @@ public class Profile {
 
     public void addGems(int n) {
         this.gems += n;
+        reportGems();
     }
 
     public void spendGems(int n) {
         this.gems -= n;
+        reportGems();
+    }
+
+    // Every coin/diamond change funnels through the add/spend methods above, so publishing the new
+    // balance here means the player is shown the updated total whenever it changes, for any reason
+    // (shop, rewards, quests, cheats, ...). The setters used to restore a saved profile stay silent --
+    // loading a save is not a balance-change event.
+    //
+    // The model does NOT print: it notifies the observer the controller registered at start-up, and the
+    // view renders it (see CurrencyObserver / CurrencyRenderer). With no observer registered nothing is
+    // emitted and the model behaves identically, which is what keeps this testable and MVC-clean.
+    private void reportCoins() {
+        notifyBalance(COINS, coins);
+    }
+
+    private void reportGems() {
+        notifyBalance(DIAMONDS, gems);
+    }
+
+    private void notifyBalance(String currency, int newTotal) {
+        CurrencyObserver observer = currencyObserver;
+        if (observer != null) {
+            observer.onBalanceChanged(currency, newTotal);
+        }
     }
 
     public int getPlantFoodCount() {
@@ -359,15 +400,20 @@ public class Profile {
         }
     }
 
-    public void unlockPlant(String plantName){
+    // Unlocks a plant. Returns true only when it was newly unlocked (previously locked), so callers
+    // can react to a genuine first-time unlock -- e.g. post a "New Plant Unlocked" news entry -- without
+    // firing again on a re-unlock or on the starter plants granted at profile creation.
+    public boolean unlockPlant(String plantName){
         String formattedName = plantName.toLowerCase().trim();
 
-        if (!unlockedPlants.contains(formattedName)) {
+        boolean newlyUnlocked = !unlockedPlants.contains(formattedName);
+        if (newlyUnlocked) {
             unlockedPlants.add(formattedName);
         }
         lockedPlants.remove(formattedName);
         plantsLevels.putIfAbsent(formattedName, 1);
         ownedSeedPackets.put(formattedName, ownedSeedPackets.getOrDefault(formattedName, 1));
+        return newlyUnlocked;
     }
 
     public void levelUpPlant(String plantName) {

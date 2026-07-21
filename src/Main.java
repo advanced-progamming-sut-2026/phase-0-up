@@ -12,6 +12,11 @@ public class Main {
         GameInitializer gameInitializer = new GameInitializer();
         gameInitializer.loadAllData();
 
+        // Wire the model's balance-change hook to the view. The model publishes, the view renders, and
+        // this composition root is the only place that knows about both -- so Profile stays view-free.
+        views.renderers.CurrencyRenderer currencyRenderer = new views.renderers.CurrencyRenderer();
+        models.user.Profile.setCurrencyObserver(currencyRenderer::showBalance);
+
         DatabaseManager db =  DatabaseManager.getInstance();
 
         User autoLoggedInUser = db.getLoggedInUser();

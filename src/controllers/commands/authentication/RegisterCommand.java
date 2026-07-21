@@ -118,7 +118,7 @@ public class RegisterCommand implements Command {
 
                 questionNumber = Integer.parseInt(numberString);
                 if (questionNumber < 1 || questionNumber > 5) {
-                    OutputHandler.showMessage("Enter a number between 1 and 5");
+                    OutputHandler.showMessage("Pick a question by number, 1 to 5.");
                     continue;
                 }
 
@@ -126,7 +126,7 @@ public class RegisterCommand implements Command {
                 String answerConfirm = SignUpMenuRegex.SECURITY_QUESTION.getGroup(input, "answerConfirm");
 
                 if (!answer.equalsIgnoreCase(answerConfirm)) {
-                    OutputHandler.showMessage("Answers do not match");
+                    OutputHandler.showMessage("Those two answers don't match. Try again!");
                 } else {
                     break;
                 }

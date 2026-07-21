@@ -22,7 +22,7 @@ public class EnterMenuCommand implements Command {
         MenuType type = MenuType.fromName(menuName);
 
         if (type == null){
-            allMenuRenderer.enterMenu(new Result(false, "Invalid menu name!"));
+            allMenuRenderer.enterMenu(new Result(false, "There's no menu by that name around here."));
             return;
         }
 
@@ -44,7 +44,7 @@ public class EnterMenuCommand implements Command {
                 if(appSession.getCurrentUser() != null){
                     if (type == MenuType.MAIN_MENU){
                         appSession.setCurrentMenu(type);
-                        allMenuRenderer.enterMenu(new Result(true , String.format("Entered %s menu!", type.getMenuName())));
+                        allMenuRenderer.enterMenu(new Result(true , String.format("Welcome to the %s menu!", type.getMenuName())));
                         return;
                     }
                 }
@@ -55,7 +55,7 @@ public class EnterMenuCommand implements Command {
                     type == MenuType.NEWS_MENU ||
                     type == MenuType.PROFILE_MENU){
                     appSession.setCurrentMenu(type);
-                    allMenuRenderer.enterMenu(new Result(true, String.format("Entered %s menu!", type.getMenuName())));
+                    allMenuRenderer.enterMenu(new Result(true, String.format("Welcome to the %s menu!", type.getMenuName())));
                     return;
                 }
             case PLAY_MENU:

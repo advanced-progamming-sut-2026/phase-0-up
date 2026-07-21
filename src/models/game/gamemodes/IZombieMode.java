@@ -126,24 +126,25 @@ public class IZombieMode extends StandardMode {
                     + "Available: " + String.join(", ", roster.keySet()) + ".");
         }
         if (x < RED_LINE_COLUMN || x >= Constants.BOARD_COLS) {
-            return new Result(false, "Zombies can only be summoned in columns " + RED_LINE_COLUMN
-                    + "-" + (Constants.BOARD_COLS - 1) + " (right of the red line).");
+            return new Result(false, "Your horde masses right of the red line -- columns "
+                    + RED_LINE_COLUMN + "-" + (Constants.BOARD_COLS - 1) + " only.");
         }
         if (y < 0 || y >= session.getMap().getRows().size()) {
-            return new Result(false, "Row " + y + " is off the board.");
+            return new Result(false, "There's no lane " + y + " on this lawn.");
         }
         int price = roster.get(alias);
         if (session.getSunAmount() < price) {
-            return new Result(false, "Not enough sun to summon " + alias + " (costs " + price
-                    + ", you have " + session.getSunAmount() + ").");
+            return new Result(false, alias + " costs " + price + " sun and you've only got "
+                    + session.getSunAmount() + ". Let the sun-makers work!");
         }
         Zombie zombie = ZombieFactory.createZombie(alias, x, y, session);
         if (zombie == null) {
-            return new Result(false, "Could not summon \"" + alias + "\".");
+            return new Result(false, "\"" + alias + "\" wouldn't rise from the grave.");
         }
         session.decreaseSunAmount(price);
         session.getMap().getRow(y).getZombies().add(zombie);
-        return new Result(true, "You summoned a " + alias + " at (" + x + ", " + y + ") for " + price + " sun.");
+        return new Result(true, "A " + alias + " lurches onto lane " + y + " for " + price
+                + " sun. Go get those brainz!");
     }
 
     // --- Sun / brains ----------------------------------------------------------------------------

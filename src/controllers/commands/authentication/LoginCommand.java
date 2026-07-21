@@ -63,7 +63,7 @@ public class LoginCommand implements Command {
         EnterMenuCommand enterMenuCommand = new EnterMenuCommand(appSession , MenuType.MAIN_MENU.getMenuName(), allMenuRenderer);
         enterMenuCommand.execute();
 
-        loginMenuRenderer.successOfLoggingIn(new Result(true, "Logged in successfully"));
+        loginMenuRenderer.successOfLoggingIn(new Result(true, "Welcome back! The lawn missed you."));
 
     }
 

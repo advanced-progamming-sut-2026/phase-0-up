@@ -37,4 +37,28 @@ public interface GameMode {
     default boolean allowsSkySun() {
         return true;
     }
+
+    // --- Plant-inventory hooks -------------------------------------------------------------------
+    // A mode that hands the player plants itself, outside the seed-packet + sun economy (Vasebreaker,
+    // whose plants come only from broken vases). When managesPlantInventory() is true, GameSession.plant
+    // consults this roster instead of the selected seeds, and consumePlant removes a plant once it is
+    // placed. The defaults keep every normal level on the standard seed-packet path.
+
+    default boolean managesPlantInventory() {
+        return false;
+    }
+
+    // Whether the player currently holds a plant of this type, ready to place.
+    default boolean hasPlantAvailable(String plantType) {
+        return false;
+    }
+
+    // Removes one plant of this type from the player's hand once it has been planted.
+    default void consumePlant(String plantType) {
+    }
+
+    // The plants currently in hand (type -> count), for the "show plant status" view. Read-only.
+    default java.util.Map<String, Integer> plantInventory() {
+        return java.util.Collections.emptyMap();
+    }
 }

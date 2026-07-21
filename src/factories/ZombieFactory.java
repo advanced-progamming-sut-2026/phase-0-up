@@ -67,6 +67,13 @@ public final class ZombieFactory {
         if (EnvironmentSystem.environmentOf(gameSession) == EnvironmentType.FROSTBITE_CAVES) {
             zombie.getState().setFreezeImmune(true);
         }
+
+        // A zombie has just entered the level: record it as discovered (first sighting posts a news
+        // entry and raises the unread-news badge). This is the single choke point every spawn path
+        // funnels through, so no caller has to remember to do it.
+        if (gameSession != null) {
+            gameSession.discoverZombie(template.getAlias());
+        }
         return zombie;
     }
 

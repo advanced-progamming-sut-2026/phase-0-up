@@ -1,6 +1,7 @@
 package controllers.systems;
 
 import models.news.News;
+import models.news.NewsType;
 import models.user.Profile;
 
 import java.time.LocalDate;
@@ -59,9 +60,9 @@ public class NewsSystem {
         return !getUnreadNews(profile).isEmpty();
     }
 
-    private News buildNews(Profile profile, String title, String description) {
+    private News buildNews(Profile profile, String title, String description, NewsType type) {
         return new News(nextId(profile), title, description,
-                SYSTEM_AUTHOR, LocalDate.now().toString());
+                SYSTEM_AUTHOR, LocalDate.now().toString(), type);
     }
 
     private int nextId(Profile profile) {
@@ -78,23 +79,27 @@ public class NewsSystem {
     }
 
     public void addPlantUnlockNews(Profile profile, String plantName) {
-        addNews(profile, buildNews(profile, "New Plant Unlocked",
-                "You have unlocked a new plant: " + plantName + "."));
+        addNews(profile, buildNews(profile, "A New Sprout Joins the Fight",
+                plantName + " has been added to your almanac. Give it a lawn to defend!",
+                NewsType.PLANT_UNLOCK));
     }
 
     public void addZombieUnlockNews(Profile profile, String zombieName) {
-        addNews(profile, buildNews(profile, "New Zombie Encountered",
-                "A new zombie has been added to your collection: " + zombieName + "."));
+        addNews(profile, buildNews(profile, "New Face in the Horde",
+                "You've met a " + zombieName + " and lived to file the paperwork. "
+                        + "It's in your almanac now.", NewsType.ZOMBIE_DISCOVERY));
     }
 
     public void addLevelUnlockNews(Profile profile, String levelName) {
-        addNews(profile, buildNews(profile, "New Level Unlocked",
-                "A new level is now available: " + levelName + "."));
+        addNews(profile, buildNews(profile, "Fresh Turf Ahead",
+                "A new level just opened up: " + levelName + ". The zombies are already queuing.",
+                NewsType.LEVEL_UNLOCK));
     }
 
     public void addMinigameUnlockNews(Profile profile, String minigameName) {
-        addNews(profile, buildNews(profile, "New Minigame Unlocked",
-                "A new minigame is now available: " + minigameName + "."));
+        addNews(profile, buildNews(profile, "New Mini-Game Unlocked",
+                minigameName + " is ready to play. Think you can handle it?",
+                NewsType.MINIGAME_UNLOCK));
     }
 
 }

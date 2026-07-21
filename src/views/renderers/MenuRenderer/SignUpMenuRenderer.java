@@ -9,7 +9,7 @@ public class SignUpMenuRenderer {
         OutputHandler.showMessage(result.message());
     }
     public void showSecurityQuestions(){
-        OutputHandler.showMessage("Please choose your security questions");
+        OutputHandler.showMessage("Pick a security question -- in case the zombies eat your memory:");
         for (String question : Constants.SECURITY_QUESTIONS) {
             OutputHandler.showMessage(question);
         }

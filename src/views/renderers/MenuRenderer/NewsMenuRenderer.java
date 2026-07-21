@@ -11,20 +11,20 @@ public class NewsMenuRenderer {
     public void unreadNewsRender(Profile profile){
         List<News> unread = NewsSystem.getInstance().getUnreadNews(profile);
         if (unread.isEmpty()) {
-            OutputHandler.showMessage("You have no unread news.");
+            OutputHandler.showMessage("All caught up -- not a single unread story.");
             return;
         }
-        OutputHandler.showMessage("Unread news:");
+        OutputHandler.showMessage("--- Hot off the press ---");
         for (News news : unread) {
             OutputHandler.showMessage(format(news));
         }
     }
     public void allNewsRender(Profile profile){
         if (profile == null || profile.getNewsList() == null || profile.getNewsList().isEmpty()) {
-            OutputHandler.showMessage("You have no news yet.");
+            OutputHandler.showMessage("No news yet. Go make some headlines!");
             return;
         }
-        OutputHandler.showMessage("All news:");
+        OutputHandler.showMessage("--- The whole newspaper ---");
         for (News news : profile.getNewsList()) {
             OutputHandler.showMessage(format(news));
         }
@@ -39,10 +39,10 @@ public class NewsMenuRenderer {
     }
 
     public void noUserLoggedIn(){
-        OutputHandler.showError("No user is currently logged in.");
+        OutputHandler.showError("Nobody's signed in -- log in first and the paper's all yours.");
     }
 
     public void hasNoProfile(){
-        OutputHandler.showError("Current user has no profile.");
+        OutputHandler.showError("This account has no profile attached. Curious.");
     }
 }

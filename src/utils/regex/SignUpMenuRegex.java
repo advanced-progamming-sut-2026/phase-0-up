@@ -7,7 +7,8 @@ public enum SignUpMenuRegex implements Regex {
             "[a-zA-Z0-9\\-]+(?:\\.[a-zA-Z0-9\\-]+)*\\.[a-zA-Z]{2,}$"),
     USERNAME("^[a-zA-Z0-9\\-]+$"),
     PASSWORD("^[a-zA-Z0-9\\p{Punct}]+$"),
-    SECURITY_QUESTION("^pick\\s+question\\s+-q\\s+(?<questionNumber>\\S+)\\s+-a\\s+(?<answer>\\S+)\\s+-c\\s+(?<answerConfirm>\\S+)$");
+    SECURITY_QUESTION("^\\s*pick\\s+question\\s+-q\\s+(?<questionNumber>\\S+)\\s+-a\\s+(?<answer>\\S+)"
+            + "\\s+-c\\s+(?<answerConfirm>\\S+)\\s*$");
 
 
     private final String pattern;

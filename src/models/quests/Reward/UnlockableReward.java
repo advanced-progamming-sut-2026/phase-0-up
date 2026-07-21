@@ -31,11 +31,12 @@ public class UnlockableReward extends Reward {
         }
         if (target == Target.LEVEL) {
             profile.setLastLevel(profile.getLastLevel() + 1);   // open the next level
+            controllers.systems.NewsSystem.getInstance().addLevelUnlockNews(profile, "a new level");
             return;
         }
         String plant = RANDOM.equalsIgnoreCase(item) ? randomLockedPlant(profile) : item;
-        if (plant != null) {
-            profile.unlockPlant(plant);
+        if (plant != null && profile.unlockPlant(plant)) {
+            controllers.systems.NewsSystem.getInstance().addPlantUnlockNews(profile, plant);
         }
     }
 

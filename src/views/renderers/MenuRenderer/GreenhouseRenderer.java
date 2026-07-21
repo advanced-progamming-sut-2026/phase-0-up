@@ -14,12 +14,14 @@ public class GreenhouseRenderer {
     }
 
     public void potNotReadyYet(Pot pot){
-        OutputHandler.showMessage(String.format("This pot is not ready, remaining time : %s",
+        OutputHandler.showMessage(String.format("Still sprouting -- give it another %s.",
                 pot.getRemainingTimeFormatted()));
     }
 
     public void invalidPotState(PotState potState){
-        OutputHandler.showMessage(String.format("This pot is %s", potState == PotState.EMPTY ? "empty" : "locked"));
+        OutputHandler.showMessage(potState == PotState.EMPTY
+                ? "That pot is empty. Pop something in it first!"
+                : "That pot is still locked.");
     }
 
     public void collect(Result result){

@@ -29,10 +29,10 @@ public class CollectionMenuRenderer {
     public void renderAllPlants(PlantRegistry registry){
         Map<String, PlantTemplate> all = registry.getAllPlantTemplates();
         if (all == null || all.isEmpty()) {
-            OutputHandler.showMessage("No plants are defined in the game.");
+            OutputHandler.showMessage("The almanac is empty. Somebody forgot to water the database.");
             return;
         }
-        OutputHandler.showMessage("All plants:");
+        OutputHandler.showMessage("--- The Almanac: every plant known to science ---");
         for (PlantTemplate template : all.values()) {
             OutputHandler.showMessage(formatPlant(template));
         }
@@ -40,10 +40,10 @@ public class CollectionMenuRenderer {
     public void renderUnlockedPlants(Profile profile){
         Map<String, Integer> owned = profile.getOwnedSeedPackets();
         if (owned == null || owned.isEmpty()) {
-            OutputHandler.showMessage("You have not acquired any plants yet.");
+            OutputHandler.showMessage("Your seed tray is bare. Pop into the shop and start a collection!");
             return;
         }
-        OutputHandler.showMessage("Acquired plants:");
+        OutputHandler.showMessage("--- Your seed collection ---");
         PlantRegistry registry = PlantRegistry.getInstance();
         for (Map.Entry<String, Integer> entry : owned.entrySet()) {
             String plantName = entry.getKey();
@@ -57,10 +57,10 @@ public class CollectionMenuRenderer {
     public void renderPlantDetails(PlantRegistry registry, String plantName){
         PlantTemplate template = registry.getTemplateByName(plantName);
         if (template == null) {
-            OutputHandler.showError("Plant '" + plantName + "' does not exist.");
+            OutputHandler.showError("No such plant as '" + plantName + "'. Check the almanac!");
             return;
         }
-        OutputHandler.showMessage("Plant details:");
+        OutputHandler.showMessage("--- Almanac entry ---");
         OutputHandler.showMessage("name: " + template.getName());
         OutputHandler.showMessage("category: " + template.getCategory());
         OutputHandler.showMessage("cost: " + template.getCost());
@@ -86,9 +86,9 @@ public class CollectionMenuRenderer {
     }
     public void renderAllZombies(ZombieRegistry registry){
         Map<String, ZombieTemplate> all = registry.getZombieTemplatesByAlias();
-        OutputHandler.showMessage("All zombies:");
+        OutputHandler.showMessage("--- Know your enemy: every zombie on file ---");
         if (all == null || all.isEmpty()) {
-            OutputHandler.showMessage("No zombies are defined in the game.");
+            OutputHandler.showMessage("Not a zombie on file. Suspiciously quiet out there...");
             return;
         }
         for (ZombieTemplate template : all.values()) {
@@ -97,9 +97,9 @@ public class CollectionMenuRenderer {
     }
     public void renderSeenZombies(Profile profile){
         Set<String> seen = profile.getSeenZombieAliases();
-        OutputHandler.showMessage("Seen zombies:");
+        OutputHandler.showMessage("--- Zombies you've met (and survived) ---");
         if (seen == null || seen.isEmpty()) {
-            OutputHandler.showMessage("You have not seen any zombies yet.");
+            OutputHandler.showMessage("You haven't met a single zombie yet. Enjoy it while it lasts.");
             return;
         }
         ZombieRegistry registry = ZombieRegistry.getInstance();
@@ -111,10 +111,10 @@ public class CollectionMenuRenderer {
     public void renderZombieDetails(ZombieRegistry registry, String zombieName){
         ZombieTemplate template = registry.getZombieTemplateByAlias(zombieName);
         if (template == null) {
-            OutputHandler.showError("Zombie '" + zombieName + "' does not exist.");
+            OutputHandler.showError("No zombie called '" + zombieName + "' has ever shambled by.");
             return;
         }
-        OutputHandler.showMessage("Zombie details:");
+        OutputHandler.showMessage("--- Almanac entry ---");
         OutputHandler.showMessage("alias: " + template.getAlias());
         OutputHandler.showMessage("objclass: " + template.getObjclass());
         OutputHandler.showMessage("base hp: " + template.getBaseHp());
@@ -124,29 +124,31 @@ public class CollectionMenuRenderer {
         OutputHandler.showMessage("wave point cost: " + template.getWavePointCost());
     }
     public void notExist(String plantName){
-        OutputHandler.showError("Plant '" + plantName +"' does not exist.");}
+        OutputHandler.showError("No such plant as '" + plantName + "'. Check the almanac!");}
     public void alreadyOwned(String plantName){
-        OutputHandler.showError("Plant '" + plantName + "' is already owned.");
+        OutputHandler.showError("You already grow '" + plantName + "'. One is plenty!");
     }
     public void notEnoughCoinToPurchase(String plantName){
-        OutputHandler.showError("Not enough coins to purchase '" + plantName + "'.");
+        OutputHandler.showError("Not enough coins for '" + plantName + "'. Time to go farming!");
     }
     public void notOwned(String plantName){
-        OutputHandler.showError("You do not own '" + plantName + "'.");
+        OutputHandler.showError("You don't own '" + plantName + "' yet -- buy it before you upgrade it.");
     }
     public void notEnoughSeed(String plantName){
-        OutputHandler.showError("Not enough seed packets to upgrade '" + plantName + "'.");
+        OutputHandler.showError("Not enough seed packets to upgrade '" + plantName + "'. Keep collecting!");
     }
     public void notEnoughCoinToUpgrade(String plantName){
-        OutputHandler.showError("Not enough coins to upgrade '" + plantName + "'.");
+        OutputHandler.showError("Not enough coins to upgrade '" + plantName + "'. Sunflowers don't grow "
+                + "on trees... wait.");
     }
     public void successfulUpgrade(String plantName){
-        OutputHandler.showSuccess("Plant '" + plantName + "' upgraded successfully.");
+        OutputHandler.showSuccess("'" + plantName + "' leveled up! It's looking meaner already.");
     }
     public void successOfPurchasePlant(){
-        OutputHandler.showSuccess("Plant purchased successfully.");
+        OutputHandler.showSuccess("Sold! A new sprout joins your garden.");
     }
     public void plantMaxLevel(String plantName){
-        OutputHandler.showError(String.format("plant %s has maximum level", plantName));
+        OutputHandler.showError(String.format("'%s' is already maxed out. It cannot get any meaner.",
+                plantName));
     }
 }

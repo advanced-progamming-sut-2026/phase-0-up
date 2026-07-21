@@ -16,6 +16,6 @@ public class RemoveCooldownCheatCommand implements Command {
     @Override
     public void execute() {
         gameSession.removeCooldownRestriction();
-        renderer.render(new Result(true, "All plant cooldown restrictions have been removed."));
+        renderer.render(new Result(true, "Cooldowns gone! Plant as fast as your fingers allow."));
     }
 }

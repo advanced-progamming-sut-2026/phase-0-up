@@ -52,11 +52,12 @@ public class GameEngine {
                 running = false;
                 break;
             }
-            if (input.isEmpty()) {
-                continue;
+            if (input.isBlank()) {
+                continue;   // a bare Enter (or a line of spaces/tabs) is not a command -- just re-prompt
             }
             if (!routeAndExecute(input)) {
-                inGameRenderer.render(new Result(false, "Invalid command."));
+                inGameRenderer.render(new Result(false, "The zombies didn't understand that one. "
+                        + "Try \"show map\" to get your bearings."));
             }
         }
     }
@@ -186,6 +187,17 @@ public class GameEngine {
             new SummonZombieCommand(gameSession, inGameRenderer, type, x, y).execute();
             return true;
         }
+        if (InGameRegex.CHEAT_SPAWN_ZOMBIE.matches(input)) {
+            String type = InGameRegex.CHEAT_SPAWN_ZOMBIE.getGroup(input, "type");
+            int x = Integer.parseInt(InGameRegex.CHEAT_SPAWN_ZOMBIE.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.CHEAT_SPAWN_ZOMBIE.getGroup(input, "y"));
+            new SpawnZombieCheatCommand(gameSession, inGameRenderer, type, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.ZOMBIES_INFO.matches(input)) {
+            new ZombiesInfoCommand(gameSession, inGameRenderer).execute();
+            return true;
+        }
         if (InGameRegex.SWAP_PLANTS.matches(input)) {
             int x1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x1"));
             int y1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y1"));
@@ -207,6 +219,10 @@ public class GameEngine {
         }
         if (InGameRegex.CHEAT_REMOVE_COOLDOWN.matches(input)) {
             new RemoveCooldownCheatCommand(gameSession, inGameRenderer).execute();
+            return true;
+        }
+        if (InGameRegex.CHEAT_ADD_PLANT_FOOD.matches(input)) {
+            new AddPlantFoodCheatCommand(gameSession, inGameRenderer).execute();
             return true;
         }
         if (InGameRegex.RELEASE_THE_NUKE.matches(input)) {
@@ -235,7 +251,8 @@ public class GameEngine {
 
     public void advanceTime(int ticks) {
         if (ticks <= 0) {
-            inGameRenderer.render(new Result(false, "Tick count must be positive."));
+            inGameRenderer.render(new Result(false, "Time only runs forwards. Give me a positive "
+                    + "number of ticks."));
             return;
         }
         for (int i = 0; i < ticks; i++) {

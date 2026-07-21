@@ -38,7 +38,9 @@ public class CollectionSystem {
             return;
         }
         profile.spendCoins(Constants.NEW_PLANT_COST_COINS);
-        profile.unlockPlant(plantName);
+        if (profile.unlockPlant(plantName)) {
+            NewsSystem.getInstance().addPlantUnlockNews(profile, plantName);
+        }
         renderer.successOfPurchasePlant();
     }
     public void upgradePlant(Profile profile, String plantName, CollectionMenuRenderer renderer){

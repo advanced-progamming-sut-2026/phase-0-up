@@ -9,7 +9,7 @@ public class AllMenuRenderer {
 
 
     public void showCurrentMenu(MenuType menu) {
-        OutputHandler.showMessage("Current Menu: " + menu.getMenuName());
+        OutputHandler.showMessage("You are in the " + menu.getMenuName() + " menu.");
     }
 
     public void enterMenu(Result result){
@@ -17,11 +17,12 @@ public class AllMenuRenderer {
     }
 
     public void menuExit(String destination){
-        OutputHandler.showMessage(String.format("returned to %s menu",destination));
+        OutputHandler.showMessage(String.format("Back to the %s menu.", destination));
     }
 
     public void invalidCommand(){
-        OutputHandler.showMessage("Invalid Command");
+        OutputHandler.showMessage("That's not a command I know. Try \"menu show current\" to see where "
+                + "you are, or check GUIDE.md.");
     }
 
 }

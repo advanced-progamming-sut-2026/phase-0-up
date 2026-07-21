@@ -153,6 +153,14 @@ public class Constants {
     public static final int DEFAULT_BEST_MEOW_POINTS = 0;
     public static final int DEFAULT_LAST_CHAPTER = 1;
     public static final int DEFAULT_LAST_LEVEL = 1;
+    // The campaign is 4 chapters of 4 levels each; lastChapter/lastLevel are pointers to the next
+    // unlocked level, so the number of levels a profile has actually finished is
+    // (lastChapter-1)*LEVELS_PER_CHAPTER + (lastLevel-1). Used by the leaderboard to show the last
+    // completed stage and by ShowProfileCommand to count completed levels.
+    public static final int LEVELS_PER_CHAPTER = 4;
+    // Each mini-game hosts this many progressively harder levels (Travel Log). Clearing a level unlocks
+    // the next, up to this cap; the leaderboard's mini-game tally is therefore 0..MINIGAME_LEVELS each.
+    public static final int MINIGAME_LEVELS = 3;
     public static final int DEFAULT_DAILY_QUESTS_DONE = 0;
     public static final int DEFAULT_NONE_DAILY_QUESTS_DONE = 0;
     public static final boolean DEFAULT_HAS_BOUGHT_DAILY_OFFER = false;

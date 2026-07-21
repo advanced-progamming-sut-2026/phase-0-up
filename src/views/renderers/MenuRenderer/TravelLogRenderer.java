@@ -48,7 +48,7 @@ public class TravelLogRenderer {
     }
 
     public void minigameUnavailable(String name) {
-        OutputHandler.showMessage("The \"" + name + "\" mini-game is not playable yet. "
-                + "Available now: vasebreaker.");
+        OutputHandler.showMessage("No mini-game called \"" + name + "\". Playable now: vasebreaker, "
+                + "bowling, izombie, beghouled, zombotany.");
     }
 }

@@ -101,6 +101,14 @@ public class StateComponent {
         this.chilledTimer = i;
     }
 
+    // Remaining ticks on each timed status effect, for the "zombies info" status readout. A value of 0
+    // means the effect is not active. (isFrozen() may still be true with a 0 timer when the zombie is
+    // permanently frozen by frostbite terrain rather than by a timed ice hit.)
+    public int getFrozenTimer() { return frozenTimer; }
+    public int getChilledTimer() { return chilledTimer; }
+    public int getButteredTimer() { return butteredTimer; }
+    public boolean isPermanentlyFrozen() { return isPermanentlyFrozen; }
+
     public boolean isSpinning() { return isSpinning; }
     public void setSpinning(boolean spinning) { isSpinning = spinning; }
     public boolean isImmuneToFire() { return isImmuneToFire; }

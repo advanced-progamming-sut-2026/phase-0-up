@@ -37,11 +37,11 @@ public class ProfileCommands implements Command {
     private void handleUsernameChange() {
         Result validation = new UsernameValidator().validate(newValue);
         if (!validation.success()) {
-            renderer.changeUsername(false, "New username isn't valid");
+            renderer.changeUsername(false, "New username doesn't pass muster -- check the format and try again.");
             return;
         }
         if (newValue.equals(user.getUsername())) {
-            renderer.changeUsername(false, "New username can't be the old one");
+            renderer.changeUsername(false, "New username is the one you already have!");
             return;
         }
         user.changeUsername(newValue);
@@ -51,11 +51,11 @@ public class ProfileCommands implements Command {
     private void handleNicknameChange() {
         Result validation = new NicknameValidator().validate(newValue);
         if (!validation.success()) {
-            renderer.changeNickname(false, "New nickname isn't valid");
+            renderer.changeNickname(false, "New nickname doesn't pass muster -- check the format and try again.");
             return;
         }
         if (newValue.equals(user.getNickname())) {
-            renderer.changeNickname(false, "New nickname can't be the old one");
+            renderer.changeNickname(false, "New nickname is the one you already have!");
             return;
         }
         user.changeNickname(newValue);
@@ -65,11 +65,11 @@ public class ProfileCommands implements Command {
     private void handleEmailChange() {
         Result validation = new EmailValidator().validate(newValue);
         if (!validation.success()) {
-            renderer.changeEmail(false, "New email isn't valid");
+            renderer.changeEmail(false, "New email doesn't pass muster -- check the format and try again.");
             return;
         }
         if (newValue.equals(user.getEmail())) {
-            renderer.changeEmail(false, "New email can't be the old one");
+            renderer.changeEmail(false, "New email is the one you already have!");
             return;
         }
         user.changeEmail(newValue);
@@ -78,7 +78,7 @@ public class ProfileCommands implements Command {
 
     private void handlePasswordChange() {
         if (!new PasswordValidator().validate(newValue).success()) {
-            renderer.changePassword(false, "New password isn't valid");
+            renderer.changePassword(false, "New password doesn't pass muster -- check the format and try again.");
             return;
         }
         if (!PasswordHasher.matches(oldPassword, user.getHashPassword())) {
@@ -86,7 +86,7 @@ public class ProfileCommands implements Command {
             return;
         }
         if (PasswordHasher.matches(newValue, user.getHashPassword())) {
-            renderer.changePassword(false, "New password can't be the old one");
+            renderer.changePassword(false, "New password is the one you already have!");
             return;
         }
 

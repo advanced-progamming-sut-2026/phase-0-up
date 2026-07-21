@@ -128,40 +128,40 @@ public class BeghouledMode extends StandardMode {
     // Swaps two adjacent plants. Allowed only if the swap forms a match; otherwise it is undone.
     public Result swap(GameSession session, int r1, int c1, int r2, int c2) {
         if (!inBounds(r1, c1) || !inBounds(r2, c2)) {
-            return new Result(false, "Those coordinates are off the board.");
+            return new Result(false, "That's off the lawn.");
         }
         if (Math.abs(r1 - r2) + Math.abs(c1 - c2) != 1) {
-            return new Result(false, "You can only swap two side-by-side plants.");
+            return new Result(false, "Only next-door neighbours can trade places.");
         }
         if (crater[r1][c1] || crater[r2][c2] || type[r1][c1] == null || type[r2][c2] == null) {
-            return new Result(false, "There is no plant to swap on one of those tiles.");
+            return new Result(false, "Nothing to swap there -- one of those tiles is a crater.");
         }
         swapTypes(r1, c1, r2, c2);
         if (findRuns().isEmpty()) {
             swapTypes(r1, c1, r2, c2);   // no match -> undo
-            return new Result(false, "That swap wouldn't make a match of three.");
+            return new Result(false, "No match from that one. The plants shuffle back, unimpressed.");
         }
         int gained = resolveBoard(session);
         syncMap(session);
         ensurePlayable();
         syncMap(session);
-        return new Result(true, "Match! You earned " + gained + " sun (matches so far: "
-                + matchesMade + "/" + matchTarget + ").");
+        return new Result(true, "Match! " + gained + " sun banked (" + matchesMade + "/"
+                + matchTarget + " matches).");
     }
 
     // Spends sun to upgrade every plant of one type on the board to its next form.
     public Result upgrade(GameSession session, String fromType) {
         Upgrade up = fromType == null ? null : upgrades.get(fromType.toLowerCase().trim());
         if (up == null) {
-            return new Result(false, "There is no upgrade for \"" + fromType + "\".");
+            return new Result(false, "\"" + fromType + "\" has nowhere left to grow.");
         }
         int count = countType(up.getFromPlant());
         if (count == 0) {
-            return new Result(false, "There are no " + up.getFromPlant() + " on the board to upgrade.");
+            return new Result(false, "Not a single " + up.getFromPlant() + " on the lawn to upgrade.");
         }
         if (session.getSunAmount() < up.getCost()) {
-            return new Result(false, "Not enough sun to upgrade " + up.getFromPlant() + " (costs "
-                    + up.getCost() + ", you have " + session.getSunAmount() + ").");
+            return new Result(false, "Need " + up.getCost() + " sun for that upgrade -- you've got "
+                    + session.getSunAmount() + ". Go make some matches!");
         }
         session.decreaseSunAmount(up.getCost());
         for (int r = 0; r < rows; r++) {
@@ -172,7 +172,7 @@ public class BeghouledMode extends StandardMode {
             }
         }
         syncMap(session);
-        return new Result(true, "Upgraded " + count + " " + up.getFromPlant() + " to "
+        return new Result(true, "Kaboom! All " + count + " " + up.getFromPlant() + " grew up into "
                 + up.getToPlant() + " for " + up.getCost() + " sun.");
     }
 

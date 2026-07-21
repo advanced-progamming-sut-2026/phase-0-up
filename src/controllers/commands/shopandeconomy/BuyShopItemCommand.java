@@ -40,7 +40,7 @@ public class BuyShopItemCommand implements Command {
         if(itemId == 5){
             DailyOffer found = shop.getDailyOffer();
             if(profile.getCoins() < 1600){renderer.successOfBuyingAProduct(new Result(false,
-                    "you don't have enough coins!")); return;}
+                    "Not enough coins for that. Go farm a few more!")); return;}
             Random rand = new Random(); found.setPurchased(true);
             int random = rand.nextInt(profile.getUnlockedPlants().size());
             String name = profile.getUnlockedPlants().get(random);
@@ -54,11 +54,11 @@ public class BuyShopItemCommand implements Command {
             } if(found == null) return;
             if(found.getCurrency() == Currency.COIN){
                 if(profile.getCoins() < (count * found.getPrice())){
-                    renderer.successOfBuyingAProduct(new Result(false, "you don't have enough coins!"));
+                    renderer.successOfBuyingAProduct(new Result(false, "Not enough coins for that. Go farm a few more!"));
                     return;}
             } else {
                 if(profile.getGems() < (count * found.getPrice())){
-                    renderer.successOfBuyingAProduct(new Result(false, "you don't have enough gems!"));
+                    renderer.successOfBuyingAProduct(new Result(false, "Not enough gems. Those things are precious!"));
                     return;}
             }
             if(itemId == 0 ){
@@ -68,7 +68,7 @@ public class BuyShopItemCommand implements Command {
                 for(int i = 0 ; i < count; i++) buyAPot();
             } else if(itemId == 1){
                 if(count + profile.getPlantFoodCount() > 3 ){
-                    renderer.successOfBuyingAProduct(new Result(false, "the capacity of your plant food is full!"));
+                    renderer.successOfBuyingAProduct(new Result(false, "Your plant food jar is already brimming!"));
                     return;}
                 for(int i = 0 ; i < count; i++) buyAPlantFood();
                 renderer.successOfBuyingAProduct(new Result(true, String.format("Bought %d plant food(s)! now you have %d plant food(s)!",

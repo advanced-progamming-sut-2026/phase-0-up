@@ -31,6 +31,13 @@ public class WallnutBowlingMode extends StandardMode {
     private static final int RED_LINE_COLUMN = 3;
     private static final int CONVEYOR_INTERVAL_TICKS = 8 * Constants.TICKS_PER_SECOND;
     private static final int CONVEYOR_MAX = 6;
+    // Zombies arrive in waves rather than one opening burst: BASE_WAVES waves plus one per difficulty
+    // tier, each a little bigger than the last, with a breather in between. The level is only won once
+    // every wave has come and gone.
+    private static final int BASE_WAVES = 3;
+    private static final int WAVES_PER_DIFFICULTY = 1;
+    private static final int WAVE_INTERVAL_TICKS = 20 * Constants.TICKS_PER_SECOND;
+    private static final int BASE_ZOMBIES_PER_ROW = 1;
     private static final double HIT_RADIUS = 0.5;        // how close a nut must be to strike a zombie
     private static final int CHERRY_BOMB_DAMAGE = 1800;  // Explode-o-Nut's 3x3 blast
     private static final double EXPLODE_COL_RADIUS = 1.5;
@@ -45,6 +52,9 @@ public class WallnutBowlingMode extends StandardMode {
     private final List<BowlingKind> conveyor = new ArrayList<>();
     private final Map<BowlingType, Zombie> lastHit = new IdentityHashMap<>();
     private long conveyorTimer;
+    private long waveTimer;
+    private int totalWaves;
+    private int wavesReleased;
     private int nextBallId = 1;
     private int normalZombieHp = FALLBACK_NORMAL_HP;
     private int zombiesSpawned;
@@ -76,10 +86,11 @@ public class WallnutBowlingMode extends StandardMode {
         conveyor.add(BowlingKind.BOWLING);
         conveyor.add(BowlingKind.EXPLODE);
         conveyor.add(BowlingKind.GIANT);
-        spawnZombies(session);
+        totalWaves = BASE_WAVES + (difficulty - 1) * WAVES_PER_DIFFICULTY;
+        releaseWave(session);   // wave 1 walks on immediately
     }
 
-    // Drives the conveyor delivery and the rolling-nut physics each tick.
+    // Drives the conveyor delivery, the wave clock and the rolling-nut physics each tick.
     @Override
     public void onTick(GameSession session) {
         conveyorTimer++;
@@ -87,12 +98,21 @@ public class WallnutBowlingMode extends StandardMode {
             conveyor.add(randomKind());
             conveyorTimer = 0;
         }
+        if (wavesReleased < totalWaves) {
+            waveTimer++;
+            if (waveTimer >= WAVE_INTERVAL_TICKS) {
+                releaseWave(session);
+                waveTimer = 0;
+            }
+        }
         stepBalls(session);
     }
 
+    // Won only once every wave has been released AND the lawn is clear -- clearing wave 1 no longer
+    // ends the level while three more waves are still queued.
     @Override
     public boolean checkWin(GameSession session) {
-        return zombiesSpawned > 0 && livingZombies(session) == 0;
+        return wavesReleased >= totalWaves && zombiesSpawned > 0 && livingZombies(session) == 0;
     }
 
     @Override
@@ -122,22 +142,22 @@ public class WallnutBowlingMode extends StandardMode {
     public Result bowlNut(GameSession session, String typeStr, int x, int y) {
         BowlingKind kind = parseKind(typeStr);
         if (kind == null) {
-            return new Result(false, "Unknown nut \"" + typeStr + "\". Use: bowling, explode, or giant.");
+            return new Result(false, "No such nut as \"" + typeStr + "\". Try: bowling, explode, giant.");
         }
         if (x < 0 || x >= RED_LINE_COLUMN) {
-            return new Result(false, "You can only bowl from columns 0-" + (RED_LINE_COLUMN - 1)
-                    + " (behind the red line at column " + RED_LINE_COLUMN + ").");
+            return new Result(false, "Stay behind the red line! Bowl from columns 0-"
+                    + (RED_LINE_COLUMN - 1) + ".");
         }
         if (y < 0 || y >= session.getMap().getRows().size()) {
-            return new Result(false, "Row " + y + " is off the board.");
+            return new Result(false, "There's no lane " + y + " on this lawn.");
         }
         if (!conveyor.remove(kind)) {
-            return new Result(false, "There is no " + kind.name().toLowerCase()
-                    + " nut on the conveyor right now.");
+            return new Result(false, "No " + kind.name().toLowerCase()
+                    + " nut on the belt right now. Check \"show map\" for what you've got.");
         }
         balls.add(create(kind, x, y));
-        return new Result(true, "You bowled a " + kind.name().toLowerCase()
-                + " nut down row " + y + " from column " + x + "!");
+        return new Result(true, "Thunk! The " + kind.name().toLowerCase()
+                + " nut rolls away down lane " + y + ". Strike!");
     }
 
     // --- Rolling-nut physics ---------------------------------------------------------------------
@@ -243,19 +263,27 @@ public class WallnutBowlingMode extends StandardMode {
 
     // --- Setup helpers ---------------------------------------------------------------------------
 
-    private void spawnZombies(GameSession session) {
+    // Walks one wave onto the lawn. Each wave is bigger than the last (and difficulty adds on top), so
+    // the pressure builds instead of peaking on the opening burst. Reports the wave so the player knows
+    // how many are still to come.
+    private void releaseWave(GameSession session) {
+        wavesReleased++;
         int rows = session.getMap().getRows().size();
-        int perRow = 1 + difficulty;                 // more zombies at higher difficulty
+        int perRow = BASE_ZOMBIES_PER_ROW + difficulty + (wavesReleased - 1);
+        int spawnedThisWave = 0;
         for (int y = 0; y < rows; y++) {
             for (int i = 0; i < perRow; i++) {
-                double x = Constants.BOARD_COLS - 1 - i;   // line them up entering from the right
+                double x = Constants.BOARD_COLS - 1 + i;   // queue them up off the right edge
                 Zombie zombie = ZombieFactory.createZombie(randomZombieAlias(), x, y, session);
                 if (zombie != null) {
                     session.getMap().getRow(y).getZombies().add(zombie);
                     zombiesSpawned++;
+                    spawnedThisWave++;
                 }
             }
         }
+        session.reportEvent("Wave " + wavesReleased + " of " + totalWaves + " shambles in -- "
+                + spawnedThisWave + " zombies. Let 'em roll!");
     }
 
     private BowlingType create(BowlingKind kind, int x, int y) {
@@ -324,6 +352,40 @@ public class WallnutBowlingMode extends StandardMode {
 
     public List<BowlingKind> getConveyor() {
         return new ArrayList<>(conveyor);
+    }
+
+    // How many of each nut are waiting on the belt, in a stable order and including the kinds the player
+    // currently has none of -- this is what the map view reports so the player always knows what they
+    // can bowl right now.
+    public Map<BowlingKind, Integer> conveyorCounts() {
+        Map<BowlingKind, Integer> counts = new java.util.LinkedHashMap<>();
+        for (BowlingKind kind : BowlingKind.values()) {
+            counts.put(kind, 0);
+        }
+        for (BowlingKind kind : conveyor) {
+            counts.merge(kind, 1, Integer::sum);
+        }
+        return counts;
+    }
+
+    public int conveyorSize() {
+        return conveyor.size();
+    }
+
+    public int conveyorCapacity() {
+        return CONVEYOR_MAX;
+    }
+
+    public int getWavesReleased() {
+        return wavesReleased;
+    }
+
+    public int getTotalWaves() {
+        return totalWaves;
+    }
+
+    public int getZombiesSpawned() {
+        return zombiesSpawned;
     }
 
     public int getRedLineColumn() {

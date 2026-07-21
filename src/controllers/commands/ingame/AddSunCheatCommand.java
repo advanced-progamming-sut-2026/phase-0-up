@@ -19,11 +19,11 @@ public class AddSunCheatCommand implements Command {
     @Override
     public void execute() {
         if(count <= 0){
-            renderer.render(new Result(false , "Sun count must be positive."));
+            renderer.render(new Result(false , "You can't cheat sun *away*. Give me a positive number."));
             return;
         }
         gameSession.increaseSunAmount(count);
         renderer.render(new Result(true ,
-                "Added " + count + " suns. Current amount: " + gameSession.getSunAmount()));
+                "Sunny day! +" + count + " sun. You now have " + gameSession.getSunAmount() + "."));
     }
 }
