@@ -23,9 +23,10 @@ public class PlantMenuRenderer {
     public void renderAvailablePlants(GameSession session){
         Profile profile = session.getPlayer();
         PlantRegistry registry = PlantRegistry.getInstance();
-        LevelTemplate levelTemplate = session.getLevel().getTemplate();
         List<String> profilePlants = profile.getUnlockedPlants();
-        List<String> levelPlants = levelTemplate.getAvailablePlants();
+        // The Level owns the pool. Generated levels (scoring game, Zombotany) have no template at all,
+        // so reading it through getTemplate() crashed the moment one of them opened seed selection.
+        List<String> levelPlants = session.getLevel().getAvailablePlants();
         // The profile stores plant names lower-cased while the level pool uses display names, so the
         // two are matched case-insensitively; the level's spelling is kept for display.
         List<String> available = levelPlants == null ? List.of() : levelPlants.stream()

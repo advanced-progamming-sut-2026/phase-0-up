@@ -32,6 +32,9 @@ public class Zombie extends Entity {
     private int wavePointCost;
     private boolean glowing;
     private GameSession gameSession;
+    // The tick this zombie was created on. Scoring rules that care how long a zombie survived (the
+    // scoring mode's speed-kill bonus) measure against it; -1 when it was built without a live session.
+    private final long spawnTick;
 
     public Zombie(int id, String category, int baseHp, List<ArmorType> armorTypes, String alias,
                   int eatDamage, int eatSpeed, double speed, double startX, int startY, boolean canSpawnPlantFood,
@@ -54,6 +57,12 @@ public class Zombie extends Entity {
         this.health = new HealthComponent(baseHp, armorTypes, this);
         this.movement = new MovementComponent(speed, startX, startY, state);
         this.gameSession = gameSession;
+        this.spawnTick = gameSession != null ? gameSession.getTimeTicks() : -1L;
+    }
+
+    // The tick this zombie walked into the world on, or -1 if it was built outside a session.
+    public long getSpawnTick() {
+        return spawnTick;
     }
 
     // Ticks the zombie once per frame: status timers decay, abilities (eating/attacks/specials) run,

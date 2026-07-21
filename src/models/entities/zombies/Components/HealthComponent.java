@@ -34,6 +34,11 @@ public class HealthComponent {
     // it, so a plant that softened the zombie up still keeps the attribution.
     private Plant lastAttacker;
 
+    // Total HP immediately before the most recent damage application. Lets a scorer ask, after the
+    // zombie is already dead, whether the killing blow found it untouched -- which is exactly what a
+    // "killed it outright, from full health" bonus needs and cannot reconstruct from a corpse at 0 HP.
+    private int hpBeforeLastHit;
+
     public HealthComponent(int baseHp, List<ArmorType> armorTypes, Zombie currentZombie) {
         layers = new Stack<>();
         this.armorTypes = armorTypes;
@@ -55,6 +60,12 @@ public class HealthComponent {
         return maxTotalHp > 0 ? maxTotalHp : 1;
     }
 
+    // Whether the most recent blow struck this zombie at full health -- i.e. it was felled outright
+    // rather than worn down. Only meaningful once it is dead.
+    public boolean wasKilledFromFullHealth() {
+        return hpBeforeLastHit >= getMaxTotalHp();
+    }
+
     public boolean isDead() {
         return layers.isEmpty() || getTotalHP() <= 0;
     }
@@ -71,6 +82,8 @@ public class HealthComponent {
 
     public void applyDamage(int damage, Element element, Plant attacker) {
         if (isDead()) return;
+
+        hpBeforeLastHit = getTotalHP();   // snapshot before the blow lands, for one-shot scoring
 
         if (attacker != null) {
             lastAttacker = attacker;   // remember who to credit for the eventual kill

@@ -5,6 +5,8 @@ public enum PlayMenuRegex implements Regex{
     ENTER_GREENHOUSE("^\\s*menu\\s+greenhouse\\s*$"),
     ENTER_TRAVEL_LOG("^\\s*menu\\s+travel-log\\s*$"),
     ENTER_LEADERBOARD("^\\s*menu\\s+leaderboard\\s*$"),
+    // The scoring game is reachable straight from the main menu as well as the play menu, per the spec.
+    PLAY_SCORING_GAME("^\\s*menu\\s+scoring-game\\s*$"),
     SHOW_COINS("^\\s*menu\\s+coin-wallet\\s*$"),
     SHOW_GEMS("^\\s*menu\\s+gem-wallet\\s*$"),
     CHEAT_CODE("^\\s*menu\\s+cheat\\s+add\\s+(?<n>\\d+)\\s+(?<currency>coin|gem)\\s*$"),

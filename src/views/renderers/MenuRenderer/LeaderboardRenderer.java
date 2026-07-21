@@ -10,7 +10,7 @@ import java.util.List;
 public class LeaderboardRenderer {
 
     private static final String[] HEADERS = {
-            "Rank", "Username", "Stage", "Mini-games", "Daily Quests", "Non-Daily Quests", "Mu-Points"
+            "Rank", "Username", "Stage", "Mini-games", "Daily Quests", "Non-Daily Quests", "Meow Points"
     };
 
     // Render the whole board. sortedBy/ascending only affect the caption and the little arrow next to
@@ -31,7 +31,7 @@ public class LeaderboardRenderer {
             rows[i][3] = String.valueOf(e.getMinigamesCompleted());
             rows[i][4] = String.valueOf(e.getDailyQuests());
             rows[i][5] = String.valueOf(e.getNonDailyQuests());
-            rows[i][6] = String.valueOf(e.getBestMyoPoint());
+            rows[i][6] = String.valueOf(e.getBestMeowPoint());
         }
 
         int sortedColumn = columnIndex(sortedBy);
@@ -85,7 +85,7 @@ public class LeaderboardRenderer {
             case MINIGAMES -> 3;
             case DAILY_QUESTS -> 4;
             case NONDAILY_QUESTS -> 5;
-            case MYOPOINT -> 6;
+            case MEOW_POINT -> 6;
         };
     }
 

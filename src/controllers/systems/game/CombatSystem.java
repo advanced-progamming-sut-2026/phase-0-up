@@ -183,10 +183,16 @@ public class CombatSystem {
                 + (int) zombie.getMovement().getPositionX() + ", "
                 + zombie.getMovement().getPositionY() + ")"));
         session.recordZombieKilled();
+        Plant killer = zombie.getHealth().getLastAttacker();
         if (questSystem != null) {
-            Plant killer = zombie.getHealth().getLastAttacker();
             questSystem.recordZombieKilled(zombie, killer);
             recordMowerlessFirstColumnKill(session, zombie, killer);
+        }
+        // A mode that scores kills (the scoring game) hears about them here rather than polling the
+        // board each frame. Every death route -- shots, explosions, mowers, cheats -- funnels through
+        // this method, so one notification covers them all and the tick loop stays untouched.
+        if (session.getMode() instanceof models.game.scoring.ZombieDeathListener listener) {
+            listener.onZombieKilled(session, zombie, killer, session.getTimeTicks());
         }
         dropPlantFood(session, zombie, events);
         dropStolenSun(session, zombie, events);

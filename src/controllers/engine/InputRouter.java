@@ -63,7 +63,7 @@ public class InputRouter {
 
     // The leaderboard opens sorted by highest score first; this is also the ordering restored whenever
     // the player runs "leaderboard show".
-    private static final LbColumn DEFAULT_LB_COLUMN = LbColumn.MYOPOINT;
+    private static final LbColumn DEFAULT_LB_COLUMN = LbColumn.MEOW_POINT;
     private static final boolean DEFAULT_LB_ASCENDING = false;
 
     public InputRouter(AppSession appSession) {
@@ -98,6 +98,9 @@ public class InputRouter {
         switch (appSession.getCurrentMenu()){
             case MAIN_MENU :
                 if(MainMenuRegex.LOG_OUT.matches(input)) {logout(); return;}
+                // The spec asks for the scoring game to be reachable straight from the main menu, so it
+                // is offered here as well as inside the play menu.
+                if(PlayMenuRegex.PLAY_SCORING_GAME.matches(input)) {launchScoringGame(); return;}
                 break;
             case SETTINGS_MENU :
                 if(SettingMenuRegex.CHANGE_DL.matches(input)){
@@ -210,6 +213,23 @@ public class InputRouter {
             return true;
         }
         return false;
+    }
+
+    // Starts the daily scoring game. It plays like an adventure level, so it routes through seed
+    // selection first and the plants menu's "start" launches the loop -- the same path Zombotany takes.
+    private void launchScoringGame(){
+        models.user.User user = appSession.getCurrentUser();
+        if(user == null){
+            allMenuRenderer.invalidCommand();
+            return;
+        }
+        models.game.Level level = factories.MinigameFactory.createScoringGame();
+        GameSession session = new GameSession(user.getProfile(), level);
+        appSession.setCurrentGameSession(session);
+        appSession.setCurrentMenu(MenuType.PLANTS_MENU);
+        playMenuRenderer.enterChapter(new utils.Result(true,
+                "Scoring Game -- today's lawn is the same for every player. Pick your plants, then "
+                        + "\"start\". Your best Meow Points go on the leaderboard."));
     }
 
     // Starts a mini-game from the Travel Log. Mini-games skip seed selection, so the GameEngine loop is
@@ -372,6 +392,10 @@ public class InputRouter {
     }
 
     private boolean handlePlayMenuExecute(String input) {
+        if(PlayMenuRegex.PLAY_SCORING_GAME.matches(input)){
+            launchScoringGame();
+            return true;
+        }
         if(PlayMenuRegex.ENTER_CHAPTER.matches(input)){
             new EnterChapterCommand(PlayMenuRegex.ENTER_CHAPTER.getGroup(input , "chapter") ,
                     appSession.getCurrentUser().getProfile(), playMenuRenderer).execute();

@@ -52,8 +52,10 @@ public class ToggleSeedCommand implements Command {
         // Profile keys are lower-cased while the level pool uses display names -> compare ignoring case.
         boolean unlocked = owned != null && owned.entrySet().stream()
                 .anyMatch(e -> e.getKey().equalsIgnoreCase(plantName) && e.getValue() > 0);
-        LevelTemplate levelTemplate = gameSession.getLevel().getTemplate();
-        List<String> available = levelTemplate.getAvailablePlants();
+        // Read the pool off the Level, not its template: a level built without a template (the
+        // scoring game, Zombotany and the other generated levels) carries its plant pool directly, and
+        // going through the template dereferenced null and crashed seed selection outright.
+        List<String> available = gameSession.getLevel().getAvailablePlants();
         boolean allowedInLevel = available != null
                 && available.stream().anyMatch(p -> p.equalsIgnoreCase(plantName));
         return unlocked && allowedInLevel;

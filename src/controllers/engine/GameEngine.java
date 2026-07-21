@@ -29,7 +29,12 @@ public class GameEngine {
         this.combatSystem = new CombatSystem();
         this.sunSystem = new SunSystem();
         this.timeSystem = new TimeSystem();
-        this.waveSystem = new WaveSystem();
+        // The scoring game must deal every player the same lawn on a given day, so its wave system runs
+        // off the day's seed instead of an unseeded Random. That single decision covers which zombies
+        // each wave buys and which lanes they walk down -- everything WaveSystem randomises.
+        this.waveSystem = gameSession.getMode() instanceof models.game.gamemodes.ScoringMode scoring
+                ? new WaveSystem(new java.util.Random(scoring.getSeed()))
+                : new WaveSystem();
         this.questSystem = new QuestSystem();
         this.environmentSystem = new EnvironmentSystem();
         this.combatSystem.setQuestSystem(questSystem);   // combat reports kills/losses to the quest tally
@@ -104,6 +109,11 @@ public class GameEngine {
         if (before != GameState.PLAYING || after == GameState.PLAYING) {
             return;
         }
+        // Settle the scoring game BEFORE the save below, so the run's Meow Points are on the profile by
+        // the time it is written. It also has to run before anything else touches the board, because
+        // two of its rules read the final state (sun left unspent, mowers never triggered).
+        settleScoringGame();
+
         // Everything a level earns -- loot coins/gems/pots from kills, campaign progress, quest rewards,
         // news -- lived only in memory until now: nothing in the combat loop touches the database. If the
         // process died here the whole level's winnings went with it. Persist once, at the one point where
@@ -133,6 +143,31 @@ public class GameEngine {
         }
     }
 
+
+    // Closes out a scoring-game run: applies the end-of-level Meow Point rules, shows the player the full
+    // breakdown, and keeps the score on the profile if it beat their previous best (which is what the
+    // leaderboard's Meow Points column reads). A non-scoring level does nothing here.
+    private void settleScoringGame() {
+        if (!(gameSession.getMode() instanceof models.game.gamemodes.ScoringMode scoring)) {
+            return;
+        }
+        int score = scoring.settleAndScore(gameSession);
+        inGameRenderer.render(new Result(true, scoring.getMeowPoints().buildScorecard()));
+
+        models.user.Profile profile = gameSession.getPlayer();
+        if (profile == null) {
+            return;
+        }
+        int best = profile.getBestNumberOfMeowPoints();
+        if (score > best) {
+            profile.setBestNumberOfMeowPoints(score);
+            inGameRenderer.render(new Result(true, "A new personal best! " + score
+                    + " Meow Points (previous best: " + best + "). The leaderboard has been notified."));
+        } else {
+            inGameRenderer.render(new Result(true, "You scored " + score
+                    + " Meow Points. Your best is still " + best + " -- go again!"));
+        }
+    }
 
     private boolean routeAndExecute(String input) {
         if (InGameRegex.COLLECT_SUN.matches(input)) {

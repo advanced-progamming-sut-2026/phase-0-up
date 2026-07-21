@@ -6,7 +6,13 @@ import models.game.Wave;
 import models.game.gamemodes.BeghouledMode;
 import models.game.gamemodes.IZombieMode;
 import models.game.gamemodes.StandardMode;
+import models.game.gamemodes.ScoringMode;
 import models.game.gamemodes.VaseBreakerMode;
+import models.templates.PlantTemplate;
+import utils.Constants;
+import utils.registry.PlantRegistry;
+
+import java.util.Collections;
 import models.game.gamemodes.WallnutBowlingMode;
 import utils.Constants;
 
@@ -19,6 +25,39 @@ import java.util.List;
 // builds, so a null terrain layout is fine.
 public final class MinigameFactory {
     private MinigameFactory() { }
+
+    // The scoring game (بازی امتیازی): an adventure-style level whose waves are generated from the
+    // day's seed, so everyone playing on this date meets the same assault and their Meow Points compare.
+    // Unlike the other mini-games this one DOES use seed selection and sun, because it plays like a
+    // normal level -- only the scoring is special.
+    public static Level createScoringGame() {
+        ScoringMode mode = new ScoringMode();
+        Wave[] waves = DailyWaveGenerator.generate(mode.getSeed());
+        return new Level(waves, null, mode, Constants.SCORING_GAME_STARTING_SUN,
+                scoringPlantPool(), waves.length, Constants.DEFAULT_SEED_SLOTS, null);
+    }
+
+    // Everything the player may bring to a scoring run. Deliberately the whole catalogue rather than a
+    // fixed hand -- the mode is about out-scoring other people with your own strategy, so the loadout
+    // is the strategy. Seed selection intersects this with what the player actually owns, so the pool
+    // being broad never hands anyone a plant they have not unlocked.
+    //
+    // Water plants and lily pads are left out: this lawn is dry, so they could never be placed.
+    private static List<String> scoringPlantPool() {
+        List<String> pool = new ArrayList<>();
+        for (PlantTemplate t : PlantRegistry.getInstance().getAllPlantTemplates().values()) {
+            if (t.getName() == null || t.getName().isBlank() || t.isPlatform()) {
+                continue;
+            }
+            List<String> tags = t.getTags();
+            if (tags != null && tags.contains("WATER")) {
+                continue;
+            }
+            pool.add(t.getName());
+        }
+        Collections.sort(pool);   // stable order, so the menu reads the same for everyone
+        return pool;
+    }
 
     public static Level createVasebreaker(int difficulty) {
         VaseBreakerMode mode = new VaseBreakerMode(Math.max(1, difficulty));

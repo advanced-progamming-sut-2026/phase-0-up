@@ -14,17 +14,17 @@ public class LeaderboardEntry {
     private final int minigamesCompleted;
     private final int dailyQuests;
     private final int nonDailyQuests;
-    private final int bestMyoPoint;
+    private final int bestMeowPoint;
 
     public LeaderboardEntry(String username, int lastChapter, int lastLevel, int minigamesCompleted,
-                            int dailyQuests, int nonDailyQuests, int bestMyoPoint) {
+                            int dailyQuests, int nonDailyQuests, int bestMeowPoint) {
         this.username = username;
         this.lastChapter = lastChapter;
         this.lastLevel = lastLevel;
         this.minigamesCompleted = minigamesCompleted;
         this.dailyQuests = dailyQuests;
         this.nonDailyQuests = nonDailyQuests;
-        this.bestMyoPoint = bestMyoPoint;
+        this.bestMeowPoint = bestMeowPoint;
     }
 
     // Snapshot a registered player's progression into a leaderboard row. passedMiniGames maps each
@@ -72,8 +72,8 @@ public class LeaderboardEntry {
         return nonDailyQuests;
     }
 
-    public int getBestMyoPoint() {
-        return bestMyoPoint;
+    public int getBestMeowPoint() {
+        return bestMeowPoint;
     }
 
     // Number of campaign levels the player has actually finished. lastChapter/lastLevel point at the

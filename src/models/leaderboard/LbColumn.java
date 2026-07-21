@@ -3,14 +3,16 @@ package models.leaderboard;
 import java.util.Comparator;
 
 // A sortable leaderboard column. Each column knows its table header, the CLI tokens a player can name
-// it by (so "leaderboard sort -c score" and "-c mu-points" both resolve to MYOPOINT), and how to
+// it by (so "leaderboard sort -c score" and "-c meow-points" both resolve to MEOW_POINT), and how to
 // compare two rows on it. Sorting logic lives here so the system and renderer never duplicate it.
 public enum LbColumn {
     LEVEL("Stage", "level", "levels", "stage", "stages", "chapter"),
     MINIGAMES("Mini-games", "minigames", "minigame", "mini-games", "mini-game", "mg"),
     DAILY_QUESTS("Daily Quests", "daily", "daily-quests", "dailyquests", "dq"),
     NONDAILY_QUESTS("Non-Daily Quests", "nondaily", "non-daily", "nondaily-quests", "non-daily-quests", "ndq"),
-    MYOPOINT("Mu-Points", "score", "scores", "points", "mu", "mu-points", "mupoints", "myopoint", "myo");
+    MEOW_POINT("Meow Points", "score", "scores", "points",
+            "meow", "meow-points", "meowpoints",
+            "mu", "mu-points", "mupoints", "myopoint", "myo");   // older spellings still accepted
 
     private final String displayName;
     private final String[] tokens;
@@ -54,7 +56,7 @@ public enum LbColumn {
             case MINIGAMES -> Comparator.comparingInt(LeaderboardEntry::getMinigamesCompleted);
             case DAILY_QUESTS -> Comparator.comparingInt(LeaderboardEntry::getDailyQuests);
             case NONDAILY_QUESTS -> Comparator.comparingInt(LeaderboardEntry::getNonDailyQuests);
-            case MYOPOINT -> Comparator.comparingInt(LeaderboardEntry::getBestMyoPoint);
+            case MEOW_POINT -> Comparator.comparingInt(LeaderboardEntry::getBestMeowPoint);
         };
         return byColumn.thenComparing(LeaderboardEntry::getUsername, String.CASE_INSENSITIVE_ORDER);
     }
