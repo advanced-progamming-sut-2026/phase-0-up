@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- Plays the game. This is an Application config rather than a Gradle task because the game is an
+       interactive REPL and IntelliJ's own console handles typed input most reliably this way.
+       WORKING_DIRECTORY must stay $PROJECT_DIR$: data/*.json and users_database.json are relative. -->
+  <configuration default="false" name="Play PvZ2" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="Main" />
+    <module name="PvZ2-AP-Project.main" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

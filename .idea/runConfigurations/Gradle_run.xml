@@ -1,0 +1,26 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- Runs the game through Gradle's `run` task. Useful for checking the build itself works end to
+       end; stdin is wired in build.gradle. If typing into the console misbehaves here, use the
+       "Play PvZ2" Application config instead -- same game, more reliable console. -->
+  <configuration default="false" name="run (Gradle)" type="GradleRunConfiguration" factoryName="Gradle">
+    <ExternalSystemSettings>
+      <option name="executionName" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$" />
+      <option name="externalSystemIdString" value="GRADLE" />
+      <option name="scriptParameters" value="" />
+      <option name="taskDescriptions">
+        <list />
+      </option>
+      <option name="taskNames">
+        <list>
+          <option value="run" />
+        </list>
+      </option>
+      <option name="vmOptions" />
+    </ExternalSystemSettings>
+    <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+    <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+    <DebugAllEnabled>false</DebugAllEnabled>
+    <method v="2" />
+  </configuration>
+</component>
