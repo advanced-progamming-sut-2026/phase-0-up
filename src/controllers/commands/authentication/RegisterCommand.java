@@ -6,10 +6,12 @@ import controllers.engine.MenuType;
 import models.user.AppSession;
 import models.user.Gender;
 import models.user.User;
+import utils.Constants;
 import utils.Result;
 import utils.regex.SignUpMenuRegex;
 import utils.storage.DatabaseManager;
 import utils.storage.PasswordHasher;
+import utils.storage.SecurityAnswer;
 import utils.validation.*;
 import views.InputHandler;
 import views.OutputHandler;
@@ -59,10 +61,6 @@ public class RegisterCommand implements Command {
         }
 
         registerNewUser(genderType, securityData.questionNumber(), securityData.answer());
-
-        signUpMenuRenderer.register(new Result(true, "User successfully registered"));
-        EnterMenuCommand enterMenuCommand = new EnterMenuCommand(appSession , MenuType.LOGIN_MENU.getMenuName() , allMenuRenderer);
-        enterMenuCommand.execute();
     }
 
     private boolean validateCredentials() {
@@ -108,38 +106,62 @@ public class RegisterCommand implements Command {
                 return null;
             }
 
-            if (SignUpMenuRegex.SECURITY_QUESTION.matches(input)) {
-                String numberString = SignUpMenuRegex.SECURITY_QUESTION.getGroup(input, "questionNumber");
-
-                if (!numberString.matches("\\d+")) {
-                    OutputHandler.showMessage("Invalid question number");
-                    continue;
-                }
-
-                questionNumber = Integer.parseInt(numberString);
-                if (questionNumber < 1 || questionNumber > 5) {
-                    OutputHandler.showMessage("Pick a question by number, 1 to 5.");
-                    continue;
-                }
-
-                answer = SignUpMenuRegex.SECURITY_QUESTION.getGroup(input, "answer");
-                String answerConfirm = SignUpMenuRegex.SECURITY_QUESTION.getGroup(input, "answerConfirm");
-
-                if (!answer.equalsIgnoreCase(answerConfirm)) {
-                    OutputHandler.showMessage("Those two answers don't match. Try again!");
-                } else {
-                    break;
-                }
+            if (!SignUpMenuRegex.SECURITY_QUESTION.matches(input)) {
+                // Without this the loop silently re-printed the question list forever, leaving the
+                // player with no idea their command was malformed.
+                OutputHandler.showMessage("Use: pick question -q <1-5> -a <answer> -c <answer>");
+                continue;
             }
+
+            String numberString = SignUpMenuRegex.SECURITY_QUESTION.getGroup(input, "questionNumber");
+
+            // Bounded to the digits a question number can plausibly have: "-q 99999999999" matches
+            // \d+ but overflows parseInt, which used to crash registration outright.
+            if (!numberString.matches("\\d{1,2}")) {
+                OutputHandler.showMessage("Invalid question number");
+                continue;
+            }
+
+            questionNumber = Integer.parseInt(numberString);
+            if (questionNumber < 1 || questionNumber > Constants.SECURITY_QUESTIONS.length) {
+                OutputHandler.showMessage("Pick a question by number, 1 to "
+                        + Constants.SECURITY_QUESTIONS.length + ".");
+                continue;
+            }
+
+            answer = SignUpMenuRegex.SECURITY_QUESTION.getGroup(input, "answer");
+            String answerConfirm = SignUpMenuRegex.SECURITY_QUESTION.getGroup(input, "answerConfirm");
+
+            if (SecurityAnswer.isBlank(answer)) {
+                OutputHandler.showMessage("An empty answer won't fool anyone. Try again!");
+                continue;
+            }
+
+            // Compared the same way recovery will compare it, so "Fluffy" and "fluffy " can never be
+            // accepted as a matching pair here and then fail to match later.
+            if (!SecurityAnswer.sameAnswer(answer, answerConfirm)) {
+                OutputHandler.showMessage("Those two answers don't match. Try again!");
+                continue;
+            }
+            break;
         }
         return new SecurityQuestionData(questionNumber, answer);
     }
 
     private void registerNewUser(Gender genderType, int questionNumber, String questionAnswer) {
         String hashedPassword = PasswordHasher.hash(password);
-        String hashedQuestionAnswer = PasswordHasher.hash(questionAnswer);
-        DatabaseManager.getInstance().addUser(new User(username, nickname, email, genderType,
+        // Hashed through SecurityAnswer, never PasswordHasher directly: recovery verifies against the
+        // same canonical form, and hashing a raw answer here is what made every recovery attempt fail.
+        String hashedQuestionAnswer = SecurityAnswer.hash(questionAnswer);
+        boolean added = DatabaseManager.getInstance().addUser(new User(username, nickname, email, genderType,
                 hashedPassword, questionNumber - 1, hashedQuestionAnswer));
+        if (!added) {
+            signUpMenuRenderer.register(new Result(false, "Username already exists"));
+            return;
+        }
         DatabaseManager.getInstance().saveAll();
+
+        signUpMenuRenderer.register(new Result(true, "User successfully registered"));
+        new EnterMenuCommand(appSession, MenuType.LOGIN_MENU.getMenuName(), allMenuRenderer).execute();
     }
 }

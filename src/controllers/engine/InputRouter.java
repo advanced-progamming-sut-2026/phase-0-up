@@ -437,6 +437,12 @@ public class InputRouter {
 
     private boolean handleProfileMenuExecute(String input) {
         User user = appSession.getCurrentUser();
+        // Belt and braces alongside the gate in EnterMenuCommand: every command below dereferences the
+        // user, so reaching here logged out must report, not crash.
+        if(user == null){
+            allMenuRenderer.enterMenu(new utils.Result(false, "Log in first -- the lawn is members only."));
+            return true;
+        }
         if(ProfileMenuRegex.CHANGE_USERNAME.matches(input)) {
             new ProfileCommands( user, EditAction.USERNAME ,
                     ProfileMenuRegex.CHANGE_USERNAME.getGroup(input , "username") , null, profileMenuRenderer).execute();

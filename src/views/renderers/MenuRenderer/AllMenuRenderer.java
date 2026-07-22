@@ -21,7 +21,7 @@ public class AllMenuRenderer {
     }
 
     public void invalidCommand(){
-        OutputHandler.showMessage("That's not a command I know. Try \"menu show current\" to see where "
+        OutputHandler.showMessage("Invalid command! Try \"menu show current\" to see where "
                 + "you are, or check GUIDE.md.");
     }
 

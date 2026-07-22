@@ -26,6 +26,16 @@ public class EnterMenuCommand implements Command {
             return;
         }
 
+        // Every menu except sign-up and login is behind authentication. Without this gate the
+        // fall-through below let a logged-out visitor walk from SIGNUP_MENU straight into the
+        // profile/play/settings/news menus (case SIGNUP_MENU has no break, so it dropped into the
+        // MAIN_MENU arm), where commands then dereferenced a null current user.
+        if (type != MenuType.SIGNUP_MENU && type != MenuType.LOGIN_MENU
+                && appSession.getCurrentUser() == null) {
+            allMenuRenderer.enterMenu(new Result(false, "Log in first -- the lawn is members only."));
+            return;
+        }
+
         MenuType currentMenu = appSession.getCurrentMenu();
         if (currentMenu == type){
             allMenuRenderer.enterMenu(new Result(false,
