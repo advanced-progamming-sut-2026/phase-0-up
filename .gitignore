@@ -13,4 +13,14 @@ target/
 
 # گراف دانش (graphify) - خروجی تولیدشده، نیازی به کامیت ندارد
 graphify-out/
-/GUIDE.md
+
+# خروجی و کش گریدل (wrapper خودش باید کامیت شود)
+build/
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# سیو بازی: بازی در پایان هر مرحله روی این فایل می‌نویسد، پس اگر کامیت شود
+# هر بار که یکی از اعضای تیم بازی کند کانفلیکت می‌خورد. ضمنا حاوی اطلاعات
+# حساب کاربران است. بازی خودش موقع اجرا می‌سازدش.
+users_database.json

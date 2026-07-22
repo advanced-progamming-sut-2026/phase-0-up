@@ -1,0 +1,116 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'checkstyle'
+}
+
+group = 'ir.sharif.ap.pvz2'
+version = '1.0-SNAPSHOT'
+
+// Java 21 is the floor, not a preference: models/map/Row.java uses List.getFirst(), which is a
+// SequencedCollection method added in 21. Compiling with --release 17 fails on exactly that call.
+// A toolchain (rather than sourceCompatibility) means Gradle will fetch a matching JDK if a teammate
+// is on a different one, instead of failing with a confusing error.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Replaces the hand-managed libs/gson-2.14.0.jar -- same version, now resolved and cached by Gradle.
+    implementation 'com.google.code.gson:gson:2.14.0'
+
+    testImplementation platform('org.junit:junit-bom:5.11.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// This project keeps its sources in src/ (packages sit directly under it) rather than the Gradle
+// default src/main/java, so the layout is declared explicitly instead of moving 388 files and handing
+// every teammate a merge conflict. Tests live in test/ for the same reason -- putting them under
+// src/test/java would nest them inside the main source set and compile them into the game.
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+            // The graphify knowledge-graph cache lives at src/graphify-out (~6 MB of JSON, git-ignored).
+            // It holds no sources, but excluding it keeps it out of Gradle's input snapshotting so it
+            // cannot slow the build or churn up-to-date checks.
+            exclude 'graphify-out/**'
+        }
+        resources { srcDirs = [] }      // data/ is read from disk at runtime, not from the classpath
+    }
+    test {
+        java { srcDirs = ['test'] }
+        resources { srcDirs = [] }
+    }
+}
+
+application {
+    // Main lives in the default package, at src/Main.java.
+    mainClass = 'Main'
+}
+
+// The sources contain Persian comments and the game prints Persian/box-drawing text, so every step
+// that touches bytes is pinned to UTF-8. Without this the build inherits the platform encoding
+// (windows-1252 here) and both the comments and the output are mangled.
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('run') {
+    // The game is an interactive REPL. Gradle does NOT wire stdin to the application by default, so
+    // without this the game reads EOF immediately and exits before you can type a single command.
+    standardInput = System.in
+
+    // data/*.json and users_database.json are opened with RELATIVE paths, so the process has to start
+    // in the project root. Gradle already defaults to this, but it is pinned because the whole game
+    // fails to load its levels if it ever changes.
+    workingDir = rootDir
+
+    jvmArgs '-Dfile.encoding=UTF-8'
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    workingDir = rootDir             // tests load the same relative data files the game does
+    jvmArgs '-Dfile.encoding=UTF-8'
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
+}
+
+// The grading sheet scores Checkstyle findings, so the existing checkstyle.xml is wired in and can be
+// run with `gradlew checkstyleMain`. It reports rather than fails the build: a style warning should
+// not stop you from running the game while you are mid-change.
+checkstyle {
+    toolVersion = '10.17.0'          // supports the Checkstyle 1.3 DTD that checkstyle.xml declares
+    configFile = file('checkstyle.xml')
+    ignoreFailures = true
+    maxWarnings = Integer.MAX_VALUE
+}
+
+// Bundles the game plus Gson into one runnable jar: `gradlew fatJar`, then
+// `java -jar build/libs/PvZ2-AP-Project-1.0-SNAPSHOT-all.jar` FROM THE PROJECT ROOT (the relative
+// data paths still apply -- the jar cannot carry data/ or the save file, which is written at runtime).
+tasks.register('fatJar', Jar) {
+    archiveClassifier = 'all'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': application.mainClass.get()
+    }
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
