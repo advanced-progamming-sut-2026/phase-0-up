@@ -196,12 +196,94 @@
     "stayLoggedIn": true,
     "profile": {
       "gameNumbers": 0,
-      "coins": 10000500,
-      "gems": 48,
+      "coins": 9997600,
+      "gems": 58,
       "plantFoodCount": 0,
       "difficultyLevel": 3,
       "bestNumberOfMeowPoints": 0,
-      "newsList": [],
+      "newsList": [
+        {
+          "id": 1,
+          "title": "A New Sprout Joins the Fight",
+          "description": "twin sunflower has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 2,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor1 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 3,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDefault and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 4,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieExplorer and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 5,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor2 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 6,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieRa and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 7,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieImp and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 8,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieGargantuar and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 9,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieTombRaiser and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        }
+      ],
       "unlockedPlants": [
         "sunflower",
         "peashooter",
@@ -209,7 +291,8 @@
         "potato mine",
         "snow pea",
         "cherry bomb",
-        "garlic"
+        "garlic",
+        "twin sunflower"
       ],
       "lockedPlants": [],
       "ownedSeedPackets": {
@@ -218,8 +301,9 @@
         "garlic": 1,
         "snow pea": 21,
         "cherry bomb": 15,
-        "peashooter": 31,
-        "sunflower": 11
+        "peashooter": 26,
+        "sunflower": 11,
+        "twin sunflower": 1
       },
       "plantsLevels": {
         "wall-nut": 1,
@@ -227,12 +311,12 @@
         "garlic": 1,
         "snow pea": 1,
         "cherry bomb": 2,
-        "peashooter": 1,
-        "sunflower": 1
+        "peashooter": 2,
+        "sunflower": 1,
+        "twin sunflower": 1
       },
       "boostedSeeds": [
-        "wall-nut",
-        "peashooter"
+        "wall-nut"
       ],
       "myGreenHouse": {
         "pots": [
@@ -379,12 +463,21 @@
         "cols": 5
       },
       "lastChapter": 1,
-      "lastLevel": 1,
+      "lastLevel": 2,
       "passedMiniGames": {},
       "dailyQuestsDone": 0,
       "noneDailyQuestsDone": 0,
       "hasBoughtDailyOfferToday": false,
-      "seenZombieAliases": [],
+      "seenZombieAliases": [
+        "ZombieArmor1",
+        "ZombieDefault",
+        "ZombieArmor2",
+        "ZombieRa",
+        "ZombieTombRaiser",
+        "ZombieExplorer",
+        "ZombieImp",
+        "ZombieGargantuar"
+      ],
       "completedQuestIds": [],
       "winStreakAtMaxDifficulty": 0,
       "zombieKillsByChapter": {}
