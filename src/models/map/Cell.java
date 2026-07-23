@@ -46,6 +46,18 @@ public class Cell {
         this.terrain.add(terrain);
     }
 
+    // Drops any terrain that has been destroyed (a grave shot to 0 HP, a melted ice block) off the
+    // tile. Damage and removal are separate steps -- a terrain marks itself destroyed but cannot pull
+    // itself out of the cell it does not know about -- so the sweep is centralised here and run every
+    // tick. Without it a broken grave lingers in the list, and everything that scans terrain has to
+    // remember to re-check isDestroyed() forever. Returns true if anything was actually removed.
+    public boolean removeDestroyedTerrain() {
+        if (terrain == null || terrain.isEmpty()) {
+            return false;
+        }
+        return terrain.removeIf(Terrain::isDestroyed);
+    }
+
     public Plant getCurrentPlant(){
         return currentPlant;
     }

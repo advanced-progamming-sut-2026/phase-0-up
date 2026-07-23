@@ -5,11 +5,19 @@ import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import java.util.List;
 
+// As ForwardStandardTrigger, but only sees as far as the plant's shots actually travel. A straight
+// firing short-range plant also opens up on a grave once the grave is inside that same reach.
 public class ForwardShortRangeTrigger implements TriggerStrategy {
     private double range;
+    private final boolean targetsGraves;
 
     public ForwardShortRangeTrigger(double range) {
+        this(range, false);
+    }
+
+    public ForwardShortRangeTrigger(double range, boolean targetsGraves) {
         this.range = range;
+        this.targetsGraves = targetsGraves;
     }
 
     @Override
@@ -26,6 +34,6 @@ public class ForwardShortRangeTrigger implements TriggerStrategy {
                 }
             }
         }
-        return false;
+        return targetsGraves && GraveSight.graveAhead(owner, gameSession, range);
     }
 }

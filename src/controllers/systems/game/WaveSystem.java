@@ -26,10 +26,11 @@ import java.util.Random;
 //
 // Timing rules:
 //   * The level starts its own first wave once the opening delay has run down, counted from level
-//     start. That delay is deliberately longer than any gap between waves -- it is the player's time
-//     to build a defence before anything walks on.
-//   * Every wave after the first needs BOTH its delay to elapse AND 75% of the previous wave's health
-//     to be gone. A player who stalls does not get the next wave for free.
+//     start. It is the player's time to build a defence before anything walks on, and it is the only
+//     clock in this system -- wave 1 has no predecessor, so nothing else could release it.
+//   * Every wave after the first is released purely by damage: as soon as 75% of the current wave's
+//     total health is gone, the next wave launches immediately, no matter how long ago the last one
+//     started. Clearing a wave quickly brings the next one on quickly.
 //
 // and the final "flag" wave is twice the previous wave's difficulty, unless the level authors an
 // explicit budget per wave -- an authored number always wins, which is what levels.json ships today.
@@ -102,18 +103,21 @@ public class WaveSystem {
         return index >= 0 && index < waves.length ? waves[index] : null;
     }
 
-    // The next wave needs its delay to have elapsed AND the previous wave to be 75% destroyed. The
-    // opening wave has no predecessor to grind down, so its delay alone releases it.
+    // The next wave is released by health alone: the moment 75% of the current wave's total HP is
+    // gone, the next one launches, however little time has passed since the last one. There is
+    // deliberately no between-wave timer any more -- a player who clears fast is rewarded with
+    // pressure rather than made to wait out a cooldown.
+    //
+    // The opening wave is the one exception, and it is not a between-wave delay: wave 1 has no
+    // predecessor to grind down, so a health rule cannot gate it at all. Its delay is counted from
+    // level start and is the player's time to plant a defence before anything walks on.
     private boolean shouldStartNextWave(GameSession gameSession, Wave next, long currentTick) {
         // Never overlap waves: the current one is not done arriving yet.
         if (!pendingSpawns.isEmpty()) {
             return false;
         }
-        if (currentTick - lastWaveTick < delayTicksFor(gameSession, next)) {
-            return false;
-        }
         if (activeWave == null) {
-            return true;
+            return currentTick - lastWaveTick >= delayTicksFor(gameSession, next);
         }
         return activeWave.hpLostFraction() >= Constants.NEXT_WAVE_HP_THRESHOLD;
     }
@@ -220,15 +224,12 @@ public class WaveSystem {
         return difficultyLevel(gameSession) / (double) Constants.DEFAULT_DIFFICULTY_LEVEL;
     }
 
-    // Higher difficulty shortens the wait between waves. The opening wait is the level's authored
-    // first delay or FIRST_WAVE_DELAY_SECONDS, whichever is longer, which keeps it clear of every
-    // between-wave gap the levels author.
+    // The opening wait before wave 1, the only delay left in the system: the level's authored first
+    // delay or FIRST_WAVE_DELAY_SECONDS, whichever is longer. Higher difficulty shortens it. Waves
+    // after the first are released by the 75% health rule alone and never consult this.
     private long delayTicksFor(GameSession gameSession, Wave wave) {
         int authored = wave.getDelay() > 0 ? wave.getDelay() : Constants.DEFAULT_WAVE_DELAY_SECONDS;
-        int delaySeconds = activeWave == null
-                ? Math.max(Constants.FIRST_WAVE_DELAY_SECONDS, authored)
-                : authored;
-        return scaledTicks(gameSession, delaySeconds);
+        return scaledTicks(gameSession, Math.max(Constants.FIRST_WAVE_DELAY_SECONDS, authored));
     }
 
     // Higher difficulty also tightens the gap between zombies inside a wave.

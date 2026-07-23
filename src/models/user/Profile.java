@@ -363,6 +363,16 @@ public class Profile {
         return getZombieKillsByChapter().getOrDefault(chapter.toLowerCase().trim(), 0);
     }
 
+    // The best any single chapter has reached. A chapter-kill quest completes on whichever chapter
+    // gets there first, so this is the number the travel log shows as that quest's progress.
+    public int getBestChapterZombieKills() {
+        int best = 0;
+        for (int kills : getZombieKillsByChapter().values()) {
+            best = Math.max(best, kills);
+        }
+        return best;
+    }
+
     public boolean isHasBoughtDailyOfferToday() {
         return hasBoughtDailyOfferToday;
     }

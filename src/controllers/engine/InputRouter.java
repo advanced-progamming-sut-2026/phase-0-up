@@ -92,6 +92,7 @@ public class InputRouter {
     }
 
     private void routeAndExecute(String input) {
+        if (AllMenuRegex.EXIT_APPLICATION.matches(input)) {exitApplication(); return;}
         if (AllMenuRegex.EXIT_MENU.matches(input)) {exitMenu(); return;}
         else if (AllMenuRegex.ENTER_MENU.matches(input)) {enterMenu(input); return;}
         else if (AllMenuRegex.SHOW_CURRENT.matches(input)) {new ShowCurrentMenuCommand(appSession, allMenuRenderer, mainMenuRenderer).execute(); return;}
@@ -248,25 +249,25 @@ public class InputRouter {
             GameSession session = new GameSession(user.getProfile(), level);
             appSession.setCurrentGameSession(session);
             travelLogRenderer.launchingMinigame("Vasebreaker", Math.max(1, difficulty));
-            new GameEngine(session).startLoop();
+            runGame(session);
         } else if(game.equals("wallnutbowling") || game.equals("bowling") || game.equals("wallnut")){
             models.game.Level level = factories.MinigameFactory.createWallnutBowling(difficulty);
             GameSession session = new GameSession(user.getProfile(), level);
             appSession.setCurrentGameSession(session);
             travelLogRenderer.launchingMinigame("Wall-nut Bowling", Math.max(1, difficulty));
-            new GameEngine(session).startLoop();
+            runGame(session);
         } else if(game.equals("izombie") || game.equals("i,zombie") || game.equals("izombies")){
             models.game.Level level = factories.MinigameFactory.createIZombie(difficulty);
             GameSession session = new GameSession(user.getProfile(), level);
             appSession.setCurrentGameSession(session);
             travelLogRenderer.launchingMinigame("I, Zombie", Math.max(1, difficulty));
-            new GameEngine(session).startLoop();
+            runGame(session);
         } else if(game.equals("beghouled") || game.equals("bejeweled")){
             models.game.Level level = factories.MinigameFactory.createBeghouled(difficulty);
             GameSession session = new GameSession(user.getProfile(), level);
             appSession.setCurrentGameSession(session);
             travelLogRenderer.launchingMinigame("Beghouled", Math.max(1, difficulty));
-            new GameEngine(session).startLoop();
+            runGame(session);
         } else if(game.equals("zombotany")){
             // Zombotany is a normal level, so it goes through seed selection first; the plants menu's
             // "start" then launches the game loop (as for any adventure level).
@@ -310,8 +311,7 @@ public class InputRouter {
         }
         else if(SeedSelectionRegex.START_GAME.matches(input)){
             new StartLevelCommand(gameSession , appSession).execute();
-            GameEngine gameEngine = new GameEngine(gameSession);
-            gameEngine.startLoop();
+            runGame(gameSession);
             return true;
         }
         return false;
@@ -486,6 +486,29 @@ public class InputRouter {
         this.running = false;
     }
 
+    // "exit" / "quit" from any menu: persist first, then drop out of the input loop so main() returns
+    // and the JVM ends on its own. Nothing is force-killed -- Runtime.exit here would skip the save and
+    // strand anything the caller still had to do.
+    private void exitApplication() {
+        try {
+            DatabaseManager.getInstance().saveAll();
+        } catch (RuntimeException e) {
+            allMenuRenderer.enterMenu(new utils.Result(false,
+                    "Your progress could not be saved: " + e.getMessage()));
+        }
+        allMenuRenderer.applicationExit();
+        exitGame();
+    }
+
+    // Runs a match to its end, then puts the player back in the Play menu. Every route into the game
+    // goes through here: without it the session is left sitting in the IN_GAME menu once the loop
+    // returns, where no menu command is routed and the player is stranded.
+    private void runGame(GameSession session) {
+        new GameEngine(session).startLoop();
+        appSession.setCurrentGameSession(null);
+        appSession.setCurrentMenu(MenuType.PLAY_MENU);
+        allMenuRenderer.enterMenu(new utils.Result(true, "Back to the Play menu."));
+    }
 
     private void exitMenu() {
         if (appSession.getCurrentMenu() == MenuType.SIGNUP_MENU) exitGame();

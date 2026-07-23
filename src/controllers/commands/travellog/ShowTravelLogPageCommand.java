@@ -34,17 +34,17 @@ public class ShowTravelLogPageCommand implements Command {
         switch (page) {
             case "main":
             case "story":
-                renderer.showQuestPage("Main Quests", questSystem.getQuestsForPage(Quest.Category.MAIN, profile));
+                renderer.showQuestPage("Main Quests", questSystem.getQuestsForPage(Quest.Category.MAIN, profile), profile);
                 break;
             case "daily":
-                renderer.showQuestPage("Daily Quests", questSystem.getQuestsForPage(Quest.Category.DAILY, profile));
+                renderer.showQuestPage("Daily Quests", questSystem.getQuestsForPage(Quest.Category.DAILY, profile), profile);
                 break;
             case "epic":
             case "challenges":
-                renderer.showQuestPage("Epic Challenges", questSystem.getQuestsForPage(Quest.Category.EPIC, profile));
+                renderer.showQuestPage("Epic Challenges", questSystem.getQuestsForPage(Quest.Category.EPIC, profile), profile);
                 break;
             case "all":
-                renderer.showQuestPage("All Quests", questSystem.getSortedQuestsForLog(profile));
+                renderer.showQuestPage("All Quests", questSystem.getSortedQuestsForLog(profile), profile);
                 break;
             case "minigames":
             case "mini-games":

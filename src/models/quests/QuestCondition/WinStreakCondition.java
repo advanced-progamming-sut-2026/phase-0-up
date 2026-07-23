@@ -16,4 +16,12 @@ public class WinStreakCondition implements QuestCondition {
     public boolean isSatisfied(QuestContext ctx) {
         return ctx.getWinStreakAtMaxDifficulty() >= threshold;
     }
+
+    // Cross-level: the streak is kept on the profile between matches (and reset there by a loss), so
+    // the travel log shows how many wins of the run are already banked.
+    @Override
+    public models.quests.QuestProgress progress(models.user.Profile profile) {
+        int streak = profile == null ? 0 : profile.getWinStreakAtMaxDifficulty();
+        return models.quests.QuestProgress.crossLevel(streak, threshold);
+    }
 }

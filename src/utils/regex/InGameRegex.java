@@ -23,6 +23,9 @@ public enum InGameRegex implements Regex{
     // optional so "-l 3, 2" is also accepted. x is the column, y is the row.
     CHEAT_SPAWN_ZOMBIE("^\\s*cheat\\s+spawn-zombie\\s+-t\\s+(?<type>\\S+)\\s+-l\\s+\\(?(?<x>\\d+),\\s*(?<y>\\d+)\\)?\\s*$"),
     SWAP_PLANTS("^\\s*swap\\s+-l\\s+\\(\\s*(?<x1>\\d+)\\s*,\\s*(?<y1>\\d+)\\s*\\)\\s+\\(\\s*(?<x2>\\d+)\\s*,\\s*(?<y2>\\d+)\\s*\\)\\s*$"),
+    // Abandons the match in progress. Declared before UPGRADE_PLANT is matched at runtime because that
+    // pattern's -t group is greedy, but the two cannot collide anyway: this one takes no arguments.
+    EXIT_GAME("^\\s*exit\\s+game\\s*$"),
     UPGRADE_PLANT("^\\s*upgrade\\s+-t\\s+(?<type>.+?)\\s*$");
 
     private final String pattern;

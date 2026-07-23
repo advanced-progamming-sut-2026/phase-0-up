@@ -387,6 +387,20 @@ public class GameSession {
     };
     public void onLose(){};
 
+    // The player abandoned the match ("exit game"). Walking out counts as a loss -- the level is not
+    // completed, no campaign progress is granted -- and it runs through exactly the same state change
+    // as being overrun, so every end-of-level consequence (quest evaluation, scoring settlement, the
+    // save) fires the way it would on any other defeat. Ignored once the level has already ended, so a
+    // won level can never be retroactively turned into a loss. Returns whether it forfeited anything.
+    public boolean forfeit() {
+        if (state != GameState.PLAYING) {
+            return false;
+        }
+        state = GameState.LOST;
+        onLose();
+        return true;
+    }
+
     // First-time zombie encounter: the moment a zombie type appears in a level it is added to the
     // player's seen set, and -- only the first time -- a "New Zombie Encountered" news entry is posted
     // (which also raises the unread-news badge). Called from ZombieFactory for every zombie born, so

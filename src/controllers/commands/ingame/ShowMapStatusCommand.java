@@ -7,6 +7,8 @@ import models.game.GameSession;
 import models.game.SeedPacket;
 import models.game.gamemodes.GameMode;
 import models.map.Cell;
+import models.map.Terrains.GraveInDarkAgesTerrain;
+import models.map.Terrains.GraveTerrain;
 import models.map.Terrains.Terrain;
 import models.templates.PlantTemplate;
 import utils.Result;
@@ -114,6 +116,7 @@ public class ShowMapStatusCommand implements Command {
         status.append("Tile (").append(tileX).append(", ").append(tileY).append("):");
 
         status.append("\n  Terrain: ").append(formatTerrain(cell));
+        appendGraveStatus(status, cell);
 
         Plant plant = cell.getCurrentPlant();
         if (plant != null) {
@@ -146,6 +149,28 @@ public class ShowMapStatusCommand implements Command {
             }
         }
         return cell.isPlantable() ? "normal ground" : "not plantable";
+    }
+
+    // A grave is the one terrain with health the player can whittle down, so the tile report calls it
+    // out explicitly and shows what is left of it -- that is how you know whether one more shot (or a
+    // Grave Buster) will clear the tile. Dark Ages headstones also say whether they are holding loot.
+    private void appendGraveStatus(StringBuilder status, Cell cell) {
+        for (Terrain terrain : cell.getTerrain()) {
+            if (!(terrain instanceof GraveTerrain grave) || grave.isDestroyed()) {
+                continue;
+            }
+            status.append("\n  Grave: yes -- health: ").append(grave.getHp())
+                    .append('/').append(grave.getMaxHp());
+            if (terrain instanceof GraveInDarkAgesTerrain darkAges) {
+                status.append(darkAges.hasLoot()
+                        ? " (something is buried in there)"
+                        : " (nothing buried in there)");
+            }
+            status.append("\n  Grave blocks: planting on this tile")
+                    .append(grave.doesBlockProjectiles() ? " and shots passing through it" : "");
+            return;
+        }
+        status.append("\n  Grave: none");
     }
 
     private Zombie findZombieAt(Cell cell) {

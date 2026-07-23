@@ -169,7 +169,27 @@ public class GameEngine {
         }
     }
 
+    // Abandons the match in progress. Quitting is a forfeit, so the session is put into LOST through
+    // the same state change a defeat uses, and the normal end-of-level path runs on top of it: quests
+    // are evaluated, a scoring run is settled, and the profile is saved. Then the loop is stopped, and
+    // the caller (InputRouter.runGame) drops the player back on the Play menu.
+    private void exitGame() {
+        GameState before = gameSession.getState();
+        if (gameSession.forfeit()) {
+            inGameRenderer.render(new Result(false,
+                    "You retreat from the lawn. The zombies will be telling this story for years."));
+            announceOutcome(before, gameSession.getState());
+        } else {
+            inGameRenderer.render(new Result(true, "This lawn is already settled -- heading back."));
+        }
+        running = false;
+    }
+
     private boolean routeAndExecute(String input) {
+        if (InGameRegex.EXIT_GAME.matches(input)) {
+            exitGame();
+            return true;
+        }
         if (InGameRegex.COLLECT_SUN.matches(input)) {
             int x = Integer.parseInt(InGameRegex.COLLECT_SUN.getGroup(input, "x"));
             int y = Integer.parseInt(InGameRegex.COLLECT_SUN.getGroup(input, "y"));
