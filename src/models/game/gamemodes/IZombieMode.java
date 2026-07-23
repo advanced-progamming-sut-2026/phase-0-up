@@ -30,7 +30,6 @@ public class IZombieMode extends StandardMode {
     // Sun income per producer per tick = BASE + GROWTH * secondsElapsed, so it starts low and ramps up.
     private static final double SUN_BASE_RATE = 0.02;
     private static final double SUN_GROWTH_RATE = 0.003;
-    private static final String[] PRE_PLACED_PLANTS = {"Peashooter", "Wall-nut"};
 
     // The 10-strong pool the level rosters are drawn from (alias -> summon cost). Each level shows a
     // different slice of 5 (chosen by difficulty), never the exact same five as another level.

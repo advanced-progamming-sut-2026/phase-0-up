@@ -1,6 +1,5 @@
 package views.renderers.MenuRenderer;
 
-import controllers.engine.InputRouter;
 import controllers.engine.MenuType;
 import utils.Result;
 import views.OutputHandler;

@@ -31,7 +31,8 @@ public class RegisterCommand implements Command {
 
     private record SecurityQuestionData(int questionNumber, String answer) {}
 
-    public RegisterCommand(String input, SignUpMenuRenderer signUpMenuRenderer , AppSession appSession , AllMenuRenderer allMenuRenderer) {
+    public RegisterCommand(String input, SignUpMenuRenderer signUpMenuRenderer,
+                           AppSession appSession, AllMenuRenderer allMenuRenderer) {
         this.username = SignUpMenuRegex.SIGN_UP.getGroup(input, "username");
         this.password = SignUpMenuRegex.SIGN_UP.getGroup(input, "password");
         this.passwordConfirm = SignUpMenuRegex.SIGN_UP.getGroup(input, "passwordConfirm");

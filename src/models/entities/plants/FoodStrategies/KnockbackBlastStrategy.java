@@ -8,7 +8,8 @@ import utils.Constants;
 
 import java.util.List;
 
-// KNOCKBACK_BLAST plant-food: a huge fume cloud that damages every zombie in the lane and shoves them back (Fume-shroom).
+// KNOCKBACK_BLAST plant-food: a huge fume cloud that damages every zombie in the lane and shoves
+// them back (Fume-shroom).
 public class KnockbackBlastStrategy implements PlantFoodStrategy {
     private static final double PUSH_DISTANCE = 2.0;
     private int damage;

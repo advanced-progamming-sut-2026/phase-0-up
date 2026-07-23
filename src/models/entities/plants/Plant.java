@@ -255,7 +255,8 @@ public class Plant extends Entity {
             this.isFrozen = false;
             this.iceHits = 0;
             this.iceBlockHp = 0;
-            report("The ice around " + this.getName() + " shatters at (" + (int) getX() + ", " + getY() + "); it is free.");
+            report("The ice around " + this.getName() + " shatters at ("
+                    + (int) getX() + ", " + getY() + "); it is free.");
         }
     }
 
@@ -312,7 +313,8 @@ public class Plant extends Entity {
         if (this.octopusHp <= 0) {
             this.hasOctopus = false;
             this.octopusHp = 0;
-            report("The octopus on " + this.getName() + " is destroyed at (" + (int) getX() + ", " + getY() + "); it is free.");
+            report("The octopus on " + this.getName() + " is destroyed at ("
+                    + (int) getX() + ", " + getY() + "); it is free.");
         }
     }
 

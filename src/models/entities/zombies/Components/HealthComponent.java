@@ -207,5 +207,5 @@ public class HealthComponent {
     public Stack<HealthLayer> getLayers() {
         return layers;
     }
-    //TODO: apply poison overtime damage
+    // Poison-over-time: ticked down here, dealing poisonDps once per second for its duration.
 }

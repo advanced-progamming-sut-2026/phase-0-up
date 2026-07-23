@@ -17,7 +17,9 @@ public class Level {
     private int seedSlots;
     private char[][] terrainLayout;
 
-    public Level(Wave[] waves, LevelTemplate template, GameMode gameMode, int startingSun, List<String> availablePlants, int waveCount, int seedSlots, char[][] terrainLayout) {
+    public Level(Wave[] waves, LevelTemplate template, GameMode gameMode, int startingSun,
+                 List<String> availablePlants, int waveCount, int seedSlots,
+                 char[][] terrainLayout) {
         this.waves = waves;
         this.template = template;
         this.unlocked = false;

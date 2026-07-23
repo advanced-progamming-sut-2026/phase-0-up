@@ -20,7 +20,6 @@ import models.entities.plants.abilities.WarmthAbility;
 import models.entities.projectiles.Element;
 import models.templates.PlantTemplate;
 import models.templates.PlantTemplate.UpgradeSpec;
-import models.templates.UpgradeType;
 import utils.Constants;
 
 import java.util.ArrayList;
@@ -81,11 +80,20 @@ public final class UpgradeResolver {
         }
     }
 
+    // Split into sun-economy upgrades and combat upgrades so each switch stays inside the 50-line
+    // method limit. applySunMechanic reports whether it handled the tag; anything it does not own
+    // falls through to the combat switch.
     private static void applyMechanic(Plant plant, String tag, double value) {
         if (tag == null) {
             return;
         }
-        int ticks = secondsToTicks(value);
+        if (!applySunMechanic(plant, tag, value)) {
+            applyCombatMechanic(plant, tag, value);
+        }
+    }
+
+    // Upgrades to sun production and the plant-food economy.
+    private static boolean applySunMechanic(Plant plant, String tag, double value) {
         switch (tag) {
             case "DOUBLE_SUN_CHANCE": set(plant, ProduceSunAbility.class, a -> a.setDoubleSunChance(value)); break;
             case "GROW_TIME_REDUCTION": set(plant, ProduceSunAbility.class,
@@ -94,6 +102,16 @@ public final class UpgradeResolver {
                 set(plant, ProduceSunAbility.class, a -> a.increaseSunAmounts((int) value)); break;
             case "SUN_AMOUNT_BUFF":
                 set(plant, InstantSunBurstAbility.class, a -> a.increaseSunAmount((int) value)); break;
+            case "AUTO_PLANT_FOOD_CHANCE": plant.setAutoPlantFoodChance(value); break;
+            default: return false;
+        }
+        return true;
+    }
+
+    // Upgrades to how a plant fights: shots, reach, damage, status effects and death effects.
+    private static void applyCombatMechanic(Plant plant, String tag, double value) {
+        int ticks = secondsToTicks(value);
+        switch (tag) {
             case "PRIORITIZE_GARGANTUARS":
                 set(plant, GlobalTargetingAbility.class, a -> a.setPrioritizeGargantuars(true)); break;
             case "ADDITIONAL_PIERCE":
@@ -110,7 +128,6 @@ public final class UpgradeResolver {
             case "ZOMBIE_DAMAGE_MULTIPLIER":
                 set(plant, HypnotizeOnEatenAbility.class, a -> a.setZombieDamageMultiplier(value)); break;
             case "DURATION_EXT": set(plant, MintFamilyBoostAbility.class, a -> a.extendDuration(ticks)); break;
-            case "AUTO_PLANT_FOOD_CHANCE": plant.setAutoPlantFoodChance(value); break;
             case "TILE_RANGE_EXT": applyTileRangeExt(plant, value); break;
             case "FREEZE_DURATION_EXT": applyFreezeDurationExt(plant, ticks); break;
             case "CHILL_DURATION_EXT":

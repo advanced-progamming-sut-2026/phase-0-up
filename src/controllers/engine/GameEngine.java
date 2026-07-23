@@ -185,34 +185,47 @@ public class GameEngine {
         running = false;
     }
 
+    // Dispatches one in-game command. Split into four groups by what the command acts on, so each
+    // stays inside the 50-line limit and a new command has one obvious place to go. Order between the
+    // groups is irrelevant -- every pattern is anchored and mutually exclusive.
     private boolean routeAndExecute(String input) {
         if (InGameRegex.EXIT_GAME.matches(input)) {
             exitGame();
             return true;
         }
+        return routeSunAndTime(input)
+                || routePlantCommands(input)
+                || routeZombieCommands(input)
+                || routeViewCommands(input);
+    }
+
+    // Sun economy and the clock.
+    private boolean routeSunAndTime(String input) {
         if (InGameRegex.COLLECT_SUN.matches(input)) {
             int x = Integer.parseInt(InGameRegex.COLLECT_SUN.getGroup(input, "x"));
             int y = Integer.parseInt(InGameRegex.COLLECT_SUN.getGroup(input, "y"));
-            new CollectSunCommand(gameSession, sunSystem, inGameRenderer,questSystem , x, y).execute();
+            new CollectSunCommand(gameSession, sunSystem, inGameRenderer, questSystem, x, y).execute();
             return true;
         }
-
         if (InGameRegex.SHOW_SUN_AMOUNT.matches(input)) {
             new ShowSunCommand(gameSession, inGameRenderer).execute();
             return true;
         }
-
         if (InGameRegex.CHEAT_ADD_SUN.matches(input)) {
             int count = Integer.parseInt(InGameRegex.CHEAT_ADD_SUN.getGroup(input, "count"));
             new AddSunCheatCommand(gameSession, inGameRenderer, count).execute();
             return true;
         }
-
         if (InGameRegex.ADVANCE_TIME.matches(input)) {
             int ticks = Integer.parseInt(InGameRegex.ADVANCE_TIME.getGroup(input, "count"));
             advanceTime(ticks);
             return true;
         }
+        return false;
+    }
+
+    // Everything the player does to their own plants and the things that yield them.
+    private boolean routePlantCommands(String input) {
         if (InGameRegex.PLANT_SEED.matches(input)) {
             String plantType = InGameRegex.PLANT_SEED.getGroup(input, "type");
             int x = Integer.parseInt(InGameRegex.PLANT_SEED.getGroup(input, "x"));
@@ -226,6 +239,31 @@ public class GameEngine {
             new PluckPlantCommand(gameSession, inGameRenderer, x, y).execute();
             return true;
         }
+        if (InGameRegex.FEED_PLANT.matches(input)) {
+            int x = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "y"));
+            new FeedPlantCommand(gameSession, inGameRenderer, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.SWAP_PLANTS.matches(input)) {
+            int x1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x1"));
+            int y1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y1"));
+            int x2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x2"));
+            int y2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y2"));
+            new SwapPlantsCommand(gameSession, inGameRenderer, x1, y1, x2, y2).execute();
+            return true;
+        }
+        if (InGameRegex.UPGRADE_PLANT.matches(input)) {
+            String type = InGameRegex.UPGRADE_PLANT.getGroup(input, "type");
+            new UpgradePlantsCommand(gameSession, inGameRenderer, type).execute();
+            return true;
+        }
+        return routeMinigamePickups(input);
+    }
+
+    // Mini-game specific ways of getting a plant onto the lawn (Vasebreaker vases and seeds, Wall-nut
+    // Bowling's conveyor).
+    private boolean routeMinigamePickups(String input) {
         if (InGameRegex.BREAK_VASE.matches(input)) {
             int x = Integer.parseInt(InGameRegex.BREAK_VASE.getGroup(input, "x"));
             int y = Integer.parseInt(InGameRegex.BREAK_VASE.getGroup(input, "y"));
@@ -245,6 +283,12 @@ public class GameEngine {
             new BowlNutCommand(gameSession, inGameRenderer, type, x, y).execute();
             return true;
         }
+        return false;
+    }
+
+    // Putting zombies on the lawn (I, Zombie summons and the spawn cheat), plus the cheats that act on
+    // the horde as a whole.
+    private boolean routeZombieCommands(String input) {
         if (InGameRegex.SUMMON_ZOMBIE.matches(input)) {
             String type = InGameRegex.SUMMON_ZOMBIE.getGroup(input, "type");
             int x = Integer.parseInt(InGameRegex.SUMMON_ZOMBIE.getGroup(input, "x"));
@@ -259,29 +303,6 @@ public class GameEngine {
             new SpawnZombieCheatCommand(gameSession, inGameRenderer, type, x, y).execute();
             return true;
         }
-        if (InGameRegex.ZOMBIES_INFO.matches(input)) {
-            new ZombiesInfoCommand(gameSession, inGameRenderer).execute();
-            return true;
-        }
-        if (InGameRegex.SWAP_PLANTS.matches(input)) {
-            int x1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x1"));
-            int y1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y1"));
-            int x2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x2"));
-            int y2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y2"));
-            new SwapPlantsCommand(gameSession, inGameRenderer, x1, y1, x2, y2).execute();
-            return true;
-        }
-        if (InGameRegex.UPGRADE_PLANT.matches(input)) {
-            String type = InGameRegex.UPGRADE_PLANT.getGroup(input, "type");
-            new UpgradePlantsCommand(gameSession, inGameRenderer, type).execute();
-            return true;
-        }
-        if (InGameRegex.FEED_PLANT.matches(input)) {
-            int x = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "x"));
-            int y = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "y"));
-            new FeedPlantCommand(gameSession, inGameRenderer, x, y).execute();
-            return true;
-        }
         if (InGameRegex.CHEAT_REMOVE_COOLDOWN.matches(input)) {
             new RemoveCooldownCheatCommand(gameSession, inGameRenderer).execute();
             return true;
@@ -292,6 +313,15 @@ public class GameEngine {
         }
         if (InGameRegex.RELEASE_THE_NUKE.matches(input)) {
             new ReleaseTheNukeCheatCommand(gameSession, inGameRenderer).execute();
+            return true;
+        }
+        return false;
+    }
+
+    // Read-only views of the board. Nothing here changes game state.
+    private boolean routeViewCommands(String input) {
+        if (InGameRegex.ZOMBIES_INFO.matches(input)) {
+            new ZombiesInfoCommand(gameSession, inGameRenderer).execute();
             return true;
         }
         if (InGameRegex.SHOW_MAP.matches(input)) {

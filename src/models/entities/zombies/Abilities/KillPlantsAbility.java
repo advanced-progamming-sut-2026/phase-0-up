@@ -51,7 +51,8 @@ public class KillPlantsAbility implements ZombieAbility {
     }
 
     private Plant findTargetPlantInFront(Zombie zombie) {
-        if (zombie.getMovement() == null || zombie.getGameSession() == null || zombie.getGameSession().getMap() == null) {
+        if (zombie.getMovement() == null || zombie.getGameSession() == null
+                || zombie.getGameSession().getMap() == null) {
             return null;
         }
 

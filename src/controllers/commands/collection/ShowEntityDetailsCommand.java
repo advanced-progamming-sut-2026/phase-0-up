@@ -1,8 +1,6 @@
 package controllers.commands.collection;
 
 import controllers.commands.Command;
-import models.user.Profile;
-import models.user.User;
 import utils.registry.PlantRegistry;
 import utils.registry.ZombieRegistry;
 import views.renderers.MenuRenderer.CollectionMenuRenderer;

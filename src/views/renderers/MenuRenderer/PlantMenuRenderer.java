@@ -1,7 +1,6 @@
 package views.renderers.MenuRenderer;
 
 import models.game.GameSession;
-import models.templates.LevelTemplate;
 import models.templates.PlantTemplate;
 import models.user.Profile;
 import utils.registry.PlantRegistry;

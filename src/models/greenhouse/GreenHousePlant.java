@@ -1,6 +1,5 @@
 package models.greenhouse;
 
-import utils.Constants;
 
 public class GreenHousePlant {
     private final String name;

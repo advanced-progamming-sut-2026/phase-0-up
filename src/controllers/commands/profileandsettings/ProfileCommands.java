@@ -15,7 +15,8 @@ public class ProfileCommands implements Command {
     private final String oldPassword;
     private final ProfileMenuRenderer renderer;
 
-    public ProfileCommands(User user, EditAction action, String newValue, String oldPassword, ProfileMenuRenderer renderer) {
+    public ProfileCommands(User user, EditAction action, String newValue, String oldPassword,
+                           ProfileMenuRenderer renderer) {
         this.user = user;
         this.action = action;
         this.newValue = newValue;

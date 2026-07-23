@@ -7,7 +7,6 @@ import models.entities.projectiles.Element;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.game.gamemodes.GameMode;
-import models.game.gamemodes.NightOpsMode;
 import models.map.Cell;
 import models.map.Row;
 import utils.Constants;
@@ -48,7 +47,7 @@ public class SunSystem {
         return Math.max(6 + 0.05 * elapsedTime , 12);
     }
 
-    public Result SpawnSkySun(GameSession gameSession){
+    public Result spawnSkySun(GameSession gameSession){
         if(!canSpawnSkySun(gameSession)){
             return null;
         }
@@ -70,7 +69,7 @@ public class SunSystem {
 
     }
 
-    public void SpawnPlantSun(GameSession gameSession, double x, int y, int amount) {
+    public void spawnPlantSun(GameSession gameSession, double x, int y, int amount) {
         Sun sun = new Sun(x, y, y, SunType.NORMAL, amount, false, PLANT_SUN_NEVER_EXPIRE_TICKS);
         gameSession.addSun(sun);
     }
@@ -251,7 +250,7 @@ public class SunSystem {
 
         if(currentTick - lastSkySunSpawnTick >= intervalTicks){
             lastSkySunSpawnTick = currentTick;
-            return SpawnSkySun(gameSession);
+            return spawnSkySun(gameSession);
         }
         return null;
     }

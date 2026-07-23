@@ -25,14 +25,7 @@ public class EnterMenuCommand implements Command {
             allMenuRenderer.enterMenu(new Result(false, "There's no menu by that name around here."));
             return;
         }
-
-        // Every menu except sign-up and login is behind authentication. Without this gate the
-        // fall-through below let a logged-out visitor walk from SIGNUP_MENU straight into the
-        // profile/play/settings/news menus (case SIGNUP_MENU has no break, so it dropped into the
-        // MAIN_MENU arm), where commands then dereferenced a null current user.
-        if (type != MenuType.SIGNUP_MENU && type != MenuType.LOGIN_MENU
-                && appSession.getCurrentUser() == null) {
-            allMenuRenderer.enterMenu(new Result(false, "Log in first -- the lawn is members only."));
+        if (!isReachable(type)) {
             return;
         }
 
@@ -43,41 +36,60 @@ public class EnterMenuCommand implements Command {
             return;
         }
 
-        switch (currentMenu){
-            case SIGNUP_MENU :
-                if (type == MenuType.LOGIN_MENU){
-                    appSession.setCurrentMenu(MenuType.LOGIN_MENU);
-                    allMenuRenderer.enterMenu(new Result(true, "Entered login menu!"));
-                    return;
-                }
-            case LOGIN_MENU:
-                if(appSession.getCurrentUser() != null){
-                    if (type == MenuType.MAIN_MENU){
-                        appSession.setCurrentMenu(type);
-                        allMenuRenderer.enterMenu(new Result(true , String.format("Welcome to the %s menu!", type.getMenuName())));
-                        return;
-                    }
-                }
-            case MAIN_MENU :
-                if (type == MenuType.PLAY_MENU ||
-                    type == MenuType.SETTINGS_MENU ||
-                    type == MenuType.ONLINE_MENU ||
-                    type == MenuType.NEWS_MENU ||
-                    type == MenuType.PROFILE_MENU){
-                    appSession.setCurrentMenu(type);
-                    allMenuRenderer.enterMenu(new Result(true, String.format("Welcome to the %s menu!", type.getMenuName())));
-                    return;
-                }
-            case PLAY_MENU:
-                if (type == MenuType.COLLECTION_MENU){
-                    appSession.setCurrentMenu(MenuType.COLLECTION_MENU);
-                    allMenuRenderer.enterMenu(new Result(true, "Entered collection menu!"));
-                    return;
-                }
-            default:
-                allMenuRenderer.enterMenu(new Result(false,
-                        String.format("You can't enter %s menu from %s menu!",
-                                type.getMenuName(), currentMenu.getMenuName())));
+        if (isTransitionAllowed(currentMenu, type)) {
+            enter(type);
+        } else {
+            allMenuRenderer.enterMenu(new Result(false,
+                    String.format("You can't enter %s menu from %s menu!",
+                            type.getMenuName(), currentMenu.getMenuName())));
         }
+    }
+
+    // Every menu except sign-up and login is behind authentication. Without this gate a logged-out
+    // visitor could walk from SIGNUP_MENU straight into the profile/play/settings/news menus, where
+    // commands then dereferenced a null current user. Reports the refusal itself.
+    private boolean isReachable(MenuType type) {
+        if (type != MenuType.SIGNUP_MENU && type != MenuType.LOGIN_MENU
+                && appSession.getCurrentUser() == null) {
+            allMenuRenderer.enterMenu(new Result(false, "Log in first -- the lawn is members only."));
+            return false;
+        }
+        return true;
+    }
+
+    // The menu graph: which menu you may step into from where. Written as explicit edges rather than a
+    // fall-through switch, which previously let one case leak into the next.
+    private boolean isTransitionAllowed(MenuType from, MenuType to) {
+        switch (from) {
+            case SIGNUP_MENU:
+                return to == MenuType.LOGIN_MENU;
+            case LOGIN_MENU:
+                return to == MenuType.MAIN_MENU && appSession.getCurrentUser() != null;
+            case MAIN_MENU:
+                return to == MenuType.PLAY_MENU
+                        || to == MenuType.SETTINGS_MENU
+                        || to == MenuType.ONLINE_MENU
+                        || to == MenuType.NEWS_MENU
+                        || to == MenuType.PROFILE_MENU;
+            case PLAY_MENU:
+                return to == MenuType.COLLECTION_MENU;
+            default:
+                return false;
+        }
+    }
+
+    // The login and collection menus keep their own greetings, exactly as before the switch was
+    // flattened -- these strings are what the player already sees.
+    private void enter(MenuType type) {
+        appSession.setCurrentMenu(type);
+        String message;
+        if (type == MenuType.LOGIN_MENU) {
+            message = "Entered login menu!";
+        } else if (type == MenuType.COLLECTION_MENU) {
+            message = "Entered collection menu!";
+        } else {
+            message = String.format("Welcome to the %s menu!", type.getMenuName());
+        }
+        allMenuRenderer.enterMenu(new Result(true, message));
     }
 }

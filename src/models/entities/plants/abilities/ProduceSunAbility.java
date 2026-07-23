@@ -19,7 +19,8 @@ public class ProduceSunAbility extends PlantAbility implements Growable {
     private double doubleSunChance;
     private int spawnCount;
 
-    public ProduceSunAbility(int actionIntervalTicks, TriggerStrategy triggerStrategy, int[] sunAmountsByStage, int[] stageUpTicks,
+    public ProduceSunAbility(int actionIntervalTicks, TriggerStrategy triggerStrategy,
+                             int[] sunAmountsByStage, int[] stageUpTicks,
                              double doubleSunChance, int spawnCount) {
         super(actionIntervalTicks, triggerStrategy);
         this.sunAmountsByStage = sunAmountsByStage;

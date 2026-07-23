@@ -328,7 +328,8 @@ public class Projectile extends Entity {
         this.speedY = direction * 0.5;
     }
 
-    //TODO: remove destroyed projectiles in time system every tick
+    // Destroyed projectiles are retired by CombatSystem.resolveProjectiles, which drops them from the
+    // row on the same tick they are flagged.
     public boolean isDestroyed() {
         return isDestroyed;
     }

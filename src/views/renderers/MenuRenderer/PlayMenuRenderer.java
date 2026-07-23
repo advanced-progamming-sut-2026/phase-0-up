@@ -1,6 +1,5 @@
 package views.renderers.MenuRenderer;
 
-import models.user.Profile;
 import utils.Result;
 
 public class PlayMenuRenderer {

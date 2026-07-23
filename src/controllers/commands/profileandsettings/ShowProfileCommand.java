@@ -1,7 +1,6 @@
 package controllers.commands.profileandsettings;
 
 import controllers.commands.Command;
-import models.user.Profile;
 import models.user.User;
 import views.renderers.MenuRenderer.ProfileMenuRenderer;
 

@@ -62,6 +62,21 @@ public final class ZombieBehaviorFactory {
         if (objclass == null) {
             return abilities(new EatPlantAbility());
         }
+        // Grouped by the chapter a zombie belongs to, so each switch stays inside the 50-line method
+        // limit. Each helper returns null for an objclass it does not own, and the last one supplies
+        // the plain-walker default.
+        List<ZombieAbility> result = egyptAndDarkAges(objclass, gameSession);
+        if (result == null) {
+            result = beachAndFrostbite(objclass);
+        }
+        if (result == null) {
+            result = lostCityAndModern(objclass);
+        }
+        return result != null ? result : abilities(new EatPlantAbility());
+    }
+
+    // Ancient Egypt and Dark Ages.
+    private static List<ZombieAbility> egyptAndDarkAges(String objclass, GameSession gameSession) {
         switch (objclass) {
             case "ZombieGargantuarProps":
                 return abilities(new KillPlantsAbility(false, SMASH_REACH), new ThrowImp());
@@ -76,16 +91,22 @@ public final class ZombieBehaviorFactory {
                 return abilities(new EatPlantAbility(), new TurnIntoCat());
             case "ZombieDarkKingProps":
                 return abilities(new EatPlantAbility(), new TurnIntoKnightAbility());
+            case "ZombieDarkJugglerProps":
+                return abilities(new EatPlantAbility(), new SpinAbility(), new DeflectLobbedAbility());
+            default:
+                return null;
+        }
+    }
+
+    // Big Wave Beach and Frostbite Caves.
+    private static List<ZombieAbility> beachAndFrostbite(String objclass) {
+        switch (objclass) {
             case "ZombieBeachSnorkelProps":
                 return abilities(new EatPlantAbility(), new SubmergeAbility());
             case "ZombieBeachOctopusProps":
                 return abilities(new EatPlantAbility(), new ThrowOctopusAbility());
             case "ZombieBeachFishermanProps":
                 return abilities(new EatPlantAbility(), new FishThePlants());
-            case "ZombieDarkJugglerProps":
-                return abilities(new EatPlantAbility(), new SpinAbility(), new DeflectLobbedAbility());
-            case "ZombieLostCityJaneProps":
-                return abilities(new EatPlantAbility(), new DeflectLobbedAbility());
             // Frostbite natives are at home in the cold: an ice hit neither freezes nor slows them, so
             // each carries IceImmunityAbility on top of its own trick.
             case "ZombieIceAgeHunterProps":
@@ -95,6 +116,16 @@ public final class ZombieBehaviorFactory {
             case "ZombieIceAgeDodoProps":
                 return abilities(new EatPlantAbility(), new IgnoreObstaclesAbility(),
                         new IceImmunityAbility());
+            default:
+                return null;
+        }
+    }
+
+    // Lost City, Neon Mixtape / modern, and the Zombotany plant-zombies.
+    private static List<ZombieAbility> lostCityAndModern(String objclass) {
+        switch (objclass) {
+            case "ZombieLostCityJaneProps":
+                return abilities(new EatPlantAbility(), new DeflectLobbedAbility());
             case "ZombieCrystalSkullProps":
                 return abilities(new EatPlantAbility(), new LaserBeamAbility());
             // The pianist crushes what it rolls over AND herds the zombies sharing its lane into the
@@ -118,10 +149,10 @@ public final class ZombieBehaviorFactory {
                 return abilities(new EatPlantAbility(), new JalapenoBurnAbility());
             case "ZombieBotanySquashProps":
                 return abilities(new SquashCrushAbility());
-            case "ZombieBotanyWallnutProps":   // just a tanky walker (high HP set on the template)
-            case "ZombiePropertySheet":
+            // ZombieBotanyWallnutProps is just a tanky walker (high HP set on the template), and
+            // ZombiePropertySheet is the shared generic sheet -- both take the default.
             default:
-                return abilities(new EatPlantAbility());
+                return null;
         }
     }
 

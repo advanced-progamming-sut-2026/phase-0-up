@@ -14,7 +14,6 @@ import utils.storage.PasswordHasher;
 import views.renderers.MenuRenderer.AllMenuRenderer;
 import views.renderers.MenuRenderer.LoginMenuRenderer;
 
-import javax.print.attribute.standard.MediaName;
 
 public class LoginCommand implements Command {
     private String username;
@@ -24,7 +23,8 @@ public class LoginCommand implements Command {
     private LoginMenuRenderer loginMenuRenderer;
     private AllMenuRenderer allMenuRenderer;
 
-    public LoginCommand(String input, AppSession appSession, LoginMenuRenderer loginMenuRenderer, AllMenuRenderer allMenuRenderer) {
+    public LoginCommand(String input, AppSession appSession, LoginMenuRenderer loginMenuRenderer,
+                        AllMenuRenderer allMenuRenderer) {
         username = LoginMenuRegex.LOGIN.getGroup(input, "username");
         password = LoginMenuRegex.LOGIN.getGroup(input, "password");
         stayLoggedIn = (LoginMenuRegex.LOGIN.getGroup(input, "stayLoggedIn") != null);
@@ -60,7 +60,8 @@ public class LoginCommand implements Command {
         }
 
         DatabaseManager.getInstance().saveAll();
-        EnterMenuCommand enterMenuCommand = new EnterMenuCommand(appSession , MenuType.MAIN_MENU.getMenuName(), allMenuRenderer);
+        EnterMenuCommand enterMenuCommand = new EnterMenuCommand(appSession,
+                MenuType.MAIN_MENU.getMenuName(), allMenuRenderer);
         enterMenuCommand.execute();
 
         loginMenuRenderer.successOfLoggingIn(new Result(true, "Welcome back! The lawn missed you."));

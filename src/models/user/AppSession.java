@@ -1,6 +1,5 @@
 package models.user;
 
-import controllers.engine.GameEngine;
 import controllers.engine.MenuType;
 import models.game.GameSession;
 import models.shop.Shop;

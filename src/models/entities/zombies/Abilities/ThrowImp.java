@@ -2,7 +2,6 @@ package models.entities.zombies.Abilities;
 
 import factories.ZombieFactory;
 import models.entities.zombies.Zombie;
-import utils.Constants;
 
 // The Gargantuar hurls its Imp over the defences the moment it drops to half health. The Imp lands in
 // the third column from the left of the Gargantuar's own lane, and only ever once per Gargantuar.
