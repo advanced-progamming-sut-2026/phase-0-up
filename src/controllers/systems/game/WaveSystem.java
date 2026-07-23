@@ -229,7 +229,13 @@ public class WaveSystem {
     // after the first are released by the 75% health rule alone and never consult this.
     private long delayTicksFor(GameSession gameSession, Wave wave) {
         int authored = wave.getDelay() > 0 ? wave.getDelay() : Constants.DEFAULT_WAVE_DELAY_SECONDS;
-        return scaledTicks(gameSession, Math.max(Constants.FIRST_WAVE_DELAY_SECONDS, authored));
+        int delaySeconds = Math.max(Constants.FIRST_WAVE_DELAY_SECONDS, authored);
+        // Capped AFTER difficulty scaling, not before. A low difficulty stretches every other timer in
+        // this system, but stretching the opening wait just leaves the player staring at an empty lawn,
+        // so FIRST_WAVE_DELAY_SECONDS is a hard ceiling: difficulty may bring the first wave in sooner,
+        // never later. The same ceiling also reins in a level that authors an over-long first delay.
+        long cap = (long) Constants.FIRST_WAVE_DELAY_SECONDS * Constants.TICKS_PER_SECOND;
+        return Math.min(scaledTicks(gameSession, delaySeconds), cap);
     }
 
     // Higher difficulty also tightens the gap between zombies inside a wave.

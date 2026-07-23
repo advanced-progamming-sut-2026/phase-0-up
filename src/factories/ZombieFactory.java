@@ -18,7 +18,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 // component-based Zombie; the objclass selects the ability set (see ZombieBehaviorFactory), and the
 // armor list plus baseHp are assembled into the layered HealthComponent inside the Zombie.
 //
-// TODO: scale zombie HP / eat damage by the player's difficulty level.
+// Body HP and bite damage are scaled by the player's difficulty level here -- the one place every
+// spawn path funnels through, so a wave zombie, a cheat spawn and an ability-summoned Imp are all
+// scaled identically. See difficultyScale().
 public final class ZombieFactory {
     private static final AtomicInteger ID_SEQUENCE = new AtomicInteger(1);
     private static final Random RANDOM = new Random();
@@ -34,8 +36,12 @@ public final class ZombieFactory {
         List<ZombieAbility> abilities = ZombieBehaviorFactory.createAbilities(
                 template.getObjclass(), template.getAlias(), gameSession);
 
-        // EatDPS is modelled as one bite per second dealing that much damage.
-        int eatDamage = template.getEatDps();
+        // EatDPS is modelled as one bite per second dealing that much damage. Both it and the body HP
+        // are scaled by difficulty, so a harder game fields tougher zombies that chew faster, not just
+        // more of them (that part is WaveSystem's budget).
+        double scale = difficultyScale(gameSession);
+        int eatDamage = scaled(template.getEatDps(), scale);
+        int baseHp = scaled(template.getBaseHp(), scale);
         int eatSpeed = Constants.TICKS_PER_SECOND;
 
         // 5% of the zombies that walk on glow, and a glowing one hands the player a plant food when it
@@ -49,7 +55,7 @@ public final class ZombieFactory {
         Zombie zombie = new Zombie(
                 ID_SEQUENCE.getAndIncrement(),
                 categoryOf(template.getObjclass()),
-                template.getBaseHp(),
+                baseHp,
                 template.getArmors(),
                 template.getAlias(),
                 eatDamage,
@@ -76,6 +82,31 @@ public final class ZombieFactory {
             gameSession.discoverZombie(template.getAlias());
         }
         return zombie;
+    }
+
+    // How much tougher (or softer) a zombie is than the blueprint says, from the player's difficulty.
+    // Mirrors WaveSystem's and SunSystem's handling so the three scale off one baseline: the default
+    // level returns exactly 1.0, which is what keeps every authored stat meaning what it says for a
+    // player who never touches the setting.
+    private static double difficultyScale(GameSession gameSession) {
+        return difficultyLevel(gameSession) / (double) Constants.DEFAULT_DIFFICULTY_LEVEL;
+    }
+
+    private static int difficultyLevel(GameSession gameSession) {
+        if (gameSession == null || gameSession.getPlayer() == null
+                || gameSession.getPlayer().getDifficultyLevel() <= 0) {
+            return Constants.DEFAULT_DIFFICULTY_LEVEL;
+        }
+        return gameSession.getPlayer().getDifficultyLevel();
+    }
+
+    // Never rounds a positive stat down to zero -- a zombie with 0 HP would be born dead, and one that
+    // bites for 0 could never eat a plant.
+    private static int scaled(int base, double scale) {
+        if (base <= 0) {
+            return base;
+        }
+        return Math.max(1, (int) Math.round(base * scale));
     }
 
     // Normalizes an objclass into a short category token ("ZombieGargantuarProps" -> "Gargantuar"),

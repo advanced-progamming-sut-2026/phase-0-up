@@ -58,9 +58,9 @@ public class Constants {
     public static final int DEFAULT_WAVE_DELAY_SECONDS = 25;       // وقتی levels.json تاخیری تعیین نکرده
     public static final int DEFAULT_FIRST_WAVE_BUDGET = 1000;      // وقتی levels.json بودجه‌ای تعیین نکرده
 
-    // فرصت اولیه‌ی بازیکن برای ساختن دفاع؛ عمداً بیشتر از فاصله‌ی بین دو موج (بیشترین مقدار در
-    // levels.json برابر ۵۵ ثانیه است) تا موج اول دیرتر از بقیه‌ی موج‌ها برسد
-    public static final int FIRST_WAVE_DELAY_SECONDS = 60;
+    // فرصت اولیه‌ی بازیکن برای ساختن دفاع. این مقدار هم هدف است و هم سقف: سختی پایین‌تر می‌تواند
+    // انتظار را کوتاه‌تر نکند اما هرگز نباید از این مقدار بیشتر شود، چون انتظار طولانی‌تر خسته‌کننده است
+    public static final int FIRST_WAVE_DELAY_SECONDS = 45;
     // زامبی‌های یک موج قطره‌ای وارد می‌شوند، نه همه با هم
     public static final int ZOMBIE_SPAWN_INTERVAL_SECONDS = 2;
 

@@ -5,6 +5,7 @@ import models.entities.zombies.Abilities.RollTheBarrel;
 import models.entities.zombies.Abilities.ZombieAbility;
 import models.entities.zombies.Zombie;
 import models.entities.projectiles.Element;
+import models.entities.projectiles.Trajectory;
 import models.map.Cell;
 import models.map.Row;
 
@@ -80,7 +81,17 @@ public class HealthComponent {
         layers.push(layer);
     }
 
+    // Straight-line damage, the common case: every caller that has no trajectory to speak of (melee
+    // bites, explosions, mowers, poison ticks) lands as DIRECT.
     public void applyDamage(int damage, Element element, Plant attacker) {
+        applyDamage(damage, element, attacker, Trajectory.DIRECT);
+    }
+
+    // How the damage arrived matters as much as what it is made of: element decides whether a blow
+    // seeps past armor, trajectory decides whether it goes over the front of it. A LOBBED shot arcs
+    // above anything the zombie is carrying in front (a newspaper, a shoved barrel) and strikes what
+    // is behind, which is exactly why a Melon-pult is the answer to a shield a Peashooter cannot pass.
+    public void applyDamage(int damage, Element element, Plant attacker, Trajectory trajectory) {
         if (isDead()) return;
 
         hpBeforeLastHit = getTotalHP();   // snapshot before the blow lands, for one-shot scoring
@@ -91,11 +102,11 @@ public class HealthComponent {
 
         if (element != null && element.piercesBaseArmor()) {
             applyToBaseBody(damage);
+        } else if (trajectory == Trajectory.LOBBED) {
+            peelFromTopOverShields(damage);
         } else {
             peelFromTop(damage);
         }
-
-        //TODO: lobbed (overhead) delivery should ignore front shields; pass Trajectory here when needed
 
         if (isDead()) {
             die();
@@ -111,6 +122,44 @@ public class HealthComponent {
             }
         }
         layers.removeIf(layer -> layer.getCurrentHp() <= 0);
+    }
+
+    // A lobbed shot passes over anything carried in front and hits the first layer that is actually
+    // worn. Only the shields on TOP of the stack are skipped -- once a worn layer is reached the shot
+    // peels normally from there down, so a newspaper sitting under a cone still gets no protection
+    // from being nominally "below" it.
+    //
+    // The skipped shields are lifted off, the damage is applied to what remains, and they are put back
+    // in the order they came off: flying over a shield must not damage it, and must not disturb the
+    // stack a later straight shot will meet.
+    private void peelFromTopOverShields(int damage) {
+        Stack<HealthLayer> lifted = new Stack<>();
+        while (!layers.isEmpty() && layers.peek().getType() != null
+                && layers.peek().getType().isFrontShield()) {
+            lifted.push(layers.pop());
+        }
+
+        if (layers.isEmpty()) {
+            // Nothing but shields (a stray barrel with no body) -- there is nothing behind to hit, so
+            // put them back untouched rather than letting the shot fall through to nowhere.
+            restore(lifted);
+            return;
+        }
+
+        peelFromTop(damage);
+
+        // Only put the shields back if something survived behind them. If the blow emptied the stack
+        // the zombie is dead, and restoring its newspaper would leave isDead() reading false -- a
+        // corpse held upright by the very shield the shot flew over.
+        if (!layers.isEmpty()) {
+            restore(lifted);
+        }
+    }
+
+    private void restore(Stack<HealthLayer> lifted) {
+        while (!lifted.isEmpty()) {
+            layers.push(lifted.pop());
+        }
     }
 
     // Normal damage is absorbed by the outermost layer; a depleted layer is popped immediately so

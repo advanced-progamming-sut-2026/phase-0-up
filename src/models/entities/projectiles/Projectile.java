@@ -88,7 +88,8 @@ public class Projectile extends Entity {
         this.poisonDurationTicks = durationTicks;
     }
 
-    //TODO: in game engine after finishing the loop on the projectiles check if any of them changed line
+    // A projectile with vertical speed can finish a tick in a different lane than the row list holding
+    // it; CombatSystem.resolveProjectiles re-files those after it has swept every row.
     @Override
     public void update(GameSession gameSession) {
         if (isDestroyed) return;
@@ -226,7 +227,9 @@ public class Projectile extends Entity {
             }
         }
 
-        target.getHealth().applyDamage(damage, element, shooter);
+        // Trajectory travels with the hit: a LOBBED melon arcs over whatever the zombie holds in front
+        // (newspaper, shoved barrel) and lands on the body behind it.
+        target.getHealth().applyDamage(damage, element, shooter, trajectory);
         hitTargets.add(target);
         element.applyOnHit(target.getState());
 
@@ -278,7 +281,10 @@ public class Projectile extends Entity {
                         double distanceX = Math.abs(z.getMovement().getPositionX() - epicenterX);
 
                         if (distanceX <= splashRadiusX) {
-                            z.getHealth().applyDamage(this.splashDamage, this.element, this.shooter);
+                            // Splash rains down from the same arc as the shot that caused it, so it
+                            // clears front shields on the neighbours too.
+                            z.getHealth().applyDamage(this.splashDamage, this.element, this.shooter,
+                                    this.trajectory);
                             this.element.applyOnHit(z.getState());
                         }
                     }

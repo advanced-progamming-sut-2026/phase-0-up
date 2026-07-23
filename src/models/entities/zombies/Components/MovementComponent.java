@@ -48,7 +48,6 @@ public class MovementComponent {
     public double getPositionX() { return x; }
     public int getPositionY() { return y; }
     public boolean isSwitchingLane() { return isSwitchingLane; }
-    //TODO: this class needs an update method which gets called on every tick
 
     public void setPositionX(double x) {
         this.x = x;

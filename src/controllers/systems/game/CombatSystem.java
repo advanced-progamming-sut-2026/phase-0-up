@@ -70,16 +70,39 @@ public class CombatSystem {
 
     // Flies every projectile and retires the ones that hit or ran out of range. Iterates a copy: a
     // hit can destroy the projectile, and an ability reacting to it can add another to the row.
+    //
+    // A projectile with vertical speed (the Bowling Bulb, which bounces between lanes) can end the
+    // tick in a different row than the list holding it. Those are re-filed afterwards rather than
+    // during the sweep: moving one mid-loop into a row not yet visited would fly it a second time in
+    // the same tick.
     private void resolveProjectiles(GameSession session){
-        for (Row row : session.getMap().getRows()) {
+        List<Row> rows = session.getMap().getRows();
+        List<LaneChange> laneChanges = new ArrayList<>();
+
+        for (int rowIndex = 0; rowIndex < rows.size(); rowIndex++) {
+            Row row = rows.get(rowIndex);
             for (Projectile projectile : new ArrayList<>(row.getActiveProjectiles())) {
                 projectile.update(session);
                 if (projectile.isDestroyed()) {
                     row.removeProjectile(projectile);
+                } else if (projectile.getY() != rowIndex) {
+                    laneChanges.add(new LaneChange(projectile, row, projectile.getY()));
                 }
             }
         }
+
+        for (LaneChange change : laneChanges) {
+            change.from().removeProjectile(change.projectile());
+            if (change.toRowIndex() >= 0 && change.toRowIndex() < rows.size()) {
+                rows.get(change.toRowIndex()).addProjectile(change.projectile());
+            }
+            // A row index off the board means the projectile left the lawn vertically; dropping it
+            // from its old row (and not re-adding it) is the retirement.
+        }
     }
+
+    // A projectile that finished the tick in a different lane than the one storing it.
+    private record LaneChange(Projectile projectile, Row from, int toRowIndex) { }
     // Sets off any mower whose row has been breached, then drives every running mower one step.
     //
     // The mower reports only once it has driven off the board, which is when its kill list is complete
