@@ -109,21 +109,10 @@ public class GameEngine {
         if (before != GameState.PLAYING || after == GameState.PLAYING) {
             return;
         }
-        // Settle the scoring game BEFORE the save below, so the run's Meow Points are on the profile by
-        // the time it is written. It also has to run before anything else touches the board, because
-        // two of its rules read the final state (sun left unspent, mowers never triggered).
+        // Settle the scoring game first: two of its rules read the final board state (sun left unspent,
+        // mowers never triggered), so it has to run before anything else touches it.
         settleScoringGame();
 
-        // Everything a level earns -- loot coins/gems/pots from kills, campaign progress, quest rewards,
-        // news -- lived only in memory until now: nothing in the combat loop touches the database. If the
-        // process died here the whole level's winnings went with it. Persist once, at the one point where
-        // the level is definitively over, rather than on every drop (which would hammer the disk).
-        try {
-            utils.storage.DatabaseManager.getInstance().saveAll();
-        } catch (RuntimeException e) {
-            inGameRenderer.render(new Result(false,
-                    "Your progress could not be saved: " + e.getMessage()));
-        }
         if (after == GameState.WON) {
             inGameRenderer.render(new Result(true,
                     "Dear humanz, zis is not done yet; we will come back to eat your brainz, humanz."));
@@ -140,6 +129,20 @@ public class GameEngine {
             for (Result quest : questSystem.evaluateAndComplete(gameSession.getPlayer(), gameSession, false)) {
                 inGameRenderer.render(quest);
             }
+        }
+
+        // Persist ONCE, and only AFTER every profile mutation this level end produces: the scoring
+        // settlement above, AND the quest completions (their reward grants plus the completed-quest
+        // counters). This save used to run before the quests were evaluated, so a finished quest lived
+        // only in memory -- the leaderboard, which reads the live profile, showed it, but it never
+        // reached disk and vanished on the next load unless the player happened to quit via the "exit"
+        // command (which saves again). Everything a level earns -- loot, campaign progress, quest
+        // rewards, news -- reaches the database here, at the one point the level is definitively over.
+        try {
+            utils.storage.DatabaseManager.getInstance().saveAll();
+        } catch (RuntimeException e) {
+            inGameRenderer.render(new Result(false,
+                    "Your progress could not be saved: " + e.getMessage()));
         }
     }
 
