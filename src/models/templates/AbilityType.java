@@ -28,5 +28,7 @@ public enum AbilityType {
     INSTANT_FREEZE,
     WARMTH,
     GRAVE_BUSTER,
-    MINT_FAMILY_BOOST
+    MINT_FAMILY_BOOST,
+    // A 3x3 instant blast that also scatters bouncing grape pellets (Grapeshot).
+    GRAPESHOT
 }

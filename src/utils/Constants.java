@@ -59,8 +59,9 @@ public class Constants {
     public static final int DEFAULT_FIRST_WAVE_BUDGET = 1000;      // وقتی levels.json بودجه‌ای تعیین نکرده
 
     // فرصت اولیه‌ی بازیکن برای ساختن دفاع. این مقدار هم هدف است و هم سقف: سختی پایین‌تر می‌تواند
-    // انتظار را کوتاه‌تر نکند اما هرگز نباید از این مقدار بیشتر شود، چون انتظار طولانی‌تر خسته‌کننده است
-    public static final int FIRST_WAVE_DELAY_SECONDS = 45;
+    // انتظار را کوتاه‌تر نکند اما هرگز نباید از این مقدار بیشتر شود، چون انتظار طولانی‌تر خسته‌کننده است.
+    // در سختی پیش‌فرض (۳) موج اول دقیقاً بعد از این تعداد ثانیه می‌رسد؛ برای هر دو حالت ماجرا و امتیازی
+    public static final int FIRST_WAVE_DELAY_SECONDS = 30;
     // زامبی‌های یک موج قطره‌ای وارد می‌شوند، نه همه با هم
     public static final int ZOMBIE_SPAWN_INTERVAL_SECONDS = 2;
 
@@ -123,6 +124,15 @@ public class Constants {
     public static final int ARMOR_KNIGHT_HELMET_HP = 1600;         // کلاه‌خود شوالیه
     public static final int ARMOR_KNIGHT_SHOULDER_HP = 1600;       // شانه‌بند شوالیه
     public static final int ARMOR_BLOCK_HP = 2200;                 // بلوک
+
+    // Grapeshot's bouncing pellets (حبه‌های کمانه‌کننده): after the 3x3 blast, it scatters grapes that
+    // ricochet from zombie to zombie. Each grape hits (1 + bounces) distinct zombies, then vanishes;
+    // any grape still airborne is destroyed after its lifespan. "Bounces +1" (lvl 3) raises the bounce
+    // count. These are tuning knobs, deliberately gathered here.
+    public static final int GRAPESHOT_GRAPE_DAMAGE = 200;          // هر حبه به هر زامبی چقدر آسیب می‌زند
+    public static final int GRAPESHOT_BASE_BOUNCES = 1;            // پرش پایه؛ یعنی هر حبه ۲ زامبی را می‌زند
+    public static final int GRAPESHOT_MAX_GRAPES = 6;              // سقف تعداد حبه‌های پرتاب‌شده در هر انفجار
+    public static final int GRAPESHOT_GRAPE_LIFESPAN_SECONDS = 5;  // حبه بعد از این مدت نابود می‌شود
 
     // ==========================================
     // ۸. مینی‌گیم‌ها و مراحل ویژه (Minigames)

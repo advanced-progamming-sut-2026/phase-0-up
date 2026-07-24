@@ -199,12 +199,29 @@ public class WaveSystem {
     // An authored budget wins outright; otherwise wave 1's budget is scaled by this wave's position
     // on the difficulty curve. Either way the player's difficulty level scales the result, with the
     // default level (3) leaving authored numbers exactly as written.
+    //
+    // The result is then floored to the cheapest zombie the wave is actually allowed to field. Budgets
+    // are sized against the GLOBALLY cheapest zombie, but each wave's pool is only a slice of the
+    // roster -- so a budget of 374 against a pool whose cheapest costs 450 buys nothing and the wave
+    // walks on empty. Flooring guarantees every non-empty pool fields at least one zombie; the cost of
+    // a single wave running slightly over budget is far smaller than a phantom wave that spawns no one.
     private int calculateBudget(GameSession gameSession, Wave wave) {
         int authored = wave.getWaveCost();
         double base = authored > 0
                 ? authored
                 : baseBudget(gameSession) * wave.difficultyFactor();
-        return Math.max(0, (int) Math.round(base * difficultyScale(gameSession)));
+        int scaled = Math.max(0, (int) Math.round(base * difficultyScale(gameSession)));
+        return Math.max(scaled, cheapestAffordableFloor(wave));
+    }
+
+    // The lowest wave-point cost among the zombies this wave may spend on, or 0 when the pool is empty
+    // (nothing to field, so nothing to floor to). This is the smallest budget that can still buy one.
+    private int cheapestAffordableFloor(Wave wave) {
+        int cheapest = Integer.MAX_VALUE;
+        for (ZombieTemplate template : resolvePool(wave.getZombieAliases())) {
+            cheapest = Math.min(cheapest, template.getWavePointCost());
+        }
+        return cheapest == Integer.MAX_VALUE ? 0 : cheapest;
     }
 
     // Wave 1's authored budget is the anchor for the curve; a level with no authored waves at all

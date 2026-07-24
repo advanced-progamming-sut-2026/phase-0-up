@@ -55,7 +55,18 @@ public class ZombieJSONParser implements Parser<ZombieTemplate> {
                 d.eatDps,
                 d.wavePointCost,
                 d.canSpawnPlantFood,
-                parseArmors(d.zombieArmorProps));
+                buildArmors(d));
+    }
+
+    // The zombie's full armor stack: its ZombieArmorProps (cone, bucket, ...) plus, for the Troglobite,
+    // one ICE_BLOCK layer per ice block it spawns with. The ice sits on top, so it is what damage --
+    // and PushIceAbility's "does it still have ice?" check -- meets first.
+    private List<ArmorType> buildArmors(ObjData d) {
+        List<ArmorType> armors = parseArmors(d.zombieArmorProps);
+        for (int i = 0; i < d.iceBlocksToSpawnWith; i++) {
+            armors.add(ArmorType.ICE_BLOCK);
+        }
+        return armors;
     }
 
     // Turns ["RTID(ConeDefault@ArmorTypes)", ...] into [CONE, ...]. Base body is added by the factory.
@@ -110,5 +121,10 @@ public class ZombieJSONParser implements Parser<ZombieTemplate> {
         @SerializedName("WavePointCost") private int wavePointCost;
         @SerializedName("CanSpawnPlantFood") private boolean canSpawnPlantFood;
         @SerializedName("ZombieArmorProps") private List<String> zombieArmorProps;
+        // The Troglobite carries its ice as a count rather than a ZombieArmorProps entry. Without
+        // reading it the zombie spawned with no ice armor at all, so PushIceAbility -- which treats
+        // "has armor" as "still has ice blocks" -- announced the ice gone on the very first tick, off
+        // the board, before it had walked on.
+        @SerializedName("NumberOfIceblocksToSpawnWith") private int iceBlocksToSpawnWith;
     }
 }

@@ -2,6 +2,7 @@ package factories.plant;
 
 import models.entities.plants.Plant;
 import models.entities.plants.abilities.AreaExplosiveAbility;
+import models.entities.plants.abilities.GrapeshotAbility;
 import models.entities.plants.abilities.DeathExplosiveAbility;
 import models.entities.plants.abilities.FreezeOnContactAbility;
 import models.entities.plants.abilities.GlobalTargetingAbility;
@@ -137,7 +138,9 @@ public final class UpgradeResolver {
             case "GROWTH_STAGE_MAX_UP":
                 set(plant, MeleeAttackAbility.class, MeleeAttackAbility::addGrowthStage); break;
             case "GRAPE_BOUNCE_EXT":
-                set(plant, AreaExplosiveAbility.class, a -> a.widenArea(0, (int) value)); break;
+                // "Bounces +1": each grape pellet ricochets to one more zombie. This used to widen the
+                // blast radius instead -- a stand-in from before the pellets existed.
+                set(plant, GrapeshotAbility.class, a -> a.addBounces((int) value)); break;
             case "WARM_RADIUS_EXT":
                 set(plant, WarmthAbility.class, a -> a.increaseRadius((int) value)); break;
             case "LIFESPAN_EXT":

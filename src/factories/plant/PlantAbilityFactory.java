@@ -9,6 +9,7 @@ import models.entities.plants.abilities.FreezeOnContactAbility;
 import models.entities.plants.abilities.GraveBusterAbility;
 import models.entities.plants.abilities.HypnotizeOnEatenAbility;
 import models.entities.plants.abilities.HypnotizeRandomTargetAbility;
+import models.entities.plants.abilities.GrapeshotAbility;
 import models.entities.plants.abilities.InstantExplosiveAbility;
 import models.entities.plants.abilities.InstantFreezeAbility;
 import models.entities.plants.abilities.InstantSunBurstAbility;
@@ -31,6 +32,7 @@ import models.entities.plants.abilities.WarmthAbility;
 import models.entities.projectiles.Element;
 import models.entities.projectiles.ProjectileType;
 import models.entities.projectiles.Trajectory;
+import utils.Constants;
 import models.templates.AbilityType;
 import models.templates.PlantTemplate.AbilityParams;
 
@@ -62,6 +64,9 @@ public final class PlantAbilityFactory {
                     params.getExplosionColRadius(), element(params));
             case INSTANT_EXPLOSIVE: return new InstantExplosiveAbility(scalarDamage,
                     params.getExplosionRowRadius(), params.getExplosionColRadius(), element(params));
+            case GRAPESHOT: return new GrapeshotAbility(scalarDamage,
+                    params.getExplosionRowRadius(), params.getExplosionColRadius(), element(params),
+                    Constants.GRAPESHOT_BASE_BOUNCES);
             case FREEZE_ON_CONTACT: return new FreezeOnContactAbility(actionIntervalTicks,
                     TriggerResolver.forContact(), params.getFreezeDurationTicks());
             case MELEE_ATTACK: return melee(params, actionIntervalTicks, damageBuff);
