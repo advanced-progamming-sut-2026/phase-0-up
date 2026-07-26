@@ -678,7 +678,7 @@
     "damage": 1800,
     "actionInterval": 0.0,
     "recharge": 35.0,
-    "abilityType": "INSTANT_EXPLOSIVE",
+    "abilityType": "GRAPESHOT",
     "abilityValue": 9.0,
     "plantFood": [],
     "upgrades": [

@@ -9,7 +9,6 @@ import utils.Result;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 
 public class Cell {
     private double x;
@@ -44,6 +43,18 @@ public class Cell {
 
     public void addTerrain(Terrain terrain) {
         this.terrain.add(terrain);
+    }
+
+    // Drops any terrain that has been destroyed (a grave shot to 0 HP, a melted ice block) off the
+    // tile. Damage and removal are separate steps -- a terrain marks itself destroyed but cannot pull
+    // itself out of the cell it does not know about -- so the sweep is centralised here and run every
+    // tick. Without it a broken grave lingers in the list, and everything that scans terrain has to
+    // remember to re-check isDestroyed() forever. Returns true if anything was actually removed.
+    public boolean removeDestroyedTerrain() {
+        if (terrain == null || terrain.isEmpty()) {
+            return false;
+        }
+        return terrain.removeIf(Terrain::isDestroyed);
     }
 
     public Plant getCurrentPlant(){

@@ -1,6 +1,8 @@
 package views.renderers.MenuRenderer;
 
 import models.quests.Quest;
+import models.quests.QuestProgress;
+import models.user.Profile;
 import views.OutputHandler;
 
 import java.util.List;
@@ -10,6 +12,12 @@ import java.util.List;
 public class TravelLogRenderer {
 
     public void showQuestPage(String pageTitle, List<Quest> quests) {
+        showQuestPage(pageTitle, quests, null);
+    }
+
+    // The profile is what turns this page from a static list into a progress report: every quest that
+    // counts towards a number reports where the player stands against it.
+    public void showQuestPage(String pageTitle, List<Quest> quests, Profile profile) {
         OutputHandler.showMessage("=== Travel Log: " + pageTitle + " ===");
         if (quests == null || quests.isEmpty()) {
             OutputHandler.showMessage("  (no quests on this page)");
@@ -20,6 +28,13 @@ public class TravelLogRenderer {
             OutputHandler.showMessage(i++ + ". [" + quest.getPriority() + "] " + quest.getName()
                     + (quest.isComplete() ? (quest.isClaimed() ? " (claimed)" : " (complete!)") : ""));
             OutputHandler.showMessage("     " + quest.getDescription());
+
+            QuestProgress progress = quest.getProgress(profile);
+            String progressLine = progress == null ? null : progress.describe();
+            if (progressLine != null) {
+                OutputHandler.showMessage("     " + progressLine);
+            }
+
             OutputHandler.showMessage("     Reward: " + quest.getReward().describe());
         }
     }

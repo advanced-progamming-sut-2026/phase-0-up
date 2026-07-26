@@ -11,8 +11,8 @@ public class GameMap {
     private List<Collectible> activeCollectibles;
     private List<Row> rows;
     
-    private static final int rowCount = 5;
-    private static final int colCount = 9;
+    private static final int ROW_COUNT = 5;
+    private static final int COL_COUNT = 9;
 
     // Big Wave Beach tide state. baseWaterColumn is the leftmost column flooded at level start (the
     // resting waterline); the tide floods up to a few more columns to its left and drains back. -1
@@ -43,22 +43,22 @@ public class GameMap {
     }
 
     public boolean isValidCoordinate(int x, int y) {
-        return x >= 0 && x < colCount && y >= 0 && y < rowCount;
+        return x >= 0 && x < COL_COUNT && y >= 0 && y < ROW_COUNT;
     }
 
     // Records the resting waterline from the terrain the initializer just flooded: the leftmost column
     // that any row starts flooded in. Called once, after applyTerrain. Stays -1 on a non-beach level.
     public void captureBaseWaterline() {
-        int leftmost = colCount;
+        int leftmost = COL_COUNT;
         for (Row row : rows) {
-            for (int x = 0; x < colCount; x++) {
+            for (int x = 0; x < COL_COUNT; x++) {
                 if (row.cellAt(x).isFlooded()) {
                     leftmost = Math.min(leftmost, x);
                     break;
                 }
             }
         }
-        baseWaterColumn = leftmost < colCount ? leftmost : -1;
+        baseWaterColumn = leftmost < COL_COUNT ? leftmost : -1;
     }
 
     public boolean hasTide() { return baseWaterColumn >= 0; }
@@ -82,7 +82,7 @@ public class GameMap {
 
     // How many leftmost columns (0 .. n-1) the tide is guaranteed never to reach.
     public int getSafeColumnCount() {
-        return hasTide() ? getTideFloodFloor() : colCount;
+        return hasTide() ? getTideFloodFloor() : COL_COUNT;
     }
     public List<Zombie> killAllZombies() {
         List<Zombie> killedZombies = new ArrayList<>();

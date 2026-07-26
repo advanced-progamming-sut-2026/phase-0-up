@@ -1,7 +1,6 @@
 package controllers.commands.greenhouse;
 
 import controllers.commands.Command;
-import models.game.SeedPacket;
 import models.greenhouse.GreenHouse;
 import models.greenhouse.GreenHousePlant;
 import models.greenhouse.Pot;

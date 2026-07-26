@@ -31,7 +31,10 @@ public final class DailyWaveGenerator {
     private static final int FINAL_WAVE_MULTIPLIER = 2;   // the flag wave is twice the previous budget
     private static final int BASE_DELAY_SECONDS = 25;
     private static final int DELAY_JITTER_SECONDS = 10;
-    private static final int OPENING_DELAY_SECONDS = 40;  // build time before anything walks on
+    // Build time before anything walks on. Kept in step with Constants.FIRST_WAVE_DELAY_SECONDS so
+    // the scoring game's opening wait matches an adventure level's. WaveSystem also caps the first
+    // wave at that same figure, so this only has to not undershoot it; matching keeps the two clear.
+    private static final int OPENING_DELAY_SECONDS = 30;
     private static final int POOL_MIN = 3;
     private static final int POOL_SPREAD = 3;             // 3..5 zombie types per wave
 

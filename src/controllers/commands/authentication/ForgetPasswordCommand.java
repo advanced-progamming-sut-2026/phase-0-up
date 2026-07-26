@@ -7,6 +7,7 @@ import utils.Result;
 import utils.regex.LoginMenuRegex;
 import utils.storage.DatabaseManager;
 import utils.storage.PasswordHasher;
+import utils.storage.SecurityAnswer;
 import utils.validation.PasswordValidator;
 import views.InputHandler;
 import views.renderers.MenuRenderer.LoginMenuRenderer;
@@ -60,11 +61,22 @@ public class ForgetPasswordCommand implements Command {
         }
 
         String answer = LoginMenuRegex.ANSWER_SECURITY.getGroup(input, "answer");
-        String normalizedAnswer = answer.trim().toLowerCase();
+        if (SecurityAnswer.isBlank(answer)) {
+            loginMenuRenderer.forgetPasswordRender(new Result(false, "An empty answer won't fool anyone."));
+            return false;
+        }
 
-        if (!PasswordHasher.matches(normalizedAnswer, user.getSecurityAnswerHash())) {
+        if (!SecurityAnswer.matches(answer, user.getSecurityAnswerHash())) {
             loginMenuRenderer.forgetPasswordRender(new Result(false, "Invalid answer!"));
             return false;
+        }
+
+        // The account was registered before answers were normalized, so its digest is of the raw
+        // answer. Re-store it in canonical form now that we've seen a correct answer -- the old digest
+        // would keep working only for a byte-identical retype.
+        if (SecurityAnswer.wasLegacyMatch(answer, user.getSecurityAnswerHash())) {
+            user.setSecurityAnswerHash(SecurityAnswer.hash(answer));
+            DatabaseManager.getInstance().saveAll();
         }
         return true;
     }

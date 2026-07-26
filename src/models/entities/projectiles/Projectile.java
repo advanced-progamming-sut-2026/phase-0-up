@@ -52,6 +52,17 @@ public class Projectile extends Entity {
 
     private Set<Terrain> hitTerrains;
 
+    // Grapeshot pellet state. remainingHits is how many more distinct zombies this grape may strike
+    // (1 + bounces); grapeTtlTicks retires a grape that never finds enough targets; grapeTarget is the
+    // zombie assigned for its first hop, so a volley fans out to different zombies instead of piling
+    // onto the nearest one. All unused for any non-GRAPE projectile.
+    private int remainingHits = 0;
+    private int grapeTtlTicks = 0;
+    private Zombie grapeTarget = null;
+    // Shared across one Grapeshot volley so its pellets fan out over different zombies instead of
+    // several piling onto the same nearest one. Null for a lone grape, which falls back to its own set.
+    private Set<Zombie> grapeVolleyHits = null;
+
     public Projectile(double x, double startY, ProjectileType type, int damage,
                       double speedX, double speedY, Plant shooter, double maxRange,
                       Element element, Trajectory trajectory) {
@@ -88,10 +99,27 @@ public class Projectile extends Entity {
         this.poisonDurationTicks = durationTicks;
     }
 
-    //TODO: in game engine after finishing the loop on the projectiles check if any of them changed line
+    // Turns this projectile into a Grapeshot pellet: it ricochets to `bounces + 1` distinct zombies,
+    // then is spent, and self-destructs after `ttlTicks` regardless. `firstTarget` is the zombie it
+    // heads for first (so a volley spreads out); null lets it seek the nearest on its own. `volleyHits`
+    // is the shared "already struck by this volley" set (null for a lone grape).
+    public void makeGrape(int bounces, int ttlTicks, Zombie firstTarget, Set<Zombie> volleyHits) {
+        this.remainingHits = Math.max(1, bounces + 1);
+        this.grapeTtlTicks = ttlTicks;
+        this.grapeTarget = firstTarget;
+        this.grapeVolleyHits = volleyHits;
+    }
+
+    // A projectile with vertical speed can finish a tick in a different lane than the row list holding
+    // it; CombatSystem.resolveProjectiles re-files those after it has swept every row.
     @Override
     public void update(GameSession gameSession) {
         if (isDestroyed) return;
+
+        if (this.type == ProjectileType.GRAPE) {
+            updateGrape(gameSession);
+            return;
+        }
 
         if (maxRange > 0.0 && Math.abs(this.x - this.startX) >= maxRange) {
             this.isDestroyed = true;
@@ -198,6 +226,76 @@ public class Projectile extends Entity {
         }
     }
 
+    // One tick of a Grapeshot pellet. It does not travel in a straight line: each tick it picks the
+    // nearest zombie it has not already struck, jumps onto it (which re-files the grape into that
+    // zombie's lane, via CombatSystem's lane-change pass), and damages it. That counts as one bounce.
+    // The grape retires once it has spent all its hits, once its time runs out, or once there is no
+    // fresh zombie left to bounce to.
+    private void updateGrape(GameSession gameSession) {
+        if (grapeTtlTicks <= 0 || remainingHits <= 0) {
+            this.isDestroyed = true;
+            return;
+        }
+        grapeTtlTicks--;
+
+        Zombie target = nextGrapeTarget(gameSession);
+        if (target == null) {
+            // Nothing to hit right now. Keep drifting on the spot until a zombie wanders into reach or
+            // the pellet's time expires -- it does not vanish the instant the lane is momentarily clear.
+            return;
+        }
+
+        this.x = target.getMovement().getPositionX();
+        this.y = target.getMovement().getPositionY();
+        this.exactY = this.y;
+
+        target.getHealth().applyDamage(damage, element, shooter, trajectory);
+        element.applyOnHit(target.getState());
+        grapeHits().add(target);
+        grapeTarget = null;   // the assigned first hop is used up; from here it seeks on its own
+
+        remainingHits--;
+        if (remainingHits <= 0) {
+            this.isDestroyed = true;
+        }
+    }
+
+    // The set of zombies this grape treats as already struck: the whole volley's shared set when it
+    // has one, otherwise just its own.
+    private Set<Zombie> grapeHits() {
+        return grapeVolleyHits != null ? grapeVolleyHits : hitTargets;
+    }
+
+    // The zombie a grape should strike next: its pre-assigned first target while that is still valid,
+    // otherwise the nearest targetable zombie the volley has not hit yet. Null when none remain.
+    private Zombie nextGrapeTarget(GameSession gameSession) {
+        Set<Zombie> hits = grapeHits();
+        if (grapeTarget != null && grapeTarget.isTargetable() && !hits.contains(grapeTarget)) {
+            return grapeTarget;
+        }
+        Zombie nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (int row = 0; row < Constants.BOARD_ROWS; row++) {
+            List<Zombie> zombies = gameSession.getMap().getRow(row).getZombies();
+            if (zombies == null) {
+                continue;
+            }
+            for (Zombie z : zombies) {
+                if (!z.isTargetable() || hits.contains(z)) {
+                    continue;
+                }
+                double dx = z.getMovement().getPositionX() - this.x;
+                double dy = row - this.exactY;
+                double distance = (dx * dx) + (dy * dy);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearest = z;
+                }
+            }
+        }
+        return nearest;
+    }
+
     public void move() {
         this.x += speedX;
         this.exactY += speedY;
@@ -226,7 +324,9 @@ public class Projectile extends Entity {
             }
         }
 
-        target.getHealth().applyDamage(damage, element, shooter);
+        // Trajectory travels with the hit: a LOBBED melon arcs over whatever the zombie holds in front
+        // (newspaper, shoved barrel) and lands on the body behind it.
+        target.getHealth().applyDamage(damage, element, shooter, trajectory);
         hitTargets.add(target);
         element.applyOnHit(target.getState());
 
@@ -278,7 +378,10 @@ public class Projectile extends Entity {
                         double distanceX = Math.abs(z.getMovement().getPositionX() - epicenterX);
 
                         if (distanceX <= splashRadiusX) {
-                            z.getHealth().applyDamage(this.splashDamage, this.element, this.shooter);
+                            // Splash rains down from the same arc as the shot that caused it, so it
+                            // clears front shields on the neighbours too.
+                            z.getHealth().applyDamage(this.splashDamage, this.element, this.shooter,
+                                    this.trajectory);
                             this.element.applyOnHit(z.getState());
                         }
                     }
@@ -328,7 +431,8 @@ public class Projectile extends Entity {
         this.speedY = direction * 0.5;
     }
 
-    //TODO: remove destroyed projectiles in time system every tick
+    // Destroyed projectiles are retired by CombatSystem.resolveProjectiles, which drops them from the
+    // row on the same tick they are flagged.
     public boolean isDestroyed() {
         return isDestroyed;
     }

@@ -7,8 +7,12 @@ public enum SignUpMenuRegex implements Regex {
             "[a-zA-Z0-9\\-]+(?:\\.[a-zA-Z0-9\\-]+)*\\.[a-zA-Z]{2,}$"),
     USERNAME("^[a-zA-Z0-9\\-]+$"),
     PASSWORD("^[a-zA-Z0-9\\p{Punct}]+$"),
-    SECURITY_QUESTION("^\\s*pick\\s+question\\s+-q\\s+(?<questionNumber>\\S+)\\s+-a\\s+(?<answer>\\S+)"
-            + "\\s+-c\\s+(?<answerConfirm>\\S+)\\s*$");
+    // The answer groups accept a quoted phrase as well as a bare word, mirroring
+    // LoginMenuRegex.ANSWER_SECURITY -- an answer you cannot re-type at recovery time is useless, so
+    // the two patterns have to admit the same shapes.
+    SECURITY_QUESTION("^\\s*pick\\s+question\\s+-q\\s+(?<questionNumber>\\S+)"
+            + "\\s+-a\\s+(?<answer>\"[^\"]*\"|[^\"\\s]+)"
+            + "\\s+-c\\s+(?<answerConfirm>\"[^\"]*\"|[^\"\\s]+)\\s*$");
 
 
     private final String pattern;

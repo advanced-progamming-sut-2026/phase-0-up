@@ -18,4 +18,11 @@ public class OnlyCategoryCondition implements QuestCondition {
         // Exactly `count` plants of this category, and every plant placed was that category.
         return ctx.isWon() && ctx.plantedCategoryCount(category) == count && ctx.allPlantedAreCategory(category);
     }
+
+    // A single-level goal: nothing carries between matches, so the travel log shows the
+    // target with no running tally rather than implying progress that would not persist.
+    @Override
+    public models.quests.QuestProgress progress(models.user.Profile profile) {
+        return models.quests.QuestProgress.perLevel(count);
+    }
 }

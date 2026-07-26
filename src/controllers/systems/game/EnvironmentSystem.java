@@ -53,6 +53,29 @@ public class EnvironmentSystem {
         }
         applySliderTiles(session);
         applyIceMelt(session);
+        sweepDestroyedTerrain(session);
+    }
+
+    // Clears broken terrain off the board once per tick, after everything that could have damaged it
+    // has run. Graves are the case that matters: a projectile marks one destroyed the moment its HP
+    // hits 0, but whatever landed the killing blow (a pea, a splash, an explosion, a Grave Buster)
+    // should not each have to remember to unlink it from its tile. One sweep here means a destroyed
+    // grave is off the grid before the next frame -- the tile becomes plantable, stops blocking shots,
+    // and stops being drawn -- no matter what killed it.
+    private void sweepDestroyedTerrain(GameSession session) {
+        if (session.getMap() == null) {
+            return;
+        }
+        for (Row row : session.getMap().getRows()) {
+            if (row == null || row.getCells() == null) {
+                continue;
+            }
+            for (Cell cell : row.getCells()) {
+                if (cell != null) {
+                    cell.removeDestroyedTerrain();
+                }
+            }
+        }
     }
 
     // Wave-launch weather. Returns any lines to render.

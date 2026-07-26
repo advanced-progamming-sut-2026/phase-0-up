@@ -6,10 +6,8 @@ import models.entities.projectiles.Element;
 import models.entities.projectiles.Projectile;
 import models.entities.projectiles.ProjectileType;
 import models.entities.projectiles.Trajectory;
-import models.entities.zombies.Zombie;
 import models.game.GameSession;
 
-import java.util.List;
 
 public class ShootProjectileAbility extends PlantAbility implements Burstable {
     private ProjectileType projectileType;

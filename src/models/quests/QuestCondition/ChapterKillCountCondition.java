@@ -17,4 +17,12 @@ public class ChapterKillCountCondition implements QuestCondition {
     public boolean isSatisfied(QuestContext ctx) {
         return ctx.getChapterZombiesKilled() >= threshold;
     }
+
+    // Genuinely cross-level: the per-chapter totals live on the profile and carry between matches, so
+    // the travel log can show a real running tally. The best chapter is the one that will finish first.
+    @Override
+    public models.quests.QuestProgress progress(models.user.Profile profile) {
+        int killed = profile == null ? 0 : profile.getBestChapterZombieKills();
+        return models.quests.QuestProgress.crossLevel(killed, threshold);
+    }
 }

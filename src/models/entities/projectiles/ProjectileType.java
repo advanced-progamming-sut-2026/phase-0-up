@@ -21,5 +21,8 @@ public enum ProjectileType {
     RUTABAGA,
     PLASMA_BALL,
     PIERCING_SPIKE,
+    // A Grapeshot pellet: it does not fly in a straight line but ricochets from zombie to zombie,
+    // handled entirely by Projectile's grape path rather than the normal collision loop.
+    GRAPE,
 
 }

@@ -91,83 +91,125 @@ public class InputRouter {
         }
     }
 
+    // Commands available from every menu are tried first; anything else is offered to the handler for
+    // the menu the player is standing in. Each per-menu handler returns whether it consumed the input,
+    // so an unrecognised command falls through to one shared "invalid" message.
     private void routeAndExecute(String input) {
-        if (AllMenuRegex.EXIT_MENU.matches(input)) {exitMenu(); return;}
-        else if (AllMenuRegex.ENTER_MENU.matches(input)) {enterMenu(input); return;}
-        else if (AllMenuRegex.SHOW_CURRENT.matches(input)) {new ShowCurrentMenuCommand(appSession, allMenuRenderer, mainMenuRenderer).execute(); return;}
-        switch (appSession.getCurrentMenu()){
-            case MAIN_MENU :
-                if(MainMenuRegex.LOG_OUT.matches(input)) {logout(); return;}
-                // The spec asks for the scoring game to be reachable straight from the main menu, so it
-                // is offered here as well as inside the play menu.
-                if(PlayMenuRegex.PLAY_SCORING_GAME.matches(input)) {launchScoringGame(); return;}
-                break;
-            case SETTINGS_MENU :
-                if(SettingMenuRegex.CHANGE_DL.matches(input)){
-                    changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input , "dl")); return;}
-                break;
-            case PROFILE_MENU :
-                if (handleProfileMenuExecute(input)) return;
-                break;
-            case PLAY_MENU :
-                if (handlePlayMenuExecute(input)) return;
-                break;
-            case SHOP_MENU :
-                if (handleShopMenuExecute(input)) return;
-                break;
-            case SIGNUP_MENU :
-                if (SignUpMenuRegex.SIGN_UP.matches(input)) {
-                    new RegisterCommand(input, signUpMenuRenderer , appSession ,allMenuRenderer).execute();
-                    return;
-                }
-                break;
-            case LOGIN_MENU:
-                if (LoginMenuRegex.LOGIN.matches(input)) {
-                    new LoginCommand(input, appSession, loginMenuRenderer , allMenuRenderer).execute();
-                    return;
-                } else if (LoginMenuRegex.FORGET_PASSWORD.matches(input)) {
-                    new ForgetPasswordCommand(input, appSession, loginMenuRenderer).execute();
-                    return;
-                }
-                break;
-            case GREENHOUSE_MENU:
-                if (GreenHouseMenuRegex.ENTER_SHOP.matches(input)) {
-                    enterShop();
-                    return;
-                } else if (GreenHouseMenuRegex.PLANT.matches(input)) {
-                    plantPot(input);
-                    return;
-                } else if (GreenHouseMenuRegex.SHOW_STATUS.matches(input)){
-                    new ShowGreenhouseCommand(appSession.getCurrentUser().getProfile().getMyGreenHouse(),
-                            greenhouseRenderer).execute();
-                    return;
-                } else if (GreenHouseMenuRegex.COLLECT.matches(input)) {
-                    collectPot(input);
-                    return;
-                } else if (GreenHouseMenuRegex.GROW.matches(input)) {
-                    growPlant(input);
-                    return;
-                }
-                break;
-            case NEWS_MENU:
-                if(handleNewsMenuExecute(input)) return;
-                break;
-            case COLLECTION_MENU:
-                if(handleCollectionMenuExecute(input)) return;
-                break;
-            case PLANTS_MENU:
-                if(handlePlantMenuExecute(input)) return;
-                break;
-            case TRAVEL_LOG_MENU:
-                if(handleTravelLogExecute(input)) return;
-                break;
-            case LEADERBOARD:
-                if(handleLeaderboardExecute(input)) return;
-                break;
-            }
-
-
+        if (routeGlobalCommands(input)) {
+            return;
+        }
+        if (routeCurrentMenu(input)) {
+            return;
+        }
         allMenuRenderer.invalidCommand();
+    }
+
+    // Menu navigation and shutdown -- valid no matter where the player is.
+    private boolean routeGlobalCommands(String input) {
+        if (AllMenuRegex.EXIT_APPLICATION.matches(input)) {
+            exitApplication();
+            return true;
+        }
+        if (AllMenuRegex.EXIT_MENU.matches(input)) {
+            exitMenu();
+            return true;
+        }
+        if (AllMenuRegex.ENTER_MENU.matches(input)) {
+            enterMenu(input);
+            return true;
+        }
+        if (AllMenuRegex.SHOW_CURRENT.matches(input)) {
+            new ShowCurrentMenuCommand(appSession, allMenuRenderer, mainMenuRenderer).execute();
+            return true;
+        }
+        return false;
+    }
+
+    // Hands the input to whichever menu the player currently occupies.
+    private boolean routeCurrentMenu(String input) {
+        switch (appSession.getCurrentMenu()) {
+            case MAIN_MENU:      return handleMainMenuExecute(input);
+            case SETTINGS_MENU:  return handleSettingsMenuExecute(input);
+            case PROFILE_MENU:   return handleProfileMenuExecute(input);
+            case PLAY_MENU:      return handlePlayMenuExecute(input);
+            case SHOP_MENU:      return handleShopMenuExecute(input);
+            case SIGNUP_MENU:    return handleSignUpMenuExecute(input);
+            case LOGIN_MENU:     return handleLoginMenuExecute(input);
+            case GREENHOUSE_MENU:return handleGreenhouseMenuExecute(input);
+            case NEWS_MENU:      return handleNewsMenuExecute(input);
+            case COLLECTION_MENU:return handleCollectionMenuExecute(input);
+            case PLANTS_MENU:    return handlePlantMenuExecute(input);
+            case TRAVEL_LOG_MENU:return handleTravelLogExecute(input);
+            case LEADERBOARD:    return handleLeaderboardExecute(input);
+            default:             return false;
+        }
+    }
+
+    private boolean handleMainMenuExecute(String input) {
+        if (MainMenuRegex.LOG_OUT.matches(input)) {
+            logout();
+            return true;
+        }
+        // The spec asks for the scoring game to be reachable straight from the main menu, so it is
+        // offered here as well as inside the play menu.
+        if (PlayMenuRegex.PLAY_SCORING_GAME.matches(input)) {
+            launchScoringGame();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean handleSettingsMenuExecute(String input) {
+        if (SettingMenuRegex.CHANGE_DL.matches(input)) {
+            changeDL(SettingMenuRegex.CHANGE_DL.getGroup(input, "dl"));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean handleSignUpMenuExecute(String input) {
+        if (SignUpMenuRegex.SIGN_UP.matches(input)) {
+            new RegisterCommand(input, signUpMenuRenderer, appSession, allMenuRenderer).execute();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean handleLoginMenuExecute(String input) {
+        if (LoginMenuRegex.LOGIN.matches(input)) {
+            new LoginCommand(input, appSession, loginMenuRenderer, allMenuRenderer).execute();
+            return true;
+        }
+        if (LoginMenuRegex.FORGET_PASSWORD.matches(input)) {
+            new ForgetPasswordCommand(input, appSession, loginMenuRenderer).execute();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean handleGreenhouseMenuExecute(String input) {
+        if (GreenHouseMenuRegex.ENTER_SHOP.matches(input)) {
+            enterShop();
+            return true;
+        }
+        if (GreenHouseMenuRegex.PLANT.matches(input)) {
+            plantPot(input);
+            return true;
+        }
+        if (GreenHouseMenuRegex.SHOW_STATUS.matches(input)) {
+            new ShowGreenhouseCommand(appSession.getCurrentUser().getProfile().getMyGreenHouse(),
+                    greenhouseRenderer).execute();
+            return true;
+        }
+        if (GreenHouseMenuRegex.COLLECT.matches(input)) {
+            collectPot(input);
+            return true;
+        }
+        if (GreenHouseMenuRegex.GROW.matches(input)) {
+            growPlant(input);
+            return true;
+        }
+        return false;
     }
 
     // Leaderboard menu: "leaderboard sort -c <column> -o <asc|desc>" re-orders the board on any of the
@@ -248,25 +290,25 @@ public class InputRouter {
             GameSession session = new GameSession(user.getProfile(), level);
             appSession.setCurrentGameSession(session);
             travelLogRenderer.launchingMinigame("Vasebreaker", Math.max(1, difficulty));
-            new GameEngine(session).startLoop();
+            runGame(session);
         } else if(game.equals("wallnutbowling") || game.equals("bowling") || game.equals("wallnut")){
             models.game.Level level = factories.MinigameFactory.createWallnutBowling(difficulty);
             GameSession session = new GameSession(user.getProfile(), level);
             appSession.setCurrentGameSession(session);
             travelLogRenderer.launchingMinigame("Wall-nut Bowling", Math.max(1, difficulty));
-            new GameEngine(session).startLoop();
+            runGame(session);
         } else if(game.equals("izombie") || game.equals("i,zombie") || game.equals("izombies")){
             models.game.Level level = factories.MinigameFactory.createIZombie(difficulty);
             GameSession session = new GameSession(user.getProfile(), level);
             appSession.setCurrentGameSession(session);
             travelLogRenderer.launchingMinigame("I, Zombie", Math.max(1, difficulty));
-            new GameEngine(session).startLoop();
+            runGame(session);
         } else if(game.equals("beghouled") || game.equals("bejeweled")){
             models.game.Level level = factories.MinigameFactory.createBeghouled(difficulty);
             GameSession session = new GameSession(user.getProfile(), level);
             appSession.setCurrentGameSession(session);
             travelLogRenderer.launchingMinigame("Beghouled", Math.max(1, difficulty));
-            new GameEngine(session).startLoop();
+            runGame(session);
         } else if(game.equals("zombotany")){
             // Zombotany is a normal level, so it goes through seed selection first; the plants menu's
             // "start" then launches the game loop (as for any adventure level).
@@ -310,8 +352,7 @@ public class InputRouter {
         }
         else if(SeedSelectionRegex.START_GAME.matches(input)){
             new StartLevelCommand(gameSession , appSession).execute();
-            GameEngine gameEngine = new GameEngine(gameSession);
-            gameEngine.startLoop();
+            runGame(gameSession);
             return true;
         }
         return false;
@@ -437,14 +478,22 @@ public class InputRouter {
 
     private boolean handleProfileMenuExecute(String input) {
         User user = appSession.getCurrentUser();
+        // Belt and braces alongside the gate in EnterMenuCommand: every command below dereferences the
+        // user, so reaching here logged out must report, not crash.
+        if(user == null){
+            allMenuRenderer.enterMenu(new utils.Result(false, "Log in first -- the lawn is members only."));
+            return true;
+        }
         if(ProfileMenuRegex.CHANGE_USERNAME.matches(input)) {
             new ProfileCommands( user, EditAction.USERNAME ,
-                    ProfileMenuRegex.CHANGE_USERNAME.getGroup(input , "username") , null, profileMenuRenderer).execute();
+                    ProfileMenuRegex.CHANGE_USERNAME.getGroup(input, "username"), null,
+                    profileMenuRenderer).execute();
             return true;
         }
         else if(ProfileMenuRegex.CHANGE_NICKNAME.matches(input)) {
             new ProfileCommands(user, EditAction.NICKNAME ,
-                    ProfileMenuRegex.CHANGE_NICKNAME.getGroup(input , "nickname") , null, profileMenuRenderer).execute();
+                    ProfileMenuRegex.CHANGE_NICKNAME.getGroup(input, "nickname"), null,
+                    profileMenuRenderer).execute();
             return true;
         }
         else if(ProfileMenuRegex.CHANGE_EMAIL.matches(input)) {
@@ -480,6 +529,29 @@ public class InputRouter {
         this.running = false;
     }
 
+    // "exit" / "quit" from any menu: persist first, then drop out of the input loop so main() returns
+    // and the JVM ends on its own. Nothing is force-killed -- Runtime.exit here would skip the save and
+    // strand anything the caller still had to do.
+    private void exitApplication() {
+        try {
+            DatabaseManager.getInstance().saveAll();
+        } catch (RuntimeException e) {
+            allMenuRenderer.enterMenu(new utils.Result(false,
+                    "Your progress could not be saved: " + e.getMessage()));
+        }
+        allMenuRenderer.applicationExit();
+        exitGame();
+    }
+
+    // Runs a match to its end, then puts the player back in the Play menu. Every route into the game
+    // goes through here: without it the session is left sitting in the IN_GAME menu once the loop
+    // returns, where no menu command is routed and the player is stranded.
+    private void runGame(GameSession session) {
+        new GameEngine(session).startLoop();
+        appSession.setCurrentGameSession(null);
+        appSession.setCurrentMenu(MenuType.PLAY_MENU);
+        allMenuRenderer.enterMenu(new utils.Result(true, "Back to the Play menu."));
+    }
 
     private void exitMenu() {
         if (appSession.getCurrentMenu() == MenuType.SIGNUP_MENU) exitGame();

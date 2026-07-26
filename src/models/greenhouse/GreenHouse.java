@@ -1,6 +1,5 @@
 package models.greenhouse;
 
-import models.entities.plants.Plant;
 
 import java.util.ArrayList;
 import java.util.List;

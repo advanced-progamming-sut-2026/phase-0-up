@@ -109,21 +109,10 @@ public class GameEngine {
         if (before != GameState.PLAYING || after == GameState.PLAYING) {
             return;
         }
-        // Settle the scoring game BEFORE the save below, so the run's Meow Points are on the profile by
-        // the time it is written. It also has to run before anything else touches the board, because
-        // two of its rules read the final state (sun left unspent, mowers never triggered).
+        // Settle the scoring game first: two of its rules read the final board state (sun left unspent,
+        // mowers never triggered), so it has to run before anything else touches it.
         settleScoringGame();
 
-        // Everything a level earns -- loot coins/gems/pots from kills, campaign progress, quest rewards,
-        // news -- lived only in memory until now: nothing in the combat loop touches the database. If the
-        // process died here the whole level's winnings went with it. Persist once, at the one point where
-        // the level is definitively over, rather than on every drop (which would hammer the disk).
-        try {
-            utils.storage.DatabaseManager.getInstance().saveAll();
-        } catch (RuntimeException e) {
-            inGameRenderer.render(new Result(false,
-                    "Your progress could not be saved: " + e.getMessage()));
-        }
         if (after == GameState.WON) {
             inGameRenderer.render(new Result(true,
                     "Dear humanz, zis is not done yet; we will come back to eat your brainz, humanz."));
@@ -140,6 +129,20 @@ public class GameEngine {
             for (Result quest : questSystem.evaluateAndComplete(gameSession.getPlayer(), gameSession, false)) {
                 inGameRenderer.render(quest);
             }
+        }
+
+        // Persist ONCE, and only AFTER every profile mutation this level end produces: the scoring
+        // settlement above, AND the quest completions (their reward grants plus the completed-quest
+        // counters). This save used to run before the quests were evaluated, so a finished quest lived
+        // only in memory -- the leaderboard, which reads the live profile, showed it, but it never
+        // reached disk and vanished on the next load unless the player happened to quit via the "exit"
+        // command (which saves again). Everything a level earns -- loot, campaign progress, quest
+        // rewards, news -- reaches the database here, at the one point the level is definitively over.
+        try {
+            utils.storage.DatabaseManager.getInstance().saveAll();
+        } catch (RuntimeException e) {
+            inGameRenderer.render(new Result(false,
+                    "Your progress could not be saved: " + e.getMessage()));
         }
     }
 
@@ -169,30 +172,63 @@ public class GameEngine {
         }
     }
 
+    // Abandons the match in progress. Quitting is a forfeit, so the session is put into LOST through
+    // the same state change a defeat uses, and the normal end-of-level path runs on top of it: quests
+    // are evaluated, a scoring run is settled, and the profile is saved. Then the loop is stopped, and
+    // the caller (InputRouter.runGame) drops the player back on the Play menu.
+    private void exitGame() {
+        GameState before = gameSession.getState();
+        if (gameSession.forfeit()) {
+            inGameRenderer.render(new Result(false,
+                    "You retreat from the lawn. The zombies will be telling this story for years."));
+            announceOutcome(before, gameSession.getState());
+        } else {
+            inGameRenderer.render(new Result(true, "This lawn is already settled -- heading back."));
+        }
+        running = false;
+    }
+
+    // Dispatches one in-game command. Split into four groups by what the command acts on, so each
+    // stays inside the 50-line limit and a new command has one obvious place to go. Order between the
+    // groups is irrelevant -- every pattern is anchored and mutually exclusive.
     private boolean routeAndExecute(String input) {
+        if (InGameRegex.EXIT_GAME.matches(input)) {
+            exitGame();
+            return true;
+        }
+        return routeSunAndTime(input)
+                || routePlantCommands(input)
+                || routeZombieCommands(input)
+                || routeViewCommands(input);
+    }
+
+    // Sun economy and the clock.
+    private boolean routeSunAndTime(String input) {
         if (InGameRegex.COLLECT_SUN.matches(input)) {
             int x = Integer.parseInt(InGameRegex.COLLECT_SUN.getGroup(input, "x"));
             int y = Integer.parseInt(InGameRegex.COLLECT_SUN.getGroup(input, "y"));
-            new CollectSunCommand(gameSession, sunSystem, inGameRenderer,questSystem , x, y).execute();
+            new CollectSunCommand(gameSession, sunSystem, inGameRenderer, questSystem, x, y).execute();
             return true;
         }
-
         if (InGameRegex.SHOW_SUN_AMOUNT.matches(input)) {
             new ShowSunCommand(gameSession, inGameRenderer).execute();
             return true;
         }
-
         if (InGameRegex.CHEAT_ADD_SUN.matches(input)) {
             int count = Integer.parseInt(InGameRegex.CHEAT_ADD_SUN.getGroup(input, "count"));
             new AddSunCheatCommand(gameSession, inGameRenderer, count).execute();
             return true;
         }
-
         if (InGameRegex.ADVANCE_TIME.matches(input)) {
             int ticks = Integer.parseInt(InGameRegex.ADVANCE_TIME.getGroup(input, "count"));
             advanceTime(ticks);
             return true;
         }
+        return false;
+    }
+
+    // Everything the player does to their own plants and the things that yield them.
+    private boolean routePlantCommands(String input) {
         if (InGameRegex.PLANT_SEED.matches(input)) {
             String plantType = InGameRegex.PLANT_SEED.getGroup(input, "type");
             int x = Integer.parseInt(InGameRegex.PLANT_SEED.getGroup(input, "x"));
@@ -206,6 +242,31 @@ public class GameEngine {
             new PluckPlantCommand(gameSession, inGameRenderer, x, y).execute();
             return true;
         }
+        if (InGameRegex.FEED_PLANT.matches(input)) {
+            int x = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "y"));
+            new FeedPlantCommand(gameSession, inGameRenderer, x, y).execute();
+            return true;
+        }
+        if (InGameRegex.SWAP_PLANTS.matches(input)) {
+            int x1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x1"));
+            int y1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y1"));
+            int x2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x2"));
+            int y2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y2"));
+            new SwapPlantsCommand(gameSession, inGameRenderer, x1, y1, x2, y2).execute();
+            return true;
+        }
+        if (InGameRegex.UPGRADE_PLANT.matches(input)) {
+            String type = InGameRegex.UPGRADE_PLANT.getGroup(input, "type");
+            new UpgradePlantsCommand(gameSession, inGameRenderer, type).execute();
+            return true;
+        }
+        return routeMinigamePickups(input);
+    }
+
+    // Mini-game specific ways of getting a plant onto the lawn (Vasebreaker vases and seeds, Wall-nut
+    // Bowling's conveyor).
+    private boolean routeMinigamePickups(String input) {
         if (InGameRegex.BREAK_VASE.matches(input)) {
             int x = Integer.parseInt(InGameRegex.BREAK_VASE.getGroup(input, "x"));
             int y = Integer.parseInt(InGameRegex.BREAK_VASE.getGroup(input, "y"));
@@ -225,6 +286,12 @@ public class GameEngine {
             new BowlNutCommand(gameSession, inGameRenderer, type, x, y).execute();
             return true;
         }
+        return false;
+    }
+
+    // Putting zombies on the lawn (I, Zombie summons and the spawn cheat), plus the cheats that act on
+    // the horde as a whole.
+    private boolean routeZombieCommands(String input) {
         if (InGameRegex.SUMMON_ZOMBIE.matches(input)) {
             String type = InGameRegex.SUMMON_ZOMBIE.getGroup(input, "type");
             int x = Integer.parseInt(InGameRegex.SUMMON_ZOMBIE.getGroup(input, "x"));
@@ -239,29 +306,6 @@ public class GameEngine {
             new SpawnZombieCheatCommand(gameSession, inGameRenderer, type, x, y).execute();
             return true;
         }
-        if (InGameRegex.ZOMBIES_INFO.matches(input)) {
-            new ZombiesInfoCommand(gameSession, inGameRenderer).execute();
-            return true;
-        }
-        if (InGameRegex.SWAP_PLANTS.matches(input)) {
-            int x1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x1"));
-            int y1 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y1"));
-            int x2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "x2"));
-            int y2 = Integer.parseInt(InGameRegex.SWAP_PLANTS.getGroup(input, "y2"));
-            new SwapPlantsCommand(gameSession, inGameRenderer, x1, y1, x2, y2).execute();
-            return true;
-        }
-        if (InGameRegex.UPGRADE_PLANT.matches(input)) {
-            String type = InGameRegex.UPGRADE_PLANT.getGroup(input, "type");
-            new UpgradePlantsCommand(gameSession, inGameRenderer, type).execute();
-            return true;
-        }
-        if (InGameRegex.FEED_PLANT.matches(input)) {
-            int x = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "x"));
-            int y = Integer.parseInt(InGameRegex.FEED_PLANT.getGroup(input, "y"));
-            new FeedPlantCommand(gameSession, inGameRenderer, x, y).execute();
-            return true;
-        }
         if (InGameRegex.CHEAT_REMOVE_COOLDOWN.matches(input)) {
             new RemoveCooldownCheatCommand(gameSession, inGameRenderer).execute();
             return true;
@@ -272,6 +316,15 @@ public class GameEngine {
         }
         if (InGameRegex.RELEASE_THE_NUKE.matches(input)) {
             new ReleaseTheNukeCheatCommand(gameSession, inGameRenderer).execute();
+            return true;
+        }
+        return false;
+    }
+
+    // Read-only views of the board. Nothing here changes game state.
+    private boolean routeViewCommands(String input) {
+        if (InGameRegex.ZOMBIES_INFO.matches(input)) {
+            new ZombiesInfoCommand(gameSession, inGameRenderer).execute();
             return true;
         }
         if (InGameRegex.SHOW_MAP.matches(input)) {

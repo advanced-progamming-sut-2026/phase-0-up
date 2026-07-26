@@ -3,7 +3,6 @@ package controllers.commands.ingame;
 import controllers.commands.Command;
 import controllers.systems.game.QuestSystem;
 import controllers.systems.game.SunSystem;
-import models.entities.collectibles.SunType;
 import models.game.GameSession;
 import utils.Constants;
 import utils.Result;
@@ -17,7 +16,8 @@ public class CollectSunCommand implements Command {
     private int x;
     private int y;
 
-    public CollectSunCommand(GameSession gameSession, SunSystem sunSystem, InGameRenderer renderer,QuestSystem questSystem, int x, int y) {
+    public CollectSunCommand(GameSession gameSession, SunSystem sunSystem, InGameRenderer renderer,
+                             QuestSystem questSystem, int x, int y) {
         this.gameSession = gameSession;
         this.sunSystem = sunSystem;
         this.renderer = renderer;
@@ -34,14 +34,14 @@ public class CollectSunCommand implements Command {
             return;
         }
 
-        int SunBefore = gameSession.getSunAmount();
+        int sunBefore = gameSession.getSunAmount();
         boolean collected = sunSystem.collectSun(gameSession , x , y);
         if(!collected){
             renderer.render(new Result(false , "No sun to collect at (" + x + ", " + y + ")."));
             return;
         }
 
-        int gained = gameSession.getSunAmount() - SunBefore;
+        int gained = gameSession.getSunAmount() - sunBefore;
         if(questSystem != null){
             questSystem.recordSunCollected(gained);
         }

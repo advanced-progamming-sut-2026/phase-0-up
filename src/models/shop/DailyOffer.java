@@ -1,6 +1,5 @@
 package models.shop;
 
-import java.time.LocalDate;
 
 public class DailyOffer {
     private final int id;

@@ -1,6 +1,5 @@
 package views.renderers.MenuRenderer;
 
-import models.entities.plants.Plant;
 import models.templates.PlantTemplate;
 import models.templates.ZombieTemplate;
 import models.user.Profile;

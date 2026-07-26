@@ -31,7 +31,8 @@ public class ThrowOctopusAbility implements ZombieAbility {
     }
 
     private Plant findFrontmostFreePlant(Zombie zombie) {
-        if (zombie.getMovement() == null || zombie.getGameSession() == null || zombie.getGameSession().getMap() == null) {
+        if (zombie.getMovement() == null || zombie.getGameSession() == null
+                || zombie.getGameSession().getMap() == null) {
             return null;
         }
 

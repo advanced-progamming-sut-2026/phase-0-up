@@ -9,7 +9,9 @@ import models.game.GameSession;
 public class DamageRandomTargetAbility extends GlobalTargetingAbility {
     private int damage;
 
-    public DamageRandomTargetAbility(int actionInterval, TriggerStrategy triggerStrategy, TargetingPriority priorityStrategy , double priorityRange, int damage) {
+    public DamageRandomTargetAbility(int actionInterval, TriggerStrategy triggerStrategy,
+                                     TargetingPriority priorityStrategy, double priorityRange,
+                                     int damage) {
         super(actionInterval, triggerStrategy, priorityStrategy, priorityRange);
         this.damage = damage;
     }

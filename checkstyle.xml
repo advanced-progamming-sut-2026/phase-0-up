@@ -3,12 +3,46 @@
         "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
         "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
+<!--
+  The linter rules the project doc (documents/project.md, "Linter rules (Checkstyle and PMD)")
+  requires. Previously only three of them were configured, so the naming and line-length rules were
+  documented but never enforced; every rule listed in the doc is now encoded here.
+
+  PMD's UnusedPrivateField / UnusedPrivateMethod and ExcessiveMethodLength / ExcessiveClassLength have
+  no exact Checkstyle equivalent -- MethodLength and JavaNCSS cover the size limits at the same
+  thresholds (50 / 500), and the unused-member rules are covered by a PMD run or IDE inspection.
+-->
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
 
-    <module name="TreeWalker">
-        <module name="UnusedLocalVariable"/>
+    <!-- LineLength: max 120 characters, for readability. -->
+    <module name="LineLength">
+        <property name="max" value="120"/>
+    </module>
 
+    <module name="TreeWalker">
+        <!-- Naming conventions. -->
+        <module name="TypeName">
+            <property name="format" value="^[A-Z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="MethodName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="LocalVariableName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="MemberName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="ConstantName">
+            <property name="format" value="^[A-Z][_A-Z0-9]*$"/>
+        </module>
+
+        <!-- Dead code. -->
+        <module name="UnusedLocalVariable"/>
+        <module name="UnusedImports"/>
+
+        <!-- Size limits: methods stay small, classes stay splittable. -->
         <module name="MethodLength">
             <property name="max" value="50"/>
             <property name="countEmpty" value="false"/>

@@ -98,7 +98,10 @@ public class User {
         this.stayLoggedIn = stayLoggedIn;
     }
 
+    // Clamped rather than indexed raw: a hand-edited or older save file can carry an index outside the
+    // question list, and an ArrayIndexOutOfBounds here would take down the whole recovery flow.
     public String getSecurityQuestion() {
-        return Constants.SECURITY_QUESTIONS[securityQuestionIndex];
+        int index = Math.max(0, Math.min(securityQuestionIndex, Constants.SECURITY_QUESTIONS.length - 1));
+        return Constants.SECURITY_QUESTIONS[index];
     }
 }

@@ -58,6 +58,21 @@ public abstract class Quest {
     // Marked complete by the tracking layer once this quest's condition is satisfied in play.
     public void markComplete() { this.completed = true; }
 
+    // How far the player has come towards this quest, for the travel log. Delegated to the condition,
+    // which is the only thing that knows what the quest counts; a quest already recorded as complete on
+    // the profile reports a full bar regardless, since its counters may since have been reset (a lost
+    // level clears the win streak) and it must not appear to have slipped backwards after completion.
+    public QuestProgress getProgress(Profile profile) {
+        if (condition == null) {
+            return QuestProgress.none();
+        }
+        QuestProgress progress = condition.progress(profile);
+        if (progress == null) {
+            return QuestProgress.none();
+        }
+        return completed ? progress.completed() : progress;
+    }
+
     // Grants the reward once, when the quest is complete and has not been claimed yet. Returns whether
     // it actually granted, so the caller can report it.
     public boolean claim(Profile profile) {

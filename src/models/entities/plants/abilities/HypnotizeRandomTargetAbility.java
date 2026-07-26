@@ -7,7 +7,8 @@ import models.game.GameSession;
 
 public class HypnotizeRandomTargetAbility extends GlobalTargetingAbility{
 
-    public HypnotizeRandomTargetAbility(int actionInterval, TriggerStrategy triggerStrategy, TargetingPriority priorityStrategy, double priorityRange) {
+    public HypnotizeRandomTargetAbility(int actionInterval, TriggerStrategy triggerStrategy,
+                                        TargetingPriority priorityStrategy, double priorityRange) {
         super(actionInterval, triggerStrategy, priorityStrategy, priorityRange);
     }
 

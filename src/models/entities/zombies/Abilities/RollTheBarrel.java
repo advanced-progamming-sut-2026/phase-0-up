@@ -78,7 +78,8 @@ public class RollTheBarrel implements ZombieAbility {
         if (isBarrelIntact) {
             int row = roller.getMovement().getPositionY();
             double x = roller.getMovement().getPositionX();
-            Barrel b = new Barrel(roller.getHealth().getLayers().pop().getCurrentHp() , x , row, roller.getGameSession());
+            Barrel b = new Barrel(roller.getHealth().getLayers().pop().getCurrentHp(), x, row,
+                    roller.getGameSession());
             roller.getGameSession().getMap().getRow(row).addObstacle(b);
 
             roller.getGameSession().reportEvent("The Barrel Roller falls at (" + (int) x + ", " + row

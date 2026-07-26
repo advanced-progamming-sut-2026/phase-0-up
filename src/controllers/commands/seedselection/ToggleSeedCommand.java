@@ -3,7 +3,6 @@ package controllers.commands.seedselection;
 import controllers.commands.Command;
 import models.game.GameSession;
 import models.game.SeedPacket;
-import models.templates.LevelTemplate;
 import models.templates.PlantTemplate;
 import models.user.Profile;
 import utils.registry.PlantRegistry;
@@ -20,7 +19,8 @@ public class ToggleSeedCommand implements Command {
     private PlantMenuRenderer renderer;
 
 
-    public ToggleSeedCommand(ToggleAction action, String plantName, GameSession gameSession, PlantMenuRenderer renderer) {
+    public ToggleSeedCommand(ToggleAction action, String plantName, GameSession gameSession,
+                             PlantMenuRenderer renderer) {
         this.action = action;
         this.plantName = plantName;
         this.gameSession = gameSession;

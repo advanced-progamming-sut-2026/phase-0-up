@@ -10,6 +10,9 @@ public class PasswordValidator implements Validator {
 
     @Override
     public Result validate(String value) {
+        if (value == null || value.isEmpty()) {
+            return new Result(false, "Password can't be empty");
+        }
         if (!SignUpMenuRegex.PASSWORD.matches(value)) {
             return new Result(false, "Invalid password format");
         }
