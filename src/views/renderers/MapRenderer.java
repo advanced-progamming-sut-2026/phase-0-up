@@ -8,6 +8,7 @@ import models.entities.plants.bowling.BowlingKind;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.game.gamemodes.BeghouledMode;
+import models.game.gamemodes.IZombieMode;
 import models.game.gamemodes.VaseBreakerMode;
 import models.game.gamemodes.WallnutBowlingMode;
 import models.map.Cell;
@@ -214,6 +215,34 @@ public class MapRenderer {
         } else if (session.getMode() instanceof BeghouledMode beghouled) {
             OutputHandler.showMessage("Matches: " + beghouled.getMatchesMade() + "/"
                     + beghouled.getMatchTarget() + "  |  spend sun with: upgrade -t <plant>");
+        } else if (session.getMode() instanceof IZombieMode iZombie) {
+            renderIZombieStatus(session, iZombie);
         }
+    }
+
+    // I, Zombie: the player is buying zombies, so they need their roster (what they can summon and what
+    // each costs), the sun they have to spend, which lanes' brains are already eaten, and how to summon.
+    private void renderIZombieStatus(GameSession session, IZombieMode mode) {
+        StringBuilder roster = new StringBuilder();
+        for (Map.Entry<String, Integer> entry : mode.getRoster().entrySet()) {
+            if (roster.length() > 0) {
+                roster.append(", ");
+            }
+            roster.append(entry.getKey()).append(" (").append(entry.getValue()).append(" sun)");
+        }
+        StringBuilder lanes = new StringBuilder();
+        for (int lane = 0; lane < mode.brainsTotal(); lane++) {
+            if (lanes.length() > 0) {
+                lanes.append("  ");
+            }
+            lanes.append("lane ").append(lane).append(": ")
+                    .append(mode.isBrainEaten(lane) ? "EATEN" : "brain");
+        }
+        OutputHandler.showMessage("Brains eaten: " + mode.brainsEaten() + "/" + mode.brainsTotal()
+                + "  |  Sun to spend: " + session.getSunAmount());
+        OutputHandler.showMessage("Lanes: " + lanes);
+        OutputHandler.showMessage("Your horde: " + roster);
+        OutputHandler.showMessage("Summon right of column " + mode.getRedLineColumn()
+                + " with: summon -t <zombie> -l (x, y)");
     }
 }

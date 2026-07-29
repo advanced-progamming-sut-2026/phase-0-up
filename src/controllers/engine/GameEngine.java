@@ -113,21 +113,30 @@ public class GameEngine {
         // mowers never triggered), so it has to run before anything else touches it.
         settleScoringGame();
 
+        // I, Zombie and Beghouled are played off the plant side (see GameMode.countsTowardQuests), so a
+        // win or loss there evaluates no quests, breaks no win streak, and credits no chapter kills.
+        boolean countsForQuests = gameSession.getMode() == null
+                || gameSession.getMode().countsTowardQuests();
+
         if (after == GameState.WON) {
             inGameRenderer.render(new Result(true,
                     "Dear humanz, zis is not done yet; we will come back to eat your brainz, humanz."));
             // The level is won: evaluate quests against it and announce any that just completed (their
             // rewards are granted straight to the profile).
-            for (Result quest : questSystem.evaluateAndComplete(gameSession.getPlayer(), gameSession, true)) {
-                inGameRenderer.render(quest);
+            if (countsForQuests) {
+                for (Result quest : questSystem.evaluateAndComplete(gameSession.getPlayer(), gameSession, true)) {
+                    inGameRenderer.render(quest);
+                }
             }
         } else if (after == GameState.LOST) {
             inGameRenderer.render(new Result(false, "The zombie ate your brain; LOSER!!!"));
             // A loss still ends a level: quests are evaluated so the cross-level counters settle (the
             // max-difficulty win streak breaks) and any quest that doesn't need a win -- chapter kills,
             // the mowerless last-stand kills -- can still complete on what happened this level.
-            for (Result quest : questSystem.evaluateAndComplete(gameSession.getPlayer(), gameSession, false)) {
-                inGameRenderer.render(quest);
+            if (countsForQuests) {
+                for (Result quest : questSystem.evaluateAndComplete(gameSession.getPlayer(), gameSession, false)) {
+                    inGameRenderer.render(quest);
+                }
             }
         }
 

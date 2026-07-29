@@ -179,6 +179,10 @@ public class CombatSystem {
                     plant.onDeath(session);
                     events.add(new Result(true, "Plant " + plant.getName() + " at ("
                             + (int) cell.getX() + ", " + row.getIndex() + ") is destroyed."));
+                    // Let the mode react before the plant leaves the tile (I, Zombie pays sun for it).
+                    if (session.getMode() != null) {
+                        session.getMode().onPlantDestroyed(session, plant);
+                    }
                     cell.removePlant();
                     session.recordPlantLost();
                     if (questSystem != null) {

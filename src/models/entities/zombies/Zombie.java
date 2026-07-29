@@ -123,13 +123,22 @@ public class Zombie extends Entity {
         return x >= 0 && x < Constants.BOARD_COLS;
     }
 
-    // The single rule for "may a plant act on this zombie": it must be alive AND on the grid.
+    // Marks a zombie the plants must ignore entirely -- used for the I, Zombie sun-maker, which sits at
+    // the right edge purely as an income source and is not part of the fight. Off by default; every
+    // ordinary zombie is a valid target.
+    private boolean untargetable = false;
+
+    public void setUntargetable(boolean untargetable) { this.untargetable = untargetable; }
+    public boolean isUntargetable() { return untargetable; }
+
+    // The single rule for "may a plant act on this zombie": it must be alive, on the grid, and not
+    // flagged untargetable.
     //
     // The board half matters because a zombie joins its row the moment it spawns, one cell beyond the
     // right edge, and only then walks in. Every plant-side scan -- triggers, abilities and plant-food
     // strategies alike -- goes through here, so nothing reaches a zombie that has not arrived yet.
     public boolean isTargetable() {
-        return !health.isDead() && isOnBoard();
+        return !health.isDead() && isOnBoard() && !untargetable;
     }
 
     // A zombie spawns one cell beyond the right edge and can be shoved past either end mid-fight, so

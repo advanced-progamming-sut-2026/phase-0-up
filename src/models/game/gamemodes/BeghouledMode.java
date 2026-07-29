@@ -26,6 +26,13 @@ import java.util.Random;
 // wipes out every zombie) and loses if a zombie reaches the house.
 public class BeghouledMode extends StandardMode {
 
+    // A match-3 puzzle, not an adventure level: finishing it completes no quests (see
+    // GameMode.countsTowardQuests).
+    @Override
+    public boolean countsTowardQuests() {
+        return false;
+    }
+
     private static final String[] BASE_TYPES =
             {"Peashooter", "Sunflower", "Wall-nut", "Puff-shroom", "Cabbage-pult"};
     private static final int SUN_PER_UNIT = 50;

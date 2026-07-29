@@ -9,12 +9,16 @@ version = '1.0-SNAPSHOT'
 
 // Java 21 is the floor, not a preference: models/map/Row.java uses List.getFirst(), which is a
 // SequencedCollection method added in 21. Compiling with --release 17 fails on exactly that call.
-// A toolchain (rather than sourceCompatibility) means Gradle will fetch a matching JDK if a teammate
-// is on a different one, instead of failing with a confusing error.
+//
+// This targets Java 21 with whatever JDK Gradle is already running on (21 or newer), rather than a
+// `toolchain { languageVersion = 21 }`. A toolchain PINS the compiler to exactly 21 and, when 21 is
+// not installed, makes Gradle download it from the internet -- which stalls forever behind a locked
+// half-finished provisioning here, because international internet is unavailable in this environment.
+// options.release = 21 (set on JavaCompile below) produces identical 21 bytecode using the installed
+// JDK 25, so nothing has to be fetched.
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 repositories {
@@ -61,6 +65,8 @@ application {
 // (windows-1252 here) and both the comments and the output are mangled.
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    // Emit Java 21 bytecode using the running JDK, so no separate JDK 21 has to be installed/fetched.
+    options.release = 21
 }
 
 tasks.withType(Javadoc).configureEach {

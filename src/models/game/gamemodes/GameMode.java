@@ -38,6 +38,21 @@ public interface GameMode {
         return true;
     }
 
+    // Whether finishing this level feeds the quest/progress system. Adventure levels and the standard
+    // survival mini-games do; the "off-book" modes do not -- I, Zombie is played from the zombies'
+    // side (its kills and garden mean nothing to a plant quest) and Beghouled is a match-3, so neither
+    // should complete quests, break the win streak, or credit chapter kills. GameEngine asks the mode
+    // rather than testing instanceof.
+    default boolean countsTowardQuests() {
+        return true;
+    }
+
+    // Notified by CombatSystem the moment an AI/board plant is destroyed. Normal levels ignore it; I,
+    // Zombie pays the zombie player sun for breaking a plant. Called after the plant's own death effect
+    // and just before it leaves the tile.
+    default void onPlantDestroyed(GameSession gameSession, models.entities.plants.Plant plant) {
+    }
+
     // --- Plant-inventory hooks -------------------------------------------------------------------
     // A mode that hands the player plants itself, outside the seed-packet + sun economy (Vasebreaker,
     // whose plants come only from broken vases). When managesPlantInventory() is true, GameSession.plant
