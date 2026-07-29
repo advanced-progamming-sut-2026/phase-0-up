@@ -140,13 +140,18 @@ public class GameEngine {
             }
         }
 
-        // Persist ONCE, and only AFTER every profile mutation this level end produces: the scoring
-        // settlement above, AND the quest completions (their reward grants plus the completed-quest
-        // counters). This save used to run before the quests were evaluated, so a finished quest lived
-        // only in memory -- the leaderboard, which reads the live profile, showed it, but it never
-        // reached disk and vanished on the next load unless the player happened to quit via the "exit"
-        // command (which saves again). Everything a level earns -- loot, campaign progress, quest
-        // rewards, news -- reaches the database here, at the one point the level is definitively over.
+        // Persist AFTER every profile mutation this level end produces: the scoring settlement above,
+        // AND the quest completions (their reward grants plus the completed-quest counters). This save
+        // used to run before the quests were evaluated, so a finished quest lived only in memory -- the
+        // leaderboard, which reads the live profile, showed it, but it never reached disk and vanished
+        // on the next load unless the player happened to quit via the "exit" command (which saves
+        // again). Everything a level earns -- loot, campaign progress, quest rewards, news -- reaches
+        // the database here, at the one point the level is definitively over.
+        //
+        // QuestSystem also saves the moment a quest completes, so a quest reward is durable even if a
+        // future caller of evaluateAndComplete forgets to persist. This save is still the one that
+        // covers a level where NO quest completed (campaign progress, loot, the scoring result), so it
+        // is not redundant -- and re-writing the same state is harmless.
         try {
             utils.storage.DatabaseManager.getInstance().saveAll();
         } catch (RuntimeException e) {

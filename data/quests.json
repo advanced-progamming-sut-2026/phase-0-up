@@ -1,10 +1,10 @@
 [
-  { "id": "daily_sun_catcher", "name": "Daily Sun Catcher", "description": "Collect a set amount of sun during one day.",
+  { "id": "daily_sun_catcher", "name": "Daily Sun Catcher", "description": "Collect {n} sun over the course of a single day, across as many levels as you like.",
     "category": "DAILY", "priority": "MEDIUM",
     "condition": { "type": "COLLECT_SUN", "threshold": 3000 },
     "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 30 }, "variables": "3000-4000-5000" },
 
-  { "id": "chapter_hunter", "name": "Chapter Hunter", "description": "Defeat 50 zombies from a given chapter.",
+  { "id": "chapter_hunter", "name": "Chapter Hunter", "description": "Defeat 50 zombies from any game chapter.",
     "category": "MAIN", "priority": "HIGH",
     "condition": { "type": "CHAPTER_KILL_COUNT", "threshold": 50 },
     "reward": { "category": "INVENTORY", "item": "SEED_PACKET", "amount": 10 }, "variables": "any game chapter" },
@@ -22,7 +22,7 @@
   { "id": "economical_herbivore", "name": "Economical Herbivore", "description": "Win a level without losing more than n plants.",
     "category": "MAIN", "priority": "HIGH",
     "condition": { "type": "MAX_PLANTS_LOST", "threshold": 5 },
-    "reward": { "category": "INVENTORY", "item": "SEED_PACKET", "amount": 20 }, "variables": "0-1-2-3-4-5" },
+    "reward": { "category": "INVENTORY", "item": "SEED_PACKET", "amount": 15 }, "variables": "0-1-2-3-4-5" },
 
   { "id": "defense_master", "name": "Defense Master", "description": "Finish a level with exactly zero sun.",
     "category": "EPIC", "priority": "CRITICAL",
@@ -49,7 +49,7 @@
     "condition": { "type": "ONLY_FAMILY" },
     "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 1000 }, "variables": "plant family" },
 
-  { "id": "flourish_in_constraints", "name": "Flourish in Constraints", "description": "Win a level without any plant from a given family.",
+  { "id": "flourish_in_constraints", "name": "Flourish in Constraints", "description": "Win a level without any plant from shooter family.",
     "category": "DAILY", "priority": "HIGH",
     "condition": { "type": "WITHOUT_FAMILY", "family": "SHOOTER" },
     "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 100 }, "variables": "plant family" },
@@ -74,7 +74,7 @@
     "condition": { "type": "ASYMMETRIC" },
     "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 800 }, "variables": "" },
 
-  { "id": "cloudy_day", "name": "Cloudy Day", "description": "Win a level using only 3 sun-producing plants.",
+  { "id": "cloudy_day", "name": "Cloudy Day", "description": "Win a level planting no more than {n} sun-producing plants.",
     "category": "DAILY", "priority": "HIGH",
     "condition": { "type": "ONLY_CATEGORY", "category": "SUN_PRODUCER", "threshold": 3 },
     "reward": { "category": "CURRENCY", "currency": "GEMS", "amount": 10 }, "variables": "" },

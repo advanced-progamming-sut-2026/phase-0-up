@@ -2,8 +2,14 @@ package models.quests.QuestCondition;
 
 import models.quests.QuestContext;
 
-// Satisfied when the level is won using only plants of one category, with exactly `count` of them
-// placed -- e.g. only 3 sun-producing plants (Cloudy Day).
+// Satisfied when the level is won having placed no more than `count` plants of one category -- e.g.
+// beating a level on only 3 sun producers (Cloudy Day).
+//
+// The cap is on that one category, NOT on the whole garden: the quest asks the player to win on a
+// starved economy, and defending the lawn with other plants is exactly how they are meant to do it.
+// This previously also demanded that every plant placed be a sun producer, which made the quest
+// literally unwinnable -- a garden of nothing but sunflowers kills no zombies, so the level could
+// never be won and the condition could never fire.
 public class OnlyCategoryCondition implements QuestCondition {
     private final String category;
     private final int count;
@@ -15,8 +21,10 @@ public class OnlyCategoryCondition implements QuestCondition {
 
     @Override
     public boolean isSatisfied(QuestContext ctx) {
-        // Exactly `count` plants of this category, and every plant placed was that category.
-        return ctx.isWon() && ctx.plantedCategoryCount(category) == count && ctx.allPlantedAreCategory(category);
+        // At most `count` of the capped category, and at least one -- "win on 3 sun producers" is a
+        // budget to stay inside, and a garden with none of them at all is a different feat entirely.
+        int placed = ctx.plantedCategoryCount(category);
+        return ctx.isWon() && placed > 0 && placed <= count;
     }
 
     // A single-level goal: nothing carries between matches, so the travel log shows the

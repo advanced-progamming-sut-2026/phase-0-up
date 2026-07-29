@@ -12,6 +12,8 @@ import java.util.Map;
 public class QuestContext {
     private final boolean won;
     private final int sunCollected;      // total sun the player banked over the level
+    private final int sunCollectedToday; // total sun banked across every level played today
+    private final boolean dayLevel;      // the level's season has sun falling from the sky (a "day" level)
     private final int finalSun;          // sun left in the bank at level end
     private final int zombiesKilled;
     private final int plantsLost;
@@ -20,6 +22,10 @@ public class QuestContext {
     private final int mowerlessFirstColumnKills;  // kills in col 0 of a mower-spent row (Almost Victorious)
     private final int winStreakAtMaxDifficulty;   // consecutive max-difficulty wins incl. this level (Win After Win)
     private final int chapterZombiesKilled;       // total kills in this level's chapter so far (Chapter Hunter)
+    // Cumulative counters that span levels, folded into the profile at each level end. The two "today"
+    // ones back DAILY quests and reset with the calendar day; the lifetime one backs an EPIC challenge.
+    private final int mowerlessFirstColumnKillsToday;   // Almost Victorious
+    private final int lawnmowerKillsTotal;              // Mowing Time
     private final Map<String, Integer> killsByPlant;   // lower-cased plant name -> kills credited to it
     private final Map<String, Integer> killsByFamily;  // lower-cased plant family (category) -> kills credited
     private final List<String> plantedCategories;      // category of every plant placed this level
@@ -29,6 +35,8 @@ public class QuestContext {
     private QuestContext(Builder b) {
         this.won = b.won;
         this.sunCollected = b.sunCollected;
+        this.sunCollectedToday = b.sunCollectedToday;
+        this.dayLevel = b.dayLevel;
         this.finalSun = b.finalSun;
         this.zombiesKilled = b.zombiesKilled;
         this.plantsLost = b.plantsLost;
@@ -37,6 +45,8 @@ public class QuestContext {
         this.mowerlessFirstColumnKills = b.mowerlessFirstColumnKills;
         this.winStreakAtMaxDifficulty = b.winStreakAtMaxDifficulty;
         this.chapterZombiesKilled = b.chapterZombiesKilled;
+        this.mowerlessFirstColumnKillsToday = b.mowerlessFirstColumnKillsToday;
+        this.lawnmowerKillsTotal = b.lawnmowerKillsTotal;
         this.killsByPlant = b.killsByPlant == null ? new HashMap<>() : b.killsByPlant;
         this.killsByFamily = b.killsByFamily == null ? new HashMap<>() : b.killsByFamily;
         this.plantedCategories = b.plantedCategories == null ? new ArrayList<>() : b.plantedCategories;
@@ -64,14 +74,19 @@ public class QuestContext {
 
     public static class Builder {
         private boolean won;
+        private boolean dayLevel;
+        private int sunCollectedToday;
         private int sunCollected, finalSun, zombiesKilled, plantsLost, lawnmowerKills, killsInFirst30s;
         private int mowerlessFirstColumnKills, winStreakAtMaxDifficulty, chapterZombiesKilled;
+        private int mowerlessFirstColumnKillsToday, lawnmowerKillsTotal;
         private Map<String, Integer> killsByPlant, killsByFamily;
         private List<String> plantedCategories, plantedNames;
         private boolean[][] plantGrid;
 
         public Builder won(boolean v) { this.won = v; return this; }
         public Builder sunCollected(int v) { this.sunCollected = v; return this; }
+        public Builder sunCollectedToday(int v) { this.sunCollectedToday = v; return this; }
+        public Builder dayLevel(boolean v) { this.dayLevel = v; return this; }
         public Builder finalSun(int v) { this.finalSun = v; return this; }
         public Builder zombiesKilled(int v) { this.zombiesKilled = v; return this; }
         public Builder plantsLost(int v) { this.plantsLost = v; return this; }
@@ -80,6 +95,8 @@ public class QuestContext {
         public Builder mowerlessFirstColumnKills(int v) { this.mowerlessFirstColumnKills = v; return this; }
         public Builder winStreakAtMaxDifficulty(int v) { this.winStreakAtMaxDifficulty = v; return this; }
         public Builder chapterZombiesKilled(int v) { this.chapterZombiesKilled = v; return this; }
+        public Builder mowerlessFirstColumnKillsToday(int v) { this.mowerlessFirstColumnKillsToday = v; return this; }
+        public Builder lawnmowerKillsTotal(int v) { this.lawnmowerKillsTotal = v; return this; }
         public Builder killsByPlant(Map<String, Integer> v) { this.killsByPlant = v; return this; }
         public Builder killsByFamily(Map<String, Integer> v) { this.killsByFamily = v; return this; }
         public Builder plantedCategories(List<String> v) { this.plantedCategories = v; return this; }
@@ -90,6 +107,16 @@ public class QuestContext {
 
     public boolean isWon() { return won; }
     public int getSunCollected() { return sunCollected; }
+
+    // Sun banked across every level played on this calendar day, this level included. This -- not the
+    // per-level figure above -- is what the Daily Sun Catcher is judged against, so the quest can be
+    // finished over several matches within one day.
+    public int getSunCollectedToday() { return sunCollectedToday; }
+
+    // Whether this level's season has sun falling from the sky, i.e. it is a "day" level. Only Dark
+    // Ages is sunless, which is the game's night setting (Night or Morning).
+    public boolean isDayLevel() { return dayLevel; }
+
     public int getFinalSun() { return finalSun; }
     public int getZombiesKilled() { return zombiesKilled; }
     public int getPlantsLost() { return plantsLost; }
@@ -125,8 +152,22 @@ public class QuestContext {
     // Total zombies felled in this level's chapter so far, this level included (Chapter Hunter).
     public int getChapterZombiesKilled() { return chapterZombiesKilled; }
 
+    // --- Cumulative, cross-level counters (this level already folded in) --------------------------
+
+    // Mower-spent first-column kills over every level played today (Almost Victorious).
+    public int getMowerlessFirstColumnKillsToday() { return mowerlessFirstColumnKillsToday; }
+
+    // Lawn-mower kills over the account's whole life (Mowing Time -- an epic, so not day-scoped).
+    public int getLawnmowerKillsTotal() { return lawnmowerKillsTotal; }
+
     // --- Plantings placed over the level (cumulative, not just what survived) ---------------------
     public int plantedCount() { return plantedNames.size(); }
+
+    // How many plantings the category tally saw. Same number as plantedCount() in play -- the session
+    // appends a name and a category together for every placement -- but a condition that filters on
+    // categories should measure "did the player plant anything?" against the very list it filters,
+    // rather than trusting two parallel lists to stay in step.
+    public int plantedCategoryTotal() { return plantedCategories.size(); }
 
     // How many placed plants had this category (e.g. "EXPLOSIVE").
     public int plantedCategoryCount(String category) {
@@ -140,19 +181,6 @@ public class QuestContext {
             }
         }
         return n;
-    }
-
-    // Whether every plant placed was of one category, and at least one was placed.
-    public boolean allPlantedAreCategory(String category) {
-        if (plantedCategories.isEmpty()) {
-            return false;
-        }
-        for (String c : plantedCategories) {
-            if (!category.equalsIgnoreCase(c)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     // Whether every plant placed was a mushroom (its name ends in "-shroom"), and at least one was.

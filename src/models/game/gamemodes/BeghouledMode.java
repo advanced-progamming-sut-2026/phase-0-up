@@ -382,10 +382,14 @@ public class BeghouledMode extends StandardMode {
         }
     }
 
+    // Zombies walk on from off the right edge, exactly as they do in an adventure level: the mini-game
+    // only owns the *timing* of the spawns (its own interval, since the level carries no waves), not
+    // where they enter. Placing them on the last column instead put them straight onto the board with
+    // the rightmost tile already inside their reach, so they appeared mid-lawn rather than shambling in.
     private void spawnZombie(GameSession session) {
         int row = random.nextInt(rows);
         String alias = difficulty >= 2 && random.nextDouble() < 0.3 ? ARMORED_ZOMBIE : BASIC_ZOMBIE;
-        Zombie zombie = ZombieFactory.createZombie(alias, cols - 1, row, session);
+        Zombie zombie = ZombieFactory.createZombie(alias, Constants.ZOMBIE_SPAWN_X, row, session);
         if (zombie != null) {
             session.getMap().getRow(row).getZombies().add(zombie);
         }
