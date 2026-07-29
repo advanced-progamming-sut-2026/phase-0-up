@@ -32,10 +32,13 @@ public final class QuestText {
         String out = description;
         if (spec != null) {
             String n = String.valueOf(spec.getThreshold() != 0 ? spec.getThreshold() : spec.getIndex());
+            // The braced form goes first. Braces are not word characters, so the 'n' in "{n}" is a
+            // standalone word as far as the regex below is concerned: running that pass first turned
+            // "{n}" into "{3000}" and left the braces on display in the travel log.
+            out = replace(out, "{n}", n);
             // Standalone "n" only (word boundaries), so the 'n' inside "in", "column", "plants" is left
             // alone. quoteReplacement guards against any regex-special chars in the value.
             out = out.replaceAll("\\bn\\b", Matcher.quoteReplacement(n));
-            out = replace(out, "{n}", n);
             out = replace(out, "{plant}", spec.getPlant());
             out = replace(out, "{family}", spec.getFamily());
             out = replace(out, "{category}", spec.getCategory());

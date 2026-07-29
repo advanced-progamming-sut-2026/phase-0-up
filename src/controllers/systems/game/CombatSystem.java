@@ -131,9 +131,6 @@ public class CombatSystem {
             events.add(new Result(true, "The lawn mower in the row " + row.getIndex()
                     + "is triggered and killed these zombies:"));
             session.recordLawnmowerKills(killed.size());   // for the Mowing Time quest
-            if (questSystem != null) {
-                questSystem.recordLawnmowerKills(killed.size());
-            }
             for (Zombie zombie : killed) {
                 reportZombieDeath(session, zombie, events);
             }
@@ -184,10 +181,10 @@ public class CombatSystem {
                         session.getMode().onPlantDestroyed(session, plant);
                     }
                     cell.removePlant();
+                    // The session's counter is the only plants-lost tally there is, so every other
+                    // way a plant can be taken off the board (the Fisherman Zombie drowning one, for
+                    // instance) lands in the same number the quests are judged against.
                     session.recordPlantLost();
-                    if (questSystem != null) {
-                        questSystem.recordPlantLost();
-                    }
                 }
             }
 

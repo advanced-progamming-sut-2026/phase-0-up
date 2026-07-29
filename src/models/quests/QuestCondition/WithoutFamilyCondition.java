@@ -13,6 +13,6 @@ public class WithoutFamilyCondition implements QuestCondition {
 
     @Override
     public boolean isSatisfied(QuestContext ctx) {
-        return ctx.isWon() && ctx.plantedCount() > 0 && ctx.plantedCategoryCount(family) == 0;
+        return ctx.isWon() && ctx.plantedCategoryTotal() > 0 && ctx.plantedCategoryCount(family) == 0;
     }
 }

@@ -12,6 +12,8 @@ import java.util.Map;
 public class QuestContext {
     private final boolean won;
     private final int sunCollected;      // total sun the player banked over the level
+    private final int sunCollectedToday; // total sun banked across every level played today
+    private final boolean dayLevel;      // the level's season has sun falling from the sky (a "day" level)
     private final int finalSun;          // sun left in the bank at level end
     private final int zombiesKilled;
     private final int plantsLost;
@@ -29,6 +31,8 @@ public class QuestContext {
     private QuestContext(Builder b) {
         this.won = b.won;
         this.sunCollected = b.sunCollected;
+        this.sunCollectedToday = b.sunCollectedToday;
+        this.dayLevel = b.dayLevel;
         this.finalSun = b.finalSun;
         this.zombiesKilled = b.zombiesKilled;
         this.plantsLost = b.plantsLost;
@@ -64,6 +68,8 @@ public class QuestContext {
 
     public static class Builder {
         private boolean won;
+        private boolean dayLevel;
+        private int sunCollectedToday;
         private int sunCollected, finalSun, zombiesKilled, plantsLost, lawnmowerKills, killsInFirst30s;
         private int mowerlessFirstColumnKills, winStreakAtMaxDifficulty, chapterZombiesKilled;
         private Map<String, Integer> killsByPlant, killsByFamily;
@@ -72,6 +78,8 @@ public class QuestContext {
 
         public Builder won(boolean v) { this.won = v; return this; }
         public Builder sunCollected(int v) { this.sunCollected = v; return this; }
+        public Builder sunCollectedToday(int v) { this.sunCollectedToday = v; return this; }
+        public Builder dayLevel(boolean v) { this.dayLevel = v; return this; }
         public Builder finalSun(int v) { this.finalSun = v; return this; }
         public Builder zombiesKilled(int v) { this.zombiesKilled = v; return this; }
         public Builder plantsLost(int v) { this.plantsLost = v; return this; }
@@ -90,6 +98,16 @@ public class QuestContext {
 
     public boolean isWon() { return won; }
     public int getSunCollected() { return sunCollected; }
+
+    // Sun banked across every level played on this calendar day, this level included. This -- not the
+    // per-level figure above -- is what the Daily Sun Catcher is judged against, so the quest can be
+    // finished over several matches within one day.
+    public int getSunCollectedToday() { return sunCollectedToday; }
+
+    // Whether this level's season has sun falling from the sky, i.e. it is a "day" level. Only Dark
+    // Ages is sunless, which is the game's night setting (Night or Morning).
+    public boolean isDayLevel() { return dayLevel; }
+
     public int getFinalSun() { return finalSun; }
     public int getZombiesKilled() { return zombiesKilled; }
     public int getPlantsLost() { return plantsLost; }
@@ -128,6 +146,12 @@ public class QuestContext {
     // --- Plantings placed over the level (cumulative, not just what survived) ---------------------
     public int plantedCount() { return plantedNames.size(); }
 
+    // How many plantings the category tally saw. Same number as plantedCount() in play -- the session
+    // appends a name and a category together for every placement -- but a condition that filters on
+    // categories should measure "did the player plant anything?" against the very list it filters,
+    // rather than trusting two parallel lists to stay in step.
+    public int plantedCategoryTotal() { return plantedCategories.size(); }
+
     // How many placed plants had this category (e.g. "EXPLOSIVE").
     public int plantedCategoryCount(String category) {
         if (category == null) {
@@ -140,19 +164,6 @@ public class QuestContext {
             }
         }
         return n;
-    }
-
-    // Whether every plant placed was of one category, and at least one was placed.
-    public boolean allPlantedAreCategory(String category) {
-        if (plantedCategories.isEmpty()) {
-            return false;
-        }
-        for (String c : plantedCategories) {
-            if (!category.equalsIgnoreCase(c)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     // Whether every plant placed was a mushroom (its name ends in "-shroom"), and at least one was.

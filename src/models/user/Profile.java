@@ -41,9 +41,20 @@ public class Profile {
     // a save file. Runtime progress is tracked by the scalar/id fields (lastChapter, lastLevel, ...).
     private List<Quest> activeQuests;
     private List<Quest> completedQuests;
-    // Ids of quests already completed (and rewarded). Plain strings, so unlike the live Quest objects
-    // above this is safe to persist alongside the other scalar progress data.
+    // Ids of one-shot quests already completed (and rewarded) -- the MAIN and EPIC quests, which are
+    // achievements and stay done forever. Plain strings, so unlike the live Quest objects above this
+    // is safe to persist alongside the other scalar progress data.
     private Set<String> completedQuestIds;
+    // Ids of the DAILY quests already completed *today*. Daily quests are repeatable by definition
+    // ("quests that encourage the player to come back each day"), so this set -- and only this set --
+    // is emptied when the calendar day turns. Keeping it apart from completedQuestIds is what lets a
+    // daily quest be earned again tomorrow while a main/epic quest never re-fires.
+    private Set<String> completedDailyQuestIds;
+    // The calendar day (ISO-8601, e.g. "2026-07-30") the daily state above belongs to. A null/stale
+    // stamp means the daily state is from an earlier day and is rolled over on next access.
+    private String questDayStamp;
+    // Sun banked so far today, across every level played on this calendar day (Daily Sun Catcher).
+    private int sunCollectedToday;
     private int lastChapter;
     private int lastLevel;
     private List<Chapter> unlockedChapters;
@@ -73,6 +84,8 @@ public class Profile {
         this.hasBoughtDailyOfferToday = Constants.DEFAULT_HAS_BOUGHT_DAILY_OFFER;
         this.winStreakAtMaxDifficulty = 0;
         this.zombieKillsByChapter = new HashMap<>();
+        this.questDayStamp = today();
+        this.sunCollectedToday = 0;
 
         this.newsList = new ArrayList<>();
         this.unlockedPlants = new ArrayList<>();
@@ -80,6 +93,7 @@ public class Profile {
         this.activeQuests = new ArrayList<>();
         this.completedQuests = new ArrayList<>();
         this.completedQuestIds = new HashSet<>();
+        this.completedDailyQuestIds = new HashSet<>();
         this.unlockedChapters = new ArrayList<>();
         this.seenZombieAliases = new HashSet<>();
         this.boostedSeeds = new HashSet<>();
@@ -299,8 +313,8 @@ public class Profile {
         this.noneDailyQuestsDone++;
     }
 
-    // Per-quest completion record. A completed quest has already had its reward granted, so this also
-    // guards against granting the same reward twice.
+    // Per-quest completion record for the one-shot (MAIN / EPIC) quests. A completed quest has already
+    // had its reward granted, so this also guards against granting the same reward twice.
     public Set<String> getCompletedQuestIds() {
         if (completedQuestIds == null) {   // a profile deserialized before this field existed
             completedQuestIds = new HashSet<>();
@@ -316,6 +330,95 @@ public class Profile {
         if (questId != null) {
             getCompletedQuestIds().add(questId);
         }
+    }
+
+    // --- Daily quest state (rolls over at midnight, local calendar day) ---------------------------
+
+    // Today's date as the game stamps it. One place, so the daily rollover and the stored stamp can
+    // never disagree about what "today" means.
+    private static String today() {
+        return java.time.LocalDate.now().toString();
+    }
+
+    // Rolls the daily state forward if the stored stamp is not today's date. Called by every reader
+    // and writer of daily state below, so a session that spans midnight -- or a profile loaded days
+    // after it was saved -- sees a clean day without anything having to poll a clock.
+    //
+    // It deliberately does NOT touch the lifetime tallies (dailyQuestsDone / noneDailyQuestsDone):
+    // those count everything the player has ever finished and are what the leaderboard ranks on.
+    private void ensureQuestDay() {
+        String today = today();
+        if (today.equals(questDayStamp)) {
+            return;
+        }
+        questDayStamp = today;
+        sunCollectedToday = 0;
+        getCompletedDailyQuestIds().clear();
+        // The daily shop offer is on the same cadence and had no other reset, so it would otherwise
+        // stay bought for the rest of the account's life once purchased.
+        hasBoughtDailyOfferToday = false;
+    }
+
+    public Set<String> getCompletedDailyQuestIds() {
+        if (completedDailyQuestIds == null) {   // a profile deserialized before this field existed
+            completedDailyQuestIds = new HashSet<>();
+        }
+        return completedDailyQuestIds;
+    }
+
+    // Whether this daily quest has already been earned today. Tomorrow it reads false again, which is
+    // what makes a daily quest repeatable.
+    public boolean hasCompletedDailyQuestToday(String questId) {
+        if (questId == null) {
+            return false;
+        }
+        ensureQuestDay();
+        return getCompletedDailyQuestIds().contains(questId);
+    }
+
+    public void markDailyQuestCompletedToday(String questId) {
+        if (questId == null) {
+            return;
+        }
+        ensureQuestDay();
+        getCompletedDailyQuestIds().add(questId);
+    }
+
+    // Sun banked today, across every level played on this calendar day (Daily Sun Catcher). Reading it
+    // on a new day yields 0 even if nothing has been collected yet, because the rollover runs first.
+    public int getSunCollectedToday() {
+        ensureQuestDay();
+        return sunCollectedToday;
+    }
+
+    // Credits sun the player just picked up to today's running total, and returns the new total so a
+    // caller can react to it crossing a quest threshold without a second lookup.
+    public int addSunCollectedToday(int amount) {
+        ensureQuestDay();
+        if (amount > 0) {
+            sunCollectedToday += amount;
+        }
+        return sunCollectedToday;
+    }
+
+    // --- Restore accessors for the daily state (used when rebuilding a profile from its record) ---
+
+    public String getQuestDayStamp() {
+        return questDayStamp;
+    }
+
+    public void setQuestDayStamp(String questDayStamp) {
+        this.questDayStamp = questDayStamp;
+    }
+
+    // Restores the raw stored value without a rollover; getSunCollectedToday() applies the rollover on
+    // the first read, so a save from a previous day correctly reads back as 0.
+    public int getRawSunCollectedToday() {
+        return sunCollectedToday;
+    }
+
+    public void setSunCollectedToday(int sunCollectedToday) {
+        this.sunCollectedToday = sunCollectedToday;
     }
 
     // --- Cross-level quest progress (Win After Win, Chapter Hunter) -------------------------------

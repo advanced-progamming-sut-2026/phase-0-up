@@ -27,36 +27,47 @@ import java.util.List;
 public class QuestSystem {
 
     // --- Per-level tally (the raw facts a quest condition is evaluated against) ------------------
-    // Fed live during play: CollectSunCommand reports sun, CombatSystem reports each kill / plant loss
-    // / mower kill as it happens. So completion reads the running tally, not an end-of-level snapshot.
-    private int sunCollectedThisLevel;
-    private int zombiesKilledThisLevel;
-    private int plantsLostThisLevel;
-    private int lawnmowerKillsThisLevel;
+    // Fed live during play: CollectSunCommand reports sun and CombatSystem reports each kill as it
+    // happens, so completion reads a running tally rather than an end-of-level snapshot.
+    //
+    // Only the facts nothing else already counts are kept here. Zombies killed, plants lost and mower
+    // kills live on the GameSession, which every death path in the game already updates, and are read
+    // straight off it at level end -- a second parallel tally here would silently drift the moment one
+    // of those paths forgot to notify this system, which is exactly how the Fisherman Zombie's drowned
+    // plants went uncounted against Economical Herbivore.
     private int mowerlessFirstColumnKillsThisLevel;
+    private int sunCollectedThisLevel;
     private final java.util.Map<String, Integer> killsByPlant = new java.util.HashMap<>();
     private final java.util.Map<String, Integer> killsByFamily = new java.util.HashMap<>();
+    // The profile playing this level, captured at kick-off so live events (sun pickups) can be credited
+    // to its cross-level, cross-day counters the moment they happen.
+    private Profile trackedProfile;
 
     public void startTrackingLevel(GameSession session) {
-        sunCollectedThisLevel = 0;
-        zombiesKilledThisLevel = 0;
-        plantsLostThisLevel = 0;
-        lawnmowerKillsThisLevel = 0;
         mowerlessFirstColumnKillsThisLevel = 0;
+        sunCollectedThisLevel = 0;
         killsByPlant.clear();
         killsByFamily.clear();
+        trackedProfile = session == null ? null : session.getPlayer();
     }
 
+    // A sun token was picked up. Beyond this level, it is banked into the player's running total for
+    // the current calendar day -- the figure the Daily Sun Catcher is judged against, which keeps
+    // accumulating across levels and resets only when the date changes.
     public void recordSunCollected(int amount) {
-        if (amount > 0) {
-            sunCollectedThisLevel += amount;
+        if (amount <= 0) {
+            return;
+        }
+        sunCollectedThisLevel += amount;
+        if (trackedProfile != null) {
+            trackedProfile.addSunCollectedToday(amount);
         }
     }
 
-    // Notified by CombatSystem the moment a zombie dies. Besides the running count, the killer plant
-    // (when there is one) is tallied by name, which drives the "kill only with plant X" quests.
+    // Notified by CombatSystem the moment a zombie dies. The overall kill count is the GameSession's
+    // job; what is tallied here is the killer plant (when there is one), by name and by family, which
+    // drives the "kill only with plant X" and "kill only with family Y" quests.
     public void recordZombieKilled(Zombie zombie, Plant killer) {
-        zombiesKilledThisLevel++;
         if (killer != null && killer.getName() != null) {
             killsByPlant.merge(killer.getName().toLowerCase().trim(), 1, Integer::sum);
         }
@@ -71,24 +82,6 @@ public class QuestSystem {
     // caller (CombatSystem) owns the "which column / is the mower gone" test, since it has the board.
     public void recordMowerlessFirstColumnKill() {
         mowerlessFirstColumnKillsThisLevel++;
-    }
-
-    public void recordPlantLost() {
-        plantsLostThisLevel++;
-    }
-
-    public void recordLawnmowerKills(int count) {
-        if (count > 0) {
-            lawnmowerKillsThisLevel += count;
-        }
-    }
-
-    public int getSunCollectedThisLevel() { return sunCollectedThisLevel; }
-    public int getZombiesKilledThisLevel() { return zombiesKilledThisLevel; }
-    public int getPlantsLostThisLevel() { return plantsLostThisLevel; }
-    public int getLawnmowerKillsThisLevel() { return lawnmowerKillsThisLevel; }
-    public java.util.Map<String, Integer> getKillsByPlantThisLevel() {
-        return new java.util.HashMap<>(killsByPlant);
     }
 
     // --- Completion (evaluated once, when a level ends) ------------------------------------------
@@ -107,17 +100,20 @@ public class QuestSystem {
             }
         }
         Profile profile = session.getPlayer();
-        // Kills, plants lost, mower kills and kills-by-plant/family come from this system's own live
-        // tally (fed by CombatSystem); sun left, the garden layout, the plantings and the first-30s
-        // kill count are read off the finished session; the win streak and per-chapter kill total are
-        // read off the profile, having just been updated for this level by updatePersistentProgress.
+        // Kills-by-plant/family and the mowerless last-stand kills come from this system's own live
+        // tally (fed by CombatSystem); the kill/plant-loss/mower totals, sun left, garden layout,
+        // plantings and first-30s kills are read off the finished session, which is the one counter
+        // every gameplay path already updates; the day's sun, the win streak and the per-chapter kill
+        // total are read off the profile, which carries them between levels.
         return QuestContext.builder()
                 .won(won)
                 .sunCollected(sunCollectedThisLevel)
+                .sunCollectedToday(profile == null ? 0 : profile.getSunCollectedToday())
+                .dayLevel(isDayLevel(session))
                 .finalSun(session.getSunAmount())
-                .zombiesKilled(zombiesKilledThisLevel)
-                .plantsLost(plantsLostThisLevel)
-                .lawnmowerKills(lawnmowerKillsThisLevel)
+                .zombiesKilled(session.getZombiesKilled())
+                .plantsLost(session.getPlantsLost())
+                .lawnmowerKills(session.getLawnmowerKills())
                 .killsInFirst30s(session.getKillsInFirst30s())
                 .mowerlessFirstColumnKills(mowerlessFirstColumnKillsThisLevel)
                 .winStreakAtMaxDifficulty(profile == null ? 0 : profile.getWinStreakAtMaxDifficulty())
@@ -141,8 +137,16 @@ public class QuestSystem {
         profile.recordLevelForWinStreak(won, atMaxDifficulty);
         String chapter = chapterOf(session);
         if (chapter != null) {
-            profile.addChapterZombieKills(chapter, zombiesKilledThisLevel);
+            profile.addChapterZombieKills(chapter, session.getZombiesKilled());
         }
+    }
+
+    // Whether this level is a "day" level, i.e. its season drops sun from the sky. Every season does
+    // except Dark Ages, which is the game's night setting -- so this is the test Night or Morning uses
+    // to insist the mushroom run happened in daylight. An unknown chapter falls back to Ancient Egypt
+    // (as EnvironmentType.fromChapter defines), which is a day season.
+    private boolean isDayLevel(GameSession session) {
+        return models.game.EnvironmentType.fromChapter(chapterOf(session)).hasSkySunDrops();
     }
 
     // The chapter the finished level belongs to (its authored "chapter" tag), or null if unknown.
@@ -155,9 +159,13 @@ public class QuestSystem {
 
     // Evaluates every quest against the finished level. Called once when a level ends, for a win or a
     // loss: the cross-level counters (win streak, chapter kills) are updated first, then every quest is
-    // tested against the resulting context. A quest that is newly satisfied (and not already completed
-    // on the profile) has its reward granted once, is recorded on the profile, and is announced.
-    // Returns those announcements for the caller to render.
+    // tested against the resulting context. A quest that is newly satisfied (and not already earned)
+    // has its reward granted exactly once, is recorded on the profile, and is announced. Returns those
+    // announcements for the caller to render.
+    //
+    // Anything that completed is written to the database before this returns, so a finished quest --
+    // its reward and the lifetime counters the leaderboard ranks on -- is durable the instant it is
+    // earned rather than only if the player later exits cleanly.
     public List<Result> evaluateAndComplete(Profile profile, GameSession session, boolean won) {
         List<Result> events = new ArrayList<>();
         if (profile == null || session == null) {
@@ -167,20 +175,59 @@ public class QuestSystem {
         QuestContext ctx = buildContext(session, won);
         for (QuestTemplate template : QuestRegistry.getInstance().getAllQuestTemplates()) {
             Quest quest = QuestFactory.createQuest(template);
-            if (quest == null || profile.hasCompletedQuest(quest.getId()) || !quest.isSatisfiedBy(ctx)) {
+            if (quest == null || alreadyEarned(profile, quest) || !quest.isSatisfiedBy(ctx)) {
                 continue;
             }
-            quest.getReward().grant(profile);
-            profile.markQuestCompleted(quest.getId());
-            if (quest.getCategory() == Quest.Category.DAILY) {
-                profile.incrementDailyQuestsDone();
-            } else {
-                profile.incrementNoneDailyQuestsDone();
+            // Through the quest's own claim path, so the once-only guard that Quest owns is the thing
+            // that hands the reward over. Belt and braces with the profile record checked above: even
+            // a duplicated call here cannot pay a player twice.
+            quest.markComplete();
+            if (!quest.claim(profile)) {
+                continue;
             }
+            recordEarned(profile, quest);
             events.add(new Result(true, "Quest complete: " + quest.getName()
                     + "! Reward: " + quest.getReward().describe() + "."));
         }
+        if (!events.isEmpty()) {
+            persist(events);
+        }
         return events;
+    }
+
+    // Whether this quest is already banked and must not pay out again. A daily quest is blocked only
+    // for the rest of today -- it is repeatable, and that is the whole point of the category -- while
+    // a main or epic quest is a one-off achievement and stays blocked forever.
+    private boolean alreadyEarned(Profile profile, Quest quest) {
+        return quest.getCategory() == Quest.Category.DAILY
+                ? profile.hasCompletedDailyQuestToday(quest.getId())
+                : profile.hasCompletedQuest(quest.getId());
+    }
+
+    // Books a freshly earned quest: the per-quest record that stops it paying out again, and the
+    // lifetime tally the leaderboard's Daily / Non-Daily Quests columns are built from. The tally is
+    // never reset -- it counts everything the player has ever finished, so a daily quest earned again
+    // tomorrow adds to it again.
+    private void recordEarned(Profile profile, Quest quest) {
+        if (quest.getCategory() == Quest.Category.DAILY) {
+            profile.markDailyQuestCompletedToday(quest.getId());
+            profile.incrementDailyQuestsDone();
+        } else {
+            profile.markQuestCompleted(quest.getId());
+            profile.incrementNoneDailyQuestsDone();
+        }
+    }
+
+    // Flushes the profile to the save file. A failure is reported through the returned event list
+    // rather than thrown, so a disk problem cannot swallow the level-end announcements the player is
+    // owed -- and cannot take down the tick loop either.
+    private void persist(List<Result> events) {
+        try {
+            utils.storage.DatabaseManager.getInstance().saveAll();
+        } catch (RuntimeException e) {
+            events.add(new Result(false,
+                    "Quest progress was earned but could not be saved: " + e.getMessage()));
+        }
     }
 
     // --- Sorting engine (travel log) -------------------------------------------------------------
@@ -226,10 +273,13 @@ public class QuestSystem {
         return withCompletion(getSortedQuestsForLog(), profile);
     }
 
+    // Flags each quest complete from the profile's record. Category-aware for the same reason the
+    // completion gate is: a daily quest shows as done only for the day it was earned, so tomorrow's
+    // travel log offers it again instead of showing a page of permanently ticked-off dailies.
     private List<Quest> withCompletion(List<Quest> quests, Profile profile) {
         if (profile != null) {
             for (Quest quest : quests) {
-                if (profile.hasCompletedQuest(quest.getId())) {
+                if (alreadyEarned(profile, quest)) {
                     quest.markComplete();
                 }
             }
