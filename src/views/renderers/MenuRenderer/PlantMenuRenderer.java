@@ -41,9 +41,14 @@ public class PlantMenuRenderer {
         for (String plantName : available) {
             PlantTemplate template = registry.getTemplateByName(plantName);
             String line = template == null ? plantName : formatTemplate(template);
+            boolean forced = session.getMode() != null && session.getMode().isSeedForced(plantName);
             if (session.isSeedSelected(plantName)) {
-                line += session.getSelectedSeed(plantName).isBoosted()
-                        ? "  [selected, boosted]" : "  [selected]";
+                boolean boosted = session.getSelectedSeed(plantName).isBoosted();
+                // A forced seed is flagged as such, so the player can see up front why it cannot be
+                // dropped rather than finding out when the remove command is refused.
+                line += forced
+                        ? (boosted ? "  [bolted down, boosted]" : "  [bolted down]")
+                        : (boosted ? "  [selected, boosted]" : "  [selected]");
             } else if (!isOwned(profile, plantName)) {
                 line += "  [locked]";
             }
@@ -101,4 +106,12 @@ public class PlantMenuRenderer {
         OutputHandler.showError("'" + plantName + "' isn't on the seed bar.");}
     public void successfulRemove(String plantName){
         OutputHandler.showSuccess("'" + plantName + "' taken off the seed bar.");}
+    // Locked Plants pinned this seed itself. Two messages rather than one, so the player is told which
+    // of the two things they just tried is impossible instead of a vague "that plant is locked".
+    public void forcedSeedCannotAdd(String plantName){
+        OutputHandler.showError("'" + plantName + "' is bolted to your seed bar by Locked Plants -- "
+                + "it's already loaded, and you can't add it again.");}
+    public void forcedSeedCannotRemove(String plantName){
+        OutputHandler.showError("'" + plantName + "' is bolted to your seed bar by Locked Plants -- "
+                + "this lawn insists you bring it, so it can't come off.");}
 }

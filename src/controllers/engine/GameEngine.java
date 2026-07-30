@@ -45,6 +45,13 @@ public class GameEngine {
         gameSession.startMode();
         gameSession.applySeedBoosts();   // carry seed-selection boosts into the live seed packets
         questSystem.startTrackingLevel(gameSession);
+        // Drain what set-up queued BEFORE the first frame. onStart is where a mode introduces itself
+        // (Locked Plants listing its bolted-down seeds, the scoring game naming the day), and the only
+        // other drain sits inside advanceOneTick -- so without this the banner explaining the rules of
+        // the level appeared a tick late, after the player had already acted on rules nobody told them.
+        for (Result startEvent : gameSession.drainEvents()) {
+            inGameRenderer.render(startEvent);
+        }
         running = true;
         run();
     }

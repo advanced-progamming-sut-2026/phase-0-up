@@ -26,6 +26,13 @@ public interface GameMode {
         return true;
     }
 
+    // Whether a mode pinned this seed into the loadout itself. A forced seed can be neither added nor
+    // removed by the player: it is already on the bar and it stays there, so seed selection reports it
+    // as forced instead of falling through to a generic "already selected" / "locked" message.
+    default boolean isSeedForced(String plantType) {
+        return false;
+    }
+
     // Seeds a mode drops into the loadout before selection begins.
     default List<String> preSelectedPlants() {
         return Collections.emptyList();

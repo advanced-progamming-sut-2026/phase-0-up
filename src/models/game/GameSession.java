@@ -257,10 +257,8 @@ public class GameSession {
         return new Result(false, "Upgrading mid-lawn is a Beghouled trick.");
     }
 
-    // --- Domain-event queue (Model -> View bridge) -----------------------------------------------
-    // Any model object reachable from the session records a narrative line here instead of printing it;
-    // the engine drains the queue each tick, so no Model-layer class ever calls System.out.
-
+    // --- Domain-event queue: model objects record narrative here instead of printing it; the engine
+    // drains it at start-up and each tick, so no Model-layer class ever calls System.out ------------
     public void reportEvent(String message) {
         if (message != null && !message.isBlank()) {
             eventLog.add(new Result(true, message));
@@ -277,9 +275,8 @@ public class GameSession {
         return drained;
     }
 
-    // --- Clock -----------------------------------------------------------------------------------
-    // The session owns the clock; the engine ticks it once per frame and then runs each system against
-    // the new value. Nothing here runs a system, so advancing time elsewhere can never double-drive them.
+    // --- Clock. The session owns it; the engine ticks once per frame then runs each system against the
+    // new value. Nothing here runs a system, so advancing time elsewhere can't double-drive them ------
     public void tick() { timeTicks++; }
 
     public void advanceTime(int ticks) {
@@ -319,9 +316,8 @@ public class GameSession {
         }
     }
 
-    // --- GameMode seam ---------------------------------------------------------------------------
-    // Rule evaluation is kept OUT of advanceTime so it never overlaps TimeSystem.advance (which owns
-    // the clock). The engine calls startMode() once and evaluateModeRules() each tick after the systems.
+    // --- GameMode seam. Rule evaluation is kept OUT of advanceTime so it never overlaps
+    // TimeSystem.advance; the engine calls startMode() once, evaluateModeRules() after each tick ------
     public void startMode() {
         if (mode != null) {
             mode.onStart(this);
@@ -358,7 +354,6 @@ public class GameSession {
         decreasePlantFoodCount(1);
         return new Result(true, target.getName() + " gulps down the plant food at ("
                 + x + ", " + y + ") -- stand back!");
-
     };
     public void onWin(){
         controllers.systems.CampaignSystem.getInstance().completeLevel(player, level);
@@ -443,9 +438,14 @@ public class GameSession {
 
     public GameMode getMode() { return mode; }
 
+    // Matched ignoring case and surrounding space. A self-picked seed carries exactly the string the
+    // player typed, so an exact match happened to work; a seed a MODE pinned in (Locked Plants) carries
+    // the level file's casing -- "Sunflower" -- and exact matching denied them their own forced plants.
     public SeedPacket getSelectedSeed(String plantType) {
+        String wanted = plantType == null ? null : plantType.trim();
         for (SeedPacket seed : selectedSeeds) {
-            if (seed.getPlantType().equals(plantType)) {
+            if (wanted != null && seed.getPlantType() != null
+                    && seed.getPlantType().trim().equalsIgnoreCase(wanted)) {
                 return seed;
             }
         }

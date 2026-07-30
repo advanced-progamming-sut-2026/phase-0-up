@@ -66,6 +66,12 @@ public class ToggleSeedCommand implements Command {
             renderer.notExist(plantName);
             return;
         }
+        // Checked before ownership and slot limits: a seed the mode bolted down is refused for that
+        // reason whatever else is true of it, rather than being reported as merely locked or duplicate.
+        if (isForcedByMode()) {
+            renderer.forcedSeedCannotAdd(plantName);
+            return;
+        }
         if (!isUnlockedAndAvailable()) {
             renderer.isLocked(plantName);
             return;
@@ -88,11 +94,16 @@ public class ToggleSeedCommand implements Command {
             renderer.notExist(plantName);
             return;
         }
+        // Locked Plants pins its forced seeds; every other mode allows removal. Checked first so the
+        // refusal names the real reason instead of the generic "not on the seed bar" / "locked".
+        if(isForcedByMode()){
+            renderer.forcedSeedCannotRemove(plantName);
+            return;
+        }
         if(!gameSession.isSeedSelected(plantName)){
             renderer.notSelected(plantName);
             return;
         }
-        // Locked Plants can pin a seed in place; every other mode allows removal.
         if(gameSession.getMode() != null && !gameSession.getMode().isSeedRemovable(plantName)){
             renderer.isLocked(plantName);
             return;
@@ -101,4 +112,8 @@ public class ToggleSeedCommand implements Command {
         renderer.successfulRemove(plantName);
     }
 
+    // Whether the level's mode put this seed on the bar itself, making it neither addable nor removable.
+    private boolean isForcedByMode(){
+        return gameSession.getMode() != null && gameSession.getMode().isSeedForced(plantName);
+    }
 }
