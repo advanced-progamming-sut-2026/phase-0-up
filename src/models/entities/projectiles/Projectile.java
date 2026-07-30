@@ -52,15 +52,13 @@ public class Projectile extends Entity {
 
     private Set<Terrain> hitTerrains;
 
-    // Grapeshot pellet state. remainingHits is how many more distinct zombies this grape may strike
-    // (1 + bounces); grapeTtlTicks retires a grape that never finds enough targets; grapeTarget is the
-    // zombie assigned for its first hop, so a volley fans out to different zombies instead of piling
-    // onto the nearest one. All unused for any non-GRAPE projectile.
+    // Grapeshot pellet state, unused for any other projectile: how many more distinct zombies this
+    // grape may strike (1 + bounces), a TTL that retires one which never finds enough targets, and the
+    // zombie assigned for its first hop. grapeVolleyHits is shared across a volley so its pellets fan
+    // out instead of piling onto the nearest zombie; null for a lone grape, which uses its own set.
     private int remainingHits = 0;
     private int grapeTtlTicks = 0;
     private Zombie grapeTarget = null;
-    // Shared across one Grapeshot volley so its pellets fan out over different zombies instead of
-    // several piling onto the same nearest one. Null for a lone grape, which falls back to its own set.
     private Set<Zombie> grapeVolleyHits = null;
 
     public Projectile(double x, double startY, ProjectileType type, int damage,
@@ -90,9 +88,7 @@ public class Projectile extends Entity {
         this.splashRowRadius = splashRowRadius;
     }
 
-    public void setChillBonusTicks(int ticks) {
-        this.chillBonusTicks = ticks;
-    }
+    public void setChillBonusTicks(int ticks) { this.chillBonusTicks = ticks; }
 
     public void setPoison(int dps, int durationTicks) {
         this.poisonDps = dps;
@@ -101,8 +97,7 @@ public class Projectile extends Entity {
 
     // Turns this projectile into a Grapeshot pellet: it ricochets to `bounces + 1` distinct zombies,
     // then is spent, and self-destructs after `ttlTicks` regardless. `firstTarget` is the zombie it
-    // heads for first (so a volley spreads out); null lets it seek the nearest on its own. `volleyHits`
-    // is the shared "already struck by this volley" set (null for a lone grape).
+    // heads for first (null lets it seek); `volleyHits` is the shared already-struck set.
     public void makeGrape(int bounces, int ttlTicks, Zombie firstTarget, Set<Zombie> volleyHits) {
         this.remainingHits = Math.max(1, bounces + 1);
         this.grapeTtlTicks = ttlTicks;
@@ -137,8 +132,8 @@ public class Projectile extends Entity {
 
         handleTerrainCollisions(gameSession);
 
-        // A Jester-reflected projectile is travelling back toward the lawn: it passes over zombies
-        // and only strikes plants (handled above in handleBlockedPlantCollisions).
+        // A Jester-reflected projectile travels back toward the lawn: it passes over zombies and only
+        // strikes plants (handled above in handleBlockedPlantCollisions).
         if (!this.isDestroyed && !this.isReflectedByJester) {
             handleZombieCollisions(gameSession);
         }
@@ -204,13 +199,12 @@ public class Projectile extends Entity {
 
         double previousX = this.x - speedX;
 
-        // Iterate a copy. onHit can kill a zombie, and a death effect is free to put new zombies on this
-        // very row (a bursting barrel dropping Imps) -- walking the live list would then throw a
-        // ConcurrentModificationException mid-flight. A piercing shot keeps looping after a kill, so
-        // this is reachable rather than theoretical.
+        // Iterate a copy: onHit can kill a zombie, and a death effect may put new zombies on this very
+        // row (a bursting barrel dropping Imps). A piercing shot keeps looping after a kill, so walking
+        // the live list would throw a ConcurrentModificationException in practice, not just in theory.
         for (Zombie z : new java.util.ArrayList<>(zombiesInRow)) {
-            // isTargetable() also rules out a zombie that has spawned beyond the right edge but not
-            // walked on: a pea must fly past where it will appear, not stop dead in mid-air on it.
+            // isTargetable() also rules out a zombie spawned beyond the right edge but not yet walked
+            // on: a pea must fly past where it will appear, not stop dead in mid-air on it.
             if (z.isTargetable() && !hitTargets.contains(z)) {
                 double zombieX = z.getMovement().getPositionX();
 
@@ -226,11 +220,10 @@ public class Projectile extends Entity {
         }
     }
 
-    // One tick of a Grapeshot pellet. It does not travel in a straight line: each tick it picks the
-    // nearest zombie it has not already struck, jumps onto it (which re-files the grape into that
-    // zombie's lane, via CombatSystem's lane-change pass), and damages it. That counts as one bounce.
-    // The grape retires once it has spent all its hits, once its time runs out, or once there is no
-    // fresh zombie left to bounce to.
+    // One tick of a Grapeshot pellet. It does not fly straight: each tick it picks the nearest zombie
+    // it has not struck, jumps onto it (CombatSystem's lane-change pass re-files it into that lane) and
+    // damages it, which counts as one bounce. It retires when its hits or its time run out, or when no
+    // fresh zombie is left to bounce to.
     private void updateGrape(GameSession gameSession) {
         if (grapeTtlTicks <= 0 || remainingHits <= 0) {
             this.isDestroyed = true;
@@ -240,8 +233,8 @@ public class Projectile extends Entity {
 
         Zombie target = nextGrapeTarget(gameSession);
         if (target == null) {
-            // Nothing to hit right now. Keep drifting on the spot until a zombie wanders into reach or
-            // the pellet's time expires -- it does not vanish the instant the lane is momentarily clear.
+            // Nothing in reach: drift on the spot until a zombie wanders in or the TTL expires, rather
+            // than vanishing the instant the lane is momentarily clear.
             return;
         }
 
@@ -260,14 +253,13 @@ public class Projectile extends Entity {
         }
     }
 
-    // The set of zombies this grape treats as already struck: the whole volley's shared set when it
-    // has one, otherwise just its own.
+    // Zombies this grape treats as already struck: the volley's shared set, or just its own.
     private Set<Zombie> grapeHits() {
         return grapeVolleyHits != null ? grapeVolleyHits : hitTargets;
     }
 
-    // The zombie a grape should strike next: its pre-assigned first target while that is still valid,
-    // otherwise the nearest targetable zombie the volley has not hit yet. Null when none remain.
+    // The next zombie to strike: the pre-assigned first target while still valid, otherwise the nearest
+    // targetable zombie the volley has not hit. Null when none remain.
     private Zombie nextGrapeTarget(GameSession gameSession) {
         Set<Zombie> hits = grapeHits();
         if (grapeTarget != null && grapeTarget.isTargetable() && !hits.contains(grapeTarget)) {
@@ -431,45 +423,26 @@ public class Projectile extends Entity {
         this.speedY = direction * 0.5;
     }
 
-    // Destroyed projectiles are retired by CombatSystem.resolveProjectiles, which drops them from the
-    // row on the same tick they are flagged.
-    public boolean isDestroyed() {
-        return isDestroyed;
-    }
+    // Destroyed projectiles are retired by CombatSystem.resolveProjectiles on the tick they are flagged.
+    public boolean isDestroyed() { return isDestroyed; }
 
     public void destroy() { this.isDestroyed = true;}
 
-    public void setBounceCount(int bounceCount) {
-        this.bounceCount = bounceCount;
-    }
+    public void setBounceCount(int bounceCount) { this.bounceCount = bounceCount; }
 
-    public void setPierceCount(int pierceCount) {
-        this.pierceCount = pierceCount;
-    }
+    public void setPierceCount(int pierceCount) { this.pierceCount = pierceCount; }
 
-    public Element getElement() {
-        return element;
-    }
+    public Element getElement() { return element; }
 
-    public void setElement(Element element) {
-        this.element = element;
-    }
+    public void setElement(Element element) { this.element = element; }
 
-    public Trajectory getTrajectory() {
-        return trajectory;
-    }
+    public Trajectory getTrajectory() { return trajectory; }
 
-    public void setDamage(int damage) {
-        this.damage = damage;
-    }
+    public void setDamage(int damage) { this.damage = damage; }
 
-    public int getDamage() {
-        return damage;
-    }
+    public int getDamage() { return damage; }
 
-    public Plant getShooter() {
-        return shooter;
-    }
+    public Plant getShooter() { return shooter; }
 
     private boolean handleBlockedPlantCollisions(GameSession gameSession) {
         if (this.trajectory == Trajectory.LOBBED) {
@@ -496,8 +469,8 @@ public class Projectile extends Entity {
                 return true;
             }
 
-            // A Jester-reflected projectile flies back toward the lawn and strikes the player's own
-            // plant -- carrying its element with it, so a Torchwood-lit pea burns and an ice pea chills.
+            // A Jester-reflected projectile flies back and strikes the player's own plant, carrying its
+            // element with it, so a Torchwood-lit pea burns and an ice pea chills.
             if (p != null && !p.isDead() && this.isReflectedByJester) {
                 p.takeElementalHit(this.damage, this.element);
                 this.isDestroyed = true;
@@ -508,11 +481,7 @@ public class Projectile extends Entity {
         return false;
     }
 
-    public boolean isReflectedByJester() {
-        return isReflectedByJester;
-    }
+    public boolean isReflectedByJester() { return isReflectedByJester; }
 
-    public void setReflectedByJester(boolean reflectedByJester) {
-        this.isReflectedByJester = reflectedByJester;
-    }
+    public void setReflectedByJester(boolean reflected) { this.isReflectedByJester = reflected; }
 }

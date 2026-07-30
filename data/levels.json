@@ -3,7 +3,7 @@
     "id": "s1l1", "chapter": "ANCIENT_EGYPT", "levelNumber": 1, "mode": "STANDARD",
     "name": "Ancient Egypt - Day 1",
     "startingSun": 50, "seedSlots": 7,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Cabbage-pult", "Kernel-pult", "Bonk Choy", "Iceberg Lettuce", "Grave Buster"],
     "terrain": [".........", "......#..", ".........", "......#..", "........."],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1000, "delay": 25 },
@@ -16,7 +16,7 @@
     "id": "s1l2", "chapter": "ANCIENT_EGYPT", "levelNumber": 2, "mode": "STANDARD",
     "name": "Ancient Egypt - Day 2",
     "startingSun": 75, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea", "Repeater"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Cabbage-pult", "Kernel-pult", "Bonk Choy", "Iceberg Lettuce", "Grave Buster", "Cactus", "Threepeater", "Split Pea", "Garlic", "Pepper-pult", "Explode-o-nut"],
     "terrain": [".....#...", "......#..", ".....#...", "......#..", "........."],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1200, "delay": 25 },
@@ -30,7 +30,7 @@
     "id": "s1l3", "chapter": "ANCIENT_EGYPT", "levelNumber": 3, "mode": "LOCKED_PLANTS",
     "name": "Ancient Egypt - Locked Plants",
     "startingSun": 100, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Cabbage-pult", "Kernel-pult", "Bonk Choy", "Iceberg Lettuce", "Grave Buster", "Cactus", "Garlic", "Explode-o-nut"],
     "terrain": [".........", "....#.#..", ".........", "....#.#..", "........."],
     "rules": { "lockedType": 2, "lockedSlots": 2, "forcedPlants": ["Sunflower", "Wall-nut"] },
     "waves": [
@@ -46,7 +46,7 @@
     "id": "s1l4", "chapter": "ANCIENT_EGYPT", "levelNumber": 4, "mode": "STANDARD",
     "name": "Ancient Egypt - Day 4",
     "startingSun": 125, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Potato Mine", "Snow Pea", "Repeater", "Cherry Bomb", "Squash"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Cabbage-pult", "Kernel-pult", "Bonk Choy", "Iceberg Lettuce", "Grave Buster", "Cactus", "Threepeater", "Split Pea", "Garlic", "Pepper-pult", "Explode-o-nut", "Primal Sunflower", "Gold Bloom", "Primal Potato Mine", "Melon-pult", "Chomper", "Sweet Potato", "Fire Peashooter", "Torchwood", "Jalapeno", "Pumpkin", "Phat Beet", "Pierce-mint", "Arma-mint"],
     "terrain": ["......#..", "....#.#..", "......#..", "....#.#..", "......#.."],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1700, "delay": 25 },
@@ -62,7 +62,7 @@
     "id": "s2l1", "chapter": "FROSTBITE_CAVES", "levelNumber": 1, "mode": "STANDARD",
     "name": "Frostbite Caves - Day 1",
     "startingSun": 50, "seedSlots": 7,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Endurian", "Torchwood", "Potato Mine", "Squash", "Cherry Bomb", "Hot Potato", "Pepper-pult", "Kernel-pult", "Iceberg Lettuce"],
     "terrain": [".........", ".......&.", ".........", ".......&.", "........."],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1500, "delay": 25 },
@@ -75,7 +75,7 @@
     "id": "s2l2", "chapter": "FROSTBITE_CAVES", "levelNumber": 2, "mode": "STANDARD",
     "name": "Frostbite Caves - Day 2",
     "startingSun": 75, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea", "Repeater"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Endurian", "Torchwood", "Potato Mine", "Squash", "Cherry Bomb", "Hot Potato", "Pepper-pult", "Kernel-pult", "Iceberg Lettuce", "Fire Peashooter", "Cabbage-pult", "Tall-nut", "Bonk Choy", "Wasabi Whip", "Garlic"],
     "terrain": ["........&", "......^..", ".........", "......v..", "........&"],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 1700, "delay": 25 },
@@ -93,7 +93,7 @@
     "id": "s2l3", "chapter": "FROSTBITE_CAVES", "levelNumber": 3, "mode": "NIGHT_OPS",
     "name": "Frostbite Caves - Night Ops",
     "startingSun": 150, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea", "Repeater", "Cherry Bomb"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Endurian", "Torchwood", "Potato Mine", "Squash", "Cherry Bomb", "Hot Potato", "Pepper-pult", "Kernel-pult", "Iceberg Lettuce", "Fire Peashooter", "Cabbage-pult", "Tall-nut", "Bonk Choy", "Wasabi Whip", "Garlic", "Sun-shroom", "Gold Bloom", "Puff-shroom", "Threepeater", "Jalapeno", "Melon-pult", "Chomper", "Sweet Potato", "Appease-mint"],
     "terrain": [".......&.", "........&", ".......&.", "........&", ".......&."],
     "rules": { "disableSkySun": true },
     "waves": [
@@ -109,7 +109,7 @@
     "id": "s2l4", "chapter": "FROSTBITE_CAVES", "levelNumber": 4, "mode": "STANDARD",
     "name": "Frostbite Caves - Day 4",
     "startingSun": 125, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Peashooter", "Wall-nut", "Torchwood", "Snow Pea", "Repeater", "Cherry Bomb", "Squash"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Endurian", "Torchwood", "Potato Mine", "Squash", "Cherry Bomb", "Hot Potato", "Pepper-pult", "Kernel-pult", "Iceberg Lettuce", "Fire Peashooter", "Cabbage-pult", "Tall-nut", "Bonk Choy", "Wasabi Whip", "Garlic", "Threepeater", "Jalapeno", "Melon-pult", "Winter Melon", "Chomper", "Sweet Potato", "Citron", "Electric Blueberry", "Pea Pod", "Kiwibeast", "Pumpkin", "Grapeshot", "Arma-mint"],
     "terrain": ["......&.&", "......^..", ".......&.", "......v..", "......&.&"],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieArmor1"], "budget": 2200, "delay": 25 },
@@ -130,7 +130,7 @@
     "id": "s3l1", "chapter": "BIG_WAVE_BEACH", "levelNumber": 1, "mode": "STANDARD",
     "name": "Big Wave Beach - Day 1",
     "startingSun": 50, "seedSlots": 7,
-    "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Lily Pad", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Tangle Kelp", "Sea-shroom", "Potato Mine", "Squash", "Cherry Bomb", "Cabbage-pult", "Iceberg Lettuce"],
     "terrain": [".......!!", ".......!!", ".......!!", ".......!!", ".......!!"],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2000, "delay": 25 },
@@ -143,7 +143,7 @@
     "id": "s3l2", "chapter": "BIG_WAVE_BEACH", "levelNumber": 2, "mode": "STANDARD",
     "name": "Big Wave Beach - Day 2",
     "startingSun": 75, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp", "Repeater"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Lily Pad", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Tangle Kelp", "Sea-shroom", "Potato Mine", "Squash", "Cherry Bomb", "Cabbage-pult", "Iceberg Lettuce", "Threepeater", "Kernel-pult", "Garlic", "Rotobaga", "Bonk Choy", "Starfruit"],
     "terrain": [".......!!", ".......!!", "......-!!", ".......!!", ".......!!"],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2200, "delay": 25 },
@@ -157,7 +157,7 @@
     "id": "s3l3", "chapter": "BIG_WAVE_BEACH", "levelNumber": 3, "mode": "DEAD_LINE",
     "name": "Big Wave Beach - Dead Line",
     "startingSun": 100, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp", "Repeater", "Cherry Bomb"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Lily Pad", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Tangle Kelp", "Sea-shroom", "Potato Mine", "Squash", "Cherry Bomb", "Cabbage-pult", "Iceberg Lettuce", "Threepeater", "Kernel-pult", "Garlic", "Rotobaga", "Bonk Choy", "Starfruit", "Melon-pult", "Split Pea", "Chomper", "Sweet Potato", "Goo Peashooter", "Phat Beet", "Pumpkin"],
     "terrain": [".......!!", ".......!!", ".......!!", ".......!!", ".......!!"],
     "rules": { "deadLineColumn": 2 },
     "waves": [
@@ -173,7 +173,7 @@
     "id": "s3l4", "chapter": "BIG_WAVE_BEACH", "levelNumber": 4, "mode": "STANDARD",
     "name": "Big Wave Beach - Day 4",
     "startingSun": 125, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Lily Pad", "Peashooter", "Wall-nut", "Tangle Kelp", "Repeater", "Cherry Bomb", "Squash"],
+    "availablePlants": ["Sunflower", "Twin Sunflower", "Lily Pad", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Tangle Kelp", "Sea-shroom", "Potato Mine", "Squash", "Cherry Bomb", "Cabbage-pult", "Iceberg Lettuce", "Threepeater", "Kernel-pult", "Garlic", "Rotobaga", "Bonk Choy", "Starfruit", "Melon-pult", "Split Pea", "Chomper", "Sweet Potato", "Goo Peashooter", "Phat Beet", "Pumpkin", "Winter Melon", "Citron", "Bowling Bulb", "Jalapeno", "Grapeshot", "Enforce-mint", "Reinforce-mint"],
     "terrain": ["......!!!", "......!!!", ".....-!!!", "......!!!", "......!!!"],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieBeachFisherman"], "budget": 2700, "delay": 25 },
@@ -189,7 +189,7 @@
     "id": "s4l1", "chapter": "DARK_AGES", "levelNumber": 1, "mode": "STANDARD",
     "name": "Dark Ages - Day 1",
     "startingSun": 100, "seedSlots": 7,
-    "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom"],
+    "availablePlants": ["Sun-shroom", "Sunflower", "Puff-shroom", "Fume-shroom", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Grave Buster", "Iceberg Lettuce", "Cabbage-pult"],
     "terrain": [".........", ".......?.", ".........", ".......?.", "........."],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 2500, "delay": 25 },
@@ -202,7 +202,7 @@
     "id": "s4l2", "chapter": "DARK_AGES", "levelNumber": 2, "mode": "STANDARD",
     "name": "Dark Ages - Day 2",
     "startingSun": 100, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom", "Fume-shroom"],
+    "availablePlants": ["Sun-shroom", "Sunflower", "Puff-shroom", "Fume-shroom", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Grave Buster", "Iceberg Lettuce", "Cabbage-pult", "Twin Sunflower", "Magnet-shroom", "Hypno-shroom", "Kernel-pult", "Bonk Choy", "Garlic"],
     "terrain": ["......0..", ".......?.", "......0..", ".......?.", "........."],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 2750, "delay": 25 },
@@ -216,7 +216,7 @@
     "id": "s4l3", "chapter": "DARK_AGES", "levelNumber": 3, "mode": "SAVE_OUR_SEEDS",
     "name": "Dark Ages - Save Our Seeds",
     "startingSun": 100, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom", "Fume-shroom", "Repeater"],
+    "availablePlants": ["Sun-shroom", "Sunflower", "Puff-shroom", "Fume-shroom", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Grave Buster", "Iceberg Lettuce", "Cabbage-pult", "Twin Sunflower", "Magnet-shroom", "Hypno-shroom", "Kernel-pult", "Bonk Choy", "Garlic", "Ice-shroom", "Doom-shroom", "Threepeater", "Melon-pult", "Chomper", "Sweet Potato", "Pumpkin"],
     "terrain": [".........", ".......?.", ".........", ".......?.", "........."],
     "rules": { "protectedPlants": [ { "plant": "Sunflower", "x": 0, "y": 1 }, { "plant": "Sunflower", "x": 0, "y": 3 } ] },
     "waves": [
@@ -232,7 +232,7 @@
     "id": "s4l4", "chapter": "DARK_AGES", "levelNumber": 4, "mode": "STANDARD",
     "name": "Dark Ages - Day 4",
     "startingSun": 100, "seedSlots": 8,
-    "availablePlants": ["Sunflower", "Sun-shroom", "Peashooter", "Wall-nut", "Puff-shroom", "Fume-shroom", "Repeater", "Cherry Bomb"],
+    "availablePlants": ["Sun-shroom", "Sunflower", "Puff-shroom", "Fume-shroom", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Grave Buster", "Iceberg Lettuce", "Cabbage-pult", "Twin Sunflower", "Magnet-shroom", "Hypno-shroom", "Kernel-pult", "Bonk Choy", "Garlic", "Ice-shroom", "Doom-shroom", "Threepeater", "Melon-pult", "Chomper", "Sweet Potato", "Pumpkin", "Sun Bean", "Cat-tail", "Caulipower", "Imitater", "Mega Gatling Pea", "Enlighten-mint", "Enchant-mint", "Bombard-mint", "catTail-mint"],
     "terrain": ["......0?.", ".......?.", "......0..", ".......?.", "......0?."],
     "waves": [
       { "zombies": ["ZombieDefault", "ZombieDarkArmor3"], "budget": 3250, "delay": 25 },
