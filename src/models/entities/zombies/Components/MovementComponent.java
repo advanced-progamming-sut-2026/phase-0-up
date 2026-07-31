@@ -22,13 +22,7 @@ public class MovementComponent {
         return speed;
     }
 
-    // Queues a hop into another lane; move() performs it on the next tick and CombatSystem then re-files
-    // the zombie into the Row that matches its new y.
-    //
-    // A target off the top or bottom of the lawn is refused outright. Callers reach for a neighbouring
-    // lane without checking the edges (a slider tile on row 0 asks for row -1 every tick it is stood on),
-    // and letting that through would strand the zombie on a lane index no Row owns -- it would be dropped
-    // from the board entirely by the re-filing pass.
+    // Queues a hop; CombatSystem re-files the Row. An off-board lane is refused (callers use y+-1).
     public void startLaneSwitch(int newLaneY) {
         if (newLaneY < 0 || newLaneY >= utils.Constants.BOARD_ROWS) {
             return;
@@ -40,14 +34,15 @@ public class MovementComponent {
     }
 
     public void move() {
-        if (state.isUnableToMove()) return;
-        double currentSpeed = (state.isChilled() ? this.speed * 0.5 : this.speed)
-                * utils.Constants.ZOMBIE_SPEED_SCALE;   // global speed knob
-        if (isSwitchingLane) {
+        // A shove, not a step, so it beats the can-it-move check: Garlic repels the zombie BITING it.
+        if (isSwitchingLane && canBeShoved()) {
             this.y = this.targetY;
             this.isSwitchingLane = false;
             return;
         }
+        if (state.isUnableToMove()) return;
+        double currentSpeed = (state.isChilled() ? this.speed * 0.5 : this.speed)
+                * utils.Constants.ZOMBIE_SPEED_SCALE;   // global speed knob
         if(!state.isHypnotized()) {
             this.x -= currentSpeed;
         } else {
@@ -55,6 +50,10 @@ public class MovementComponent {
         }
     }
 
+    private boolean canBeShoved() {
+        return !state.isFrozen() && !state.isButtered()
+                && state.getCurrentAction() != ActionState.DYING;
+    }
     public double getPositionX() { return x; }
     public int getPositionY() { return y; }
     public boolean isSwitchingLane() { return isSwitchingLane; }

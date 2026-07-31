@@ -32,20 +32,14 @@ public final class QuestText {
         String out = description;
         if (spec != null) {
             String n = String.valueOf(spec.getThreshold() != 0 ? spec.getThreshold() : spec.getIndex());
-            // The braced form goes first. Braces are not word characters, so the 'n' in "{n}" is a
-            // standalone word as far as the regex below is concerned: running that pass first turned
-            // "{n}" into "{3000}" and left the braces on display in the travel log.
+            // Braced form first: a bare-word pass would turn "{n}" into "{3000}".
             out = replace(out, "{n}", n);
             // Standalone "n" only (word boundaries), so the 'n' inside "in", "column", "plants" is left
             // alone. quoteReplacement guards against any regex-special chars in the value.
             out = out.replaceAll("\\bn\\b", Matcher.quoteReplacement(n));
             out = replace(out, "{plant}", spec.getPlant());
-            // Families and categories are authored as enum tokens (LOBBER, SUN_PRODUCER); show them the
-            // way a player would say them ("Lobber", "Sun Producer").
             out = replace(out, "{family}", titleCase(spec.getFamily()));
             out = replace(out, "{category}", titleCase(spec.getCategory()));
-            // Chapters are authored as enum-ish tokens (ANCIENT_EGYPT); show them the way the rest of
-            // the game names a season ("Ancient Egypt").
             out = replace(out, "{chapter}", seasonName(EnvironmentType.fromChapter(spec.getChapter())));
         }
         if (season != null) {
@@ -67,9 +61,6 @@ public final class QuestText {
     public static String seasonName(EnvironmentType season) {
         return season == null ? "" : titleCase(season.name());
     }
-
-    // ENUM_TOKEN -> "Enum Token". Returns the input unchanged when it is null or blank, so replace()
-    // still leaves the readable placeholder in place rather than blanking it.
     public static String titleCase(String token) {
         if (token == null || token.isBlank()) {
             return token;

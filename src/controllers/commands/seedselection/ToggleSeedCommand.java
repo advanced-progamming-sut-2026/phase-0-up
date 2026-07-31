@@ -37,7 +37,8 @@ public class ToggleSeedCommand implements Command {
         }
     }
 
-    private boolean isUnlockedAndAvailable() {
+    // Separate from isAllowedInLevel(): "still locked" sent players to unlock what they owned.
+    private boolean isUnlocked() {
         Profile profile = gameSession.getPlayer();
         Map<String, Integer> map = profile.getOwnedSeedPackets();
         Map<String, Integer> owned = null;
@@ -50,15 +51,16 @@ public class ToggleSeedCommand implements Command {
         }
 
         // Profile keys are lower-cased while the level pool uses display names -> compare ignoring case.
-        boolean unlocked = owned != null && owned.entrySet().stream()
+        return owned != null && owned.entrySet().stream()
                 .anyMatch(e -> e.getKey().equalsIgnoreCase(plantName) && e.getValue() > 0);
+    }
+    private boolean isAllowedInLevel() {
         // Read the pool off the Level, not its template: a level built without a template (the
         // scoring game, Zombotany and the other generated levels) carries its plant pool directly, and
         // going through the template dereferenced null and crashed seed selection outright.
         List<String> available = gameSession.getLevel().getAvailablePlants();
-        boolean allowedInLevel = available != null
+        return available != null
                 && available.stream().anyMatch(p -> p.equalsIgnoreCase(plantName));
-        return unlocked && allowedInLevel;
     }
 
     private void add(PlantTemplate template){
@@ -66,14 +68,16 @@ public class ToggleSeedCommand implements Command {
             renderer.notExist(plantName);
             return;
         }
-        // Checked before ownership and slot limits: a seed the mode bolted down is refused for that
-        // reason whatever else is true of it, rather than being reported as merely locked or duplicate.
         if (isForcedByMode()) {
             renderer.forcedSeedCannotAdd(plantName);
             return;
         }
-        if (!isUnlockedAndAvailable()) {
+        if (!isUnlocked()) {
             renderer.isLocked(plantName);
+            return;
+        }
+        if (!isAllowedInLevel()) {
+            renderer.notAvailableInLevel(plantName);
             return;
         }
         if (gameSession.isSeedSelected(plantName)) {
@@ -94,8 +98,6 @@ public class ToggleSeedCommand implements Command {
             renderer.notExist(plantName);
             return;
         }
-        // Locked Plants pins its forced seeds; every other mode allows removal. Checked first so the
-        // refusal names the real reason instead of the generic "not on the seed bar" / "locked".
         if(isForcedByMode()){
             renderer.forcedSeedCannotRemove(plantName);
             return;
@@ -105,14 +107,13 @@ public class ToggleSeedCommand implements Command {
             return;
         }
         if(gameSession.getMode() != null && !gameSession.getMode().isSeedRemovable(plantName)){
-            renderer.isLocked(plantName);
+            renderer.seedPinnedByMode(plantName);
             return;
         }
         gameSession.removeSeed(plantName);
         renderer.successfulRemove(plantName);
     }
 
-    // Whether the level's mode put this seed on the bar itself, making it neither addable nor removable.
     private boolean isForcedByMode(){
         return gameSession.getMode() != null && gameSession.getMode().isSeedForced(plantName);
     }

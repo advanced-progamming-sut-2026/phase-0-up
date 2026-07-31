@@ -1,7 +1,6 @@
 package models.game.gamemodes;
 
 import models.game.GameSession;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,10 +42,7 @@ public class LockedPlantsMode extends StandardMode {
     public boolean isSeedRemovable(String plantType) {
         return !isSeedForced(plantType);
     }
-
-    // Compared ignoring case and surrounding space: the forced list carries the level's display casing
-    // ("Wall-nut") while the player may type it any way they like, and a near-miss must not quietly
-    // hand them back a plant the mode bolted down.
+    // Ignoring case and space: the forced list carries the level's casing, the player types their own.
     @Override
     public boolean isSeedForced(String plantType) {
         if (plantType == null) {
@@ -65,15 +61,12 @@ public class LockedPlantsMode extends StandardMode {
     public List<String> preSelectedPlants() {
         return forcedPlants;
     }
-
-    // Announces the mode as the level opens, so the player is told why their seed bar came pre-filled
-    // and why slots are missing, rather than discovering both by having commands refused.
+    // Announced at level open, so the pre-filled bar and missing slots are not a surprise.
     @Override
     public void onStart(GameSession session) {
         super.onStart(session);
         session.reportEvent(startBanner(session));
     }
-
     private String startBanner(GameSession session) {
         StringBuilder sb = new StringBuilder("Locked Plants! The lawn picked your loadout for you.");
         if (!forcedPlants.isEmpty()) {
@@ -86,7 +79,6 @@ public class LockedPlantsMode extends StandardMode {
         }
         return sb.toString();
     }
-
     private String joinNames() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < forcedPlants.size(); i++) {

@@ -81,14 +81,12 @@ public class Zombie extends Entity {
         movement.move();
     }
 
-    // Multiplies how hard this zombie bites, leaving its health alone. The Newspaper Zombie's rage uses
-    // it: losing the paper makes it chew several times faster without making it any tougher.
+    // Scales bite damage only, leaving health alone (the Newspaper Zombie's rage).
     public void scaleEatDamage(double multiplier) {
         if (multiplier > 0) {
             this.eatDamage = Math.max(1, (int) Math.round(this.eatDamage * multiplier));
         }
     }
-
     // Hypno-shroom upgrades: a hypnotized ally fights with buffed HP and bite damage.
     public void applyHypnoBuffs(double hpMultiplier, double damageMultiplier) {
         this.eatDamage = (int) Math.round(this.eatDamage * damageMultiplier);
@@ -131,20 +129,9 @@ public class Zombie extends Entity {
         return x >= 0 && x < Constants.BOARD_COLS;
     }
 
-    // Marks a zombie the plants must ignore entirely -- used for the I, Zombie sun-maker, which sits at
-    // the right edge purely as an income source and is not part of the fight. Off by default; every
-    // ordinary zombie is a valid target.
     private boolean untargetable = false;
-
     public void setUntargetable(boolean untargetable) { this.untargetable = untargetable; }
     public boolean isUntargetable() { return untargetable; }
-
-    // The single rule for "may a plant act on this zombie": it must be alive, on the grid, and not
-    // flagged untargetable.
-    //
-    // The board half matters because a zombie joins its row the moment it spawns, one cell beyond the
-    // right edge, and only then walks in. Every plant-side scan -- triggers, abilities and plant-food
-    // strategies alike -- goes through here, so nothing reaches a zombie that has not arrived yet.
     public boolean isTargetable() {
         return !health.isDead() && isOnBoard() && !untargetable;
     }

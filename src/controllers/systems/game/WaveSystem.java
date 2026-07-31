@@ -163,13 +163,9 @@ public class WaveSystem {
             return;
         }
         int count = Math.min(1 + random.nextInt(4), pendingSpawns.size());
-
-        // The tornado is a one-off event on the last wave of an Ancient Egypt level, so it announces
-        // itself before the zombies it is carrying land -- otherwise they simply appear mid-lawn with
-        // an ordinary spawn line and the player has no idea why.
+        // Announced before the zombies land, or they just appear mid-lawn with no explanation.
         events.add(new Result(true, "A tornado tears across the desert and hurls " + count
                 + " zombie(s) deep onto your lawn!"));
-
         for (int i = 0; i < count; i++) {
             PendingSpawn pending = pendingSpawns.poll();
             Zombie zombie = pending.zombie();

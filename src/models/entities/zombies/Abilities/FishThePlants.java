@@ -5,14 +5,20 @@ import models.entities.zombies.Zombie;
 import models.map.Cell;
 import models.map.Row;
 
+// Fisherman Zombie: fixed in the rightmost column, dragging a plant one tile forward periodically.
 public class FishThePlants implements ZombieAbility {
     private int tickCounter = 0;
     private static final int TICKS_PER_SECOND = 10;
     private static final int FISHING_COOLDOWN = 5 * TICKS_PER_SECOND;
 
+    private static final double SHORELINE_X = utils.Constants.BOARD_COLS - 0.5;
     @Override
     public void execute(Zombie fisherman) {
-        if (fisherman == null || fisherman.getState().isUnableToMove()) {
+        if (fisherman == null) {
+            return;
+        }
+        anchorAtShoreline(fisherman);
+        if (fisherman.getState().isUnableToMove()) {
             return;
         }
         tickCounter++;
@@ -24,6 +30,17 @@ public class FishThePlants implements ZombieAbility {
         }
     }
 
+    // Speed 0, not an unable-to-move state (which would stop it fishing). Looks one step ahead.
+    private void anchorAtShoreline(Zombie fisherman) {
+        if (fisherman.getMovement() == null) {
+            return;
+        }
+        double nextStep = fisherman.getMovement().getSpeed() * utils.Constants.ZOMBIE_SPEED_SCALE;
+        if (fisherman.getMovement().getPositionX() - nextStep <= SHORELINE_X) {
+            fisherman.getMovement().setPositionX(SHORELINE_X);
+            fisherman.getMovement().setSpeed(0);
+        }
+    }
     private boolean tryFishPlant(Zombie fisherman) {
         if (fisherman.getGameSession() == null || fisherman.getGameSession().getMap() == null) {
             return false;

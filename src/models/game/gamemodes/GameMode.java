@@ -26,26 +26,19 @@ public interface GameMode {
         return true;
     }
 
-    // Whether a mode pinned this seed into the loadout itself. A forced seed can be neither added nor
-    // removed by the player: it is already on the bar and it stays there, so seed selection reports it
-    // as forced instead of falling through to a generic "already selected" / "locked" message.
+    // A mode-pinned seed can be neither added nor removed, and is reported as forced.
     default boolean isSeedForced(String plantType) {
         return false;
     }
-
     // Seeds a mode drops into the loadout before selection begins.
     default List<String> preSelectedPlants() {
         return Collections.emptyList();
     }
 
-    // Whether the player may dig up the plant standing on this tile. A mode that pre-places the plants
-    // the whole level is built around (Save Our Seeds) says no: Cell.removePlant only drops the board's
-    // reference and never kills the plant, so digging one up would leave the mode still watching a
-    // living object that can no longer be eaten -- quietly dissolving the level's lose condition.
+    // May the player dig up this tile? Save Our Seeds says no -- removePlant only drops the reference.
     default boolean isPlantRemovable(int x, int y) {
         return true;
     }
-
     // Whether the sky may drop suns on this level. Night Ops / Plant What You Get turn it off, and a
     // level rule wins over the chapter's EnvironmentType default. SunSystem asks the mode rather than
     // testing instanceof, so the levels.json flag actually drives the behaviour.
@@ -53,21 +46,12 @@ public interface GameMode {
         return true;
     }
 
-    // Whether finishing this level feeds the quest/progress system. Adventure levels and the standard
-    // survival mini-games do; the "off-book" modes do not -- I, Zombie is played from the zombies'
-    // side (its kills and garden mean nothing to a plant quest) and Beghouled is a match-3, so neither
-    // should complete quests, break the win streak, or credit chapter kills. GameEngine asks the mode
-    // rather than testing instanceof.
+    // Does finishing this level feed quests/progress? I, Zombie and Beghouled do not.
     default boolean countsTowardQuests() {
         return true;
     }
-
-    // Notified by CombatSystem the moment an AI/board plant is destroyed. Normal levels ignore it; I,
-    // Zombie pays the zombie player sun for breaking a plant. Called after the plant's own death effect
-    // and just before it leaves the tile.
     default void onPlantDestroyed(GameSession gameSession, models.entities.plants.Plant plant) {
     }
-
     // --- Plant-inventory hooks -------------------------------------------------------------------
     // A mode that hands the player plants itself, outside the seed-packet + sun economy (Vasebreaker,
     // whose plants come only from broken vases). When managesPlantInventory() is true, GameSession.plant

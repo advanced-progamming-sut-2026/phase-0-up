@@ -8,11 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-// Pianist Zombie: while it plays, the zombies on the lawn swap their row with one of the neighbouring
-// rows every few seconds (documents/project.md, Pianist Zombie). The music carries across the whole
-// lawn, so every zombie on the board dances -- not just the ones sharing the pianist's lane.
-//
-// The pianist itself is exempt: it is pushing a piano down its lane and does not hop rows.
+// Pianist Zombie: while it plays, every zombie swaps row with a neighbour; the pianist is exempt.
 public class ChangeRow implements ZombieAbility {
     private int tickCounter = 0;
     private static final int TICKS_PER_SECOND = 10;
@@ -25,7 +21,6 @@ public class ChangeRow implements ZombieAbility {
         if (pianist.getState().isUnableToMove()) {
             return;
         }
-        // Nothing to play to until the piano has actually rolled onto the lawn.
         if (!pianist.isOnBoard()) {
             return;
         }
@@ -36,9 +31,7 @@ public class ChangeRow implements ZombieAbility {
         }
     }
 
-    // Collects every dancer first and only then queues the hops. The switch itself is just a flag on
-    // the movement component -- CombatSystem re-files the zombie into its new Row after the tick -- so
-    // no row's zombie list is touched here and the sweep cannot trip over its own changes.
+    // Collect every dancer first: the switch is only a flag, so no zombie list is touched mid-sweep.
     private void triggerLaneSwitchForRow(Zombie pianist) {
         List<Zombie> dancers = new ArrayList<>();
         for (Row row : pianist.getGameSession().getMap().getRows()) {
@@ -59,7 +52,6 @@ public class ChangeRow implements ZombieAbility {
                 moved++;
             }
         }
-
         if (moved > 0) {
             pianist.getGameSession().reportEvent("The pianist strikes up a tune and " + moved
                     + " zombie(s) dance into a neighbouring lane.");

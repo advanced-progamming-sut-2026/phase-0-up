@@ -1,9 +1,11 @@
 package models.map;
 import models.entities.plants.Plant;
 import models.entities.plants.abilities.PassiveModifierAbility;
+import models.entities.plants.abilities.GraveBusterAbility;
 import models.entities.plants.abilities.PlantAbility;
 import models.entities.projectiles.Element;
 import models.entities.projectiles.Projectile;
+import models.map.Terrains.GraveTerrain;
 import models.map.Terrains.Terrain;
 import utils.Result;
 
@@ -127,6 +129,14 @@ public class Cell {
             return new Result(false, "This cell is already occupied!");
         }
 
+        // Grave Buster is the exception: a grave is the only tile it may go on, and also unplantable.
+        if (isGraveBuster(newPlant)) {
+            if (!hasLiveGrave()) {
+                return new Result(false, "Grave Buster only goes on a grave. Find a headstone to chew!");
+            }
+            this.currentPlant = newPlant;
+            return new Result(true, "Plant placed successfully.");
+        }
         // Use the terrain-aware check, not the raw field: a live grave (or any non-plantable terrain)
         // sitting on this tile must block planting.
         if (!isPlantable()) return new Result(false, "This cell is not plantable!");
@@ -206,6 +216,16 @@ public class Cell {
         }
     }
 
+    // Identified by its ability, not its name, so renaming it in plants.json cannot break placement.
+    private boolean isGraveBuster(Plant plant) {
+        return plant != null && plant.getAbilities() != null
+                && plant.getAbilities().stream().anyMatch(a -> a instanceof GraveBusterAbility);
+    }
+    // A headstone still standing on this tile.
+    public boolean hasLiveGrave() {
+        return terrain != null
+                && terrain.stream().anyMatch(t -> t instanceof GraveTerrain && !t.isDestroyed());
+    }
     public boolean isPlantable() {
         if (!this.isPlantable) {
             return false;

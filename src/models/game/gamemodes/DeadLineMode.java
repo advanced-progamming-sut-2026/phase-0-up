@@ -25,7 +25,6 @@ public class DeadLineMode extends StandardMode {
                 + ". Let a single zombie step past it and the level is over -- no mower, no second"
                 + " chance. Stop them to the right of it.");
     }
-
     @Override
     public boolean checkLose(GameSession gameSession) {
         for (Row row : gameSession.getMap().getRows()) {

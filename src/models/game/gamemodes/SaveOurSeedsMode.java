@@ -63,9 +63,7 @@ public class SaveOurSeedsMode extends StandardMode {
         return super.checkLose(gameSession);
     }
 
-    // The plants this level exists to defend cannot be dug up. checkLose watches these exact objects
-    // for isDead(), but plucking one only clears the board's reference -- the plant stays alive and
-    // un-eatable, so the level would run on with a lose condition that could never fire again.
+    // The defended plants cannot be dug up: checkLose watches these exact objects for isDead().
     @Override
     public boolean isPlantRemovable(int x, int y) {
         for (Plant plant : protectedPlants) {
@@ -75,15 +73,12 @@ public class SaveOurSeedsMode extends StandardMode {
         }
         return true;
     }
-
-    // Tells the player up front which plants they are defending, and that losing one ends the level --
-    // otherwise the only way to discover the rule is to lose to it.
+    // Names the defended plants up front; otherwise the only way to learn the rule is to lose.
     @Override
     public void onStart(GameSession gameSession) {
         placeAll(gameSession);
         gameSession.reportEvent(startBanner());
     }
-
     private String startBanner() {
         if (protectedPlants.isEmpty()) {
             return "Save Our Seeds! Nothing survived the planting, so just hold the lawn.";
@@ -100,7 +95,6 @@ public class SaveOurSeedsMode extends StandardMode {
         sb.append(". Lose even one and the level is over -- and no, you can't dig them up.");
         return sb.toString();
     }
-
     public List<Plant> getProtectedPlants() {
         return protectedPlants;
     }

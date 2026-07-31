@@ -13,16 +13,12 @@ public class MowerlessFirstColumnCondition implements QuestCondition {
         this.threshold = threshold;
     }
 
-    // The kills accumulate across every level played today and reset with the calendar day: ten
-    // last-ditch kills in one match would mean losing ten mowers first, so the goal only makes sense
-    // spread over several matches.
+    // Accumulates across today's levels: ten in one match would mean losing ten mowers first.
     @Override
     public boolean isSatisfied(QuestContext ctx) {
         return ctx.getMowerlessFirstColumnKillsToday() >= threshold;
     }
 
-    // Cross-level within the day: the tally is kept on the profile between matches, so the travel log
-    // shows how many of these last-ditch kills are already banked.
     @Override
     public models.quests.QuestProgress progress(models.user.Profile profile) {
         int killed = profile == null ? 0 : profile.getMowerlessFirstColumnKillsToday();

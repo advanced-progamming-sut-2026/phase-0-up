@@ -19,12 +19,19 @@ public class StealSunAbility implements ZombieAbility {
     private final double searchRadius;
     private final int sunPerSecond;
     private final boolean stopAfterMaxTime;
+    // Carrying capacity, from the blueprint's MaxClaimedSunCurrency. Uncapped for a thief without one.
+    private final int maxStolenSun;
     private int totalStolenSun = 0;
 
     public StealSunAbility(double searchRadius, int sunPerSecond, boolean stopAfterMaxTime, GameSession gameSession) {
+        this(searchRadius, sunPerSecond, stopAfterMaxTime, Integer.MAX_VALUE, gameSession);
+    }
+    public StealSunAbility(double searchRadius, int sunPerSecond, boolean stopAfterMaxTime,
+                           int maxStolenSun, GameSession gameSession) {
         this.searchRadius = searchRadius;
         this.sunPerSecond = sunPerSecond;
         this.stopAfterMaxTime = stopAfterMaxTime;
+        this.maxStolenSun = maxStolenSun > 0 ? maxStolenSun : Integer.MAX_VALUE;
         this.gameSession = gameSession;
     }
 
@@ -64,7 +71,7 @@ public class StealSunAbility implements ZombieAbility {
 
                 if (oneSecondTicks >= TICKS_PER_SECOND) {
                     oneSecondTicks = 0;
-                    int stolen = stealFromPlayer(sunPerSecond, gameSession);
+                    int stolen = stealFromPlayer(Math.min(sunPerSecond, maxStolenSun - totalStolenSun), gameSession);
                     totalStolenSun += stolen;
                     if (stolen > 0) {
                         gameSession.reportEvent("The " + zombie.getAlias() + " steals " + stolen
@@ -72,19 +79,17 @@ public class StealSunAbility implements ZombieAbility {
                     }
                 }
 
-                if (stopAfterMaxTime && totalStealTicks >= MAX_STEAL_TICKS) {
+                // Ends on the five-second burn-out (which arms the laser) or on a full haul (which does not).
+                if (totalStolenSun >= maxStolenSun || (stopAfterMaxTime && totalStealTicks >= MAX_STEAL_TICKS)) {
                     currentState = StealState.FINISHED;
                     zombie.getState().setAction(ActionState.WALKING);
-                    zombie.getState().setReadyForLaser(true);
+                    zombie.getState().setReadyForLaser(totalStolenSun < maxStolenSun);
                 }
                 break;
 
             case FINISHED:
-                // The Turquoise's heist is what charges its laser: once LaserBeamAbility has fired and
-                // cleared the flag, the zombie is free to line up another one. A sun-thief with no beam
-                // (the Ra Zombie) never has the flag cleared for it, so it stays finished after its one
-                // run -- exactly as before.
-                if (!zombie.getState().isReadyForLaser()) {
+                // Only the Turquoise re-arms (the beam clears the flag); Ra has no beam.
+                if (stopAfterMaxTime && !zombie.getState().isReadyForLaser()) {
                     currentState = StealState.SEARCHING;
                 }
                 break;

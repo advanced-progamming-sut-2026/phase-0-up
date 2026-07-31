@@ -19,8 +19,6 @@ public class Profile {
     public static final String COINS = "Coins";
     public static final String GEMS = "Gems";
 
-    // Balance-change listener, registered once by the controller layer at start-up. Static, so it is
-    // never serialized with a profile.
     private static CurrencyObserver currencyObserver;
 
     private int coins;
@@ -35,25 +33,15 @@ public class Profile {
     private Map<String, Integer> plantsLevels;
     private Set<String> boostedSeeds;
     private GreenHouse myGreenHouse;
-    // Live game objects, rebuilt from the registries at runtime and never persisted -- saving goes
-    // exclusively through ProfileRecord, which lists only plain progress data.
+    // Live game objects, never persisted: saving goes exclusively through ProfileRecord.
     private List<Quest> activeQuests;
     private List<Quest> completedQuests;
-    // Ids of the one-shot (MAIN / EPIC) quests already completed and rewarded. Permanent.
     private Set<String> completedQuestIds;
-    // Ids of the DAILY quests completed *today*. Emptied when the calendar day turns, which is what
-    // lets a daily quest be earned again tomorrow while a main/epic quest never re-fires.
     private Set<String> completedDailyQuestIds;
-    // ISO-8601 day the daily state below belongs to; a null/stale stamp triggers a rollover on access.
     private String questDayStamp;
-    // Sun banked today, across every level played on this calendar day (Daily Sun Catcher).
     private int sunCollectedToday;
-    // Kills in column 0 of a mower-spent row today, across every level (Almost Victorious).
     private int mowerlessFirstColumnKillsToday;
-    // Zombies felled today per killer plant, across every level, keyed by lower-cased plant name
-    // (Pro Plant Player).
     private Map<String, Integer> killsByPlantToday;
-    // Lifetime lawn-mower kills (Mowing Time). An epic is earned once, so this never rolls over.
     private int lawnmowerKillsTotal;
     private int lastChapter;
     private int lastLevel;
@@ -64,8 +52,6 @@ public class Profile {
     private int noneDailyQuestsDone;
     private boolean hasBoughtDailyOfferToday;
     private Set<String> seenZombieAliases;
-    // Cross-level quest progress, persisted via ProfileRecord: the max-difficulty win streak (Win
-    // After Win) and the zombies felled per chapter (Chapter Hunter).
     private int winStreakAtMaxDifficulty;
     private Map<String, Integer> zombieKillsByChapter;
 
@@ -109,8 +95,6 @@ public class Profile {
         initializeStartingPlants();
     }
 
-    // The basic loadout every profile starts with -- without it no seed can be selected and no level
-    // is playable. Further plants come from the shop (CollectionSystem.purchasePlant).
     private void initializeStartingPlants() {
         for (String plant : Constants.STARTING_PLANTS) {
             unlockPlant(plant);
@@ -118,9 +102,7 @@ public class Profile {
         }
     }
 
-    // Re-grants the starter plants after a load: Gson sets fields directly and never runs the
-    // constructor, so a saved profile would otherwise come back with every seed reading as locked.
-    // Call once when a user becomes active (login / auto-login). Idempotent.
+    // Re-grants the starter plants after a load: Gson never runs the constructor. Idempotent.
     public void ensureStartingPlants() {
         if (ownedSeedPackets == null) ownedSeedPackets = new java.util.HashMap<>();
         if (plantsLevels == null) plantsLevels = new java.util.HashMap<>();
@@ -135,7 +117,6 @@ public class Profile {
 
     public void increaseGameNumbers() { this.gameNumbers++; }
 
-    // Wires the view-side balance listener; null detaches it.
     public static void setCurrencyObserver(CurrencyObserver observer) { currencyObserver = observer; }
 
     public int getCoins() { return coins; }
@@ -162,10 +143,6 @@ public class Profile {
         reportGems();
     }
 
-    // Every coin/gem change funnels through the add/spend methods above, so the player sees the new
-    // total whenever it moves, for any reason. The restore setters stay silent -- loading a save is
-    // not a balance-change event. The model never prints: it notifies the observer the controller
-    // registered at start-up and the view renders it, which is what keeps this MVC-clean and testable.
     private void reportCoins() { notifyBalance(COINS, coins); }
 
     private void reportGems() { notifyBalance(GEMS, gems); }
@@ -212,30 +189,17 @@ public class Profile {
     public int getLastChapter() { return lastChapter; }
 
     public void setLastChapter(int lastChapter) { this.lastChapter = lastChapter; }
-
     public int getLastLevel() { return lastLevel; }
-
     public void setLastLevel(int lastLevel) { this.lastLevel = lastLevel; }
-
     public List<Chapter> getUnlockedChapters() { return unlockedChapters; }
-
     public void addUnlockedChapter(Chapter chapter) { this.unlockedChapters.add(chapter); }
-
     public Chapter getCurrentChapter() { return currentChapter; }
-
     public void setCurrentChapter(Chapter currentChapter) { this.currentChapter = currentChapter; }
-
     public Map<String, Integer> getPassedMiniGames() { return passedMiniGames; }
-
     public int getDailyQuestsDone() { return dailyQuestsDone; }
-
     public void incrementDailyQuestsDone() { this.dailyQuestsDone++; }
-
     public int getNoneDailyQuestsDone() { return noneDailyQuestsDone; }
-
     public void incrementNoneDailyQuestsDone() { this.noneDailyQuestsDone++; }
-
-    // Completion record for the one-shot quests; also the guard against paying a reward twice.
     public Set<String> getCompletedQuestIds() {
         if (completedQuestIds == null) {   // a profile deserialized before this field existed
             completedQuestIds = new HashSet<>();
@@ -253,17 +217,11 @@ public class Profile {
         }
     }
 
-    // --- Daily quest state (rolls over at midnight, local calendar day) ---------------------------
-
-    // Today's date, in one place, so the rollover and the stored stamp always agree.
     private static String today() {
         return java.time.LocalDate.now().toString();
     }
 
-    // Rolls the daily state forward when the stored stamp is not today. Every daily reader and writer
-    // below calls it, so a session spanning midnight -- or a profile loaded days later -- sees a clean
-    // day with nothing polling a clock. It deliberately leaves the lifetime tallies alone
-    // (dailyQuestsDone / noneDailyQuestsDone): those are what the leaderboard ranks on.
+    // Rolls the daily state forward on a date change; leaves the lifetime tallies the leaderboard ranks on.
     private void ensureQuestDay() {
         String today = today();
         if (today.equals(questDayStamp)) {
@@ -274,7 +232,6 @@ public class Profile {
         mowerlessFirstColumnKillsToday = 0;
         getKillsByPlantToday().clear();
         getCompletedDailyQuestIds().clear();
-        // Same cadence, and it had no other reset -- once bought it stayed bought forever.
         hasBoughtDailyOfferToday = false;
     }
 
@@ -285,7 +242,6 @@ public class Profile {
         return completedDailyQuestIds;
     }
 
-    // Whether this daily quest is already earned today; tomorrow it reads false again.
     public boolean hasCompletedDailyQuestToday(String questId) {
         if (questId == null) {
             return false;
@@ -302,15 +258,11 @@ public class Profile {
         getCompletedDailyQuestIds().add(questId);
     }
 
-    // Sun banked today across every level played (Daily Sun Catcher). Reads 0 on a new day, because
-    // the rollover runs first.
     public int getSunCollectedToday() {
         ensureQuestDay();
         return sunCollectedToday;
     }
 
-    // Credits a fresh sun pickup and returns the new total, so a caller can react to it crossing a
-    // quest threshold without a second lookup.
     public int addSunCollectedToday(int amount) {
         ensureQuestDay();
         if (amount > 0) {
@@ -319,7 +271,6 @@ public class Profile {
         return sunCollectedToday;
     }
 
-    // Kills in column 0 of a mower-spent row today, across every level (Almost Victorious).
     public int getMowerlessFirstColumnKillsToday() {
         ensureQuestDay();
         return mowerlessFirstColumnKillsToday;
@@ -332,7 +283,6 @@ public class Profile {
         }
     }
 
-    // Zombies one plant type has felled today, across every level (Pro Plant Player).
     public int getKillsTodayByPlant(String plantName) {
         if (plantName == null) {
             return 0;
@@ -356,9 +306,7 @@ public class Profile {
         return killsByPlantToday;
     }
 
-    // Lifetime lawn-mower kills (Mowing Time) -- no rollover, an epic is earned once.
     public int getLawnmowerKillsTotal() { return lawnmowerKillsTotal; }
-
     public void addLawnmowerKills(int amount) {
         if (amount > 0) {
             lawnmowerKillsTotal += amount;
@@ -366,23 +314,13 @@ public class Profile {
     }
 
     public void setLawnmowerKillsTotal(int total) { this.lawnmowerKillsTotal = total; }
-
-    // --- Restore accessors for the daily state (used when rebuilding a profile from its record) ---
-    // The raw getters skip the rollover on purpose: it happens on the first real read instead, so a
-    // save written on an earlier day correctly reads back as 0.
-
+    // Raw getters skip the rollover on purpose; it happens on the first real read instead.
     public int getRawMowerlessFirstColumnKillsToday() { return mowerlessFirstColumnKillsToday; }
-
     public void setMowerlessFirstColumnKillsToday(int kills) { this.mowerlessFirstColumnKillsToday = kills; }
-
     public String getQuestDayStamp() { return questDayStamp; }
-
     public void setQuestDayStamp(String questDayStamp) { this.questDayStamp = questDayStamp; }
-
     public int getRawSunCollectedToday() { return sunCollectedToday; }
-
     public void setSunCollectedToday(int sunCollectedToday) { this.sunCollectedToday = sunCollectedToday; }
-
     // --- Cross-level quest progress (Win After Win, Chapter Hunter) -------------------------------
 
     public int getWinStreakAtMaxDifficulty() { return winStreakAtMaxDifficulty; }
@@ -453,8 +391,6 @@ public class Profile {
         }
     }
 
-    // Unlocks a plant. Returns true only on a genuine first-time unlock, so callers can post a "New
-    // Plant Unlocked" news entry without it firing again on a re-unlock or on the starter plants.
     public boolean unlockPlant(String plantName){
         String formattedName = plantName.toLowerCase().trim();
 

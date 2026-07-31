@@ -30,13 +30,11 @@ public class GameSession {
     private int zombiesKilled;
     private int plantsLost;
     private int lawnmowerKills;
-    // Quest tracking: what was planted (cumulative) and kills landed within 30s of the first wave.
     private final List<String> plantedNames = new ArrayList<>();
     private final List<String> plantedCategories = new ArrayList<>();
     private long firstWaveTick = -1;
     private int killsInFirst30s;
     private boolean cooldownRemoved;
-    // Domain-event queue: the MVC seam for in-game narration (see reportEvent / drainEvents below).
     private final List<Result> eventLog = new ArrayList<>();
 
     public GameSession(Profile player, Level level) {
@@ -79,7 +77,6 @@ public class GameSession {
 
     public List<SeedPacket> getSelectedSeeds() { return selectedSeeds; }
 
-    // Carries a boost bought in seed selection into the live SeedPacket. Run once at game start.
     public void applySeedBoosts() {
         for (SeedPacket seed : selectedSeeds) {
             seed.setBoosted(player.isSeedBoosted(seed.getPlantType()));
@@ -89,7 +86,6 @@ public class GameSession {
         if (!map.isValidCoordinate(x, y)) {
             return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
         }
-        // Vasebreaker (any mode handing out its own plants) is detached from the seed/sun economy.
         if (mode != null && mode.managesPlantInventory()) {
             return plantFromModeInventory(x, y, plantType);
         }
@@ -127,8 +123,6 @@ public class GameSession {
         if (!cooldownRemoved) {
             seed.updateLastPlantedTick(timeTicks);
         }
-        // A boost lasts the level: EVERY copy fires its plant-food, not just the first. Only the profile
-        // flag clears -- the purchase is spent, but the packet stays boosted until the session ends.
         if (seed.isBoosted()) {
             newPlant.triggerPlantFood(this);
             player.setSeedBoosted(plantType, false);
@@ -141,8 +135,6 @@ public class GameSession {
                 + "). Hold the line!");
     };
 
-    // Planting for a mode that owns its plant roster (Vasebreaker): no seed packet, no recharge, no sun
-    // cost -- the plant must simply be in hand, and placing it takes it back out again.
     private Result plantFromModeInventory(int x, int y, String plantType) {
         if (!mode.hasPlantAvailable(plantType)) {
             return new Result(false, "No \"" + plantType + "\" in hand. "
@@ -179,8 +171,7 @@ public class GameSession {
         if (cell.hasProtector()) {
             return cell.removeProtector();
         }
-        // A mode may protect a plant it placed itself (Save Our Seeds). removePlant only drops the
-        // board's reference, so digging one up leaves the mode watching a plant that can never die.
+        // A mode may protect a plant it placed itself (Save Our Seeds); removePlant only unlinks it.
         if (cell.hasPlant() && mode != null && !mode.isPlantRemovable(x, y)) {
             return new Result(false, "The " + cell.getCurrentPlant().getName() + " at (" + x + ", " + y
                     + ") is exactly what you're defending. It stays in the ground.");
@@ -188,7 +179,6 @@ public class GameSession {
         return cell.removePlant();
     };
 
-    // Vasebreaker actions -- other modes report nothing to break/collect, so these stay harmless.
     public Result breakVase(int x, int y) {
         if (!map.isValidCoordinate(x, y)) {
             return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
@@ -209,7 +199,6 @@ public class GameSession {
         return new Result(false, "No seed packets lying around here.");
     }
 
-    // Wall-nut Bowling: bowl a conveyor nut down a row from behind the red line. No effect elsewhere.
     public Result bowlNut(String type, int x, int y) {
         if (mode instanceof models.game.gamemodes.WallnutBowlingMode) {
             return ((models.game.gamemodes.WallnutBowlingMode) mode).bowlNut(this, type, x, y);
@@ -217,7 +206,6 @@ public class GameSession {
         return new Result(false, "Save the bowling for Wall-nut Bowling!");
     }
 
-    // I, Zombie: summon one of your zombies to the right of the red line. No effect elsewhere.
     public Result summonZombie(String type, int x, int y) {
         if (mode instanceof models.game.gamemodes.IZombieMode) {
             return ((models.game.gamemodes.IZombieMode) mode).summonZombie(this, type, x, y);
@@ -225,8 +213,6 @@ public class GameSession {
         return new Result(false, "You're on the plant side here -- summoning is an I, Zombie trick.");
     }
 
-    // "cheat spawn-zombie -t <type> -l (x, y)": drops a zombie onto column x of row y. A debug cheat, so
-    // it ignores wave budgets and works on any mode; a bad cell reports an error rather than throwing.
     public Result spawnZombieCheat(String type, int x, int y) {
         if (type == null || type.isBlank()) {
             return new Result(false, "Which zombie? Give me a type to raise.");
@@ -243,7 +229,6 @@ public class GameSession {
                 + x + ", " + y + ").");
     }
 
-    // Beghouled actions. (x, y) is (column, row); the mode works in (row, column). No effect elsewhere.
     public Result swapPlants(int x1, int y1, int x2, int y2) {
         if (mode instanceof models.game.gamemodes.BeghouledMode) {
             return ((models.game.gamemodes.BeghouledMode) mode).swap(this, y1, x1, y2, x2);
@@ -258,8 +243,7 @@ public class GameSession {
         return new Result(false, "Upgrading mid-lawn is a Beghouled trick.");
     }
 
-    // --- Domain-event queue: model objects record narrative here instead of printing it; the engine
-    // drains it at start-up and each tick, so no Model-layer class ever calls System.out ------------
+    // --- Domain-event queue: the Model records narrative here; nothing here calls System.out ------
     public void reportEvent(String message) {
         if (message != null && !message.isBlank()) {
             eventLog.add(new Result(true, message));
@@ -276,8 +260,6 @@ public class GameSession {
         return drained;
     }
 
-    // --- Clock. The session owns it; the engine ticks once per frame then runs each system against the
-    // new value. Nothing here runs a system, so advancing time elsewhere can't double-drive them ------
     public void tick() { timeTicks++; }
 
     public void advanceTime(int ticks) {
@@ -286,7 +268,6 @@ public class GameSession {
         }
     }
 
-    // Called by WaveSystem on launch; currentWave is what StandardMode.checkWin tests the wave count on.
     public void advanceWave() {
         currentWave++;
         if (currentWave == 1) {
@@ -294,7 +275,6 @@ public class GameSession {
         }
     }
 
-    // Death tallies, written by CombatSystem.processDeaths; quest conditions read them back.
     public void recordZombieKilled() {
         zombiesKilled++;
         if (firstWaveTick >= 0 && timeTicks - firstWaveTick <= 30L * utils.Constants.TICKS_PER_SECOND) {
@@ -309,15 +289,12 @@ public class GameSession {
     public void recordPlantLost() { plantsLost++; }
     public int getLawnmowerKills() { return lawnmowerKills; }
 
-    // Mown-down zombies, tracked apart from the overall kill count for the "Mowing Time" quest.
     public void recordLawnmowerKills(int count) {
         if (count > 0) {
             lawnmowerKills += count;
         }
     }
 
-    // --- GameMode seam. Rule evaluation is kept OUT of advanceTime so it never overlaps
-    // TimeSystem.advance; the engine calls startMode() once, evaluateModeRules() after each tick ------
     public void startMode() {
         if (mode != null) {
             mode.onStart(this);
@@ -361,10 +338,7 @@ public class GameSession {
     };
     public void onLose(){};
 
-    // The player abandoned the match ("exit game"). Walking out counts as a loss and runs through the
-    // same state change as being overrun, so every end-of-level consequence (quest evaluation, scoring
-    // settlement, the save) fires as on any defeat. Ignored once the level has ended, so a won level can
-    // never be retroactively turned into a loss. Returns whether it forfeited anything.
+    // "exit game" is a loss on the same path as being overrun; ignored once the level has ended.
     public boolean forfeit() {
         if (state != GameState.PLAYING) {
             return false;
@@ -374,8 +348,6 @@ public class GameSession {
         return true;
     }
 
-    // First-time zombie encounter: adds the type to the player's seen set and, only the first time,
-    // posts a "New Zombie Encountered" news entry. Called from ZombieFactory for every zombie born, so
     // wave, mini-game, cheat and ability spawns are all covered from one place.
     public void discoverZombie(String alias) {
         if (player == null || alias == null || alias.isBlank()) {
@@ -386,9 +358,6 @@ public class GameSession {
         }
     }
 
-    // Clearing a mini-game level unlocks the next. Records it against the player's tally (what the
-    // leaderboard reads) and, while harder levels remain (up to MINIGAME_LEVELS), posts a news entry.
-    // Campaign levels have no mini-game mode, so this is a no-op for them.
     private void recordMinigameCompletion() {
         if (player == null) {
             return;
@@ -407,7 +376,6 @@ public class GameSession {
                 .addMinigameUnlockNews(player, name + " level " + next);
     }
 
-    // The display name of the mini-game this level runs, or null for a normal campaign level.
     private String minigameName() {
         if (mode instanceof models.game.gamemodes.VaseBreakerMode) {
             return "Vasebreaker";
@@ -437,10 +405,7 @@ public class GameSession {
     }
 
     public GameMode getMode() { return mode; }
-
-    // Matched ignoring case and surrounding space. A self-picked seed carries exactly the string the
-    // player typed, so an exact match happened to work; a seed a MODE pinned in (Locked Plants) carries
-    // the level file's casing -- "Sunflower" -- and exact matching denied them their own forced plants.
+    // Ignoring case/space: a mode-pinned seed carries the level file's casing, not the player's.
     public SeedPacket getSelectedSeed(String plantType) {
         String wanted = plantType == null ? null : plantType.trim();
         for (SeedPacket seed : selectedSeeds) {
@@ -455,8 +420,6 @@ public class GameSession {
     public boolean isSeedSelected(String plantType) { return getSelectedSeed(plantType) != null; }
     public Level getLevel() { return level; }
 
-    // A mode that hands out its own plants (Vasebreaker) is fully detached from seed selection: no seed
-    // packet may ever enter the loadout, whatever tries to route through here.
     public void addSeed(SeedPacket seed){
         if (mode != null && mode.managesPlantInventory()) {
             return;

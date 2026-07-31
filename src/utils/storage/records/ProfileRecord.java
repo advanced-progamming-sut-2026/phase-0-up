@@ -39,9 +39,7 @@ public class ProfileRecord {
     private Set<String> completedQuestIds;   // plain ids of finished quests -> survive a save/reload
     private int winStreakAtMaxDifficulty;    // Win After Win: running streak, persisted across levels
     private Map<String, Integer> zombieKillsByChapter;   // Chapter Hunter: kills tallied per chapter
-    // Daily quest state. It is saved with its own day stamp rather than being dropped, so quitting and
-    // coming back the same day resumes the day in progress (a half-collected Daily Sun Catcher keeps
-    // its sun) while a save from an earlier day rolls over to a clean slate on load.
+    // Daily quest state, saved with its own day stamp so the same day resumes and an older one rolls over.
     private Set<String> completedDailyQuestIds;
     private String questDayStamp;
     private int sunCollectedToday;
@@ -97,10 +95,7 @@ public class ProfileRecord {
         p.setNoneDailyQuestsDone(noneDailyQuestsDone);
         p.setHasBoughtDailyOfferToday(hasBoughtDailyOfferToday);
         p.setWinStreakAtMaxDifficulty(winStreakAtMaxDifficulty);
-        // The day stamp is restored BEFORE the daily values, so a record from an earlier day carries a
-        // stale stamp and the profile's own rollover clears the values on their first read. A record
-        // written before this field existed has no stamp at all, which reads as stale for the same
-        // reason -- so an old save can never resurrect yesterday's sun total or daily completions.
+        // Stamp restored BEFORE the values, so a stale one makes the profile's rollover clear them.
         p.setQuestDayStamp(questDayStamp);
         p.setSunCollectedToday(sunCollectedToday);
         p.setMowerlessFirstColumnKillsToday(mowerlessFirstColumnKillsToday);

@@ -5,32 +5,40 @@ import models.entities.zombies.Zombie;
 import models.map.Cell;
 import models.map.Row;
 
-// Arcade Zombie: shoves its arcade machine ahead, damaging the plant directly in front on a steady
-// cadence (a battering ram rather than a nibble).
+// Arcade Zombie: its shoved machine kills a plant or hypnotized zombie "on the spot" -- every tick,
 public class ArcadePushAbility implements ZombieAbility {
-    private static final int TICKS_PER_SECOND = 10;
-    private static final int PUSH_INTERVAL = TICKS_PER_SECOND;
-    private static final int PUSH_DAMAGE = 200;
+    private static final int PUSH_DAMAGE = Integer.MAX_VALUE;
     private static final double PUSH_REACH = 1.0;
 
-    private int timer = 0;
 
     @Override
     public void execute(Zombie zombie) {
         if (zombie == null || zombie.getState().isUnableToMove()) {
             return;
         }
-        timer++;
-        if (timer < PUSH_INTERVAL) {
-            return;
-        }
-        timer = 0;
 
         Plant front = frontPlant(zombie);
         if (front != null && front.getHealth() != null) {
             front.getHealth().takeDamage(PUSH_DAMAGE);
             zombie.getGameSession().reportEvent(zombie.getAlias() + " rams its arcade machine into "
                     + front.getName() + " at (" + (int) front.getX() + ", " + front.getY() + ").");
+        }
+        crushHypnotizedInFront(zombie);
+    }
+    // A hypnotized zombie is in the machine's way exactly as a plant is, and meets the same end.
+    private void crushHypnotizedInFront(Zombie zombie) {
+        Row row = zombie.getGameSession().getMap().getRow(zombie.getMovement().getPositionY());
+        if (row == null) {
+            return;
+        }
+        double zombieX = zombie.getMovement().getPositionX();
+        for (Zombie other : new java.util.ArrayList<>(row.getZombies())) {
+            if (other != zombie && other.getState().isHypnotized() && !other.getHealth().isDead()
+                    && Math.abs(other.getMovement().getPositionX() - zombieX) <= PUSH_REACH) {
+                other.getHealth().applyDamage(PUSH_DAMAGE, null, null);
+                zombie.getGameSession().reportEvent(zombie.getAlias()
+                        + " runs its arcade machine over a hypnotized " + other.getAlias() + ".");
+            }
         }
     }
 

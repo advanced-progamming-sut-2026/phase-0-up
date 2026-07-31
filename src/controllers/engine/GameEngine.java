@@ -45,10 +45,7 @@ public class GameEngine {
         gameSession.startMode();
         gameSession.applySeedBoosts();   // carry seed-selection boosts into the live seed packets
         questSystem.startTrackingLevel(gameSession);
-        // Drain what set-up queued BEFORE the first frame. onStart is where a mode introduces itself
-        // (Locked Plants listing its bolted-down seeds, the scoring game naming the day), and the only
-        // other drain sits inside advanceOneTick -- so without this the banner explaining the rules of
-        // the level appeared a tick late, after the player had already acted on rules nobody told them.
+        // Drain what onStart queued BEFORE the first frame, or its banner arrives a tick late.
         for (Result startEvent : gameSession.drainEvents()) {
             inGameRenderer.render(startEvent);
         }
@@ -120,11 +117,8 @@ public class GameEngine {
         // mowers never triggered), so it has to run before anything else touches it.
         settleScoringGame();
 
-        // I, Zombie and Beghouled are played off the plant side (see GameMode.countsTowardQuests), so a
-        // win or loss there evaluates no quests, breaks no win streak, and credits no chapter kills.
         boolean countsForQuests = gameSession.getMode() == null
                 || gameSession.getMode().countsTowardQuests();
-
         if (after == GameState.WON) {
             inGameRenderer.render(new Result(true,
                     "Dear humanz, zis is not done yet; we will come back to eat your brainz, humanz."));
@@ -147,18 +141,7 @@ public class GameEngine {
             }
         }
 
-        // Persist AFTER every profile mutation this level end produces: the scoring settlement above,
-        // AND the quest completions (their reward grants plus the completed-quest counters). This save
-        // used to run before the quests were evaluated, so a finished quest lived only in memory -- the
-        // leaderboard, which reads the live profile, showed it, but it never reached disk and vanished
-        // on the next load unless the player happened to quit via the "exit" command (which saves
-        // again). Everything a level earns -- loot, campaign progress, quest rewards, news -- reaches
-        // the database here, at the one point the level is definitively over.
-        //
-        // QuestSystem also saves the moment a quest completes, so a quest reward is durable even if a
-        // future caller of evaluateAndComplete forgets to persist. This save is still the one that
-        // covers a level where NO quest completed (campaign progress, loot, the scoring result), so it
-        // is not redundant -- and re-writing the same state is harmless.
+        // AFTER every profile mutation: running before quest evaluation lost finished quests.
         try {
             utils.storage.DatabaseManager.getInstance().saveAll();
         } catch (RuntimeException e) {

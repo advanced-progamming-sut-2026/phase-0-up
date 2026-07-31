@@ -22,8 +22,7 @@ public class QuestContext {
     private final int mowerlessFirstColumnKills;  // kills in col 0 of a mower-spent row (Almost Victorious)
     private final int winStreakAtMaxDifficulty;   // consecutive max-difficulty wins incl. this level (Win After Win)
     private final int chapterZombiesKilled;       // total kills in this level's chapter so far (Chapter Hunter)
-    // Cumulative counters that span levels, folded into the profile at each level end. The two "today"
-    // ones back DAILY quests and reset with the calendar day; the lifetime one backs an EPIC challenge.
+    // Cross-level counters folded into the profile at each level end; the "today" ones reset daily.
     private final int mowerlessFirstColumnKillsToday;   // Almost Victorious
     private final int lawnmowerKillsTotal;              // Mowing Time
     private final Map<String, Integer> killsByPlant;   // lower-cased plant name -> kills credited to it
@@ -113,16 +112,8 @@ public class QuestContext {
 
     public boolean isWon() { return won; }
     public int getSunCollected() { return sunCollected; }
-
-    // Sun banked across every level played on this calendar day, this level included. This -- not the
-    // per-level figure above -- is what the Daily Sun Catcher is judged against, so the quest can be
-    // finished over several matches within one day.
     public int getSunCollectedToday() { return sunCollectedToday; }
-
-    // Whether this level's season has sun falling from the sky, i.e. it is a "day" level. Only Dark
-    // Ages is sunless, which is the game's night setting (Night or Morning).
     public boolean isDayLevel() { return dayLevel; }
-
     public int getFinalSun() { return finalSun; }
     public int getZombiesKilled() { return zombiesKilled; }
     public int getPlantsLost() { return plantsLost; }
@@ -155,42 +146,23 @@ public class QuestContext {
     // Running streak of consecutive wins at maximum difficulty, this level included (Win After Win).
     public int getWinStreakAtMaxDifficulty() { return winStreakAtMaxDifficulty; }
 
-    // Total zombies felled in this level's chapter so far, this level included.
     public int getChapterZombiesKilled() { return chapterZombiesKilled; }
 
-    // Zombies felled in one NAMED chapter, over every play of it (Chapter Hunter). Case-insensitive:
-    // the quest names its chapter in the level file's casing, the tally is keyed lower-case.
     public int killsInChapter(String chapter) {
         return chapter == null ? 0 : killsByChapter.getOrDefault(chapter.toLowerCase().trim(), 0);
     }
-
-    // Kills credited to one plant type across every level played today (Pro Plant Player).
     public int killsTodayByPlant(String plantName) {
         return plantName == null ? 0 : killsByPlantToday.getOrDefault(plantName.toLowerCase().trim(), 0);
     }
-
-    // Kills credited to one plant family this level (Family Massacre).
     public int killsByFamily(String family) {
         return family == null ? 0 : killsByFamily.getOrDefault(family.toLowerCase().trim(), 0);
     }
-
-    // --- Cumulative, cross-level counters (this level already folded in) --------------------------
-
-    // Mower-spent first-column kills over every level played today (Almost Victorious).
     public int getMowerlessFirstColumnKillsToday() { return mowerlessFirstColumnKillsToday; }
-
-    // Lawn-mower kills over the account's whole life (Mowing Time -- an epic, so not day-scoped).
     public int getLawnmowerKillsTotal() { return lawnmowerKillsTotal; }
-
     // --- Plantings placed over the level (cumulative, not just what survived) ---------------------
     public int plantedCount() { return plantedNames.size(); }
 
-    // How many plantings the category tally saw. Same number as plantedCount() in play -- the session
-    // appends a name and a category together for every placement -- but a condition that filters on
-    // categories should measure "did the player plant anything?" against the very list it filters,
-    // rather than trusting two parallel lists to stay in step.
     public int plantedCategoryTotal() { return plantedCategories.size(); }
-
     // How many placed plants had this category (e.g. "EXPLOSIVE").
     public int plantedCategoryCount(String category) {
         if (category == null) {

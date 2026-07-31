@@ -14,6 +14,10 @@ public class ContactTrigger implements TriggerStrategy {
         if (zombies == null) return false;
 
         for (Zombie z : zombies) {
+            // A zombie in the air sets off no mine -- the Dodo Rider flies over them.
+            if (z.getState().isFlying()) {
+                continue;
+            }
             if (z.isTargetable()
                     && Math.abs(z.getMovement().getPositionX() - owner.getX()) <= 0.5) {
                 return true;

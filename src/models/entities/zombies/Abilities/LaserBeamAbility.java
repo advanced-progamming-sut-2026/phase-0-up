@@ -5,19 +5,11 @@ import models.entities.zombies.Zombie;
 import models.map.Cell;
 import models.map.Row;
 
-// Turquoise (Crystal Skull): once its five-second sun heist is done it fires a powerful laser at the
-// four tiles directly ahead of it in its own row, wiping out every plant standing there, then needs a
-// cooldown before it can do the whole thing again (documents/project.md, Turquoise Zombie).
-//
-// The charge IS the steal: StealSunAbility raises the state's ready-for-laser flag when its five
-// seconds are up, and this ability waits on that flag rather than running a second timer of its own --
-// which is what the JSON's ChargingTime 5 / LaserCooldownTime 5 pair describes. Values mirror the JSON
-// (LaserBeamDamage 4001, LaserCooldownTime 5s).
+// Turquoise: its five-second sun heist IS the charge, then it lasers the four tiles ahead.
 public class LaserBeamAbility implements ZombieAbility {
     private static final int TICKS_PER_SECOND = 10;
     private static final int COOLDOWN_TICKS = 5 * TICKS_PER_SECOND;
     private static final int LASER_DAMAGE = 4001;
-    // "a powerful laser at the four tiles in front of it" -- the beam does not run the whole lane.
     private static final int LASER_REACH_TILES = 4;
 
     private int cooldownTimer = 0;
@@ -31,15 +23,12 @@ public class LaserBeamAbility implements ZombieAbility {
             cooldownTimer--;
             return;
         }
-        // Not charged yet: the sun heist has not run its course, so there is nothing to fire.
         if (!zombie.getState().isReadyForLaser()) {
             return;
         }
-
         fireLaser(zombie);
         cooldownTimer = COOLDOWN_TICKS;
-        // Clearing the flag both disarms the beam and tells StealSunAbility the shot is spent, so it can
-        // line up the next heist.
+        // Clearing the flag disarms the beam and lets StealSunAbility line up the next heist.
         zombie.getState().setReadyForLaser(false);
     }
 

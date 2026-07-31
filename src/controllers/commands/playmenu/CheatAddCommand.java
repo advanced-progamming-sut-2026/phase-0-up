@@ -27,8 +27,7 @@ public class CheatAddCommand implements Command {
         } else {
             profile.addGems(n);
         }
-        // The game says "gem" whichever word was typed: "diamond" is accepted only because the spec
-        // writes the command that way, and it is never echoed back.
+        // Always echoes "gem"; "diamond" is accepted only because the spec writes the command so.
         renderer.cheatRenderForAddingCoinsAndGems(n , isCoin ? "coin" : "gem");
 
         DatabaseManager.getInstance().saveAll();

@@ -6,7 +6,6 @@ import models.entities.zombies.Abilities.ChangeRow;
 import models.entities.zombies.Abilities.DeflectLobbedAbility;
 import models.entities.zombies.Abilities.FireImmunityAbility;
 import models.entities.zombies.Abilities.IceImmunityAbility;
-import models.entities.zombies.Abilities.RollTheBarrel;
 import models.entities.zombies.Abilities.EatPlantAbility;
 import models.entities.zombies.Abilities.FishThePlants;
 import models.entities.zombies.Abilities.FootballTackleAbility;
@@ -43,8 +42,8 @@ public final class ZombieBehaviorFactory {
     private static final double TORCH_REACH = 1.0;
     private static final double RA_SUN_RADIUS = 3.0;
     private static final int RA_SUN_PER_SECOND = 25;
-    // Turquoise: "if it sees a plant within a radius of 4 tiles it starts stealing the player's stored
-    // sun, 25 sun per second, and keeps it up for 5 seconds -- then it fires the laser."
+    // Ra's carrying capacity (blueprint MaxClaimedSunCurrency); all of it returns when it dies.
+    private static final int RA_MAX_CLAIMED_SUN = 250;
     private static final double TURQUOISE_SUN_RADIUS = 4.0;
     private static final int TURQUOISE_SUN_PER_SECOND = 25;
 
@@ -87,7 +86,8 @@ public final class ZombieBehaviorFactory {
                 return abilities(new KillPlantsAbility(false, SMASH_REACH), new ThrowImp());
             case "ZombieRaProps":
                 return abilities(new EatPlantAbility(),
-                        new StealSunAbility(RA_SUN_RADIUS, RA_SUN_PER_SECOND, true, gameSession));
+                        new StealSunAbility(RA_SUN_RADIUS, RA_SUN_PER_SECOND, false,
+                                RA_MAX_CLAIMED_SUN, gameSession));
             case "ZombieExplorerProps":
                 return abilities(new EatPlantAbility(), new KillPlantsAbility(true, TORCH_REACH));
             case "ZombieTombRaiserProps":
@@ -96,8 +96,9 @@ public final class ZombieBehaviorFactory {
                 return abilities(new EatPlantAbility(), new TurnIntoCat());
             case "ZombieDarkKingProps":
                 return abilities(new EatPlantAbility(), new TurnIntoKnightAbility());
+            // Spins back STRAIGHT shots only; a parasol as well made it immune to everything.
             case "ZombieDarkJugglerProps":
-                return abilities(new EatPlantAbility(), new SpinAbility(), new DeflectLobbedAbility());
+                return abilities(new EatPlantAbility(), new SpinAbility());
             default:
                 return null;
         }
@@ -110,16 +111,19 @@ public final class ZombieBehaviorFactory {
                 return abilities(new EatPlantAbility(), new SubmergeAbility());
             case "ZombieBeachOctopusProps":
                 return abilities(new EatPlantAbility(), new ThrowOctopusAbility());
+            // FishThePlants first: it anchors the zombie, and must run even on an EATING tick.
             case "ZombieBeachFishermanProps":
-                return abilities(new EatPlantAbility(), new FishThePlants());
+                return abilities(new FishThePlants(), new EatPlantAbility());
             // Frostbite natives are at home in the cold: an ice hit neither freezes nor slows them, so
             // each carries IceImmunityAbility on top of its own trick.
             case "ZombieIceAgeHunterProps":
                 return abilities(new EatPlantAbility(), new ThrowIceAbility(), new IceImmunityAbility());
+            // Push before eat: EATING makes isUnableToMove() true, which blocked the ice crush.
             case "ZombieIceAgeTroglobiteProps":
-                return abilities(new EatPlantAbility(), new PushIceAbility(), new IceImmunityAbility());
+                return abilities(new PushIceAbility(), new EatPlantAbility(), new IceImmunityAbility());
+            // Obstacle check first: it sets the flying flag the eat pass reads in the same tick.
             case "ZombieIceAgeDodoProps":
-                return abilities(new EatPlantAbility(), new IgnoreObstaclesAbility(),
+                return abilities(new IgnoreObstaclesAbility(), new EatPlantAbility(),
                         new IceImmunityAbility());
             default:
                 return null;
@@ -131,33 +135,24 @@ public final class ZombieBehaviorFactory {
         switch (objclass) {
             case "ZombieLostCityJaneProps":
                 return abilities(new EatPlantAbility(), new DeflectLobbedAbility());
-            // The Turquoise robs the player blind before it shoots: spotting a plant within four tiles
-            // starts a five-second sun heist, and finishing that heist is what arms the laser
-            // (StealSunAbility raises the ready-for-laser flag LaserBeamAbility waits on). Half the haul
-            // spills back onto the lawn when it dies -- CombatSystem.dropStolenSun pays it out.
+            // The heist arms the laser; half the haul spills back on death.
             case "ZombieCrystalSkullProps":
                 return abilities(new EatPlantAbility(),
                         new StealSunAbility(TURQUOISE_SUN_RADIUS, TURQUOISE_SUN_PER_SECOND, true,
                                 gameSession),
                         new LaserBeamAbility());
-            // The pianist FLATTENS what it rolls over rather than eating it, and its music sends the
-            // zombies on the lawn hopping between neighbouring rows. Deliberately no EatPlantAbility:
-            // stopping to chew would put it in the EATING state, which halts the piano, the music and
-            // the zombie itself -- the spec has plants destroyed on contact, not eaten.
+            // Flattens rather than eats: EatPlantAbility's EATING state would halt the piano.
             case "ZombiePianoProps":
                 return abilities(new PianoCrushAbility(), new ChangeRow());
-            // The old man reads as he walks, so he starts slower than an ordinary zombie; shred the
-            // paper and he turns furious -- four times the walking speed and four times the bite.
             case "ZombieNewspaperProps":
                 return abilities(new EatPlantAbility(), new NewspaperRageAbility());
             // The Prospector's dynamite blasts it to the far left of the lawn, from where it walks back
             // toward the house: left-most column, then heading reversed.
             case "ZombieProspectorProps":
                 return abilities(new EatPlantAbility(), new CarryADynamite());
-            // The Arcade zombie shoves a machine ahead of it: it flattens what it rolls into, and once
-            // the machine is wrecked the Imps riding inside spill out.
+            // Push before eat (EATING blocks the crush). No RollTheBarrel -- Imps are the Roller's.
             case "ZombieArcadeProps":
-                return abilities(new EatPlantAbility(), new ArcadePushAbility(), new RollTheBarrel());
+                return abilities(new ArcadePushAbility(), new EatPlantAbility());
             case "ZombieModernAllStarProps":
                 return abilities(new EatPlantAbility(), new FootballTackleAbility());
             // Zombotany plant-zombies: each carries the behaviour of the plant it mimics.

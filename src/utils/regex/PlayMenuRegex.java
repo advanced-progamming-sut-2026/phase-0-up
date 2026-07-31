@@ -9,10 +9,7 @@ public enum PlayMenuRegex implements Regex{
     PLAY_SCORING_GAME("^\\s*menu\\s+scoring-game\\s*$"),
     SHOW_COINS("^\\s*menu\\s+coin-wallet\\s*$"),
     SHOW_GEMS("^\\s*menu\\s+gem-wallet\\s*$"),
-    // "gem" is the game's word for this currency and the only one it ever prints. "diamond" stays
-    // accepted purely as an input spelling, because that is how the spec writes the command
-    // (project.md line 462: "menu cheat add <n> <coin/diamond>") -- typing it does the same thing and
-    // still reports back in gems, so nobody following the spec hits a dead end.
+    // "gem" is the only word printed; "diamond" is accepted as input because the spec writes it so.
     CHEAT_CODE("^\\s*menu\\s+cheat\\s+add\\s+(?<n>\\d+)\\s+(?<currency>coin|gem|diamond)\\s*$"),
     CHOOSE_LEVEL("^\\s*level\\s+-l\\s+(?<level>\\d+)\\s*$");
 

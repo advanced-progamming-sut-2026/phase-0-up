@@ -55,6 +55,10 @@ public class EatPlantAbility implements ZombieAbility {
         Plant closestPlant = null;
         double minDistance = Double.MAX_VALUE;
 
+        // Airborne means passing over; the flag is per tick, so it eats what it does not fly over.
+        if (zombie.getState().isFlying()) {
+            return null;
+        }
         for (Cell cell : zombie.getGameSession().getMap().getRow(zombieRow).getCells()) {
             Plant plant = cell.getDefendingPlant(); // eats the protective cover (Pumpkin) first, if any
             if (plant != null && plant.getY() == zombieRow && !plant.isDead()) {

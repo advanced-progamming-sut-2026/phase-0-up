@@ -1,7 +1,7 @@
 package models.entities.zombies.Abilities;
 
 import models.entities.plants.Plant;
-import models.entities.zombies.Components.ActionState;
+import models.entities.plants.PlantTags;
 import models.entities.zombies.Zombie;
 import models.map.Cell;
 import models.map.Row;
@@ -13,18 +13,21 @@ public class IgnoreObstaclesAbility implements ZombieAbility {
         if (zombie == null || zombie.getState().isUnableToMove()) {
             return;
         }
-        zombie.getState().setFlying(true);
         Plant plantInFront = getPlantInFront(zombie);
 
-        if (plantInFront != null && !plantInFront.isDead()) {
-            if (plantInFront.getName().equalsIgnoreCase("Tall-nut")) {
-                zombie.getState().setAction(ActionState.EATING);
-            } else {
-                if (zombie.getState().getCurrentAction() == ActionState.EATING) {
-                    zombie.getState().setAction(ActionState.WALKING);
-                }
-            }
+        // The flag stops EatPlantAbility chewing and ContactTrigger firing a mine underneath.
+        zombie.getState().setFlying(plantInFront != null && fliesOver(plantInFront));
+    }
+    // The spec's obstacles: the WALL_NUT family, lane-shunting plants and mines. A Tall-nut stops it.
+    private boolean fliesOver(Plant plant) {
+        if (plant.getName() != null && plant.getName().equalsIgnoreCase("Tall-nut")) {
+            return false;
         }
+        if ("WALL_NUT".equalsIgnoreCase(plant.getCategory())) {
+            return true;
+        }
+        return plant.getTags() != null && (plant.getTags().contains(PlantTags.MOVE_ZOMBIES)
+                || plant.getTags().contains(PlantTags.TRAP));
     }
 
     private Plant getPlantInFront(Zombie zombie) {
@@ -42,9 +45,10 @@ public class IgnoreObstaclesAbility implements ZombieAbility {
         }
 
         for (Cell cell : row.getCells()) {
-            if (cell != null && cell.getCurrentPlant() != null) {
-                if (Math.abs(zX - cell.getX()) <= 35.0) {
-                    return cell.getCurrentPlant();
+            // Reach in TILES: the old 35.0 matched every plant in the row, not the one it reached.
+            if (cell != null && cell.getDefendingPlant() != null && !cell.getDefendingPlant().isDead()) {
+                if (Math.abs(zX - cell.getX()) <= 0.5) {
+                    return cell.getDefendingPlant();
                 }
             }
         }

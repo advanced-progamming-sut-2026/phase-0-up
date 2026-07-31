@@ -18,23 +18,12 @@ import java.util.Random;
 
 // I, Zombie mini-game -- the game played from the zombies' side. The plants are AI-controlled and
 // pre-placed on the left; the player spends sun to summon zombies to the RIGHT of a red line and march
-// them left to eat the brain at the end of each row. Sun comes from stationary sun-maker zombies -- one
-// buckethead per lane, pinned at the right edge -- plus a bonus for every plant the horde destroys.
-// The makers are destructible: a lane left undefended has its maker shot down and stops paying sun, so
-// the player must keep pressure on every lane. The player wins by eating every brain, and loses when
-// no zombies are left and the sun cannot buy another.
+// them left to eat the brain in each row. Sun: one destructible maker per lane, plus plant bonuses.
 public class IZombieMode extends StandardMode {
 
     // Zombies may only be summoned from this column rightward (the "red line").
     private static final int RED_LINE_COLUMN = 5;
-
-    // Sun income. A sun-maker stands at the right edge of each lane and drips sun every tick; each
-    // plant the horde breaks pays a one-off bonus. A small starting bank funds the opening move.
-    //
-    // The makers are ordinary, DESTRUCTIBLE zombies with a buckethead's health -- the plants can shoot
-    // them. Keep a lane's plants busy (summon zombies to draw their fire) and the maker survives; leave
-    // a lane unattended and its peashooters chew through the bucket and kill the maker, and that lane's
-    // income is gone for good. Neglect enough lanes and the sun dries up -- that is the losing spiral.
+    // Sun income: a DESTRUCTIBLE maker per lane drips sun, plus a bonus per plant broken.
     private static final int STARTING_SUN = 300;
     private static final String SUN_PRODUCER = "ZombieArmor2";     // the buckethead (Bucket, ~1290 HP)
     private static final double SUN_PER_PRODUCER_PER_TICK = 0.12;  // 5 makers -> ~6 sun/sec at full strength
@@ -69,13 +58,10 @@ public class IZombieMode extends StandardMode {
 
     // --- Mode contract ---------------------------------------------------------------------------
 
-    // Played from the zombies' side, so nothing here should touch a plant quest or the campaign win
-    // streak (see GameMode.countsTowardQuests).
     @Override
     public boolean countsTowardQuests() {
         return false;
     }
-
     @Override
     public void onStart(GameSession session) {
         if (started) {
@@ -98,16 +84,12 @@ public class IZombieMode extends StandardMode {
                 + "sky, so protect them. On the belt: " + String.join(", ", roster.keySet()) + ".");
     }
 
-    // Each frame: the sun-makers drip income, brains that got reached this tick are marked, and any
-    // zombie that has walked off the left edge (past the brain) is swept off the board.
     @Override
     public void onTick(GameSession session) {
         produceSun(session);
         eatBrains(session);
         removeZombiesPastHouse(session);
     }
-
-    // The zombie player earns sun for every plant its horde destroys, on top of the sun-makers' drip.
     @Override
     public void onPlantDestroyed(GameSession session, Plant plant) {
         session.increaseSunAmount(PLANT_DESTROYED_SUN_REWARD);
@@ -127,10 +109,6 @@ public class IZombieMode extends StandardMode {
         return true;
     }
 
-    // Lost when the board holds no living zombies AND the player cannot afford another. Now that the
-    // sun-makers are destructible, this is a real starvation spiral: shoot down the makers (by leaving
-    // lanes undefended), income stops, the last attackers die, the sun runs dry, and there is no way
-    // back. While any maker or attacker still stands, the player is not out.
     @Override
     public boolean checkLose(GameSession session) {
         return livingZombies(session) == 0 && session.getSunAmount() < cheapestPrice();
@@ -178,8 +156,6 @@ public class IZombieMode extends StandardMode {
 
     // --- Sun / brains ----------------------------------------------------------------------------
 
-    // The sun-makers drip income every tick. Whole sun is banked as soon as the fractional accumulator
-    // rolls over one. A maker that somehow died stops contributing.
     private void produceSun(GameSession session) {
         int alive = 0;
         for (Zombie producer : sunProducers) {
@@ -212,15 +188,11 @@ public class IZombieMode extends StandardMode {
         }
     }
 
-    // A zombie that has reached the house (column 0 or beyond) has done its job -- it ate the brain --
-    // so it leaves the board rather than trudging on into negative columns and lingering there. The
-    // stationary sun-makers sit at the right edge and are never swept.
     private void removeZombiesPastHouse(GameSession session) {
         for (Row row : session.getMap().getRows()) {
             row.getZombies().removeIf(z -> z.getX() <= 0 && !z.getHealth().isDead());
         }
     }
-
     // --- Setup helpers ---------------------------------------------------------------------------
 
     private void buildRoster() {
@@ -232,8 +204,6 @@ public class IZombieMode extends StandardMode {
         }
     }
 
-    // The AI plant defence each lane must be broken through. It ramps with difficulty: a lone
-    // Peashooter at level 1, up to a layered gauntlet of shooters behind two Wall-nuts at level 5.
     private void prePlacePlants(GameSession session) {
         int rows = session.getMap().getRows().size();
         for (int y = 0; y < rows; y++) {
@@ -265,10 +235,7 @@ public class IZombieMode extends StandardMode {
         cell.addPlant(plant);
     }
 
-    // One buckethead sun-maker per lane, pinned to the right edge. It does NOT move (speed 0), but it
-    // IS a normal target: the lane's plants will shoot it, and once its bucket and body are gone the
-    // maker dies and that lane stops paying sun. Protecting it -- by keeping attackers in the lane so
-    // the plants shoot those instead -- is the player's job.
+    // One buckethead maker per lane, pinned at speed 0 but a normal target the plants can kill.
     private void placeSunProducers(GameSession session) {
         int rows = session.getMap().getRows().size();
         int column = Constants.BOARD_COLS - 1;   // column 8, the far right edge
@@ -330,7 +297,6 @@ public class IZombieMode extends StandardMode {
         return n;
     }
 
-    // Whether the brain in a given lane has been eaten yet, for the per-lane status readout.
     public boolean isBrainEaten(int lane) {
         return brainEaten != null && lane >= 0 && lane < brainEaten.length && brainEaten[lane];
     }

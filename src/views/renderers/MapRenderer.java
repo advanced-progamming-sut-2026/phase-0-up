@@ -219,9 +219,7 @@ public class MapRenderer {
             renderIZombieStatus(session, iZombie);
         }
     }
-
-    // I, Zombie: the player is buying zombies, so they need their roster (what they can summon and what
-    // each costs), the sun they have to spend, which lanes' brains are already eaten, and how to summon.
+    // I, Zombie: the roster and its costs, the sun to spend, and which brains are already eaten.
     private void renderIZombieStatus(GameSession session, IZombieMode mode) {
         StringBuilder roster = new StringBuilder();
         for (Map.Entry<String, Integer> entry : mode.getRoster().entrySet()) {

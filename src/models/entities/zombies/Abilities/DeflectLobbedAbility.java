@@ -4,6 +4,7 @@ import models.entities.projectiles.Projectile;
 import models.entities.projectiles.Trajectory;
 import models.entities.zombies.Zombie;
 
+// Parasol Zombie: its umbrella repels every lobber's shot; Projectile.onHit calls deflects().
 public class DeflectLobbedAbility implements ZombieAbility {
 
     private boolean isParasolIntact = true;
@@ -23,17 +24,12 @@ public class DeflectLobbedAbility implements ZombieAbility {
         this.isParasolIntact = false;
     }
 
-    public void handleProjectileHit(Zombie zombie, Projectile projectile) {
+    public static boolean deflects(Zombie zombie, Projectile projectile) {
         for (ZombieAbility ability : zombie.getAbilities()) {
-            if (ability instanceof DeflectLobbedAbility) {
-                DeflectLobbedAbility parasol = (DeflectLobbedAbility) ability;
-                if (parasol.canDeflect(projectile)) {
-                    projectile.destroy();
-                    return;
-                }
+            if (ability instanceof DeflectLobbedAbility parasol && parasol.canDeflect(projectile)) {
+                return true;
             }
         }
-        zombie.getHealth().applyDamage(projectile.getDamage() , projectile.getElement(), projectile.getShooter());
-        projectile.destroy();
+        return false;
     }
 }
