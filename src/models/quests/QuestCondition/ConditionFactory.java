@@ -32,7 +32,7 @@ public final class ConditionFactory {
             case "KILL_WITH_PLANT":
                 return new KillWithPlantCondition(spec.getPlant(), spec.getThreshold());
             case "KILL_WITH_SINGLE_PLANT":
-                return new KillWithSinglePlantCondition(spec.getThreshold());
+                return new KillWithSinglePlantCondition(spec.getPlant(), spec.getThreshold());
             case "LAWNMOWER_KILLS":
                 return new LawnmowerKillsCondition(spec.getThreshold());
             case "PLANT_CATEGORY_COUNT":
@@ -46,7 +46,7 @@ public final class ConditionFactory {
             case "MOWERLESS_FIRST_COLUMN":
                 return new MowerlessFirstColumnCondition(spec.getThreshold());
             case "CHAPTER_KILL_COUNT":
-                return new ChapterKillCountCondition(spec.getThreshold());
+                return new ChapterKillCountCondition(spec.getChapter(), spec.getThreshold());
             default:
                 return null;   // not a counting condition -- let the layout group try
         }
@@ -71,7 +71,7 @@ public final class ConditionFactory {
             case "ONLY_MUSHROOMS":
                 return new OnlyMushroomsCondition();
             case "ONLY_FAMILY":
-                return new FamilyMassacreCondition();
+                return new FamilyMassacreCondition(spec.getFamily());
             case "WITHOUT_FAMILY":
                 return new WithoutFamilyCondition(spec.getFamily());
             default:

@@ -29,9 +29,10 @@ public class QuestTemplate {
         private String type;
         private int threshold;
         private int index;
-        private String plant;      // for KILL_WITH_PLANT: the plant that must get all the kills
+        private String plant;      // KILL_WITH_PLANT / KILL_WITH_SINGLE_PLANT: the plant that must kill
         private String category;   // for PLANT_CATEGORY_COUNT / ONLY_CATEGORY: the plant category
-        private String family;     // for WITHOUT_FAMILY: the plant family (category) that must go unused
+        private String family;     // ONLY_FAMILY: the family to kill with; WITHOUT_FAMILY: the one to avoid
+        private String chapter;    // for CHAPTER_KILL_COUNT: which chapter the kills must come from
 
         public String getType() { return type; }
         public int getThreshold() { return threshold; }
@@ -39,6 +40,7 @@ public class QuestTemplate {
         public String getPlant() { return plant; }
         public String getCategory() { return category; }
         public String getFamily() { return family; }
+        public String getChapter() { return chapter; }
     }
 
     // The reward payload. Which fields are meaningful depends on `category`:

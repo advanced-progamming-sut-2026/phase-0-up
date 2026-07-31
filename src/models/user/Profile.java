@@ -50,6 +50,9 @@ public class Profile {
     private int sunCollectedToday;
     // Kills in column 0 of a mower-spent row today, across every level (Almost Victorious).
     private int mowerlessFirstColumnKillsToday;
+    // Zombies felled today per killer plant, across every level, keyed by lower-cased plant name
+    // (Pro Plant Player).
+    private Map<String, Integer> killsByPlantToday;
     // Lifetime lawn-mower kills (Mowing Time). An epic is earned once, so this never rolls over.
     private int lawnmowerKillsTotal;
     private int lastChapter;
@@ -84,6 +87,7 @@ public class Profile {
         this.sunCollectedToday = 0;
         this.mowerlessFirstColumnKillsToday = 0;
         this.lawnmowerKillsTotal = 0;
+        this.killsByPlantToday = new HashMap<>();
 
         this.newsList = new ArrayList<>();
         this.unlockedPlants = new ArrayList<>();
@@ -268,6 +272,7 @@ public class Profile {
         questDayStamp = today;
         sunCollectedToday = 0;
         mowerlessFirstColumnKillsToday = 0;
+        getKillsByPlantToday().clear();
         getCompletedDailyQuestIds().clear();
         // Same cadence, and it had no other reset -- once bought it stayed bought forever.
         hasBoughtDailyOfferToday = false;
@@ -325,6 +330,30 @@ public class Profile {
         if (amount > 0) {
             mowerlessFirstColumnKillsToday += amount;
         }
+    }
+
+    // Zombies one plant type has felled today, across every level (Pro Plant Player).
+    public int getKillsTodayByPlant(String plantName) {
+        if (plantName == null) {
+            return 0;
+        }
+        ensureQuestDay();
+        return getKillsByPlantToday().getOrDefault(plantName.toLowerCase().trim(), 0);
+    }
+
+    public void addKillsTodayByPlant(String plantName, int amount) {
+        if (plantName == null || plantName.isBlank() || amount <= 0) {
+            return;
+        }
+        ensureQuestDay();
+        getKillsByPlantToday().merge(plantName.toLowerCase().trim(), amount, Integer::sum);
+    }
+
+    public Map<String, Integer> getKillsByPlantToday() {
+        if (killsByPlantToday == null) {   // a profile deserialized before this field existed
+            killsByPlantToday = new HashMap<>();
+        }
+        return killsByPlantToday;
     }
 
     // Lifetime lawn-mower kills (Mowing Time) -- no rollover, an epic is earned once.
@@ -393,16 +422,6 @@ public class Profile {
             return 0;
         }
         return getZombieKillsByChapter().getOrDefault(chapter.toLowerCase().trim(), 0);
-    }
-
-    // The best any single chapter has reached -- a chapter-kill quest completes on whichever chapter
-    // gets there first, so this is the number the travel log shows as its progress.
-    public int getBestChapterZombieKills() {
-        int best = 0;
-        for (int kills : getZombieKillsByChapter().values()) {
-            best = Math.max(best, kills);
-        }
-        return best;
     }
 
     public boolean isHasBoughtDailyOfferToday() { return hasBoughtDailyOfferToday; }

@@ -36,8 +36,7 @@ public class GameSession {
     private long firstWaveTick = -1;
     private int killsInFirst30s;
     private boolean cooldownRemoved;
-    // Domain-event queue: model objects record narrative events here instead of printing. The engine
-    // drains it once per tick and hands each to the view -- the single MVC seam for in-game narration.
+    // Domain-event queue: the MVC seam for in-game narration (see reportEvent / drainEvents below).
     private final List<Result> eventLog = new ArrayList<>();
 
     public GameSession(Profile player, Level level) {
@@ -80,9 +79,7 @@ public class GameSession {
 
     public List<SeedPacket> getSelectedSeeds() { return selectedSeeds; }
 
-    // Carries the boost bought in the seed-selection menu into the live SeedPacket, so a boosted plant
-    // fires its plant-food when placed. Run once at game start, covering boosts made either side of
-    // the seed being selected.
+    // Carries a boost bought in seed selection into the live SeedPacket. Run once at game start.
     public void applySeedBoosts() {
         for (SeedPacket seed : selectedSeeds) {
             seed.setBoosted(player.isSeedBoosted(seed.getPlantType()));
@@ -92,8 +89,7 @@ public class GameSession {
         if (!map.isValidCoordinate(x, y)) {
             return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
         }
-        // Vasebreaker (and any mode handing out its own plants) is detached from the seed-packet and
-        // sun economy: availability comes from the mode's hand, and placing consumes it.
+        // Vasebreaker (any mode handing out its own plants) is detached from the seed/sun economy.
         if (mode != null && mode.managesPlantInventory()) {
             return plantFromModeInventory(x, y, plantType);
         }
@@ -131,9 +127,10 @@ public class GameSession {
         if (!cooldownRemoved) {
             seed.updateLastPlantedTick(timeTicks);
         }
+        // A boost lasts the level: EVERY copy fires its plant-food, not just the first. Only the profile
+        // flag clears -- the purchase is spent, but the packet stays boosted until the session ends.
         if (seed.isBoosted()) {
             newPlant.triggerPlantFood(this);
-            seed.setBoosted(false);
             player.setSeedBoosted(plantType, false);
         }
 
@@ -182,11 +179,16 @@ public class GameSession {
         if (cell.hasProtector()) {
             return cell.removeProtector();
         }
+        // A mode may protect a plant it placed itself (Save Our Seeds). removePlant only drops the
+        // board's reference, so digging one up leaves the mode watching a plant that can never die.
+        if (cell.hasPlant() && mode != null && !mode.isPlantRemovable(x, y)) {
+            return new Result(false, "The " + cell.getCurrentPlant().getName() + " at (" + x + ", " + y
+                    + ") is exactly what you're defending. It stays in the ground.");
+        }
         return cell.removePlant();
     };
 
-    // Vasebreaker actions -- every other mode reports there is nothing to break/collect, so the in-game
-    // commands stay harmless on normal levels.
+    // Vasebreaker actions -- other modes report nothing to break/collect, so these stay harmless.
     public Result breakVase(int x, int y) {
         if (!map.isValidCoordinate(x, y)) {
             return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
@@ -224,8 +226,7 @@ public class GameSession {
     }
 
     // "cheat spawn-zombie -t <type> -l (x, y)": drops a zombie onto column x of row y. A debug cheat, so
-    // it works on any level/mode and ignores wave budgets. Coordinates are validated against the board,
-    // so a bad cell reports an error rather than throwing.
+    // it ignores wave budgets and works on any mode; a bad cell reports an error rather than throwing.
     public Result spawnZombieCheat(String type, int x, int y) {
         if (type == null || type.isBlank()) {
             return new Result(false, "Which zombie? Give me a type to raise.");
@@ -285,8 +286,7 @@ public class GameSession {
         }
     }
 
-    // Called by the WaveSystem when a wave launches. currentWave is what StandardMode.checkWin compares
-    // against the level's wave count.
+    // Called by WaveSystem on launch; currentWave is what StandardMode.checkWin tests the wave count on.
     public void advanceWave() {
         currentWave++;
         if (currentWave == 1) {
@@ -455,9 +455,9 @@ public class GameSession {
     public boolean isSeedSelected(String plantType) { return getSelectedSeed(plantType) != null; }
     public Level getLevel() { return level; }
 
+    // A mode that hands out its own plants (Vasebreaker) is fully detached from seed selection: no seed
+    // packet may ever enter the loadout, whatever tries to route through here.
     public void addSeed(SeedPacket seed){
-        // A mode that hands out its own plants (Vasebreaker) is fully detached from seed selection: no
-        // seed packet may ever enter the loadout, whatever tries to route through here.
         if (mode != null && mode.managesPlantInventory()) {
             return;
         }
@@ -482,7 +482,6 @@ public class GameSession {
     public GameState getState() { return state; }
     public int getZombiesKilled() { return zombiesKilled; }
     public int getPlantsLost() { return plantsLost; }
-
     public void increaseSunAmount(int amount) { sunAmount += amount; }
     public void decreaseSunAmount(int amount) {sunAmount -= amount; }
     public void addSun(Sun sun) { activeSuns.add(sun); }

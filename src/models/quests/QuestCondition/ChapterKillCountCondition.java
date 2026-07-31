@@ -2,27 +2,30 @@ package models.quests.QuestCondition;
 
 import models.quests.QuestContext;
 
-// Satisfied when at least `threshold` zombies have been defeated across the levels of a single chapter
-// (Chapter Hunter). Unlike a per-level kill count, this reads a running per-chapter total that the
-// profile accumulates level by level (and persists), so the kills can be spread over several plays of
-// the chapter.
+// Satisfied when at least `threshold` zombies have been defeated in ONE NAMED chapter (Chapter Hunter:
+// "defeat 50 zombies from chapter X"). The chapter is authored on the quest, so grinding a different
+// chapter does nothing for it -- the player has to go and fight the one it names.
+//
+// The kills accumulate: the per-chapter totals live on the profile and carry between matches, so they
+// can be spread over as many plays of that chapter as it takes.
 public class ChapterKillCountCondition implements QuestCondition {
+    private final String chapter;
     private final int threshold;
 
-    public ChapterKillCountCondition(int threshold) {
+    public ChapterKillCountCondition(String chapter, int threshold) {
+        this.chapter = chapter;
         this.threshold = threshold;
     }
 
     @Override
     public boolean isSatisfied(QuestContext ctx) {
-        return ctx.getChapterZombiesKilled() >= threshold;
+        return ctx.killsInChapter(chapter) >= threshold;
     }
 
-    // Genuinely cross-level: the per-chapter totals live on the profile and carry between matches, so
-    // the travel log can show a real running tally. The best chapter is the one that will finish first.
+    // The running tally for the named chapter, so the travel log shows real progress towards it.
     @Override
     public models.quests.QuestProgress progress(models.user.Profile profile) {
-        int killed = profile == null ? 0 : profile.getBestChapterZombieKills();
+        int killed = profile == null ? 0 : profile.getChapterZombieKills(chapter);
         return models.quests.QuestProgress.crossLevel(killed, threshold);
     }
 }

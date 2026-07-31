@@ -21,8 +21,7 @@ public class SaveOurSeedsMode extends StandardMode {
         this.specs = specs != null ? specs : new ArrayList<>();
     }
 
-    @Override
-    public void onStart(GameSession gameSession) {
+    private void placeAll(GameSession gameSession) {
         if (started) {
             return; // placing twice would stack duplicate plants on the same cells
         }
@@ -62,6 +61,44 @@ public class SaveOurSeedsMode extends StandardMode {
             }
         }
         return super.checkLose(gameSession);
+    }
+
+    // The plants this level exists to defend cannot be dug up. checkLose watches these exact objects
+    // for isDead(), but plucking one only clears the board's reference -- the plant stays alive and
+    // un-eatable, so the level would run on with a lose condition that could never fire again.
+    @Override
+    public boolean isPlantRemovable(int x, int y) {
+        for (Plant plant : protectedPlants) {
+            if ((int) plant.getX() == x && plant.getY() == y) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Tells the player up front which plants they are defending, and that losing one ends the level --
+    // otherwise the only way to discover the rule is to lose to it.
+    @Override
+    public void onStart(GameSession gameSession) {
+        placeAll(gameSession);
+        gameSession.reportEvent(startBanner());
+    }
+
+    private String startBanner() {
+        if (protectedPlants.isEmpty()) {
+            return "Save Our Seeds! Nothing survived the planting, so just hold the lawn.";
+        }
+        StringBuilder sb = new StringBuilder("Save Our Seeds! Keep these alive at all costs: ");
+        for (int i = 0; i < protectedPlants.size(); i++) {
+            Plant plant = protectedPlants.get(i);
+            if (i > 0) {
+                sb.append(i == protectedPlants.size() - 1 ? " and " : ", ");
+            }
+            sb.append(plant.getName()).append(" at (")
+                    .append((int) plant.getX()).append(", ").append(plant.getY()).append(")");
+        }
+        sb.append(". Lose even one and the level is over -- and no, you can't dig them up.");
+        return sb.toString();
     }
 
     public List<Plant> getProtectedPlants() {

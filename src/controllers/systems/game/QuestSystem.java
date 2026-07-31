@@ -126,6 +126,10 @@ public class QuestSystem {
                 .chapterZombiesKilled(profile == null ? 0 : profile.getChapterZombieKills(chapterOf(session)))
                 .killsByPlant(new java.util.HashMap<>(killsByPlant))
                 .killsByFamily(new java.util.HashMap<>(killsByFamily))
+                .killsByPlantToday(profile == null
+                        ? new java.util.HashMap<>() : new java.util.HashMap<>(profile.getKillsByPlantToday()))
+                .killsByChapter(profile == null
+                        ? new java.util.HashMap<>() : new java.util.HashMap<>(profile.getZombieKillsByChapter()))
                 .plantedCategories(new java.util.ArrayList<>(session.getPlantedCategories()))
                 .plantedNames(new java.util.ArrayList<>(session.getPlantedNames()))
                 .plantGrid(grid)
@@ -153,6 +157,9 @@ public class QuestSystem {
         }
         profile.addLawnmowerKills(session.getLawnmowerKills());
         profile.addMowerlessFirstColumnKillsToday(mowerlessFirstColumnKillsThisLevel);
+        for (java.util.Map.Entry<String, Integer> entry : killsByPlant.entrySet()) {
+            profile.addKillsTodayByPlant(entry.getKey(), entry.getValue());   // Pro Plant Player
+        }
     }
 
     // Whether this level is a "day" level, i.e. its season drops sun from the sky. Every season does

@@ -38,6 +38,14 @@ public interface GameMode {
         return Collections.emptyList();
     }
 
+    // Whether the player may dig up the plant standing on this tile. A mode that pre-places the plants
+    // the whole level is built around (Save Our Seeds) says no: Cell.removePlant only drops the board's
+    // reference and never kills the plant, so digging one up would leave the mode still watching a
+    // living object that can no longer be eaten -- quietly dissolving the level's lose condition.
+    default boolean isPlantRemovable(int x, int y) {
+        return true;
+    }
+
     // Whether the sky may drop suns on this level. Night Ops / Plant What You Get turn it off, and a
     // level rule wins over the chapter's EnvironmentType default. SunSystem asks the mode rather than
     // testing instanceof, so the levels.json flag actually drives the behaviour.

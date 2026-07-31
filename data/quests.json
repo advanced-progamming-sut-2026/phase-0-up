@@ -4,14 +4,14 @@
     "condition": { "type": "COLLECT_SUN", "threshold": 3000 },
     "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 30 }, "variables": "3000-4000-5000" },
 
-  { "id": "chapter_hunter", "name": "Chapter Hunter", "description": "Defeat 50 zombies from any game chapter.",
+  { "id": "chapter_hunter", "name": "Chapter Hunter", "description": "Defeat {n} zombies in the {chapter} chapter.",
     "category": "MAIN", "priority": "HIGH",
-    "condition": { "type": "CHAPTER_KILL_COUNT", "threshold": 50 },
+    "condition": { "type": "CHAPTER_KILL_COUNT", "chapter": "ANCIENT_EGYPT", "threshold": 50 },
     "reward": { "category": "INVENTORY", "item": "SEED_PACKET", "amount": 10 }, "variables": "any game chapter" },
 
-  { "id": "pro_plant_player", "name": "Pro Plant Player", "description": "Kill ten zombies using only one plant type.",
+  { "id": "pro_plant_player", "name": "Pro Plant Player", "description": "Kill {n} zombies with the {plant} over one day.",
     "category": "DAILY", "priority": "HIGH",
-    "condition": { "type": "KILL_WITH_SINGLE_PLANT", "threshold": 10 },
+    "condition": { "type": "KILL_WITH_SINGLE_PLANT", "plant": "Peashooter", "threshold": 10 },
     "reward": { "category": "UNLOCKABLE", "target": "PLANT", "item": "random", "amount": 1 }, "variables": "any offensive plant" },
 
   { "id": "only_cactus", "name": "Only Cactus", "description": "Kill ten zombies using only the Cactus.",
@@ -44,9 +44,9 @@
     "condition": { "type": "SYMMETRIC" },
     "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 500 }, "variables": "" },
 
-  { "id": "family_massacre", "name": "Family Massacre", "description": "Kill zombies using only plants from one family.",
+  { "id": "family_massacre", "name": "Family Massacre", "description": "Win a level killing zombies with {family} plants only.",
     "category": "DAILY", "priority": "MEDIUM",
-    "condition": { "type": "ONLY_FAMILY" },
+    "condition": { "type": "ONLY_FAMILY", "family": "LOBBER" },
     "reward": { "category": "CURRENCY", "currency": "COINS", "amount": 1000 }, "variables": "plant family" },
 
   { "id": "flourish_in_constraints", "name": "Flourish in Constraints", "description": "Win a level without any plant from shooter family.",

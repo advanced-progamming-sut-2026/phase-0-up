@@ -28,6 +28,8 @@ public class QuestContext {
     private final int lawnmowerKillsTotal;              // Mowing Time
     private final Map<String, Integer> killsByPlant;   // lower-cased plant name -> kills credited to it
     private final Map<String, Integer> killsByFamily;  // lower-cased plant family (category) -> kills credited
+    private final Map<String, Integer> killsByPlantToday;   // plant -> kills across today's levels
+    private final Map<String, Integer> killsByChapter;      // chapter -> kills across every play of it
     private final List<String> plantedCategories;      // category of every plant placed this level
     private final List<String> plantedNames;           // name of every plant placed this level
     private final boolean[][] plantGrid;  // [row][col] -> a plant stood there at level end
@@ -49,6 +51,8 @@ public class QuestContext {
         this.lawnmowerKillsTotal = b.lawnmowerKillsTotal;
         this.killsByPlant = b.killsByPlant == null ? new HashMap<>() : b.killsByPlant;
         this.killsByFamily = b.killsByFamily == null ? new HashMap<>() : b.killsByFamily;
+        this.killsByPlantToday = b.killsByPlantToday == null ? new HashMap<>() : b.killsByPlantToday;
+        this.killsByChapter = b.killsByChapter == null ? new HashMap<>() : b.killsByChapter;
         this.plantedCategories = b.plantedCategories == null ? new ArrayList<>() : b.plantedCategories;
         this.plantedNames = b.plantedNames == null ? new ArrayList<>() : b.plantedNames;
         this.plantGrid = b.plantGrid;
@@ -79,7 +83,7 @@ public class QuestContext {
         private int sunCollected, finalSun, zombiesKilled, plantsLost, lawnmowerKills, killsInFirst30s;
         private int mowerlessFirstColumnKills, winStreakAtMaxDifficulty, chapterZombiesKilled;
         private int mowerlessFirstColumnKillsToday, lawnmowerKillsTotal;
-        private Map<String, Integer> killsByPlant, killsByFamily;
+        private Map<String, Integer> killsByPlant, killsByFamily, killsByPlantToday, killsByChapter;
         private List<String> plantedCategories, plantedNames;
         private boolean[][] plantGrid;
 
@@ -99,6 +103,8 @@ public class QuestContext {
         public Builder lawnmowerKillsTotal(int v) { this.lawnmowerKillsTotal = v; return this; }
         public Builder killsByPlant(Map<String, Integer> v) { this.killsByPlant = v; return this; }
         public Builder killsByFamily(Map<String, Integer> v) { this.killsByFamily = v; return this; }
+        public Builder killsByPlantToday(Map<String, Integer> v) { this.killsByPlantToday = v; return this; }
+        public Builder killsByChapter(Map<String, Integer> v) { this.killsByChapter = v; return this; }
         public Builder plantedCategories(List<String> v) { this.plantedCategories = v; return this; }
         public Builder plantedNames(List<String> v) { this.plantedNames = v; return this; }
         public Builder plantGrid(boolean[][] v) { this.plantGrid = v; return this; }
@@ -149,8 +155,24 @@ public class QuestContext {
     // Running streak of consecutive wins at maximum difficulty, this level included (Win After Win).
     public int getWinStreakAtMaxDifficulty() { return winStreakAtMaxDifficulty; }
 
-    // Total zombies felled in this level's chapter so far, this level included (Chapter Hunter).
+    // Total zombies felled in this level's chapter so far, this level included.
     public int getChapterZombiesKilled() { return chapterZombiesKilled; }
+
+    // Zombies felled in one NAMED chapter, over every play of it (Chapter Hunter). Case-insensitive:
+    // the quest names its chapter in the level file's casing, the tally is keyed lower-case.
+    public int killsInChapter(String chapter) {
+        return chapter == null ? 0 : killsByChapter.getOrDefault(chapter.toLowerCase().trim(), 0);
+    }
+
+    // Kills credited to one plant type across every level played today (Pro Plant Player).
+    public int killsTodayByPlant(String plantName) {
+        return plantName == null ? 0 : killsByPlantToday.getOrDefault(plantName.toLowerCase().trim(), 0);
+    }
+
+    // Kills credited to one plant family this level (Family Massacre).
+    public int killsByFamily(String family) {
+        return family == null ? 0 : killsByFamily.getOrDefault(family.toLowerCase().trim(), 0);
+    }
 
     // --- Cumulative, cross-level counters (this level already folded in) --------------------------
 

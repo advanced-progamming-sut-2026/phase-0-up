@@ -96,6 +96,9 @@ public class VaseBreakerMode extends StandardMode {
             row.setLawnmower(null);
         }
         generateBoard(session);
+        session.reportEvent("Vasebreaker! No seed selection and no sun here -- every plant you get "
+                + "comes out of a vase. Smash them with \"break vase -l (x, y)\", grab what drops with "
+                + "\"collect seed -l (x, y)\", and mind the zombies hiding inside. There are no mowers.");
     }
 
     // Drives the seed-packet timeout. Called every tick by GameSession.evaluateModeRules: a packet that

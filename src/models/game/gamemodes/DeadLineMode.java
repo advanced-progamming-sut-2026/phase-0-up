@@ -17,6 +17,15 @@ public class DeadLineMode extends StandardMode {
         return deadLineColumn;
     }
 
+    // The line is invisible and instantly fatal, so the only way to learn it existed was to lose to it.
+    @Override
+    public void onStart(GameSession gameSession) {
+        super.onStart(gameSession);
+        gameSession.reportEvent("Dead Line! A trip-wire runs down column " + deadLineColumn
+                + ". Let a single zombie step past it and the level is over -- no mower, no second"
+                + " chance. Stop them to the right of it.");
+    }
+
     @Override
     public boolean checkLose(GameSession gameSession) {
         for (Row row : gameSession.getMap().getRows()) {

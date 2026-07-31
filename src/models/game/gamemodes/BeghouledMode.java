@@ -18,16 +18,14 @@ import java.util.Map;
 import java.util.Random;
 
 // Beghouled mini-game -- a match-3 played on the lawn. The board starts full of five random plant
-// types; the player swaps two adjacent plants, but only when the swap forms a line of three or more of
-// one type. A match clears, the plants above fall, and random new plants drop in from the top, which
-// can set off cascades. Each match pays sun (50 x (size-2), +50 for a cascade match) that the player
-// spends on plant upgrades. Meanwhile zombies keep coming as in a normal level; a zombie that eats a
-// plant leaves a permanent crater. The player wins by making a target number of matches (which then
-// wipes out every zombie) and loses if a zombie reaches the house.
+// types; the player swaps two adjacent plants, but only when the swap forms a line of three or more.
+// A match clears, the plants above fall, and new ones drop in from the top, which can set off
+// cascades. Each match pays sun (50 x (size-2), +50 for a cascade) to spend on plant upgrades.
+// Zombies keep coming as in a normal level, and one that eats a plant leaves a permanent crater. The
+// player wins on a target number of matches (which wipes out every zombie) and loses to a breach.
 public class BeghouledMode extends StandardMode {
 
-    // A match-3 puzzle, not an adventure level: finishing it completes no quests (see
-    // GameMode.countsTowardQuests).
+    // A match-3 puzzle, not an adventure level: it completes no quests (GameMode.countsTowardQuests).
     @Override
     public boolean countsTowardQuests() {
         return false;
@@ -87,6 +85,10 @@ public class BeghouledMode extends StandardMode {
         settleWithoutReward();          // clear any accidental starting matches, no sun for free
         ensurePlayable();
         syncMap(session);
+        session.reportEvent("Beghouled! The lawn is a match-3 board. Swap neighbours with "
+                + "\"swap -l (x1, y1) (x2, y2)\" -- only if the swap lines up three or more. "
+                + "Matches pay sun, sun buys upgrades, and " + matchTarget + " matches wins the level. "
+                + "Zombies keep coming, and anything they eat leaves a crater. No mowers.");
     }
 
     @Override
@@ -222,8 +224,7 @@ public class BeghouledMode extends StandardMode {
     }
 
     // Resolves the board after a match-forming move: repeatedly clears runs, drops plants and refills,
-    // paying sun for every run. The first pass is the player's own match; later passes are cascades and
-    // pay one extra sun each. Returns the total sun granted.
+    // paying sun per run. The first pass is the player's match; later ones are cascades and pay extra.
     private int resolveBoard(GameSession session) {
         int gained = 0;
         boolean cascade = false;
@@ -254,8 +255,8 @@ public class BeghouledMode extends StandardMode {
         return (Math.max(0, runSize - 2) + (cascade ? 1 : 0)) * SUN_PER_UNIT;
     }
 
-    // Drops every plant to the bottom of its column, stopping above craters (which stay put). Public so
-    // the map view (and the harness) can settle a column; refill is separate.
+    // Drops every plant to the bottom of its column, stopping above craters. Public so the map view
+    // (and the harness) can settle a column; refill is separate.
     public void collapse() {
         for (int c = 0; c < cols; c++) {
             int segTop = 0;
@@ -352,8 +353,8 @@ public class BeghouledMode extends StandardMode {
         }
     }
 
-    // Clears any matches already on the board without paying sun or counting them (used at start and
-    // after a reset, so a freshly dealt board never hands out free sun).
+    // Clears matches already on the board without paying or counting them, so a freshly dealt board
+    // (at start and after a reset) never hands out free sun.
     private void settleWithoutReward() {
         while (true) {
             List<List<int[]>> runs = findRuns();

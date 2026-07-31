@@ -40,8 +40,13 @@ public final class QuestText {
             // alone. quoteReplacement guards against any regex-special chars in the value.
             out = out.replaceAll("\\bn\\b", Matcher.quoteReplacement(n));
             out = replace(out, "{plant}", spec.getPlant());
-            out = replace(out, "{family}", spec.getFamily());
-            out = replace(out, "{category}", spec.getCategory());
+            // Families and categories are authored as enum tokens (LOBBER, SUN_PRODUCER); show them the
+            // way a player would say them ("Lobber", "Sun Producer").
+            out = replace(out, "{family}", titleCase(spec.getFamily()));
+            out = replace(out, "{category}", titleCase(spec.getCategory()));
+            // Chapters are authored as enum-ish tokens (ANCIENT_EGYPT); show them the way the rest of
+            // the game names a season ("Ancient Egypt").
+            out = replace(out, "{chapter}", seasonName(EnvironmentType.fromChapter(spec.getChapter())));
         }
         if (season != null) {
             out = replace(out, "{season}", seasonName(season));
@@ -60,10 +65,16 @@ public final class QuestText {
 
     // Friendly, title-cased season name: FROSTBITE_CAVES -> "Frostbite Caves".
     public static String seasonName(EnvironmentType season) {
-        if (season == null) {
-            return "";
+        return season == null ? "" : titleCase(season.name());
+    }
+
+    // ENUM_TOKEN -> "Enum Token". Returns the input unchanged when it is null or blank, so replace()
+    // still leaves the readable placeholder in place rather than blanking it.
+    public static String titleCase(String token) {
+        if (token == null || token.isBlank()) {
+            return token;
         }
-        String[] parts = season.name().toLowerCase().split("_");
+        String[] parts = token.toLowerCase().trim().split("[_\\s]+");
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
             if (part.isEmpty()) {

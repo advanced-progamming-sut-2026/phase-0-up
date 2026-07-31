@@ -29,7 +29,7 @@ public class WallnutBowlingMode extends StandardMode {
 
     // The player may only bowl from columns left of this line (the "red line" on the lawn).
     private static final int RED_LINE_COLUMN = 3;
-    private static final int CONVEYOR_INTERVAL_TICKS = 8 * Constants.TICKS_PER_SECOND;
+    private static final int CONVEYOR_INTERVAL_TICKS = 5 * Constants.TICKS_PER_SECOND;
     private static final int CONVEYOR_MAX = 6;
     // Zombies arrive in waves rather than one opening burst: BASE_WAVES waves plus one per difficulty
     // tier, each a little bigger than the last, with a breather in between. The level is only won once
@@ -86,6 +86,9 @@ public class WallnutBowlingMode extends StandardMode {
         conveyor.add(BowlingKind.BOWLING);
         conveyor.add(BowlingKind.EXPLODE);
         conveyor.add(BowlingKind.GIANT);
+        session.reportEvent("Wall-nut Bowling! You pick no plants and no sun falls -- nuts arrive on "
+                + "the conveyor instead. Roll one with \"bowl -t <bowling|explode|giant> -l (x, y)\""
+                + " from behind the red line, columns 0-" + (RED_LINE_COLUMN - 1) + ".");
         totalWaves = BASE_WAVES + (difficulty - 1) * WAVES_PER_DIFFICULTY;
         releaseWave(session);   // wave 1 walks on immediately
     }

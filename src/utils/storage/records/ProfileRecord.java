@@ -46,6 +46,7 @@ public class ProfileRecord {
     private String questDayStamp;
     private int sunCollectedToday;
     private int mowerlessFirstColumnKillsToday;                 // Almost Victorious
+    private Map<String, Integer> killsByPlantToday;             // Pro Plant Player
     private int lawnmowerKillsTotal;   // Mowing Time -- lifetime, not daily, so it never rolls over
 
     public static ProfileRecord from(Profile p) {
@@ -77,6 +78,7 @@ public class ProfileRecord {
         r.questDayStamp = p.getQuestDayStamp();
         r.sunCollectedToday = p.getRawSunCollectedToday();
         r.mowerlessFirstColumnKillsToday = p.getRawMowerlessFirstColumnKillsToday();
+        r.killsByPlantToday = new HashMap<>(p.getKillsByPlantToday());
         r.lawnmowerKillsTotal = p.getLawnmowerKillsTotal();
         return r;
     }
@@ -116,6 +118,7 @@ public class ProfileRecord {
         replace(p.getPassedMiniGames(), passedMiniGames);
         replace(p.getCompletedQuestIds(), completedQuestIds);
         replace(p.getCompletedDailyQuestIds(), completedDailyQuestIds);
+        replace(p.getKillsByPlantToday(), killsByPlantToday);
         replace(p.getZombieKillsByChapter(), zombieKillsByChapter);
         return p;
     }

@@ -92,6 +92,10 @@ public class IZombieMode extends StandardMode {
         session.increaseSunAmount(STARTING_SUN - session.getSunAmount());
         prePlacePlants(session);
         placeSunProducers(session);
+        session.reportEvent("I, Zombie! You're on the undead side this time. Buy zombies with "
+                + "\"summon -t <type> -l (x, y)\" -- right of column " + RED_LINE_COLUMN
+                + " only -- and eat every brain. Your sun comes from the sun-maker zombies, not the "
+                + "sky, so protect them. On the belt: " + String.join(", ", roster.keySet()) + ".");
     }
 
     // Each frame: the sun-makers drip income, brains that got reached this tick are marked, and any
