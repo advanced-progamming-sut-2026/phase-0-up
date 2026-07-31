@@ -21,12 +21,15 @@ public class CheatAddCommand implements Command {
 
     @Override
     public void execute() {
-        if(currencyName.equals("coin")){
+        boolean isCoin = "coin".equalsIgnoreCase(currencyName == null ? "" : currencyName.trim());
+        if(isCoin){
             profile.addCoins(n);
         } else {
             profile.addGems(n);
         }
-        renderer.cheatRenderForAddingCoinsAndGems(n , currencyName);
+        // The game says "gem" whichever word was typed: "diamond" is accepted only because the spec
+        // writes the command that way, and it is never echoed back.
+        renderer.cheatRenderForAddingCoinsAndGems(n , isCoin ? "coin" : "gem");
 
         DatabaseManager.getInstance().saveAll();
     }

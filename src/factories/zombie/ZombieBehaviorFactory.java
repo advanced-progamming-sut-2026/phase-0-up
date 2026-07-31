@@ -14,6 +14,7 @@ import models.entities.zombies.Abilities.IgnoreObstaclesAbility;
 import models.entities.zombies.Abilities.JalapenoBurnAbility;
 import models.entities.zombies.Abilities.KillPlantsAbility;
 import models.entities.zombies.Abilities.LaserBeamAbility;
+import models.entities.zombies.Abilities.NewspaperRageAbility;
 import models.entities.zombies.Abilities.ShootingAbility;
 import models.entities.zombies.Abilities.SquashCrushAbility;
 import models.entities.zombies.Abilities.PianoCrushAbility;
@@ -42,6 +43,10 @@ public final class ZombieBehaviorFactory {
     private static final double TORCH_REACH = 1.0;
     private static final double RA_SUN_RADIUS = 3.0;
     private static final int RA_SUN_PER_SECOND = 25;
+    // Turquoise: "if it sees a plant within a radius of 4 tiles it starts stealing the player's stored
+    // sun, 25 sun per second, and keeps it up for 5 seconds -- then it fires the laser."
+    private static final double TURQUOISE_SUN_RADIUS = 4.0;
+    private static final int TURQUOISE_SUN_PER_SECOND = 25;
 
     private ZombieBehaviorFactory() { }
 
@@ -70,7 +75,7 @@ public final class ZombieBehaviorFactory {
             result = beachAndFrostbite(objclass);
         }
         if (result == null) {
-            result = lostCityAndModern(objclass);
+            result = lostCityAndModern(objclass, gameSession);
         }
         return result != null ? result : abilities(new EatPlantAbility());
     }
@@ -122,16 +127,29 @@ public final class ZombieBehaviorFactory {
     }
 
     // Lost City, Neon Mixtape / modern, and the Zombotany plant-zombies.
-    private static List<ZombieAbility> lostCityAndModern(String objclass) {
+    private static List<ZombieAbility> lostCityAndModern(String objclass, GameSession gameSession) {
         switch (objclass) {
             case "ZombieLostCityJaneProps":
                 return abilities(new EatPlantAbility(), new DeflectLobbedAbility());
+            // The Turquoise robs the player blind before it shoots: spotting a plant within four tiles
+            // starts a five-second sun heist, and finishing that heist is what arms the laser
+            // (StealSunAbility raises the ready-for-laser flag LaserBeamAbility waits on). Half the haul
+            // spills back onto the lawn when it dies -- CombatSystem.dropStolenSun pays it out.
             case "ZombieCrystalSkullProps":
-                return abilities(new EatPlantAbility(), new LaserBeamAbility());
-            // The pianist crushes what it rolls over AND herds the zombies sharing its lane into the
-            // neighbouring rows as it plays.
+                return abilities(new EatPlantAbility(),
+                        new StealSunAbility(TURQUOISE_SUN_RADIUS, TURQUOISE_SUN_PER_SECOND, true,
+                                gameSession),
+                        new LaserBeamAbility());
+            // The pianist FLATTENS what it rolls over rather than eating it, and its music sends the
+            // zombies on the lawn hopping between neighbouring rows. Deliberately no EatPlantAbility:
+            // stopping to chew would put it in the EATING state, which halts the piano, the music and
+            // the zombie itself -- the spec has plants destroyed on contact, not eaten.
             case "ZombiePianoProps":
-                return abilities(new EatPlantAbility(), new PianoCrushAbility(), new ChangeRow());
+                return abilities(new PianoCrushAbility(), new ChangeRow());
+            // The old man reads as he walks, so he starts slower than an ordinary zombie; shred the
+            // paper and he turns furious -- four times the walking speed and four times the bite.
+            case "ZombieNewspaperProps":
+                return abilities(new EatPlantAbility(), new NewspaperRageAbility());
             // The Prospector's dynamite blasts it to the far left of the lawn, from where it walks back
             // toward the house: left-most column, then heading reversed.
             case "ZombieProspectorProps":

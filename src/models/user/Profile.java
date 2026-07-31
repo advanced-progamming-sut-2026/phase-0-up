@@ -17,7 +17,7 @@ public class Profile {
     private int gameNumbers;
     // Currency labels used when publishing a balance change.
     public static final String COINS = "Coins";
-    public static final String DIAMONDS = "Diamonds";
+    public static final String GEMS = "Gems";
 
     // Balance-change listener, registered once by the controller layer at start-up. Static, so it is
     // never serialized with a profile.
@@ -168,7 +168,7 @@ public class Profile {
     // registered at start-up and the view renders it, which is what keeps this MVC-clean and testable.
     private void reportCoins() { notifyBalance(COINS, coins); }
 
-    private void reportGems() { notifyBalance(DIAMONDS, gems); }
+    private void reportGems() { notifyBalance(GEMS, gems); }
 
     private void notifyBalance(String currency, int newTotal) {
         CurrencyObserver observer = currencyObserver;

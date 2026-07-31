@@ -22,7 +22,17 @@ public class MovementComponent {
         return speed;
     }
 
+    // Queues a hop into another lane; move() performs it on the next tick and CombatSystem then re-files
+    // the zombie into the Row that matches its new y.
+    //
+    // A target off the top or bottom of the lawn is refused outright. Callers reach for a neighbouring
+    // lane without checking the edges (a slider tile on row 0 asks for row -1 every tick it is stood on),
+    // and letting that through would strand the zombie on a lane index no Row owns -- it would be dropped
+    // from the board entirely by the re-filing pass.
     public void startLaneSwitch(int newLaneY) {
+        if (newLaneY < 0 || newLaneY >= utils.Constants.BOARD_ROWS) {
+            return;
+        }
         if (!isSwitchingLane && this.y != newLaneY) {
             this.targetY = newLaneY;
             this.isSwitchingLane = true;

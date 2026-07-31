@@ -45,6 +45,8 @@ public class StealSunAbility implements ZombieAbility {
                     zombie.getState().setAction(ActionState.IDLE);
                     totalStealTicks = 0;
                     oneSecondTicks = 0;
+                    gameSession.reportEvent("The " + zombie.getAlias() + " spots a plant and starts "
+                            + "siphoning your sun.");
                 }
                 break;
 
@@ -64,15 +66,27 @@ public class StealSunAbility implements ZombieAbility {
                     oneSecondTicks = 0;
                     int stolen = stealFromPlayer(sunPerSecond, gameSession);
                     totalStolenSun += stolen;
+                    if (stolen > 0) {
+                        gameSession.reportEvent("The " + zombie.getAlias() + " steals " + stolen
+                                + " sun; you have " + gameSession.getSunAmount() + " sun now.");
+                    }
                 }
 
                 if (stopAfterMaxTime && totalStealTicks >= MAX_STEAL_TICKS) {
                     currentState = StealState.FINISHED;
+                    zombie.getState().setAction(ActionState.WALKING);
                     zombie.getState().setReadyForLaser(true);
                 }
                 break;
 
             case FINISHED:
+                // The Turquoise's heist is what charges its laser: once LaserBeamAbility has fired and
+                // cleared the flag, the zombie is free to line up another one. A sun-thief with no beam
+                // (the Ra Zombie) never has the flag cleared for it, so it stays finished after its one
+                // run -- exactly as before.
+                if (!zombie.getState().isReadyForLaser()) {
+                    currentState = StealState.SEARCHING;
+                }
                 break;
         }
     }

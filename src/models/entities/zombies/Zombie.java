@@ -81,6 +81,14 @@ public class Zombie extends Entity {
         movement.move();
     }
 
+    // Multiplies how hard this zombie bites, leaving its health alone. The Newspaper Zombie's rage uses
+    // it: losing the paper makes it chew several times faster without making it any tougher.
+    public void scaleEatDamage(double multiplier) {
+        if (multiplier > 0) {
+            this.eatDamage = Math.max(1, (int) Math.round(this.eatDamage * multiplier));
+        }
+    }
+
     // Hypno-shroom upgrades: a hypnotized ally fights with buffed HP and bite damage.
     public void applyHypnoBuffs(double hpMultiplier, double damageMultiplier) {
         this.eatDamage = (int) Math.round(this.eatDamage * damageMultiplier);

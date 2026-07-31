@@ -80,11 +80,11 @@ public class GreenHouse {
         return harvestedPlant;
     }
 
-    public int getGrowthCostInDiamonds(int x, int y){
+    public int getGrowthCostInGems(int x, int y){
         return pots[y][x].getRemainingHoursCeil();
     }
 
-    public void growPlantWithDiamonds(int x, int y){
+    public void growPlantWithGems(int x, int y){
         pots[y][x].instantGrow();
     }
 

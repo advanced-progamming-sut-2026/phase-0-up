@@ -45,7 +45,7 @@ public class GrowPotCommand implements Command {
             return;
         }
 
-        int cost = greenHouse.getGrowthCostInDiamonds(potX - 1, potY - 1);
+        int cost = greenHouse.getGrowthCostInGems(potX - 1, potY - 1);
         Profile profile = appSession.getCurrentUser().getProfile();
 
         if (profile.getGems() < cost){
@@ -55,7 +55,7 @@ public class GrowPotCommand implements Command {
 
         profile.spendGems(cost);
         DatabaseManager.getInstance().saveAll();
-        greenHouse.growPlantWithDiamonds(potX - 1, potY - 1);
+        greenHouse.growPlantWithGems(potX - 1, potY - 1);
         greenhouseRenderer.grow(new Result(true, "Plant is ready to collect"));
     }
 }
