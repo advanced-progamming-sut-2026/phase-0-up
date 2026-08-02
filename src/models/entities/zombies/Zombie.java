@@ -132,8 +132,9 @@ public class Zombie extends Entity {
     private boolean untargetable = false;
     public void setUntargetable(boolean untargetable) { this.untargetable = untargetable; }
     public boolean isUntargetable() { return untargetable; }
+    // A hypnotized zombie is fighting for the player, so nothing plant-side may act on it.
     public boolean isTargetable() {
-        return !health.isDead() && isOnBoard() && !untargetable;
+        return !health.isDead() && isOnBoard() && !untargetable && !state.isHypnotized();
     }
 
     // A zombie spawns one cell beyond the right edge and can be shoved past either end mid-fight, so

@@ -4,9 +4,6 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
-        <!-- Build and run with IntelliJ's own compiler instead of delegating to Gradle. Gradle was
-             stalling the Run button by trying to auto-download a Java 21 toolchain with no internet;
-             IntelliJ's builder uses the installed JDK 25 at language level 21 and needs no download. -->
         <option name="delegatedBuild" value="false" />
         <option name="testRunner" value="PLATFORM" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />

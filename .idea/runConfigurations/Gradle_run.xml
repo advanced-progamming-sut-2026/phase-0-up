@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <!-- Runs the game through Gradle's `run` task. Useful for checking the build itself works end to
        end; stdin is wired in build.gradle. If typing into the console misbehaves here, use the
-       "Play PvZ2" Application config instead -- same game, more reliable console. -->
+       "Play PvZ2" Application config instead; same game, more reliable console. -->
   <configuration default="false" name="run (Gradle)" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />

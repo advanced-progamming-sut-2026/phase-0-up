@@ -55,7 +55,7 @@ public class PushIceAbility implements ZombieAbility {
         }
         List<Zombie> allZombies = new ArrayList<>();
         for(Row r : troglobite.getGameSession().getMap().getRows()){
-            for(Zombie z : row.getZombies()){
+            for(Zombie z : r.getZombies()){
                 allZombies.add(z);
             }
         }

@@ -44,6 +44,7 @@ java -jar build/libs/PvZ2-AP-Project-1.0-SNAPSHOT-all.jar
 | `menu show current` | Print which menu you're in |
 | `menu enter <name>` | Go to a menu |
 | `menu exit` | Leave the current menu (back out) |
+| `exit` / `quit` / `exit application` | Quit the game (saves first) |
 
 **Menu names:** `signup` `login` `main` `play` `profile` `settings` `collection` `shop` `greenhouse` `news` `travel-log` `leaderboard`.
 
@@ -122,6 +123,7 @@ menu collection show-plants
 menu collection show-all-plants
 menu collection show-zombies
 menu collection show-all-zombies
+menu collection show-plant -p <plantName>
 menu collection show-zombie -z <zombieName>
 menu collection upgrade-plant -p <plantName>
 menu collection purchase-plant -p <plantName>
@@ -133,6 +135,16 @@ menu collection purchase-plant -p <plantName>
 shop buy -i <itemId> -n <quantity>
 shop buy -i <itemId> -n <quantity> -t <plantType>
 ```
+
+| id | Item | Price | Gives |
+|---|---|---|---|
+| 0 | Greenhouse pot | 2000 coins | 1 pot |
+| 1 | Plant food | 3 gems | 1 |
+| 2 | Random seed packets | 1000 coins | 5, spread over random plants |
+| 3 | Selective seed packets | 5 gems | 10 of a plant you name with `-t` |
+| 4 | Gem→coin exchange | 5 gems | 500 coins |
+
+`-t` is only meaningful for item 3, and reads a **single token** (no spaces).
 
 ### News (`menu enter news`)
 ```
@@ -148,10 +160,19 @@ mini‑game level. Reading it clears the badge.
 leaderboard show
 leaderboard sort -c <column> -o <asc|desc>
 ```
-Ranks every registered player side by side. `<column>` is one of `stage`, `minigames`, `daily`,
-`quests`, `score` — the stage they've reached (e.g. `Stage 2-3`), mini‑games completed, daily and
-non‑daily quests completed, and their best **Meow Points** (from the Scoring Game — see §8). `-o` picks
-ascending or descending, so you can sort on any column in either direction.
+Ranks every registered player side by side: the stage they've reached (e.g. `Stage 2-3`), mini‑games
+completed, daily and non‑daily quests completed, and their best **Meow Points** (from the Scoring Game —
+see §8). `-o` is `asc`/`ascending` or `desc`/`descending`, so you can sort any column either way.
+
+`<column>` is one of (aliases in the same row all work):
+
+| Column | Accepted tokens |
+|---|---|
+| Stage | `stage` `stages` `level` `levels` `chapter` |
+| Mini‑games | `minigames` `minigame` `mini-games` `mini-game` `mg` |
+| Daily Quests | `daily` `daily-quests` `dailyquests` `dq` |
+| Non‑Daily Quests | `nondaily` `non-daily` `nondaily-quests` `non-daily-quests` `ndq` |
+| Meow Points | `score` `scores` `points` `meow` `meow-points` `mu` `mu-points` |
 
 ### 🏆 Scoring Game (`menu scoring-game`)
 Playable straight from the main menu, or from the Play menu. Full rules in **§8** below.
@@ -175,7 +196,7 @@ menu enter play
 menu coin-wallet          # show coins
 menu gem-wallet           # show gems
 menu cheat add <n> coin       # 💰 give yourself coins (great for testing)
-menu cheat add <n> diamond    # 💎 give yourself gems
+menu cheat add <n> gem        # 💎 give yourself gems (the spec's "diamond" also works)
 menu enter chapter -c <chapterNumber>
 level -l <levelNumber>
 ```
@@ -194,12 +215,28 @@ show all plants           # everything in the catalogue
 show available plants     # what you own / can pick this level
 add plant -t <plantType>
 remove plant -t <plantType>
-boost plant -t <plantType>    # pre-charges the plant's Plant Food for its first placement
+boost plant -t <plantType>    # costs gems: this plant fires its Plant Food on EVERY placement this level
 start game
 ```
 `-t` here accepts names with spaces. **Your starter plants:** `Sunflower`, `Peashooter`, `Wall-nut`, `Potato Mine`, `Snow Pea`.
 
+**Boosting** costs gems and lasts the **whole level**: every copy of that plant you put down triggers its
+Plant Food as it lands, not just the first. The purchase is spent once you use it, so it does not carry
+over to the next level. `show available plants` marks a boosted seed `[selected, boosted]`.
+
 `start game` drops you into the live game.
+
+### Special levels
+
+Level 3 of each chapter changes the rules. **The game tells you which rules are in play the moment the
+level starts** — read the banner before your first move.
+
+| Level | Mode | What changes |
+|---|---|---|
+| 1‑3 | **Locked Plants** | Some seed slots are welded shut, and certain plants are bolted onto your seed bar. You can't add or remove a bolted plant — `show available plants` marks them `[bolted down]`. |
+| 2‑3 | **Night Ops** | No sun falls from the sky at all. Every drop has to come from your own sun producers. |
+| 3‑3 | **Dead Line** | A trip‑wire runs down a column. One zombie past it and you lose instantly — no mower, no second chance. |
+| 4‑3 | **Save Our Seeds** | Plants are pre‑placed on the lawn and you must keep them alive. Lose one and the level ends. You can't dig them up either. |
 
 ---
 
@@ -245,21 +282,58 @@ takes damage. Effects show the time left (`frozen`, `chilled`, `buttered`).
 
 ### Map legend
 
-| Symbol | Meaning | Where |
-|---|---|---|
-| `[.]` | empty, plantable ground | everywhere |
-| `[x]` | not plantable | everywhere |
-| `[P]` | a plant (or protector) | normal levels |
-| `[Z]` | a zombie | normal levels |
-| `[?]` | ordinary vase — could be anything | Vasebreaker |
-| `[*]` | **plant vase** — always a seed packet | Vasebreaker |
-| `[G]` | **Gargantuar vase** — always a Gargantuar | Vasebreaker |
-| `[S]` | a dropped seed packet (grab it before it fades!) | Vasebreaker |
-| `[Pe]` `[Su]` `[Wa]` `[Pu]` `[Ca]` … | plant type codes | Beghouled |
-| `[##]` | a crater — nothing can ever go here again | Beghouled |
-| `[Z!]` | a zombie standing on a tile | Beghouled |
+Every tile prints as one bracketed symbol. `show map` also prints a `Row n [mower ready|mower used|no
+mower]` prefix per row, then lists every zombie and plant with its exact position and HP.
 
-Terrain tiles show their own letter (e.g. water, ice, graves).
+**Ground and occupants** (normal levels)
+
+| Symbol | Meaning |
+|---|---|
+| `[.]` | empty, plantable ground |
+| `[x]` | not plantable |
+| `[P]` | a plant, or a protector (Pumpkin/Lily Pad) |
+| `[Z]` | a zombie |
+
+**Terrain** — every terrain tile the game can place:
+
+| Symbol | Terrain | Where | What it does |
+|---|---|---|---|
+| `[#]` | Headstone | Ancient Egypt | Blocks shots until it's destroyed. Nothing can be planted on it. |
+| `[?]` | Grave | Dark Ages | Breaking it drops sun or plant food. |
+| `[0]` | Necromancy tile | Dark Ages | A Necromancer zombie can raise a new zombie out of it. |
+| `[&]` | Ice block | Frostbite Caves | A frozen tile. A frozen zombie sits under one until it's thawed or broken. |
+| `[^]` | Slippery ice (up) | Frostbite Caves | Slides a zombie that steps on it **up** one row. |
+| `[v]` | Slippery ice (down) | Frostbite Caves | Slides a zombie **down** one row. |
+| `[!]` | Water | Big Wave Beach | Only aquatic plants, or anything on a Lily Pad platform. |
+| `[-]` | Low sand | Big Wave Beach | Dry until the tide comes in; zombies can surface here once it floods. |
+
+On a beach level `show map` prints a tide line first, e.g. `Tide: columns 4+ may flood; columns 0-3 are
+always safe.`
+
+**Vasebreaker**
+
+| Symbol | Meaning |
+|---|---|
+| `[?]` | ordinary vase — could be anything |
+| `[*]` | **plant vase** — always a seed packet |
+| `[G]` | **Gargantuar vase** — always a Gargantuar |
+| `[S]` | a dropped seed packet (grab it before it fades!) |
+
+**Beghouled** (two characters wide, so the board stays aligned)
+
+| Symbol | Meaning |
+|---|---|
+| `[Pe]` `[Su]` `[Wa]` `[Pu]` `[Ca]` … | plant type codes (see §7) |
+| `[..]` | empty tile |
+| `[##]` | a crater — nothing can ever go here again |
+| `[Z!]` | a zombie standing on a tile |
+
+> **Reading order.** A tile shows only the topmost thing on it, in this order: zombie → plant → vase →
+> dropped seed → terrain → bare ground. So a zombie standing on ice prints `[Z]`, not `[&]` — the ice is
+> still there underneath. Use `show tile status -l (x, y)` to see everything on one tile at once.
+>
+> `[?]` means a grave in Dark Ages and an unknown vase in Vasebreaker. The two never appear in the same
+> level, so there's no ambiguity in practice.
 
 ### Cheats (for fast testing)
 ```
@@ -273,7 +347,16 @@ release the nuke                                 # kill every zombie on the boar
 `ZombieGargantuar`, `ZombieImp`, … (matching is case‑insensitive). Use `menu enter collection` →
 `show zombies` for the full list.
 
-**Win** = clear all waves with no zombie reaching the house. **Lose** = a zombie breaches a row whose lawn mower is spent. Either way you return to the menu.
+### Leaving a level early
+```
+exit game                          # abandon the match -- counts as a LOSS
+```
+Walking out runs through the same ending as being overrun: no campaign progress, the win streak breaks,
+quests are still evaluated, and everything is saved. Use it to bail out of a run you've lost anyway.
+
+**Win** = clear all waves with no zombie reaching the house. **Lose** = a zombie breaches a row whose lawn
+mower is spent (or whatever the level's special mode says — see *Special levels* in §5). Either way you
+return to the menu, and your progress is written to disk at that point.
 
 ---
 
@@ -481,10 +564,21 @@ show map
 ## 10. Testing tips & gotchas
 
 - **Reset all accounts/progress:** stop the game and delete (or rename) `users_database.json` in the project root — the next launch starts empty. Progress (coins, gems, unlocked plants, completed quests, chapter/level, greenhouse) is saved here; live game state is **not** persisted.
-- **Speed things up:** `menu cheat add … coin/diamond` (menus) and `cheat add -n … suns` / `cheat remove-cooldown` / `release the nuke` (in‑game).
-- **Plant‑name argument quirk:** in‑game `plant plant -t`, `bowl -t`, and `summon -t` read the type as a **single token** (no spaces). Use single‑word or hyphenated names there (`Peashooter`, `Wall-nut`, `Repeater`). The seed‑selection `add plant -t`, collection `-p`, and Beghouled `upgrade -t` **do** accept spaces (`Cherry Bomb`).
+- **Speed things up:** `menu cheat add … coin/gem` (menus) and `cheat add -n … suns` / `cheat remove-cooldown` / `release the nuke` (in‑game).
+- **"Gem", never "diamond".** The currency is called a **gem** everywhere the game talks to you,
+  including the zombie loot‑drop line (*"A zombie dropeed a gem; you have N gems now."* — the `dropeed`
+  typo there is the project spec's and is kept deliberately). The spec calls this currency a *diamond*;
+  saying `gem` throughout was a deliberate choice, so don't "fix" it back. The only leftover is that
+  `menu cheat add <n> diamond` is still **accepted** as an input spelling, since that's how the spec
+  writes the command — it does the same thing and still answers in gems.
+- **Which commands accept spaces in a name.** Most do. `plant plant -t`, `add/remove/boost plant -t`,
+  collection `-p`/`-z`, and Beghouled `upgrade -t` all read the rest of the argument, so `Cherry Bomb`
+  works. The **single‑token** ones are `bowl -t`, `summon -t`, `cheat spawn-zombie -t`, and `shop buy -t`
+  — use a name with no spaces there (`Peashooter`, `Wall-nut`, `ZombieArmor2`).
 - **Plant Food:** `cheat add-plant-food` grants one instantly; glowing zombies also drop it. Spend it with `feed plant -l (x, y)`.
-- **Names are case‑sensitive** where they matter — match the catalogue casing (`Wall-nut`, not `wall-nut`) for plant commands.
+- **Names are case‑insensitive.** `wall-nut`, `Wall-nut` and `WALL-NUT` all resolve to the same plant, in
+  both the menus and in‑game, and surrounding spaces are trimmed. The catalogue casing is only what gets
+  echoed back to you.
 - **Script a run:** pipe a command file into the game for repeatable tests. Build once with `./gradlew fatJar`, then `java -jar build/libs/PvZ2-AP-Project-1.0-SNAPSHOT-all.jar < test-commands.txt` (from the project root).
 - Use `show map` liberally — it's your main window into what the simulation is doing.
 
@@ -494,7 +588,7 @@ show map
 
 | Context | Command |
 |---|---|
-| Any menu | `menu show current` · `menu enter <name>` · `menu exit` |
+| Any menu | `menu show current` · `menu enter <name>` · `menu exit` · `exit`/`quit` |
 | Signup | `register -u .. -p .. .. -n .. -e .. -g <male\|female>` · `pick question -q <1-5> -a .. -c ..` |
 | Login | `login -u .. -p .. [-stay-logged-in]` · `forget password -u .. -e ..` · `answer -a ..` |
 | Main | `menu logout` · `menu scoring-game` |
@@ -503,9 +597,11 @@ show map
 | Collection | `show-plants` · `show-zombies` · `upgrade-plant -p ..` · `purchase-plant -p ..` |
 | Shop | `shop buy -i <id> -n <qty> [-t <type>]` |
 | Greenhouse | `show greenhouse` · `plant pot at (x,y)` · `grow (x,y)` · `collect (x,y)` |
-| Play | `menu coin-wallet` · `menu gem-wallet` · `menu cheat add <n> <coin\|diamond>` · `menu enter chapter -c <n>` · `level -l <n>` · `menu travel-log` · `menu leaderboard` |
+| Leaderboard | `leaderboard show` · `leaderboard sort -c <stage\|minigames\|daily\|nondaily\|score> -o <asc\|desc>` |
+| News | `menu news show-all` · `menu news show-unread` |
+| Play | `menu coin-wallet` · `menu gem-wallet` · `menu cheat add <n> <coin\|gem>` · `menu enter chapter -c <n>` · `level -l <n>` · `menu travel-log` · `menu leaderboard` |
 | Seeds | `show all/available plants` · `add/remove/boost plant -t <type>` · `start game` |
-| In‑game | `collect sun -l (x,y)` · `show sun amount` · `advance time -t <n> ticks` · `plant plant -t <t> -l (x,y)` · `pluck plant -l (x,y)` · `feed plant -l (x,y)` · `show map` · `show plants status` · `show tile status -l (x,y)` |
+| In‑game | `collect sun -l (x,y)` · `show sun amount` · `advance time -t <n> ticks` · `plant plant -t <t> -l (x,y)` · `pluck plant -l (x,y)` · `feed plant -l (x,y)` · `show map` · `show plants status` · `show tile status -l (x,y)` · `exit game` |
 | In‑game cheats | `cheat add -n <n> suns` · `cheat add-plant-food` · `cheat remove-cooldown` · `cheat spawn-zombie -t <alias> -l (x,y)` · `release the nuke` · `zombies info` |
 | Scoring Game | `menu scoring-game` (main **or** play menu) |
 | Travel Log | `travel log page <main\|daily\|epic\|all\|minigames>` · `travel log play <game> [-d <n>]` |

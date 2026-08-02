@@ -9,7 +9,7 @@
   documented but never enforced; every rule listed in the doc is now encoded here.
 
   PMD's UnusedPrivateField / UnusedPrivateMethod and ExcessiveMethodLength / ExcessiveClassLength have
-  no exact Checkstyle equivalent -- MethodLength and JavaNCSS cover the size limits at the same
+  no exact Checkstyle equivalent; MethodLength and JavaNCSS cover the size limits at the same
   thresholds (50 / 500), and the unused-member rules are covered by a PMD run or IDE inspection.
 -->
 <module name="Checker">

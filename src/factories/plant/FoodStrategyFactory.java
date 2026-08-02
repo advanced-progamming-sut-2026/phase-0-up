@@ -49,7 +49,14 @@ public final class FoodStrategyFactory {
         return composite;
     }
 
+    // Split across two switches so each stays inside the 50-statement NCSS limit; the first returns
+    // null for a type it does not own and the second picks it up.
     private static PlantFoodStrategy strategyFor(PlantFoodType type, int value) {
+        PlantFoodStrategy strategy = offensiveStrategyFor(type, value);
+        return strategy != null ? strategy : supportStrategyFor(type, value);
+    }
+
+    private static PlantFoodStrategy offensiveStrategyFor(PlantFoodType type, int value) {
         switch (type) {
             case SPAWN_SUN_ITEMS: return new InstantSunProductionStrategy(value);
             case INSTANT_GROWING: return new InstantGrowing();
@@ -66,6 +73,12 @@ public final class FoodStrategyFactory {
             case RESET_LIFESPAN: return new ResetLifespanStrategy(value);
             case MAP_WIDE_BUTTER: return new MapWideButterStrategy(value);
             case LOB_BARRAGE: return new LobBarrageStrategy(value);
+            default: return null;
+        }
+    }
+
+    private static PlantFoodStrategy supportStrategyFor(PlantFoodType type, int value) {
+        switch (type) {
             case MELEE_FLURRY: return new MeleeFlurryStrategy(value);
             case LOCAL_AOE_ATTACK: return new LocalAoeAttackStrategy(value);
             case MAP_WIDE_FREEZE: return new MapWideFreezeStrategy(value);

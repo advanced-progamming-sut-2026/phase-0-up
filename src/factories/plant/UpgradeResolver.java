@@ -109,9 +109,17 @@ public final class UpgradeResolver {
         return true;
     }
 
-    // Upgrades to how a plant fights: shots, reach, damage, status effects and death effects.
+    // Upgrades to how a plant fights: shots, reach, damage, status effects and death effects. Split
+    // across two switches so each stays inside the 50-statement NCSS limit; the first reports whether
+    // it handled the tag and the second picks up what it did not.
     private static void applyCombatMechanic(Plant plant, String tag, double value) {
-        int ticks = secondsToTicks(value);
+        if (!applyAttackMechanic(plant, tag, value)) {
+            applyEffectMechanic(plant, tag, value);
+        }
+    }
+
+    // Returns false when the tag belongs to the second switch.
+    private static boolean applyAttackMechanic(Plant plant, String tag, double value) {
         switch (tag) {
             case "PRIORITIZE_GARGANTUARS":
                 set(plant, GlobalTargetingAbility.class, a -> a.setPrioritizeGargantuars(true)); break;
@@ -128,6 +136,14 @@ public final class UpgradeResolver {
                 set(plant, HypnotizeOnEatenAbility.class, a -> a.setZombieHealthMultiplier(value)); break;
             case "ZOMBIE_DAMAGE_MULTIPLIER":
                 set(plant, HypnotizeOnEatenAbility.class, a -> a.setZombieDamageMultiplier(value)); break;
+            default: return false;
+        }
+        return true;
+    }
+
+    private static void applyEffectMechanic(Plant plant, String tag, double value) {
+        int ticks = secondsToTicks(value);
+        switch (tag) {
             case "DURATION_EXT": set(plant, MintFamilyBoostAbility.class, a -> a.extendDuration(ticks)); break;
             case "TILE_RANGE_EXT": applyTileRangeExt(plant, value); break;
             case "FREEZE_DURATION_EXT": applyFreezeDurationExt(plant, ticks); break;

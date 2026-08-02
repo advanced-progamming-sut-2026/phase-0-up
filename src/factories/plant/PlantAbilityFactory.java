@@ -42,8 +42,16 @@ import models.templates.PlantTemplate.AbilityParams;
 public final class PlantAbilityFactory {
     private PlantAbilityFactory() { }
 
+    // Split across two switches so each stays inside the 50-statement NCSS limit; the first returns
+    // null for a type it does not own and the second picks it up.
     public static PlantAbility build(AbilityType type, AbilityParams params,
                                      int actionIntervalTicks, int scalarDamage, int damageBuff) {
+        PlantAbility ability = buildOffensive(type, params, actionIntervalTicks, scalarDamage, damageBuff);
+        return ability != null ? ability : buildSupport(type, params, actionIntervalTicks, scalarDamage);
+    }
+
+    private static PlantAbility buildOffensive(AbilityType type, AbilityParams params,
+                                               int actionIntervalTicks, int scalarDamage, int damageBuff) {
         switch (type) {
             case PRODUCE_SUN: return produceSun(params, actionIntervalTicks);
             case INSTANT_SUN_BURST: return new InstantSunBurstAbility(params.getSunAmount(), spawnCount(params));
@@ -70,6 +78,13 @@ public final class PlantAbilityFactory {
             case FREEZE_ON_CONTACT: return new FreezeOnContactAbility(actionIntervalTicks,
                     TriggerResolver.forContact(), params.getFreezeDurationTicks());
             case MELEE_ATTACK: return melee(params, actionIntervalTicks, damageBuff);
+            default: return null;
+        }
+    }
+
+    private static PlantAbility buildSupport(AbilityType type, AbilityParams params,
+                                             int actionIntervalTicks, int scalarDamage) {
+        switch (type) {
             case PASSIVE_SHIELD: return new PassiveShieldAbility();
             case REFLECT_DAMAGE: return new ReflectDamageAbility(params.getReflectDamage());
             case REPEL_ZOMBIE: return new RepelZombieAbility();
