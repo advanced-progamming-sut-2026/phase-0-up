@@ -186,6 +186,13 @@ public class CombatSystem {
             }
 
             for (Zombie zombie : new ArrayList<>(row.getZombies())) {
+                // A hypnotized ally that fought its way clear walks off the far edge and is done; it is
+                // not a kill, so it leaves quietly rather than through reportZombieDeath.
+                if (zombie.getState().isHypnotized()
+                        && zombie.getMovement().getPositionX() > Constants.BOARD_COLS) {
+                    row.getZombies().remove(zombie);
+                    continue;
+                }
                 if (!zombie.getHealth().isDead()) {
                     continue;
                 }
@@ -225,11 +232,16 @@ public class CombatSystem {
     // and the player could never win it back, which is not what the drop-on-death rule says.
     private void dropStolenSun(GameSession session, Zombie zombie, List<Result> events) {
         for (models.entities.zombies.Abilities.ZombieAbility ability : zombie.getAbilities()) {
-            if (!(ability instanceof models.entities.zombies.Abilities.StealSunAbility)) {
+            // Two different thefts pay out here: the Turquoise drained the player's bank and gives back
+            // half, while Ra pocketed sun off the lawn and gives back all of it.
+            int refund;
+            if (ability instanceof models.entities.zombies.Abilities.StealSunAbility turquoise) {
+                refund = turquoise.getSunDropAmountOnDeath();
+            } else if (ability instanceof models.entities.zombies.Abilities.StealGroundSunAbility ra) {
+                refund = ra.getSunDropAmountOnDeath();
+            } else {
                 continue;
             }
-            int refund = ((models.entities.zombies.Abilities.StealSunAbility) ability)
-                    .getSunDropAmountOnDeath();
             if (refund <= 0) {
                 continue;
             }

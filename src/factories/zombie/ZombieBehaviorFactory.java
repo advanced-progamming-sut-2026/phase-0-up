@@ -19,6 +19,7 @@ import models.entities.zombies.Abilities.SquashCrushAbility;
 import models.entities.zombies.Abilities.PianoCrushAbility;
 import models.entities.zombies.Abilities.PushIceAbility;
 import models.entities.zombies.Abilities.SpinAbility;
+import models.entities.zombies.Abilities.StealGroundSunAbility;
 import models.entities.zombies.Abilities.StealSunAbility;
 import models.entities.zombies.Abilities.SubmergeAbility;
 import models.entities.zombies.Abilities.SummonGraveAbility;
@@ -28,6 +29,7 @@ import models.entities.zombies.Abilities.ThrowOctopusAbility;
 import models.entities.zombies.Abilities.TurnIntoCat;
 import models.entities.zombies.Abilities.TurnIntoKnightAbility;
 import models.entities.zombies.Abilities.ZombieAbility;
+import models.entities.zombies.Abilities.ZombieDuelAbility;
 import models.game.GameSession;
 
 import java.util.ArrayList;
@@ -41,7 +43,6 @@ public final class ZombieBehaviorFactory {
     private static final double SMASH_REACH = 0.7;
     private static final double TORCH_REACH = 1.0;
     private static final double RA_SUN_RADIUS = 3.0;
-    private static final int RA_SUN_PER_SECOND = 25;
     // Ra's carrying capacity (blueprint MaxClaimedSunCurrency); all of it returns when it dies.
     private static final int RA_MAX_CLAIMED_SUN = 250;
     private static final double TURQUOISE_SUN_RADIUS = 4.0;
@@ -84,10 +85,11 @@ public final class ZombieBehaviorFactory {
         switch (objclass) {
             case "ZombieGargantuarProps":
                 return abilities(new KillPlantsAbility(false, SMASH_REACH), new ThrowImp());
+            // Ra robs the LAWN, not the bank: it drags loose sun tokens in and pockets them. Nothing to
+            // do with the Turquoise's StealSunAbility, which drains the player's stored sun.
             case "ZombieRaProps":
                 return abilities(new EatPlantAbility(),
-                        new StealSunAbility(RA_SUN_RADIUS, RA_SUN_PER_SECOND, false,
-                                RA_MAX_CLAIMED_SUN, gameSession));
+                        new StealGroundSunAbility(RA_SUN_RADIUS, RA_MAX_CLAIMED_SUN));
             case "ZombieExplorerProps":
                 return abilities(new EatPlantAbility(), new KillPlantsAbility(true, TORCH_REACH));
             case "ZombieTombRaiserProps":
@@ -138,7 +140,7 @@ public final class ZombieBehaviorFactory {
             // The heist arms the laser; half the haul spills back on death.
             case "ZombieCrystalSkullProps":
                 return abilities(new EatPlantAbility(),
-                        new StealSunAbility(TURQUOISE_SUN_RADIUS, TURQUOISE_SUN_PER_SECOND, true,
+                        new StealSunAbility(TURQUOISE_SUN_RADIUS, TURQUOISE_SUN_PER_SECOND,
                                 gameSession),
                         new LaserBeamAbility());
             // Flattens rather than eats: EatPlantAbility's EATING state would halt the piano.
@@ -184,11 +186,15 @@ public final class ZombieBehaviorFactory {
         return null;
     }
 
+    // Every zombie funnels through here, which is why the duel ability is appended for all of them:
+    // any zombie can end up hypnotized, and any zombie can be the one that turns on a hypnotized ally.
+    // Appended LAST on purpose, so it sees the action state EatPlantAbility has already settled.
     private static List<ZombieAbility> abilities(ZombieAbility... items) {
         List<ZombieAbility> list = new ArrayList<>();
         for (ZombieAbility item : items) {
             list.add(item);
         }
+        list.add(new ZombieDuelAbility());
         return list;
     }
 }

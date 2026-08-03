@@ -22,6 +22,15 @@ public abstract class Collectible extends Entity {
         }
     }
 
+    // Taken off the board by something other than the player, so applyEffect is deliberately NOT run:
+    // the Ra Zombie pockets the sun rather than paying it into the bank. Marking it collected is what
+    // makes SunSystem's sweep drop it from the active list.
+    public void steal() {
+        if (!isCollected && !isExpired) {
+            this.isCollected = true;
+        }
+    }
+
     protected abstract void applyEffect(GameSession gameSession);
 
     public boolean isRemovable() {

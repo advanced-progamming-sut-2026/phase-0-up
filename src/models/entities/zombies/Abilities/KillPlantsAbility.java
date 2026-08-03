@@ -48,6 +48,28 @@ public class KillPlantsAbility implements ZombieAbility {
 
             zombie.getState().setAction(ActionState.WALKING);
         }
+        crushHypnotized(zombie);
+    }
+
+    // A hypnotized zombie is in the way exactly as a plant is, and a smash (or a torch) ends it the
+    // same way -- the same rule ArcadePushAbility and PushIceAbility already apply. This is also how a
+    // Gargantuar fights back at all: its EatDPS is 0, so it has no bite to trade in a duel.
+    private void crushHypnotized(Zombie zombie) {
+        Row row = zombie.getGameSession().getMap().getRow(zombie.getMovement().getPositionY());
+        if (row == null) {
+            return;
+        }
+        double zombieX = zombie.getMovement().getPositionX();
+        for (Zombie other : new java.util.ArrayList<>(row.getZombies())) {
+            if (other == zombie || !other.getState().isHypnotized() || other.getHealth().isDead()
+                    || Math.abs(other.getMovement().getPositionX() - zombieX) > killThreshold) {
+                continue;
+            }
+            other.getHealth().applyDamage(Integer.MAX_VALUE, null, null);
+            zombie.getGameSession().reportEvent(zombie.getAlias()
+                    + (requiresTorch ? " burns away your hypnotized " : " smashes your hypnotized ")
+                    + other.getAlias() + ".");
+        }
     }
 
     private Plant findTargetPlantInFront(Zombie zombie) {

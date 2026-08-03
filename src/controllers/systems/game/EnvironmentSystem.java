@@ -242,14 +242,21 @@ public class EnvironmentSystem {
         events.add(new Result(true, "The tide recedes from column " + column + "."));
     }
 
-    // A flooded low-sand tile ('-') may let a zombie surface from beneath it. Rolled per flooded tile
-    // each wave; a surfaced zombie walks like any other.
+    // A low-sand tile ('-') may let a zombie surface from beneath it: "low sands: a zombie may appear
+    // from beneath it and come up onto the ground" (documents/project.md line 879). Rolled per tile each
+    // wave; a surfaced zombie walks like any other.
+    //
+    // Deliberately NOT gated on the tile being flooded. The spec attaches no such condition, and it
+    // names necromancy tiles as "grounds SIMILAR TO low sands" -- applyNecromancy below rolls on the
+    // bare tile, so gating this one behind the tide made two mechanics the spec calls siblings behave
+    // differently, and made the low-sand ambush almost impossible to ever witness: it needed the tide
+    // to have stepped onto that exact column first, which only happens on a couple of wave starts.
     private void surfaceLowTideZombies(GameSession session, List<Result> events) {
         for (Row row : session.getMap().getRows()) {
             for (Cell cell : row.getCells()) {
                 boolean lowSand = cell.getTerrain().stream()
                         .anyMatch(t -> t instanceof models.map.Terrains.LowSandTerrain);
-                if (!lowSand || !cell.isFlooded()) {
+                if (!lowSand) {
                     continue;
                 }
                 if (random.nextDouble() >= Constants.LOW_TIDE_SURFACE_PROBABILITY) {

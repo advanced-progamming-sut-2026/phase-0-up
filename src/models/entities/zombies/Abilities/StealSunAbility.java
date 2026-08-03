@@ -7,6 +7,14 @@ import models.game.GameSession;
 import models.map.Cell;
 import models.map.Row;
 
+// Turquoise Zombie: "if it sees a plant within a 4-tile radius it starts stealing the sun STORED BY THE
+// PLAYER, 25 sun a second, and keeps that up for 5 seconds. After the 5 seconds it fires a powerful
+// laser at the four tiles ahead in its row... after it is killed it drops HALF the sun it stole."
+// (documents/project.md line 1183.)
+//
+// This drains the player's bank. It is NOT the Ra Zombie's theft -- Ra never touches the bank, it drags
+// loose sun tokens off the lawn (StealGroundSunAbility). The two were once the same class behind a
+// flag, which gave Ra access to a bank the spec never grants it.
 public class StealSunAbility implements ZombieAbility {
     private enum StealState { SEARCHING, STEALING, FINISHED }
     private StealState currentState = StealState.SEARCHING;
@@ -18,20 +26,11 @@ public class StealSunAbility implements ZombieAbility {
     private static final int MAX_STEAL_TICKS = 5 * TICKS_PER_SECOND;
     private final double searchRadius;
     private final int sunPerSecond;
-    private final boolean stopAfterMaxTime;
-    // Carrying capacity, from the blueprint's MaxClaimedSunCurrency. Uncapped for a thief without one.
-    private final int maxStolenSun;
     private int totalStolenSun = 0;
 
-    public StealSunAbility(double searchRadius, int sunPerSecond, boolean stopAfterMaxTime, GameSession gameSession) {
-        this(searchRadius, sunPerSecond, stopAfterMaxTime, Integer.MAX_VALUE, gameSession);
-    }
-    public StealSunAbility(double searchRadius, int sunPerSecond, boolean stopAfterMaxTime,
-                           int maxStolenSun, GameSession gameSession) {
+    public StealSunAbility(double searchRadius, int sunPerSecond, GameSession gameSession) {
         this.searchRadius = searchRadius;
         this.sunPerSecond = sunPerSecond;
-        this.stopAfterMaxTime = stopAfterMaxTime;
-        this.maxStolenSun = maxStolenSun > 0 ? maxStolenSun : Integer.MAX_VALUE;
         this.gameSession = gameSession;
     }
 
@@ -58,20 +57,12 @@ public class StealSunAbility implements ZombieAbility {
                 break;
 
             case STEALING:
-                if (!isPlantInRadius(zombie, searchRadius, gameSession) && !stopAfterMaxTime) {
-                    currentState = StealState.SEARCHING;
-                    if (zombie.getState().getCurrentAction() == ActionState.IDLE) {
-                        zombie.getState().setAction(ActionState.WALKING);
-                    }
-                    break;
-                }
-
                 totalStealTicks++;
                 oneSecondTicks++;
 
                 if (oneSecondTicks >= TICKS_PER_SECOND) {
                     oneSecondTicks = 0;
-                    int stolen = stealFromPlayer(Math.min(sunPerSecond, maxStolenSun - totalStolenSun), gameSession);
+                    int stolen = stealFromPlayer(sunPerSecond, gameSession);
                     totalStolenSun += stolen;
                     if (stolen > 0) {
                         gameSession.reportEvent("The " + zombie.getAlias() + " steals " + stolen
@@ -79,17 +70,18 @@ public class StealSunAbility implements ZombieAbility {
                     }
                 }
 
-                // Ends on the five-second burn-out (which arms the laser) or on a full haul (which does not).
-                if (totalStolenSun >= maxStolenSun || (stopAfterMaxTime && totalStealTicks >= MAX_STEAL_TICKS)) {
+                // Five seconds up: the heist is over and finishing it is what arms the laser.
+                if (totalStealTicks >= MAX_STEAL_TICKS) {
                     currentState = StealState.FINISHED;
                     zombie.getState().setAction(ActionState.WALKING);
-                    zombie.getState().setReadyForLaser(totalStolenSun < maxStolenSun);
+                    zombie.getState().setReadyForLaser(true);
                 }
                 break;
 
             case FINISHED:
-                // Only the Turquoise re-arms (the beam clears the flag); Ra has no beam.
-                if (stopAfterMaxTime && !zombie.getState().isReadyForLaser()) {
+                // LaserBeamAbility clears the flag when the beam fires; that is the cue to line up
+                // the next heist.
+                if (!zombie.getState().isReadyForLaser()) {
                     currentState = StealState.SEARCHING;
                 }
                 break;
@@ -136,12 +128,10 @@ public class StealSunAbility implements ZombieAbility {
         return actualStolen;
     }
 
+    // "After it is killed it drops HALF the sun it stole." Ra, by contrast, returns all of its haul --
+    // see StealGroundSunAbility.
     public int getSunDropAmountOnDeath() {
-        if (!stopAfterMaxTime) {
-            return totalStolenSun;
-        } else {
-            return totalStolenSun / 2;
-        }
+        return totalStolenSun / 2;
     }
 
     public int getTotalStolenSun() {
