@@ -1,7 +1,6 @@
 package views.gdx.render;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
-import models.entities.collectibles.Collectible;
 import models.entities.collectibles.Sun;
 import models.entities.collectibles.SunType;
 import models.game.GameSession;
@@ -23,33 +22,61 @@ public final class CollectibleRenderer {
 
     private static final String SUN_SPRITE = "SUN";
 
+    // How far above the lawn a sky sun starts, in cell heights. The model drops it from the top ROW,
+    // which on screen is barely above the board and reads as the sun blinking into existence rather
+    // than falling from the sky. Purely visual: the landing tile and the moment it lands stay the
+    // model's, the descent is simply re-mapped onto a longer path.
+    private static final float SKY_DROP_CELLS = 4.5f;
+
     private final SpriteRegistry sprites;
     private final LawnGeometry lawn;
     private final EntityInterpolator interpolator;
+    private final AnimationClocks clocks;
 
     public CollectibleRenderer(SpriteRegistry sprites, LawnGeometry lawn,
-                               EntityInterpolator interpolator) {
+                               EntityInterpolator interpolator, AnimationClocks clocks) {
         this.sprites = sprites;
         this.lawn = lawn;
         this.interpolator = interpolator;
+        this.clocks = clocks;
     }
 
-    public void draw(Batch batch, GameSession session, float stateTime, float alpha) {
+    public void draw(Batch batch, GameSession session, float delta, float alpha) {
         EntitySprite sprite = sprites.get(SUN_SPRITE);
 
-        for (Collectible collectible : session.getMap().getActiveCollectibles()) {
-            if (collectible.isRemovable()) {
+        // GameSession.getActiveSuns(), NOT GameMap.getActiveCollectibles(). The map's list exists but
+        // SunSystem never puts suns in it, so reading it renders nothing at all -- which is exactly
+        // what happened until a per-second census showed suns=0 while the event log said they were
+        // falling.
+        for (Sun sun : new java.util.ArrayList<>(session.getActiveSuns())) {
+            if (sun.isRemovable()) {
                 continue;   // collected or expired; it is swept at the end of the tick
-            }
-            if (!(collectible instanceof Sun sun)) {
-                continue;
             }
             float modelY = (float) sun.getCurrentY();
             float x = lawn.worldX(interpolator.x(sun, sun.getX(), alpha));
-            float y = laneToWorldY(interpolator.lane(sun, (int) modelY, alpha));
 
-            SpritePlacer.drawCentred(batch, sprite, clipFor(sprite, sun.getType()), stateTime,
-                    x, y, true);
+            // INTERPOLATED height, not the raw model value. currentY only changes on a tick, so
+            // reading it directly makes the sun descend in 10 visible steps a second -- the stutter.
+            // The interpolator already samples it, so this is the same smoothing zombies get.
+            float smoothY = interpolator.lane(sun, (int) modelY, alpha);
+
+            float y;
+            if (sun.isFalling()) {
+                // The model drops a sun from the top ROW, which is barely above the board. Its progress
+                // is re-mapped onto a much taller path so it reads as falling from the sky, while still
+                // touching down on the same tile at the same moment.
+                float target = Math.max(0.0001f, (float) sun.getTargetY());
+                float progress = Math.max(0f, Math.min(1f, smoothY / target));
+                float from = lawn.topEdge() + SKY_DROP_CELLS * lawn.cellHeight();
+                float to = lawn.centerY((int) Math.round(sun.getTargetY()));
+                y = from + (to - from) * progress;
+            } else {
+                y = laneToWorldY(smoothY);
+            }
+
+            String clip = clipFor(sprite, sun.getType());
+            SpritePlacer.drawCentred(batch, sprite, clip,
+                    ClipMap.sample(sprite, clip, clocks.advance(sun, clip, delta)), x, y, true);
         }
     }
 

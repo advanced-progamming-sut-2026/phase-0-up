@@ -40,6 +40,11 @@ public final class Assets implements Disposable {
     // rather than by whoever needs it first, so the "only Assets disposes" rule keeps holding.
     private final com.badlogic.gdx.graphics.Texture whitePixel;
 
+    // A soft-edged white disc. Tinting a 1x1 pixel gives a SQUARE, which is why coloured projectiles
+    // rendered as rectangles over the pea sprite. Anything round and tintable -- element shots, impact
+    // shards -- uses this instead.
+    private final com.badlogic.gdx.graphics.Texture disc;
+
     public Assets() {
         this.root = resolveAssetRoot();
         verifyAssetRoot(this.root);
@@ -51,6 +56,7 @@ public final class Assets implements Disposable {
         // Gdx.files.internal() falls back to the classpath, so this needs nothing on disk.
         this.skin = loadSkin();
         this.whitePixel = createWhitePixel();
+        this.disc = createDisc();
 
         Gdx.app.log("Assets", "asset root: " + root.file().getAbsolutePath());
     }
@@ -76,6 +82,30 @@ public final class Assets implements Disposable {
         }
         Gdx.app.log("Assets", "loading skin from disk: " + file.path());
         return new pvz.skin.FreeTypeSkin(file);
+    }
+
+    // Drawn once at 64px and scaled down in use, so the edge stays smooth at any projectile size.
+    private static com.badlogic.gdx.graphics.Texture createDisc() {
+        int size = 64;
+        com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(
+                size, size, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+        try {
+            pixmap.setColor(com.badlogic.gdx.graphics.Color.WHITE);
+            pixmap.fillCircle(size / 2, size / 2, size / 2 - 1);
+            com.badlogic.gdx.graphics.Texture texture = new com.badlogic.gdx.graphics.Texture(pixmap);
+            // Linear filtering: without it the circle's edge is visibly stair-stepped once scaled.
+            texture.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.Linear,
+                    com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
+            return texture;
+        } finally {
+            pixmap.dispose();
+        }
+    }
+
+    // A tintable round fill, for projectiles and impact bursts.
+    public com.badlogic.gdx.scenes.scene2d.utils.Drawable round(com.badlogic.gdx.graphics.Color color) {
+        return new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(
+                new com.badlogic.gdx.graphics.g2d.TextureRegion(disc)).tint(color);
     }
 
     private static com.badlogic.gdx.graphics.Texture createWhitePixel() {
@@ -165,6 +195,7 @@ public final class Assets implements Disposable {
         // Disposed in reverse order of creation. PamPlayer holds no GL resources of its own -- it draws
         // through the bank -- so there is deliberately nothing to dispose for it.
         whitePixel.dispose();
+        disc.dispose();
         skin.dispose();
         bank.dispose();
     }

@@ -47,10 +47,6 @@ public final class GameScreen extends ScreenAdapter {
 
     private boolean showGrid;
 
-    // Seconds of animation time. Advances only while the game is running, so pausing freezes every
-    // animation on the board along with the simulation.
-    private float stateTime;
-
     public GameScreen(GdxContext context, DevBoot boot) {
         this.context = context;
         this.session = boot.session();
@@ -125,9 +121,9 @@ public final class GameScreen extends ScreenAdapter {
         // Model first, then draw what it produced. Both the tick and the animation clock stop when the
         // loop is paused or the level is over, which is what freezes the board.
         loop.update(delta);
-        if (!loop.isPaused() && loop.isPlaying()) {
-            stateTime += delta;
-        }
+        // Animations advance only while the game runs, so pausing freezes the board as the spec
+        // requires. Renderers keep their own per-entity clocks; this is just the gate.
+        float animationDelta = (!loop.isPaused() && loop.isPlaying()) ? delta : 0f;
 
         camera.update();
         viewport.apply();
@@ -135,7 +131,7 @@ public final class GameScreen extends ScreenAdapter {
 
         batch.begin();
         background.draw(batch);
-        entities.draw(batch, session, stateTime, loop.alpha());
+        entities.draw(batch, session, animationDelta, loop.alpha());
         batch.end();
 
         // Drawn after the sprites so the lines sit over the board, not under it.
@@ -184,9 +180,29 @@ public final class GameScreen extends ScreenAdapter {
             }
         }
         Gdx.app.log("Board", "t=" + second + "s plants=" + plants + " zombies=" + zombies
-                + " projectiles=" + projectiles + " suns="
-                + session.getMap().getActiveCollectibles().size()
+                + " projectiles=" + projectiles + " suns=" + session.getActiveSuns().size()
                 + " tracked=" + interpolator.trackedCount());
+        reportLaneDesync();
+    }
+
+    // A zombie's lane is stored twice: in movement.y, and implicitly by which Row's list holds it.
+    // CombatSystem.reconcileZombieLanes is the only thing that reconciles them. If they drift, a
+    // zombie is DRAWN where movement.y says but FOUGHT where the Row list says -- which looks exactly
+    // like "it took damage from a plant in another lane". Worth knowing which of the two is happening
+    // before blaming the renderer.
+    private void reportLaneDesync() {
+        for (int row = 0; row < utils.Constants.BOARD_ROWS; row++) {
+            for (models.entities.zombies.Zombie z : session.getMap().getRow(row).getZombies()) {
+                int movementLane = z.getMovement().getPositionY();
+                if (movementLane != row) {
+                    Gdx.app.error("LaneDesync", z.getAlias() + " x=" + String.format("%.2f", z.getX())
+                            + " is in Row " + row + " but movement.y=" + movementLane);
+                }
+                if (movementLane < 0 || movementLane >= utils.Constants.BOARD_ROWS) {
+                    Gdx.app.error("LaneDesync", z.getAlias() + " has out-of-range lane " + movementLane);
+                }
+            }
+        }
     }
 
     public GameSession session() {

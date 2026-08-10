@@ -95,13 +95,17 @@ public final class SpriteRegistry {
                 continue;
             }
             Set<String> clips = new LinkedHashSet<>();
+            Map<String, Float> durations = new HashMap<>();
             JsonValue clipNode = node.get("clips");
             if (clipNode != null) {
                 for (JsonValue c = clipNode.child; c != null; c = c.next) {
                     clips.add(c.name);
+                    // animations.json stores each clip's length in seconds; it is the only source for
+                    // it, and without it nothing can loop or clamp correctly.
+                    durations.put(c.name, c.asFloat());
                 }
             }
-            AnimationEntry entry = new AnimationEntry(name, path, clips);
+            AnimationEntry entry = new AnimationEntry(name, path, clips, durations);
             keepBetter(byName, name, entry);
             keepBetter(byNormalisedName, normalise(name), entry);
         }
@@ -174,7 +178,7 @@ public final class SpriteRegistry {
         } catch (RuntimeException e) {
             Gdx.app.log("SpriteRegistry", "no part list for " + entry.path + " (" + e + ")");
         }
-        return new PamEntitySprite(player, entry.path, entry.clips, parts);
+        return new PamEntitySprite(player, entry.path, entry.clips, parts, entry.durations);
     }
 
     private AnimationEntry lookup(String entityName) {
@@ -277,5 +281,6 @@ public final class SpriteRegistry {
         return entry == null ? Set.of() : Collections.unmodifiableSet(entry.clips);
     }
 
-    private record AnimationEntry(String name, String path, Set<String> clips) { }
+    private record AnimationEntry(String name, String path, Set<String> clips,
+                                  Map<String, Float> durations) { }
 }

@@ -1,0 +1,28 @@
+<component name="ProjectRunConfigurationManager">
+  <!--
+    Same game, every developer overlay switched on. Use this while working on rendering, layout or
+    coordinates.
+
+      -Dpvz.grid=1         red 5x9 grid plus yellow lawn bounds over the board
+      -Dpvz.uiDebug=1      Scene2D cell and actor outlines (why is that widget THERE?)
+      -Dpvz.glProfile=1    fps / draw calls / texture binds per second. Baseline is roughly 540
+                           draw calls at 60 fps; a sudden jump means something started flushing
+                           the SpriteBatch per entity.
+      -Dpvz.debugCounts=1  per second census of the plants, zombies, projectiles and suns actually
+                           in the model, which answers "is it not drawn, or not there?"
+
+    All of these are read once at startup by views.gdx.core.DebugFlags and default to off, so the
+    plain "Play PvZ2 (GUI)" configuration costs nothing.
+
+    NOTE for editors: XML comments may not contain two consecutive hyphens.
+  -->
+  <configuration default="false" name="Play PvZ2 (GUI, debug overlays)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="DesktopLauncher" />
+    <module name="PvZ2-AP-Project.main" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow -Dpvz.grid=1 -Dpvz.uiDebug=1 -Dpvz.glProfile=1 -Dpvz.debugCounts=1" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

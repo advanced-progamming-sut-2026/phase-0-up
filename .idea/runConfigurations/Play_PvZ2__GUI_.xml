@@ -1,0 +1,29 @@
+<component name="ProjectRunConfigurationManager">
+  <!--
+    The graphical build. Press Run to play, press Debug to play with breakpoints.
+
+    This is an Application configuration rather than a Gradle one, so the IDE launches the JVM
+    itself and the debugger attaches with no extra setup. (Gradle's runGui forks a second JVM,
+    which would need the Gradle debug-jvm flag and a remote attach instead.)
+
+    WORKING_DIRECTORY matters: data/*.json, users_database.json and pvz-assets/ are all opened
+    with RELATIVE paths, so the process has to start in the project root or the game cannot find
+    its levels.
+
+    The two JVM flags grant LWJGL the native access JDK 24+ otherwise warns about, and silence its
+    remaining sun.misc.Unsafe deprecation notice. Without them every launch prints eight lines of
+    warnings that have nothing to do with our code.
+
+    NOTE for editors: XML comments may not contain two consecutive hyphens. A run configuration
+    with invalid XML is skipped silently by IntelliJ, with no error anywhere.
+  -->
+  <configuration default="false" name="Play PvZ2 (GUI)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="DesktopLauncher" />
+    <module name="PvZ2-AP-Project.main" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -13,6 +13,53 @@ public final class ClipMap {
 
     public static final String IDLE = "idle";
 
+    // Clips that should repeat forever versus play once and hold.
+    //
+    // A .PAM clip does not loop by itself: played past its end it simply stops moving. That is why a
+    // zombie appeared to walk only until it reached the board (it enters at ~2.4s and the walk clip is
+    // 3.0s long) and then slid along frozen mid-stride.
+    //
+    // The inverse mistake is just as visible: a headstone's damage poses are one-shot crumbles, and
+    // repeating them makes the stone flicker as it re-crumbles several times a second.
+    private static final java.util.Set<String> ONE_SHOT_PREFIXES = java.util.Set.of(
+            "die", "damage", "undamaged", "attack", "special", "shooting", "plantfood",
+            "smash", "fire", "spawn", "enter", "exit");
+
+    public static boolean loops(String clip) {
+        if (clip == null) {
+            return true;
+        }
+        for (String prefix : ONE_SHOT_PREFIXES) {
+            if (clip.startsWith(prefix)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Converts elapsed time into the time to hand PamPlayer: wrapped for looping clips, held just
+    // short of the end for one-shot ones. Falls back to raw elapsed time when the duration is unknown.
+    public static float sample(EntitySprite sprite, String clip, float elapsed) {
+        float duration = sprite.clipDuration(clip);
+        if (duration <= 0f) {
+            return elapsed;
+        }
+        if (loops(clip)) {
+            // libPVZ does NOT repeat a clip on its own: played past its end it holds the final frame.
+            // That is precisely why zombies appeared to walk only until they reached the board -- they
+            // spawn off-board and enter at ~2.4s, while the walk clip is 3.0s long, so it ran out just
+            // as they arrived and they slid on frozen mid-stride.
+            //
+            // (Two frames 6s apart being pixel-identical is what a CLAMPED clip looks like too, not
+            // just a looping one. Wrapping is what actually makes it cycle.)
+            return elapsed % duration;
+        }
+        // One-shot clips are the ones that need help: left to loop, a headstone's damage pose
+        // re-crumbles several times a second, which is the blinking. Hold on the final frame instead,
+        // a hair inside the clip so it does not wrap round to the first.
+        return Math.min(elapsed, duration - 0.0001f);
+    }
+
     private ClipMap() { }
 
     // First candidate the sprite actually has, falling back to idle and finally to the first candidate

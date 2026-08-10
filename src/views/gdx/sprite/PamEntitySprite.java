@@ -20,6 +20,7 @@ final class PamEntitySprite implements EntitySprite {
     private final String pamPath;
     private final Set<String> availableClips;
     private final Set<String> availableParts;
+    private final Map<String, Float> clipDurations;
     private final Map<String, ClipRef> clipCache = new HashMap<>();
 
     // Clips whose absence has already been reported. Without this a missing "eat" clip logs once per
@@ -27,11 +28,18 @@ final class PamEntitySprite implements EntitySprite {
     private final Set<String> warnedClips = new java.util.HashSet<>();
 
     PamEntitySprite(PamPlayer player, String pamPath, Set<String> availableClips,
-                    Set<String> availableParts) {
+                    Set<String> availableParts, Map<String, Float> clipDurations) {
         this.player = player;
         this.pamPath = pamPath;
         this.availableClips = availableClips;
         this.availableParts = availableParts;
+        this.clipDurations = clipDurations;
+    }
+
+    @Override
+    public float clipDuration(String clip) {
+        Float seconds = clipDurations.get(clip);
+        return seconds == null ? 0f : seconds;
     }
 
     @Override
@@ -116,6 +124,35 @@ final class PamEntitySprite implements EntitySprite {
                 return null;
             }
         });
+    }
+
+    private com.badlogic.gdx.math.Rectangle anchor;
+    private boolean anchorResolved;
+
+    // Prefers "idle" -- the canonical standing pose, present on almost every entity -- and otherwise
+    // the smallest-area clip box, which is the one least likely to be inflated by parked parts.
+    @Override
+    public com.badlogic.gdx.math.Rectangle anchorBounds() {
+        if (anchorResolved) {
+            return anchor;
+        }
+        anchorResolved = true;
+
+        anchor = bounds(ClipMap.IDLE);
+        if (anchor != null) {
+            return anchor;
+        }
+        for (String clip : availableClips) {
+            com.badlogic.gdx.math.Rectangle candidate = bounds(clip);
+            if (candidate == null) {
+                continue;
+            }
+            if (anchor == null
+                    || candidate.width * candidate.height < anchor.width * anchor.height) {
+                anchor = candidate;
+            }
+        }
+        return anchor;
     }
 
     String pamPath() {

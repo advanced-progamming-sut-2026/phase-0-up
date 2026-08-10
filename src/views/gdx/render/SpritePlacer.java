@@ -85,7 +85,9 @@ public final class SpritePlacer {
     //
     // Flipping gives the true span as [-(y + height), -y], so the bottom edge is -(y + height).
     private static float bottomOffset(EntitySprite sprite, String clip) {
-        Rectangle bounds = sprite.bounds(clip);
+        // anchorBounds(), not bounds(clip): see EntitySprite.anchorBounds for why using the playing
+        // clip's box made walking zombies float a lane above the ground.
+        Rectangle bounds = sprite.anchorBounds();
         return bounds == null ? 0f : -(bounds.y + bounds.height);
     }
 }

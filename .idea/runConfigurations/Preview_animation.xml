@@ -1,0 +1,28 @@
+<component name="ProjectRunConfigurationManager">
+  <!--
+    The .PAM animation viewer. Edit the VM parameters to inspect whatever you are working on:
+
+      -Dpvz.preview=Peashooter,ZombieGargantuar,ZombieRa
+      -Dpvz.previewClip=attack     force one clip instead of idle / walk
+
+    Names resolve through the same SpriteRegistry the game uses, so either a game name
+    ("Wall-nut", "ZombieArmor1") or a raw animations.json name ("GARGANTUAR") works, and anything
+    that fails to resolve fails here exactly as it would on the lawn.
+
+    The console prints each subject's clip list, which is how you find out what previewClip values
+    are legal for it. For browsing assets you have not identified yet, use the separate
+    pvz-asset-browser app; this screen is for checking how something looks through OUR renderer,
+    with our scale and anchoring applied.
+
+    NOTE for editors: XML comments may not contain two consecutive hyphens.
+  -->
+  <configuration default="false" name="Preview animation" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="DesktopLauncher" />
+    <module name="PvZ2-AP-Project.main" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow -Dpvz.screen=sprites -Dpvz.preview=Peashooter,Sunflower,ZombieDefault,ZombieGargantuar" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

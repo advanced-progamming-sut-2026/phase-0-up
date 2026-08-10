@@ -113,7 +113,15 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
     }
 
     private void fireSingleProjectile(Plant owner, GameSession gameSession) {
-        double spawnX = (direction == ShootDirection.FORWARD) ? owner.getX() + 0.5 : owner.getX() - 0.5;
+        // Spawned AT the plant, not half a cell ahead of it.
+        //
+        // The old +0.5 offset put the shot past any zombie standing closer than half a tile -- which is
+        // exactly where a zombie sits while eating this plant. The pea appeared behind its target and
+        // flew off harmlessly, so a shooter under attack could never defend itself and looked like it
+        // had simply stopped firing. Projectile.handleZombieCollisions sweeps from the previous x to
+        // the current one, so starting on the plant's own tile lets the very first step register the
+        // hit. Firing backwards keeps its offset: that shot travels away from the plant's own tile.
+        double spawnX = (direction == ShootDirection.FORWARD) ? owner.getX() : owner.getX() - 0.5;
 
         Projectile projectile = new Projectile(
                 spawnX,
@@ -221,8 +229,10 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
 
     // Plant food: lobs one of this plant's projectiles into the given lane (lobber barrage at random zombies).
     public void lobInLane(Plant owner, GameSession gameSession, int targetRow) {
+        // Same reasoning as fireSingleProjectile: start on the plant's own tile so a zombie already
+        // standing on top of it is still in front of the shot.
         Projectile projectile = new Projectile(
-                owner.getX() + 0.5, targetRow, projectileType, damage, speedX, 0, owner, maxRange, element, trajectory);
+                owner.getX(), targetRow, projectileType, damage, speedX, 0, owner, maxRange, element, trajectory);
         projectile.setPierceCount(pierceCount);
         projectile.setSplashProperties(splashDamage, splashRadiusX, splashRowRadius);
         gameSession.getMap().getRow(targetRow).addProjectile(projectile);

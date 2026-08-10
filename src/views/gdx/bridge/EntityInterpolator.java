@@ -1,6 +1,5 @@
 package views.gdx.bridge;
 
-import models.entities.collectibles.Collectible;
 import models.entities.collectibles.Sun;
 import models.entities.projectiles.Projectile;
 import models.entities.zombies.Zombie;
@@ -81,11 +80,12 @@ public final class EntityInterpolator {
                 sample(mower, (float) mower.getPositionX(), row.getIndex());
             }
         }
-        for (Collectible collectible : session.getMap().getActiveCollectibles()) {
+        // Suns live on the session, not on the map: GameMap.getActiveCollectibles() exists but
+        // SunSystem never fills it.
+        for (Sun sun : session.getActiveSuns()) {
             // A falling sun's precise height lives in Sun.currentY; Entity.getY() is the rounded row
             // and would make it drop a whole lane at a time.
-            float y = collectible instanceof Sun sun ? (float) sun.getCurrentY() : collectible.getY();
-            sample(collectible, (float) collectible.getX(), y);
+            sample(sun, (float) sun.getX(), (float) sun.getCurrentY());
         }
     }
 

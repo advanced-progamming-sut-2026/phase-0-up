@@ -34,16 +34,22 @@ public final class ZombieRenderer {
     private final SpriteRegistry sprites;
     private final LawnGeometry lawn;
     private final EntityInterpolator interpolator;
+    private final AnimationClocks clocks;
 
-    public ZombieRenderer(SpriteRegistry sprites, LawnGeometry lawn, EntityInterpolator interpolator) {
+    public ZombieRenderer(SpriteRegistry sprites, LawnGeometry lawn, EntityInterpolator interpolator,
+                          AnimationClocks clocks) {
         this.sprites = sprites;
         this.lawn = lawn;
         this.interpolator = interpolator;
+        this.clocks = clocks;
     }
 
-    public void draw(Batch batch, Zombie zombie, float stateTime, float alpha) {
+    public void draw(Batch batch, Zombie zombie, float delta, float alpha) {
         EntitySprite sprite = sprites.get(zombie.getAlias());
         String clip = ClipMap.forZombie(sprite, zombie);
+        // Per zombie, restarted on clip change: otherwise the whole horde steps in unison and a
+        // zombie that stops to bite starts its "eat" animation halfway through.
+        float stateTime = ClipMap.sample(sprite, clip, clocks.advance(zombie, clip, delta));
 
         float modelX = (float) zombie.getMovement().getPositionX();
         int modelLane = zombie.getMovement().getPositionY();

@@ -92,8 +92,13 @@ public final class SpriteSmokeScreen extends ScreenAdapter {
             sprites.get(name);
             // The clip list is the useful part when inspecting an unfamiliar animation: it tells you
             // what -Dpvz.previewClip values are legal for it.
+            EntitySprite sp = sprites.get(name);
+            StringBuilder durations = new StringBuilder();
+            for (String c : sprites.clipsOf(name)) {
+                durations.append(c).append('=').append(sp.clipDuration(c)).append("s ");
+            }
             Gdx.app.log("SpriteSmoke", name + " animated=" + sprites.hasAnimation(name)
-                    + " clips=" + sprites.clipsOf(name));
+                    + " durations=[" + durations.toString().trim() + "]");
         }
         if (!sprites.unresolvedNames().isEmpty()) {
             Gdx.app.log("SpriteSmoke", "fell back to still images: " + sprites.unresolvedNames());
@@ -118,8 +123,23 @@ public final class SpriteSmokeScreen extends ScreenAdapter {
         batch.end();
     }
 
+    // -Dpvz.previewStagger=1 draws the FIRST subject five times across the screen at stateTimes
+    // 0.0, 0.4, 0.8, 1.2, 1.6s within a single frame. If the five poses differ, stateTime drives the
+    // animation. If they are identical, the player is holding the pose itself and ignoring the
+    // argument -- which would mean no arithmetic on stateTime can ever make a clip cycle.
+    private final boolean stagger = "1".equals(System.getProperty("pvz.previewStagger"));
+
     private void drawRow(List<String> names, float y, String preferredClip) {
         if (names.isEmpty()) {
+            return;
+        }
+        if (stagger) {
+            EntitySprite sprite = sprites.get(names.get(0));
+            String wanted = forcedClip != null && !forcedClip.isBlank() ? forcedClip : preferredClip;
+            String clip = sprite.hasClip(wanted) ? wanted : "idle";
+            for (int i = 0; i < 5; i++) {
+                sprite.draw(batch, clip, i * 0.4f, 180f + i * 230f, y, true);
+            }
             return;
         }
         float spacing = PvZGame.VIRTUAL_WIDTH / (names.size() + 1f);
@@ -128,7 +148,9 @@ public final class SpriteSmokeScreen extends ScreenAdapter {
             String wanted = forcedClip != null && !forcedClip.isBlank() ? forcedClip : preferredClip;
             // Not every entity defines the clip we would like -- fall back rather than draw nothing.
             String clip = sprite.hasClip(wanted) ? wanted : "idle";
-            sprite.draw(batch, clip, stateTime, spacing * (i + 1), y, true);
+            // Same loop/clamp policy the lawn uses, so the preview shows what the game shows.
+            sprite.draw(batch, clip, views.gdx.sprite.ClipMap.sample(sprite, clip, stateTime),
+                    spacing * (i + 1), y, true);
         }
     }
 

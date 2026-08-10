@@ -20,13 +20,16 @@ public final class LawnmowerRenderer {
     private final SpriteRegistry sprites;
     private final LawnGeometry lawn;
     private final EntityInterpolator interpolator;
+    private final AnimationClocks clocks;
     private final String spriteName;
 
     public LawnmowerRenderer(SpriteRegistry sprites, LawnGeometry lawn,
-                             EntityInterpolator interpolator, EnvironmentType environment) {
+                             EntityInterpolator interpolator, AnimationClocks clocks,
+                             EnvironmentType environment) {
         this.sprites = sprites;
         this.lawn = lawn;
         this.interpolator = interpolator;
+        this.clocks = clocks;
         this.spriteName = mowerFor(environment);
     }
 
@@ -43,12 +46,13 @@ public final class LawnmowerRenderer {
         };
     }
 
-    public void draw(Batch batch, Lawnmower mower, int row, float stateTime, float alpha) {
+    public void draw(Batch batch, Lawnmower mower, int row, float delta, float alpha) {
         if (mower == null || mower.isUsed()) {
             return;   // spent: it has driven off the board and is not coming back
         }
         EntitySprite sprite = sprites.get(spriteName);
         String clip = ClipMap.firstAvailable(sprite, mower.isActiveNow() ? "walk" : ClipMap.IDLE);
+        float stateTime = ClipMap.sample(sprite, clip, clocks.advance(mower, clip, delta));
 
         // Parked mowers sit just off the left edge of column 0; a running one advances up the row.
         float modelX = (float) mower.getPositionX();

@@ -41,8 +41,22 @@ public interface EntitySprite {
     // without it instead of erroring.
     boolean hasPart(String partName);
 
-    // The drawn extent of a clip, relative to the draw origin. Renderers use it to stand an entity ON
-    // a lane rather than guessing an offset per species -- a Gargantuar and an Imp anchor very
-    // differently. Null when unknown, in which case the caller falls back to the raw origin.
+    // The drawn extent of a clip, relative to the draw origin. Null when unknown.
     com.badlogic.gdx.math.Rectangle bounds(String clip);
+
+    // The extent to anchor this entity by, for ALL of its clips.
+    //
+    // Deliberately not per-clip. bounds() unions every frame of a clip, and some clips park hidden
+    // parts far off-model: ZombieDefault's "walk" box is 421 tall against "idle"'s 250. Anchoring on
+    // the playing clip therefore lifted walking zombies more than a full lane off the ground, made
+    // them appear to hop lanes whenever they stopped to eat, and left them visually one row away from
+    // the plants actually shooting them.
+    //
+    // One stable pose per entity keeps the feet still no matter what is playing.
+    com.badlogic.gdx.math.Rectangle anchorBounds();
+
+    // Length of a clip in seconds, or 0 when unknown. Needed because a clip does not repeat on its
+    // own: played past its end it simply stops moving, which is why zombies appeared to walk only
+    // while off-board (they enter at ~2.4s and the walk clip is 3.0s long).
+    float clipDuration(String clip);
 }

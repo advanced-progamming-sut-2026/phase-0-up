@@ -77,4 +77,16 @@ final class StaticEntitySprite implements EntitySprite {
         }
         return new com.badlogic.gdx.math.Rectangle(-width / 2f, 0f, width, height);
     }
+
+    // A still image never advances, so it has no duration.
+    @Override
+    public float clipDuration(String clip) {
+        return 0f;
+    }
+
+    // A still image has one pose, so its anchor is simply its own box.
+    @Override
+    public com.badlogic.gdx.math.Rectangle anchorBounds() {
+        return bounds(null);
+    }
 }
