@@ -40,7 +40,13 @@ public class GameEngine {
         this.combatSystem.setQuestSystem(questSystem);   // combat reports kills/losses to the quest tally
     }
 
-    public void startLoop() {
+    // Everything a level needs before its first tick, with no loop attached.
+    //
+    // Split out of startLoop so the same preparation can serve two very different callers: the terminal
+    // build, which follows it with a blocking stdin loop, and the graphical build, where LibGDX owns
+    // the loop and calls advanceOneTick() from a fixed-step accumulator instead. Neither may skip this
+    // -- startMode() is what places pre-set plants, seeds the mode's banner and arms its rules.
+    public void init() {
         sunSystem.reset();
         gameSession.startMode();
         gameSession.applySeedBoosts();   // carry seed-selection boosts into the live seed packets
@@ -50,9 +56,19 @@ public class GameEngine {
             inGameRenderer.render(startEvent);
         }
         running = true;
+    }
+
+    public void startLoop() {
+        init();
         run();
     }
     public void stopLoop() {running = false;}
+
+    // Whether the engine still considers the level live. The graphical build has no blocking loop to
+    // fall out of, so it asks this instead of inferring it.
+    public boolean isRunning() {
+        return running && gameSession.getState() == GameState.PLAYING;
+    }
 
     private void run() {
         while (running && gameSession.getState() == GameState.PLAYING) {

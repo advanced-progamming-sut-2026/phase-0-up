@@ -1,0 +1,80 @@
+package views.gdx.sprite;
+
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+
+import java.util.Map;
+
+// The fallback: one still image, drawn for every clip.
+//
+// Used when an entity has no .PAM in the asset dump at all (Rotobaga, Cat-tail, Iceberg Lettuce,
+// Kernel-pult and a few others are genuinely absent) or when its animation failed to load. The game
+// stays playable and the entity stays visible; it just does not move. That is the whole reason
+// renderers go through EntitySprite instead of calling libPVZ directly.
+//
+// A null region is legal and draws nothing -- better than a crash or a magenta box in a submitted
+// build -- but reports isReady() == false so a debug overlay can list what is missing.
+final class StaticEntitySprite implements EntitySprite {
+
+    private final TextureRegion region;
+    private final float width;
+    private final float height;
+
+    StaticEntitySprite(TextureRegion region) {
+        this.region = region;
+        this.width = region != null ? region.getRegionWidth() : 0f;
+        this.height = region != null ? region.getRegionHeight() : 0f;
+    }
+
+    @Override
+    public void draw(Batch batch, String clip, float stateTime, float x, float y, boolean faceRight) {
+        draw(batch, clip, stateTime, x, y, faceRight, null);
+    }
+
+    @Override
+    public void draw(Batch batch, String clip, float stateTime, float x, float y, boolean faceRight,
+                     Map<String, Boolean> parts) {
+        if (region == null) {
+            return;
+        }
+        // Drawn centred horizontally and sitting on y, to match how PamPlayer anchors its output --
+        // so swapping an entity between the two paths does not shift it on the lawn.
+        float drawX = x - width / 2f;
+        float drawWidth = faceRight ? width : -width;
+        float originX = faceRight ? 0f : width;
+        batch.draw(region, drawX + originX, y, drawWidth, height);
+    }
+
+    @Override
+    public boolean isReady() {
+        return region != null;
+    }
+
+    @Override
+    public boolean isAnimated() {
+        return false;
+    }
+
+    // A still image is the same picture whatever the requested clip, so it never refuses one. Saying
+    // "yes" here stops callers from walking a fallback chain that would land back on this same image.
+    @Override
+    public boolean hasClip(String clip) {
+        return region != null;
+    }
+
+    // A flat image has no parts to toggle, so armor and status overlays simply do not appear on the
+    // fallback path. The entity is still visible, which is the point.
+    @Override
+    public boolean hasPart(String partName) {
+        return false;
+    }
+
+    // Matches how draw() places the image: centred on x, sitting on y.
+    @Override
+    public com.badlogic.gdx.math.Rectangle bounds(String clip) {
+        if (region == null) {
+            return null;
+        }
+        return new com.badlogic.gdx.math.Rectangle(-width / 2f, 0f, width, height);
+    }
+}

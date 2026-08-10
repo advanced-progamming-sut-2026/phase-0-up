@@ -54,6 +54,11 @@ public class Sun extends Collectible {
     public int getAmount() { return amount; }
     public boolean isFalling() { return falling; }
 
+    // The exact height of a sun mid-fall. Entity.getY() rounds to an int row, which is all the terminal
+    // view ever needed, but a sun drawn on a rounded row snaps down the screen a whole cell at a time.
+    // The precise value already exists here -- it just had no way out.
+    public double getCurrentY() { return currentY; }
+
     public double getTargetY() {
         return targetY;
     }

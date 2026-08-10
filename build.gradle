@@ -23,15 +23,62 @@ java {
 
 repositories {
     mavenCentral()
+    // libPVZ and TenPatch are published through JitPack rather than Maven Central. Declared after
+    // mavenCentral() on purpose: Gradle asks the repositories in order, and JitPack builds artifacts
+    // on demand, so letting it answer for gson/gdx/junit first would be slow for no benefit.
+    maven { url = 'https://jitpack.io' }
+}
+
+// Pinned to what is already in the local Gradle cache. International internet is unreliable in this
+// environment (see gradle.properties), so bumping this is a deliberate, online-only decision -- not
+// something to do casually while working offline.
+ext {
+    gdxVersion = '1.14.2'
 }
 
 dependencies {
     // Replaces the hand-managed libs/gson-2.14.0.jar -- same version, now resolved and cached by Gradle.
     implementation 'com.google.code.gson:gson:2.14.0'
 
+    // --- Phase 2 GUI ---------------------------------------------------------------------------
+    // LibGDX proper. gdx-platform/gdx-freetype-platform carry the native .dll/.so/.dylib payloads and
+    // are runtimeOnly: nothing compiles against them, but the game cannot open a window without them.
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+    runtimeOnly "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    runtimeOnly "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+
+    // A Scene2D skin styled like PvZ2, plus the FreeTypeSkin loader it needs. Pulled as a jar rather
+    // than copied into the repo: the skin ships its atlas, 3 MB page PNG and six TTFs as CLASSPATH
+    // resources, and Gdx.files.internal() falls back to the classpath, so "skin/pvz2_skin.json"
+    // resolves out of the jar with nothing to check in or keep in sync.
+    implementation 'com.github.pizpizi:pvz-skin:v0.1.0'
+
+    // Required by that skin, whose backgrounds are TenPatch drawables rather than plain nine-patches.
+    // The skin's JSON names these classes directly, so it fails to load without it.
+    implementation 'com.github.raeleus.TenPatch:tenpatch:5.2.3'
+
+    // Renders PopCap .PAM skeletal animations. pvz-assets/ ships body PARTS in its atlases, never whole
+    // character frames, so there is no way to draw a plant or zombie without a PAM runtime. Always used
+    // through views.gdx.sprite.EntitySprite, never called directly from a renderer -- see
+    // documents/phase-2-roadmap.md, Part 3.
+    implementation 'com.github.pizpizi:libPVZ:v0.1.5'
+
+    // LibGDX 1.14.2 pulls LWJGL 3.3.3, which predates the JNI version JDK 22+ reports. On the JDK 25
+    // installed here that prints "[LWJGL] Unsupported JNI version detected, this may result in a crash"
+    // on every launch. 3.3.6 is the same patch series (no API change for the lwjgl3 backend) and knows
+    // about the newer JNI. Drop this constraint once LibGDX itself ships a 3.3.4+ default.
+    implementation platform('org.lwjgl:lwjgl-bom:3.3.6')
+
     testImplementation platform('org.junit:junit-bom:5.11.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Enforces the MVC boundary mechanically instead of by discipline: ArchitectureTest fails the build
+    // if anything under models/ ever imports com.badlogic.gdx or views. That rule is the whole reason
+    // Phase 2 can swap the View without touching the 57 Commands.
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.3.0'
 }
 
 // This project keeps its sources in src/ (packages sit directly under it) rather than the Gradle
@@ -86,6 +133,46 @@ tasks.named('run') {
     jvmArgs '-Dfile.encoding=UTF-8'
 }
 
+// `gradlew runGui` starts the LibGDX build; `gradlew run` still starts the terminal build. Both drive
+// the SAME models, systems and Commands -- only the renderer implementations differ -- so the terminal
+// game doubles as the regression harness for every change made on the GUI side.
+//
+// No standardInput here, unlike `run`: nothing in the GUI path may read stdin. Two commands still call
+// views.InputHandler.readLine() mid-execute (RegisterCommand, ForgetPasswordCommand) and would freeze
+// the render thread if they were ever reached from a Screen.
+tasks.register('runGui', JavaExec) {
+    group = 'application'
+    description = 'Runs the LibGDX graphical build (Phase 2).'
+    mainClass = 'DesktopLauncher'
+    classpath = sourceSets.main.runtimeClasspath
+
+    // Same reason as `run`: data/*.json, users_database.json AND pvz-assets/ are all opened with
+    // relative paths, so the process has to start in the project root.
+    workingDir = rootDir
+
+    // --enable-native-access silences the four-line warning JDK 24+ prints when LWJGL loads its
+    // natives through System.load. It is a grant, not a workaround: LWJGL genuinely needs native
+    // access, and without the flag the JDK will start refusing it in a future release.
+    // --sun-misc-unsafe-memory-access=allow silences a second JDK 24+ warning: LWJGL's MemoryUtil
+    // still calls the deprecated sun.misc.Unsafe. Nothing we can fix from here, and four warning lines
+    // on every launch train people to ignore the console.
+    jvmArgs '-Dfile.encoding=UTF-8', '--enable-native-access=ALL-UNNAMED',
+            '--sun-misc-unsafe-memory-access=allow'
+
+    // Forward any -Dpvz.* flag from the Gradle command line into the forked GUI JVM. Gradle sets -D on
+    // ITS OWN process, not on the application it launches, so without this the SmokeHarness flags are
+    // silently swallowed and the window just runs forever:
+    //
+    //   gradlew runGui -Dpvz.smokeFrames=90 -Dpvz.screenshot=build/shot.png
+    //
+    // That pair is how a rendering change gets verified without a human watching the window.
+    System.properties.each { key, value ->
+        if (key.toString().startsWith('pvz.')) {
+            systemProperty(key.toString(), value)
+        }
+    }
+}
+
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
     workingDir = rootDir             // tests load the same relative data files the game does
@@ -119,4 +206,10 @@ tasks.register('fatJar', Jar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
+}
+
+// Prints the runtime classpath, so a plain `java -cp ...` launch (what an IntelliJ Application run
+// configuration does) can be reproduced from the command line for troubleshooting.
+tasks.register('printRuntimeCp') {
+    doLast { println sourceSets.main.runtimeClasspath.asPath }
 }
