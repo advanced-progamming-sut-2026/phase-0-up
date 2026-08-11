@@ -59,6 +59,10 @@ public class PvZGame extends Game {
                 for (String clip : sprites.clipsOf(name)) {
                     Gdx.app.log("Bounds", name + " [" + clip + "] = " + s.bounds(clip));
                 }
+                // The part list is the half this flag always claimed to print and never did. It is the
+                // useful half: when an entity's states are layers rather than clips -- a zombie's cone,
+                // a Wall-nut's cracked shell -- the part names are what a visibility map switches on.
+                Gdx.app.log("Parts", name + " = " + sprites.partNames(name));
             }
         }
         screens = new ScreenManager(context);

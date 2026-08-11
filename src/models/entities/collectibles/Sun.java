@@ -33,7 +33,16 @@ public class Sun extends Collectible {
 
     @Override
     public void update(GameSession gameSession) {
-        super.update(gameSession);
+        // The expiry clock does not start until the sun is actually sitting on the lawn.
+        //
+        // Counting from the moment it spawns charges a sky sun for the five seconds it spends falling,
+        // which is half its life: SKY_SUN_GROUND_EXPIRE_TICKS says 10 seconds on the GROUND, but the
+        // player only ever got about five to reach it. A sun still in mid-air is not an uncollected sun
+        // going stale, it is a sun on its way. Plant-made suns are not falling to begin with, so their
+        // window is unchanged.
+        if (!falling) {
+            super.update(gameSession);
+        }
 
         if (isRemovable()) {
             return;

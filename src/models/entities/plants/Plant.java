@@ -76,6 +76,22 @@ public class Plant extends Entity {
         this.abilities.add(ability);
     }
 
+    // Whether this plant is mid-action: it has committed to doing something -- firing a shot, blooming
+    // a sun -- but the effect has not appeared yet. Purely informational: the view plays the plant's
+    // action animation through the wind-up so the effect lands on the animation's release frame rather
+    // than before it has begun.
+    public boolean isWindingUp() {
+        if (abilities == null) {
+            return false;
+        }
+        for (PlantAbility ability : abilities) {
+            if (ability.isWindingUp()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isDead() {
         return health == null || health.isDead();
     }

@@ -38,6 +38,16 @@ public abstract class PlantAbility {
     }
     public abstract void execute(Plant owner,  GameSession gameSession);
 
+    // Whether this ability has committed to acting but its effect has not landed yet -- the plant is
+    // visibly drawing back. Abilities that take effect the instant they trigger are never winding up.
+    //
+    // A wind-up costs the simulation nothing: the ability still fires once per actionInterval, so only
+    // the moment WITHIN the cycle shifts. What it buys is a window the view can play an animation in,
+    // ending on the effect rather than starting after it.
+    public boolean isWindingUp() {
+        return false;
+    }
+
     // Called once when the owning plant dies, before removal. Default: no death behavior.
     public void onOwnerDeath(Plant owner, GameSession gameSession) {
         // no-op

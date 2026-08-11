@@ -37,6 +37,13 @@ public abstract class Collectible extends Entity {
         return isCollected || isExpired;
     }
 
+    // Ticks left before this vanishes on its own. Purely informational -- the view flashes a sun that
+    // is about to time out so the player gets a chance to grab it. A collectible that never expires
+    // reports a huge number, which reads naturally as "not soon".
+    public int getRemainingTicks() {
+        return expireTicks;
+    }
+
     @Override
     public void update(GameSession gameSession) {
         if (!isCollected && !isExpired) {

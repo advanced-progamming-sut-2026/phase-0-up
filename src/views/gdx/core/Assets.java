@@ -170,7 +170,8 @@ public final class Assets implements Disposable {
     }
 
     // The most likely first-run failure for anyone cloning this repo, because pvz-assets/ is git-ignored
-    // (36 MB+) and therefore absent on a fresh checkout. Worth a real message.
+    // (about 510 MB) and therefore absent on a fresh checkout. Worth a real message: this is the ONLY
+    // thing that stops a fresh clone from running the GUI -- the build and the terminal game are fine.
     private static void verifyAssetRoot(FileHandle root) {
         if (!root.exists() || !root.isDirectory()) {
             throw new IllegalStateException(assetRootMessage(root, "was not found"));
@@ -183,11 +184,22 @@ public final class Assets implements Disposable {
     }
 
     private static String assetRootMessage(FileHandle root, String problem) {
-        return "The PvZ asset folder " + problem + ": " + root.file().getAbsolutePath()
-                + System.lineSeparator()
-                + "It is git-ignored (36 MB+), so a fresh clone will not have it. Put the extracted "
-                + "pvz-assets folder (ATLASES/, IMAGES/, RESOURCES.json) in the project root, or point "
-                + "at it with -D" + ASSET_ROOT_PROPERTY + "=<path>.";
+        String nl = System.lineSeparator();
+        return "The PvZ asset folder " + problem + ": " + root.file().getAbsolutePath() + nl
+                + nl
+                + "  This is expected on a fresh clone. pvz-assets/ is about 510 MB of extracted" + nl
+                + "  PopCap art, far too big to keep in git, so it is shared separately -- ask a" + nl
+                + "  teammate for the folder. Nothing else is missing: `gradlew run` and" + nl
+                + "  `gradlew build` both work without it." + nl
+                + nl
+                + "  Then either put it in the project root as pvz-assets/ (containing ATLASES/," + nl
+                + "  IMAGES/ and RESOURCES.json), or leave it where it is and add this line to your" + nl
+                + "  personal ~/.gradle/gradle.properties:" + nl
+                + nl
+                + "      systemProp." + ASSET_ROOT_PROPERTY + "=D:/path/to/pvz-assets" + nl
+                + nl
+                + "  For one run only: gradlew runGui -D" + ASSET_ROOT_PROPERTY + "=D:/path/to/pvz-assets" + nl
+                + "  See README.md.";
     }
 
     @Override

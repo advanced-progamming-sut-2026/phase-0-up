@@ -19,6 +19,14 @@ public class ProduceSunAbility extends PlantAbility implements Growable {
     private double doubleSunChance;
     private int spawnCount;
 
+    // Ticks the plant spends blooming before the sun actually appears, exactly like a shooter's
+    // wind-up: the sun is created when this expires, so the produce animation runs THROUGH it and the
+    // sun pops out on the animation's release rather than materialising before it has started.
+    // The production rate is untouched -- PlantAbility resets cooldownTimer to actionInterval on
+    // execute(), so only the moment within the cycle moves.
+    private static final int WIND_UP_TICKS = 8;   // 0.8s at 10 ticks/sec
+    private int windUpRemaining = -1;             // -1 = not winding up
+
     public ProduceSunAbility(int actionIntervalTicks, TriggerStrategy triggerStrategy,
                              int[] sunAmountsByStage, int[] stageUpTicks,
                              double doubleSunChance, int spawnCount) {
@@ -35,6 +43,19 @@ public class ProduceSunAbility extends PlantAbility implements Growable {
 
 
     @Override
+    public boolean isWindingUp() {
+        return windUpRemaining >= 0;
+    }
+
+    @Override
+    public boolean canExecute(Plant owner, GameSession gameSession) {
+        if (windUpRemaining >= 0) {
+            return false;   // already blooming; do not stack a second production on top
+        }
+        return super.canExecute(owner, gameSession);
+    }
+
+    @Override
     public void update(Plant owner, GameSession gameSession) {
         currentAliveTicks++;
 
@@ -45,11 +66,25 @@ public class ProduceSunAbility extends PlantAbility implements Growable {
             }
         }
 
+        // The bloom started by execute() runs down here, and the sun appears on the tick it ends.
+        if (windUpRemaining > 0) {
+            windUpRemaining--;
+        } else if (windUpRemaining == 0) {
+            windUpRemaining = -1;
+            releaseSuns(owner, gameSession);
+        }
+
         super.update(owner, gameSession);
     }
 
+    // Begins the bloom. The suns themselves are created in releaseSuns once the wind-up elapses.
     @Override
     public void execute(Plant owner, GameSession gameSession) {
+        windUpRemaining = WIND_UP_TICKS;
+    }
+
+    // The bloom has finished: the sun appears now.
+    private void releaseSuns(Plant owner, GameSession gameSession) {
         int count = spawnCount;
 
         int currentSunAmount = sunAmountsByStage[currentStage];
@@ -68,7 +103,12 @@ public class ProduceSunAbility extends PlantAbility implements Growable {
             double offsetY = random.nextDouble() * 0.6;
             double targetY = owner.getY() + offsetY;
 
-            Sun sun = new Sun(targetX, owner.getY(), targetY, SunType.NORMAL, currentSunAmount, true, 100);
+            // NOT falling. "Falling" means descending from the sky, and this sun never was in the sky
+            // -- the plant made it, right here. Flagging it as falling made it identical to a sky sun
+            // to everything downstream: it was drawn plummeting from above the board, and the produce
+            // animation was skipped entirely because that code path only runs for suns that are NOT
+            // falling. It settles beside the plant instead, on its own tile where it can be collected.
+            Sun sun = new Sun(targetX, targetY, targetY, SunType.NORMAL, currentSunAmount, false, 100);
 
             gameSession.addSun(sun);
         }

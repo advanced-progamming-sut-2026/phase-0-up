@@ -25,6 +25,16 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
     private double splashRadiusX;
     private int splashRowRadius;
 
+    // Ticks the plant spends visibly winding up before the shot actually leaves. The projectile is
+    // created when this expires, so a renderer can play the attack animation THROUGH the wind-up and
+    // have it finish exactly as the pea appears.
+    //
+    // This does not change the firing RATE: PlantAbility resets cooldownTimer to actionInterval when
+    // execute() runs, so the cycle length is untouched and only the moment within it shifts. DPS is
+    // the same; the first shot of a plant's life lands WIND_UP_TICKS later.
+    private static final int WIND_UP_TICKS = 4;   // 0.4s at 10 ticks/sec
+    private int windUpRemaining = -1;             // -1 = not winding up
+
     private int remainingShotsInBurst;
     private int burstDelayTicks;
     private int burstTimer;
@@ -72,14 +82,29 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
 
     @Override
     public boolean canExecute(Plant owner, GameSession gameSession) {
-        if (remainingShotsInBurst > 0) {
-            return false;
+        if (remainingShotsInBurst > 0 || windUpRemaining >= 0) {
+            return false;   // already committed to a shot
         }
         return super.canExecute(owner, gameSession);
     }
 
+    // True while the plant is drawing back for a shot that has not been fired yet. The view reads this
+    // to know which animation to play; the model needs it for nothing else.
+    @Override
+    public boolean isWindingUp() {
+        return windUpRemaining >= 0;
+    }
+
     @Override
     public void update(Plant owner, GameSession gameSession) {
+        // The wind-up started by execute() runs down here, and the shot leaves on the tick it ends.
+        if (windUpRemaining > 0) {
+            windUpRemaining--;
+        } else if (windUpRemaining == 0) {
+            windUpRemaining = -1;
+            releaseShot(owner, gameSession);
+        }
+
         if (remainingShotsInBurst > 0) {
             if (burstTimer > 0) {
                 burstTimer--;
@@ -98,11 +123,15 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
         super.update(owner, gameSession);
     }
 
+    // Begins the shot. The projectile itself is created in releaseShot once the wind-up elapses.
     @Override
     public void execute(Plant owner, GameSession gameSession) {
-
         plantFoodBurst = false;
+        windUpRemaining = WIND_UP_TICKS;
+    }
 
+    // The wind-up has finished: the shot leaves now.
+    private void releaseShot(Plant owner, GameSession gameSession) {
         fireSingleProjectile(owner, gameSession);
 
         remainingShotsInBurst = shotCount - 1;

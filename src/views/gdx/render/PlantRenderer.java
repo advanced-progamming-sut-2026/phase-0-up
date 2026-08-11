@@ -7,6 +7,7 @@ import models.map.Cell;
 import views.gdx.map.LawnGeometry;
 import views.gdx.sprite.ClipMap;
 import views.gdx.sprite.EntitySprite;
+import views.gdx.sprite.PlantDamage;
 import views.gdx.sprite.SpriteRegistry;
 
 import java.util.IdentityHashMap;
@@ -19,16 +20,8 @@ import java.util.Map;
 // the real plant sits on it, and a Pumpkin is the shell in front.
 public final class PlantRenderer {
 
-    // How long a shooter stays in its "attack" clip after firing. The model has no "is attacking"
-    // flag -- shooting is instantaneous there -- so the view keeps this pulse itself, started by
-    // GameRenderer the frame a new projectile from this plant appears.
-    // Fallback only. The pulse actually lasts the attack clip's own length (Peashooter's is 1.03s),
-    // read from the animation, so the shot animation is never cut off partway through.
+    // Fallback length for an action animation whose real duration the sprite does not report.
     private static final float ATTACK_SECONDS = 0.45f;
-
-    // Crossfade back to idle. Without it the plant snaps from its final attack pose to the idle pose
-    // in a single frame, which reads as a twitch.
-    private static final float BLEND_SECONDS = 0.18f;
 
     // Frozen plants are encased in ice. Phase 1 tints rather than drawing an ice block; the block
     // itself is Frostbite Caves work (T7.7). Three steps, matching Plant.getChillLevel()'s 1..3.
@@ -45,33 +38,28 @@ public final class PlantRenderer {
     private final LawnGeometry lawn;
     private final AnimationClocks clocks;
 
-    // Remaining attack-pulse seconds per plant.
-    private final Map<Plant, Float> attacking = new IdentityHashMap<>();
-    // Remaining crossfade seconds per plant, started when its attack pulse ends.
-    private final Map<Plant, Float> blending = new IdentityHashMap<>();
+    // Seconds into its action clip, for each plant currently playing one. Set to 0 the frame the model
+    // announces a wind-up, then advanced until the clip runs out.
+    private final Map<Plant, Float> actionPhase = new IdentityHashMap<>();
+    // Plants whose wind-up was already running last frame, so a new one is detected on its RISING edge
+    // rather than restarting the clip every frame the flag stays true.
+    private final java.util.Set<Plant> winding =
+            java.util.Collections.newSetFromMap(new IdentityHashMap<>());
 
-    // NOTE: there was an attempt here to predict the next shot from the plant's actionInterval and
-    // start the attack clip early, so its last frame would land on the pea. It is deliberately gone.
-    // The prediction and the post-shot pulse below both selected the attack clip, so the animation
-    // played TWICE per cycle -- once before the shot and once after. Making a plant's animation lead
-    // its shot needs the MODEL to announce an imminent attack; it cannot be inferred in the view.
+    // NOTE: two earlier approaches are deliberately gone.
+    //
+    // The first predicted the next shot from the plant's actionInterval and started the clip early. It
+    // fought with a post-shot pulse that selected the same clip, so the animation played TWICE per
+    // cycle. The second cross-faded attack over idle to soften the hand-off; blending two copies of
+    // skeletal art whose parts overlap reads as a flash, not a dissolve -- that was the "blink".
+    //
+    // Neither is needed now. The model announces the wind-up, so one clip plays once, straight
+    // through, and the join back to idle happens at the pose the clip ends on.
 
     public PlantRenderer(SpriteRegistry sprites, LawnGeometry lawn, AnimationClocks clocks) {
         this.sprites = sprites;
         this.lawn = lawn;
         this.clocks = clocks;
-    }
-
-    // Called when a projectile fired by this plant is first seen, so it can play its shot animation.
-    public void noteShot(Plant shooter) {
-        if (shooter == null) {
-            return;
-        }
-        EntitySprite sprite = sprites.get(shooter.getName());
-        String shot = ClipMap.firstAvailable(sprite, "attack", "special", "shooting");
-        float length = ClipMap.IDLE.equals(shot) ? ATTACK_SECONDS : sprite.clipDuration(shot);
-        attacking.put(shooter, length > 0f ? length : ATTACK_SECONDS);
-        blending.remove(shooter);
     }
 
     // Redraws one plant on top of whatever has already been drawn, WITHOUT advancing its clock (the
@@ -99,95 +87,84 @@ public final class PlantRenderer {
 
     private void draw(Batch batch, Plant plant, int col, int row, float delta) {
         if (plant == null || plant.isDead()) {
+            if (plant != null) {
+                // A plant is still drawn on the tick it dies, so this is where its per-plant state is
+                // dropped. Without it a long level accumulates an entry per plant that ever died.
+                actionPhase.remove(plant);
+                winding.remove(plant);
+            }
             return;
         }
         EntitySprite sprite = sprites.get(plant.getName());
-        String clip = clipFor(sprite, plant, delta);
-        float stateTime = ClipMap.sample(sprite, clip, clocks.advance(plant, clip, delta));
+        int damageStage = PlantDamage.stageFor(plant,
+                PlantDamage.stageCount(sprite, plant.getName()));
+        String clip = clipFor(sprite, plant, delta, damageStage);
+
+        // The clock is advanced even while an action clip is driving the pose, so the plant keeps its
+        // entry in AnimationClocks: dropping out of the map and back in would reset idle to frame 0
+        // after every shot, which is its own visible jump.
+        float freeRunning = clocks.advance(plant, clip, delta);
+        Float phase = actionPhase.get(plant);
+        float stateTime = ClipMap.sample(sprite, clip, phase != null ? phase : freeRunning);
 
         Color previous = batch.getColor().cpy();
         Color tint = tintFor(plant);
         float cx = lawn.centerX(col);
         float fy = footY(row);
 
-        // Crossfade out of the attack pose rather than cutting. Both clips are drawn for a moment,
-        // their opacities summing to 1, which blends the poses without needing a shader.
-        Float fade = blending.get(plant);
-        if (fade != null) {
-            float left = fade - delta;
-            if (left > 0f) {
-                blending.put(plant, left);
-            } else {
-                blending.remove(plant);
-            }
-            float t = 1f - Math.max(0f, left) / BLEND_SECONDS;   // 0 -> just finished, 1 -> fully idle
-
-            // Idle FIRST and fully opaque, with the attack pose fading out on top of it.
-            //
-            // Cross-fading by giving each pose a partial alpha that sums to 1 does NOT preserve
-            // opacity: alpha compositing multiplies rather than adds, so mid-blend the plant was
-            // genuinely see-through -- the "fades for a bit" after every shot. Keeping one layer solid
-            // means total coverage never drops.
-            batch.setColor(tint);
-            SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, null);
-
-            String outgoing = ClipMap.firstAvailable(sprite, "attack", "special", "shooting");
-            if (!ClipMap.IDLE.equals(outgoing)) {
-                batch.setColor(tint.r, tint.g, tint.b, 1f - t);
-                SpritePlacer.drawStanding(batch, sprite, outgoing,
-                        ClipMap.sample(sprite, outgoing, Float.MAX_VALUE), cx, fy, true, null);
-            }
-            batch.setColor(previous);
-            return;
-        }
-
         batch.setColor(tint);
-        // Plants face right, toward the oncoming horde.
-        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, null);
+        // Plants face right, toward the oncoming horde. The visibility map is what actually cracks a
+        // Wall-nut's shell -- the damage clips only change its face.
+        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true,
+                PlantDamage.visibilityFor(sprite, plant.getName(), damageStage));
 
         batch.setColor(previous);
     }
 
-    private String clipFor(EntitySprite sprite, Plant plant, float delta) {
-        // A shot in progress wins: it is the animation the player is waiting to see.
-        Float remaining = attacking.get(plant);
-        if (remaining != null) {
-            float left = remaining - delta;
-            if (left > 0f) {
-                attacking.put(plant, left);
-            } else {
-                attacking.remove(plant);
-                blending.put(plant, BLEND_SECONDS);   // hand over to the crossfade
+    private String clipFor(EntitySprite sprite, Plant plant, float delta, int damageStage) {
+        // An action clip plays ONCE, WHOLE: wind-up, release, follow-through, then back to idle.
+        //
+        // The model announces the wind-up and holds the effect back until it ends, so the release
+        // frame is when the pea appears / the sun pops out. What makes the return to idle smooth is
+        // the part AFTER that: the clip is allowed to run to its own end. Cutting to idle on the
+        // release -- which is what happened while the clip was gated on isWindingUp() alone -- drops
+        // the plant from a mid-lunge pose straight into the rest pose, and that discontinuity is the
+        // jerk. Played out, the clip settles back to rest by itself, so the switch lands on two poses
+        // that already match and there is nothing to see.
+        if (plant.isWindingUp()) {
+            if (winding.add(plant)) {
+                actionPhase.put(plant, 0f);   // rising edge: a fresh action just began
             }
-            // "attack" for shooters, "special" for sun producers (Sunflower's produce animation).
-            String shot = ClipMap.firstAvailable(sprite, "attack", "special", "shooting");
-            if (!ClipMap.IDLE.equals(shot)) {
-                return shot;
-            }
+        } else {
+            winding.remove(plant);
         }
 
-        // Defenders visibly degrade. Wall-nut ships idle / damage / damage2 / damage3 for exactly
-        // this, which is the spec's "visual degradation at 2 or 3 health thresholds".
-        String damaged = damageClip(sprite, plant);
+        Float phase = actionPhase.get(plant);
+        if (phase != null) {
+            // "attack"/"shooting" for shooters, "special" for sun producers (Sunflower's bloom).
+            String action = ClipMap.firstAvailable(sprite, "attack", "shooting", "special");
+            if (!ClipMap.IDLE.equals(action)) {
+                float length = sprite.clipDuration(action);
+                if (length <= 0f) {
+                    length = ATTACK_SECONDS;
+                }
+                float advanced = phase + delta;
+                if (advanced < length) {
+                    actionPhase.put(plant, advanced);
+                    return action;
+                }
+            }
+            actionPhase.remove(plant);
+        }
+
+        // Defenders visibly degrade -- the spec's "visual degradation at 2 or 3 health thresholds".
+        // The stage was decided in draw(), so the clip and the part swap can never disagree about how
+        // hurt the plant is.
+        String damaged = PlantDamage.clipFor(sprite, damageStage);
         if (damaged != null) {
             return damaged;
         }
         return ClipMap.firstAvailable(sprite, ClipMap.IDLE);
-    }
-
-    private static String damageClip(EntitySprite sprite, Plant plant) {
-        if (plant.getHealth() == null || !sprite.hasClip("damage")) {
-            return null;
-        }
-        int max = Math.max(1, plant.getHealth().getMaxHp());
-        float fraction = plant.getHealth().getCurrentHp() / (float) max;
-        if (fraction > 0.66f) {
-            return null;    // unhurt: fall through to idle
-        }
-        if (fraction > 0.33f) {
-            return "damage";
-        }
-        return sprite.hasClip("damage2") ? "damage2" : "damage";
     }
 
     private float footY(int row) {

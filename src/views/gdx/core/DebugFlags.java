@@ -24,7 +24,19 @@ public final class DebugFlags {
     // Answers "is it not being drawn, or is it not there?" without squinting at a screenshot.
     public static final boolean BOARD_COUNTS = flag("pvz.debugCounts");
 
+    // Pins every plant to one damage stage (1..3), so a Wall-nut's cracked shells can be looked at
+    // without waiting forty seconds for zombies to chew through 4000 HP. -1 leaves health in charge.
+    public static final int FORCE_DAMAGE_STAGE = number("pvz.forceDamage");
+
     private DebugFlags() { }
+
+    private static int number(String key) {
+        try {
+            return Integer.parseInt(System.getProperty(key, "-1").trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
 
     private static boolean flag(String key) {
         String value = System.getProperty(key);

@@ -16,7 +16,10 @@ public class InstantSunProductionStrategy implements PlantFoodStrategy {
     @Override
     public void executeEffect(Plant sourcePlant, GameSession gameSession) {
         double targetY = sourcePlant.getY() + 0.3;
-        Sun sun = new Sun(sourcePlant.getX(), sourcePlant.getY(), targetY, SunType.NORMAL, sunAmount, true, 100);
+        // Not falling: this sun comes out of the plant, not out of the sky. See ProduceSunAbility --
+        // marking a plant-made sun as falling makes it drop in from above the board and skips the
+        // producer's animation.
+        Sun sun = new Sun(sourcePlant.getX(), targetY, targetY, SunType.NORMAL, sunAmount, false, 100);
         gameSession.addSun(sun);
     }
 }

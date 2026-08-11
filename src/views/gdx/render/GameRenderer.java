@@ -49,11 +49,15 @@ public final class GameRenderer {
     private final AnimationClocks clocks = new AnimationClocks();
     private LawnGeometry lawn;
 
-    // Projectiles already seen. A projectile appearing for the first time means its shooter just
-    // fired, which is the only signal the view gets -- the model treats shooting as instantaneous and
-    // records no "attacking" state anywhere.
+    // Projectiles already seen, so a shot that vanishes can be spotted and turned into an impact.
+    //
+    // This used to double as the trigger for the shooter's attack animation, on the reasoning that a
+    // new projectile is the only sign the view gets that a plant fired. It is not needed for that any
+    // more: the model announces its wind-up, so PlantRenderer starts the animation BEFORE the shot
+    // instead of after it.
     private final java.util.Set<Projectile> knownShots =
             java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
     private final java.util.Set<Projectile> liveShots =
             java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
@@ -126,10 +130,7 @@ public final class GameRenderer {
             }
 
             for (Projectile projectile : new ArrayList<>(lane.getActiveProjectiles())) {
-                // First sighting == the shooter just fired; start its attack animation.
-                if (knownShots.add(projectile)) {
-                    plants.noteShot(projectile.getShooter());
-                }
+                knownShots.add(projectile);
                 projectiles.draw(batch, projectile, alpha, delta);
             }
 
