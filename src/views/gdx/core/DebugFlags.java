@@ -24,6 +24,15 @@ public final class DebugFlags {
     // Answers "is it not being drawn, or is it not there?" without squinting at a screenshot.
     public static final boolean BOARD_COUNTS = flag("pvz.debugCounts");
 
+    // Starts the level paused. Lets a screenshot capture the pause overlay, and is handy for looking
+    // at a board's opening state without it walking away from you.
+    public static final boolean START_PAUSED = flag("pvz.pause");
+
+    // Round-trips every lawn tile through project/unproject and reports any that come back as a
+    // different tile, then plants one seed by simulated click. Verifies the screen-to-tile half of the
+    // input path, which no unit test can reach because it needs a live viewport.
+    public static final boolean INPUT_CHECK = flag("pvz.inputCheck");
+
     // Pins every plant to one damage stage (1..3), so a Wall-nut's cracked shells can be looked at
     // without waiting forty seconds for zombies to chew through 4000 HP. -1 leaves health in charge.
     public static final int FORCE_DAMAGE_STAGE = number("pvz.forceDamage");

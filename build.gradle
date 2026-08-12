@@ -173,6 +173,47 @@ tasks.register('runGui', JavaExec) {
     }
 }
 
+// `gradlew browse` opens pizpizi's pvz-asset-browser against THIS project's asset folder.
+//
+// The browser is a separate desktop app (github.com/pizpizi/pvz-asset-browser) that reads the same
+// dump the game does -- it happens to take the same -Dpvz.assets property, because both come from the
+// same author. It is what to reach for when an animation does not look right and the question is "what
+// is actually in the file": it plays PAM clips, lists parts and armor states, and lets a visibility map
+// be tried out before any of it is written into a renderer.
+//
+// Deliberately NOT a dependency. It is a developer tool, it is not needed to build or play the game,
+// and adding a 40 MB jar to the build for it would slow every clone down for something most sessions
+// never open.
+//
+// Put the downloaded jar in tools/ (git-ignored), or point at it:
+//   gradlew browse -PbrowserJar=D:/downloads/browser.jar
+tasks.register('browse', Exec) {
+    group = 'application'
+    description = 'Opens the pvz-asset-browser on this project\'s pvz-assets folder.'
+
+    def assetsPath = System.getProperty('pvz.assets') ?: file('pvz-assets').absolutePath
+    def jarPath = project.findProperty('browserJar')
+    def jar = jarPath ? file(jarPath) : fileTree(dir: 'tools', include: '*.jar').files.find { true }
+
+    doFirst {
+        if (jar == null || !jar.exists()) {
+            throw new GradleException(
+                    "No asset-browser jar found.\n" +
+                    "  Download it from https://github.com/pizpizi/pvz-asset-browser/releases\n" +
+                    "  then either drop it in ${file('tools')}\n" +
+                    "  or run: gradlew browse -PbrowserJar=<path to the jar>")
+        }
+        if (!file(assetsPath).exists()) {
+            throw new GradleException("pvz-assets not found at ${assetsPath} -- see README.md")
+        }
+    }
+
+    // java -jar, not JavaExec: the browser ships as an executable jar and its Main-Class lives in the
+    // manifest, which JavaExec has no way to honour without hard-coding the class name here.
+    commandLine 'java', "-Dpvz.assets=${assetsPath}", '-jar',
+            jar != null ? jar.absolutePath : 'missing.jar'
+}
+
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
     workingDir = rootDir             // tests load the same relative data files the game does

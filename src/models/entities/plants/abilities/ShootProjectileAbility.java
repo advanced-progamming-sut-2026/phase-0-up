@@ -88,6 +88,13 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
         return super.canExecute(owner, gameSession);
     }
 
+    // True while a plant-food boost still has shots to fire. The view keeps the plant-food animation
+    // running for exactly as long as this does, so the glow stops when the burst does rather than after
+    // a guessed number of seconds -- a Peashooter's burst outlasted a fixed two-second window.
+    public boolean hasPendingBurst() {
+        return remainingShotsInBurst > 0 || pendingGiantShots > 0;
+    }
+
     // True while the plant is drawing back for a shot that has not been fired yet. The view reads this
     // to know which animation to play; the model needs it for nothing else.
     @Override
@@ -134,9 +141,20 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
     private void releaseShot(Plant owner, GameSession gameSession) {
         fireSingleProjectile(owner, gameSession);
 
-        remainingShotsInBurst = shotCount - 1;
+        // ADDS this shot's follow-ups to whatever is already queued -- it must never assign over it.
+        //
+        // Assigning wiped plant food. Feeding a plant queues a large burst (60 shots for a Peashooter),
+        // and if the plant happened to be mid-wind-up at that moment, the wind-up expired a moment
+        // later and reset the counter to shotCount - 1, which is 0 for a single-shot plant. The whole
+        // boost vanished, having fired nothing.
+        //
+        // That is why it only failed when the plant was SHOOTING and worked perfectly from idle: idle
+        // means no wind-up in flight, so nothing came along afterwards to overwrite the queue.
+        boolean wasIdle = remainingShotsInBurst <= 0;
+        remainingShotsInBurst += Math.max(0, shotCount - 1);
 
-        if (remainingShotsInBurst > 0) {
+        // Only start the cadence if nothing was already running; a burst in progress keeps its own.
+        if (remainingShotsInBurst > 0 && wasIdle) {
             burstTimer = burstDelayTicks;
         }
     }

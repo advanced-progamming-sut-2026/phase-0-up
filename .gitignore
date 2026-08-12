@@ -30,3 +30,6 @@ users_database.json
 # مسیرش با -Dpvz.assets=<path> قابل تغییر است و اگر نباشد،
 # views.gdx.core.Assets با یک پیام واضح از کار می‌ایستد.
 pvz-assets/
+
+# ابزار توسعه: مرورگر اسست‌ها (jar دانلودی، جزو مخزن نیست)
+tools/*.jar

@@ -38,6 +38,7 @@ public final class GameRenderer {
     private final CollectibleRenderer collectibles;
     private final LawnmowerRenderer mowers;
     private final ImpactEffects impacts;
+    private final ExplosionEffects explosions;
 
     // Reused per lane so a full board does not allocate a list per row per frame.
     private final List<Zombie> laneZombies = new ArrayList<>();
@@ -73,8 +74,15 @@ public final class GameRenderer {
         this.projectiles = new ProjectileRenderer(assets, lawn, interpolator);
         this.collectibles = new CollectibleRenderer(sprites, lawn, interpolator, clocks);
         this.mowers = new LawnmowerRenderer(sprites, lawn, interpolator, clocks, environment);
-        this.impacts = new ImpactEffects(assets);
+        this.impacts = new ImpactEffects(sprites);
+        this.explosions = new ExplosionEffects(sprites, lawn);
         this.lawn = lawn;
+    }
+
+    // Input needs to hit-test suns against where they were DRAWN, not where the model files them, so
+    // that a falling sun can be clicked in mid-air. Only the renderer knows the drawn position.
+    public CollectibleRenderer collectibles() {
+        return collectibles;
     }
 
     // Diagnostic: what clip an entity is playing and how far into it.
@@ -94,7 +102,15 @@ public final class GameRenderer {
         clocks.sweep();
     }
 
+    // The model narrates detonations; this is where the view hears about them.
+    public ExplosionEffects explosions() {
+        return explosions;
+    }
+
     private void drawLanes(Batch batch, GameSession session, float delta, float alpha) {
+        // The blast's rear half, under everything it engulfs.
+        explosions.drawRear(batch, delta);
+
         for (int row = 0; row < Constants.BOARD_ROWS; row++) {
             Row lane = session.getMap().getRow(row);
 
@@ -158,7 +174,7 @@ public final class GameRenderer {
         for (Projectile spent : knownShots) {
             if (!liveShots.contains(spent)) {
                 impacts.spawn(projectiles.lastDrawnX(spent), projectiles.lastDrawnY(spent),
-                        projectiles.tintOf(spent));
+                        projectiles.tintOf(spent), spent.getElement());
             }
         }
         knownShots.retainAll(liveShots);
@@ -168,5 +184,9 @@ public final class GameRenderer {
         // Suns float above the whole board and are collected by hovering, so they are drawn over
         // everything rather than per lane.
         collectibles.draw(batch, session, delta, alpha);
+
+        // The blast's front half, over everything -- drawn after the suns so a detonation is not hidden
+        // behind one that happens to be sitting on the same tile.
+        explosions.drawFront(batch);
     }
 }

@@ -23,6 +23,10 @@ public final class PlantRenderer {
     // Fallback length for an action animation whose real duration the sprite does not report.
     private static final float ATTACK_SECONDS = 0.45f;
 
+    // How long a fed plant keeps its plant-food animation going. Roughly how long the boost itself
+    // takes to play out -- a Peashooter's queued burst is several shots over a couple of seconds.
+    private static final float PLANT_FOOD_SECONDS = 2.0f;
+
     // Frozen plants are encased in ice. Phase 1 tints rather than drawing an ice block; the block
     // itself is Frostbite Caves work (T7.7). Three steps, matching Plant.getChillLevel()'s 1..3.
     private static final Color[] CHILL_TINT = {
@@ -44,6 +48,12 @@ public final class PlantRenderer {
     // Plants whose wind-up was already running last frame, so a new one is detected on its RISING edge
     // rather than restarting the clip every frame the flag stays true.
     private final java.util.Set<Plant> winding =
+            java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+    // Plants already seen holding plant food, so the one-way flag fires its animation exactly once.
+    private final java.util.Set<Plant> fed =
+            java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+    // Plants whose currently-playing action clip is the plant-food one.
+    private final java.util.Set<Plant> plantFood =
             java.util.Collections.newSetFromMap(new IdentityHashMap<>());
 
     // NOTE: two earlier approaches are deliberately gone.
@@ -92,6 +102,8 @@ public final class PlantRenderer {
                 // dropped. Without it a long level accumulates an entry per plant that ever died.
                 actionPhase.remove(plant);
                 winding.remove(plant);
+                fed.remove(plant);
+                plantFood.remove(plant);
             }
             return;
         }
@@ -105,7 +117,19 @@ public final class PlantRenderer {
         // after every shot, which is its own visible jump.
         float freeRunning = clocks.advance(plant, clip, delta);
         Float phase = actionPhase.get(plant);
-        float stateTime = ClipMap.sample(sprite, clip, phase != null ? phase : freeRunning);
+        float elapsed = phase != null ? phase : freeRunning;
+        // Plant food is the one action that repeats: its clip is far shorter than the window it plays
+        // across, so the phase is wrapped rather than clamped. ClipMap.sample would otherwise hold the
+        // final frame for the rest of the window, which looks like the animation stopped.
+        // Only the LOOP stage wraps -- the two bookends play once each, at their own length.
+        if (phase != null && plantFood.contains(plant)
+                && plantFoodStage.getOrDefault(plant, STAGE_ON) == STAGE_LOOP) {
+            float cycle = sprite.clipDuration(clip);
+            if (cycle > 0f) {
+                elapsed = elapsed % cycle;
+            }
+        }
+        float stateTime = ClipMap.sample(sprite, clip, elapsed);
 
         Color previous = batch.getColor().cpy();
         Color tint = tintFor(plant);
@@ -131,6 +155,8 @@ public final class PlantRenderer {
         // the plant from a mid-lunge pose straight into the rest pose, and that discontinuity is the
         // jerk. Played out, the clip settles back to rest by itself, so the switch lands on two poses
         // that already match and there is nothing to see.
+        noteNewActions(plant);
+
         if (plant.isWindingUp()) {
             if (winding.add(plant)) {
                 actionPhase.put(plant, 0f);   // rising edge: a fresh action just began
@@ -141,20 +167,45 @@ public final class PlantRenderer {
 
         Float phase = actionPhase.get(plant);
         if (phase != null) {
-            // "attack"/"shooting" for shooters, "special" for sun producers (Sunflower's bloom).
-            String action = ClipMap.firstAvailable(sprite, "attack", "shooting", "special");
+            // Plant food wins while it is playing: "plantfood" for the plants that ship one, otherwise
+            // the normal action clip. Peashooter's is a plain "plantfood"; some plants also carry
+            // plantfood_on/_off bookends, which are left for T8.6's aura work.
+            String action = plantFood.contains(plant)
+                    ? plantFoodClip(sprite, plant)
+                    // "attack"/"shooting" for shooters, "special" for sun producers (Sunflower's bloom).
+                    : ClipMap.firstAvailable(sprite, "attack", "shooting", "special");
             if (!ClipMap.IDLE.equals(action)) {
                 float length = sprite.clipDuration(action);
                 if (length <= 0f) {
                     length = ATTACK_SECONDS;
+                }
+                if (plantFood.contains(plant)) {
+                    length = plantFoodStageLength(sprite, plant);
                 }
                 float advanced = phase + delta;
                 if (advanced < length) {
                     actionPhase.put(plant, advanced);
                     return action;
                 }
+                // Plant food is a three-part sequence, so the end of one stage starts the next rather
+                // than ending the whole thing.
+                if (plantFood.contains(plant) && advancePlantFoodStage(sprite, plant)) {
+                    actionPhase.put(plant, 0f);
+                    return plantFoodClip(sprite, plant);
+                }
             }
             actionPhase.remove(plant);
+            plantFood.remove(plant);
+            plantFoodStage.remove(plant);
+        }
+
+        // A mine that has not finished burying itself is a lump in the dirt, not a live potato with its
+        // eyes open. Checked after the action clips so an arming mine still animates if it acts.
+        if (!plant.isArmed()) {
+            String buried = ClipMap.firstAvailable(sprite, "plant_idle");
+            if (!ClipMap.IDLE.equals(buried)) {
+                return buried;
+            }
         }
 
         // Defenders visibly degrade -- the spec's "visual degradation at 2 or 3 health thresholds".
@@ -165,6 +216,82 @@ public final class PlantRenderer {
             return damaged;
         }
         return ClipMap.firstAvailable(sprite, ClipMap.IDLE);
+    }
+
+    // Plant food is a one-off: the flag is set once and never cleared, so its rising edge is the cue.
+    // Checked before the wind-up because feeding a plant should visibly interrupt whatever it was doing.
+    private void noteNewActions(Plant plant) {
+        if (plant.hasPlantFood() && fed.add(plant)) {
+            actionPhase.put(plant, 0f);
+            plantFood.add(plant);
+            // Start at the build-up, or straight at the loop for a plant that has no plantfood_on.
+            // Entering at STAGE_ON regardless would substitute the middle clip for the missing build-up
+            // and then play it AGAIN as the loop, doubling how long a Peashooter glows.
+            EntitySprite sprite = sprites.get(plant.getName());
+            plantFoodStage.put(plant, sprite.hasClip("plantfood_on") ? STAGE_ON : STAGE_LOOP);
+        }
+    }
+
+    // Plant food plays as three parts, the way the art is cut: plantfood_on is the build-up, plantfood
+    // is a short cycle that REPEATS while the boost works, and plantfood_off is the wind-down.
+    //
+    // Not every plant ships all three -- Peashooter has only the middle -- so a missing stage is
+    // skipped rather than special-cased. 0 = on, 1 = loop, 2 = off.
+    private static final int STAGE_ON = 0;
+    private static final int STAGE_LOOP = 1;
+    private static final int STAGE_OFF = 2;
+
+    private final Map<Plant, Integer> plantFoodStage = new IdentityHashMap<>();
+
+    private static String stageClip(int stage) {
+        return switch (stage) {
+            case STAGE_ON -> "plantfood_on";
+            case STAGE_OFF -> "plantfood_off";
+            default -> "plantfood";
+        };
+    }
+
+    private String plantFoodClip(EntitySprite sprite, Plant plant) {
+        int stage = plantFoodStage.getOrDefault(plant, STAGE_ON);
+        String wanted = stageClip(stage);
+        if (sprite.hasClip(wanted)) {
+            return wanted;
+        }
+        // Stage missing from this plant's art: fall back to the looping middle, then to the attack clip
+        // so a fed plant still does something visible.
+        return ClipMap.firstAvailable(sprite, "plantfood", "plantfood2", "attack");
+    }
+
+    // How long the current stage lasts. The bookends run for exactly their own length; the middle runs
+    // for a fixed window because its clip is a sixth of a second and is meant to repeat.
+    private float plantFoodStageLength(EntitySprite sprite, Plant plant) {
+        int stage = plantFoodStage.getOrDefault(plant, STAGE_ON);
+        if (stage == STAGE_LOOP) {
+            // The loop lasts as long as the boost does. A fixed window is only the floor, for boosts
+            // that are instantaneous (a lane freeze) or already finished -- otherwise the animation
+            // stopped mid-burst, with the plant still visibly firing extra shots.
+            return plant.isPlantFoodActive() ? Float.MAX_VALUE : PLANT_FOOD_SECONDS;
+        }
+        if (!sprite.hasClip(stageClip(stage))) {
+            return PLANT_FOOD_SECONDS;
+        }
+        float length = sprite.clipDuration(stageClip(stage));
+        return length > 0f ? length : ATTACK_SECONDS;
+    }
+
+    // Moves to the next stage, returning false once the wind-down has finished.
+    private boolean advancePlantFoodStage(EntitySprite sprite, Plant plant) {
+        int stage = plantFoodStage.getOrDefault(plant, STAGE_ON);
+        if (stage >= STAGE_OFF) {
+            return false;
+        }
+        // A plant with no plantfood_off ends after the loop, so the sequence is however much of it the
+        // art actually has.
+        if (stage == STAGE_LOOP && !sprite.hasClip("plantfood_off")) {
+            return false;
+        }
+        plantFoodStage.put(plant, stage + 1);
+        return true;
     }
 
     private float footY(int row) {

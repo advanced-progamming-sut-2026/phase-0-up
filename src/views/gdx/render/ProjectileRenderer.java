@@ -30,16 +30,42 @@ public final class ProjectileRenderer {
     private static final float ARC_SPAN_CELLS = 3.2f;
     private static final float ARC_HEIGHT_CELLS = 0.85f;
 
-    private static final String DEFAULT_PEA = "IMAGE_PROJECTILEPEA";
+    // The shipped projectile art, per element.
+    //
+    // These are real sub-images out of the plants' own animations -- the pea a Peashooter spits is the
+    // part named "peashooter_stem_pea", and Snow Pea carries its own blue one. Both were found with
+    // -Dpvz.dumpParts and confirmed with -Dpvz.probeRegions before being named here.
+    //
+    // This replaces a tinted-disc fake. The disc existed because the only pea sprite anyone had found
+    // was green, and multiplying green by cyan is still green, so a Snow Pea fired a visibly normal pea.
+    // The answer was never a better tint -- it was that the blue pea is in the dump.
+    private static final String PEA_GREEN = "IMAGE_PLANT_PEASHOOTER_PEASHOOTER_23X23";
+    private static final String PEA_ICE = "IMAGE_PLANT_SNOWPEA_SNOWPEA_23X23";
+    private static final String PEA_FIRE = "IMAGE_EFFECTS_T_FIRE_PEA_T_FIRE_PEA_43X43";
 
-    // Element decides the colour, which is what the spec means by projectiles being "visually
-    // distinct": a fire pea, an ice pea and a goo pea read apart instantly even sharing one sprite.
+    private static final Map<Element, String> ELEMENT_REGION = new java.util.EnumMap<>(Element.class);
+
+    static {
+        ELEMENT_REGION.put(Element.NEUTRAL, PEA_GREEN);
+        ELEMENT_REGION.put(Element.ICE, PEA_ICE);
+        ELEMENT_REGION.put(Element.FIRE, PEA_FIRE);
+    }
+
+    // How big a pea is drawn, as a fraction of a tile's width.
+    //
+    // NOT the region's own pixel size. The atlas is packed at 0.643 of the authored size, so a pea
+    // authored as 23x23 arrives here as a 15x15 region -- drawing it at that size made peas about an
+    // eighth of a tile, which is what "the peas are too small" was about. Sizing against the lawn
+    // instead means every element's pea reads the same regardless of how its source was packed, and
+    // the fire pea (authored 43x43) does not come out three times the size of a normal one.
+    private static final float PEA_WIDTH_CELLS = 0.34f;
+
+    // Elements with no dedicated sprite in the dump still have to read apart, so those keep a tint over
+    // the green pea. Ice and neutral are NOT tinted any more: they have their own art.
     private static final Map<Element, Color> ELEMENT_TINT = new java.util.EnumMap<>(Element.class);
 
     static {
-        ELEMENT_TINT.put(Element.NEUTRAL, new Color(0.55f, 0.95f, 0.35f, 1f));
         ELEMENT_TINT.put(Element.FIRE, new Color(1f, 0.55f, 0.15f, 1f));
-        ELEMENT_TINT.put(Element.ICE, new Color(0.55f, 0.90f, 1f, 1f));
         ELEMENT_TINT.put(Element.POISON, new Color(0.70f, 0.45f, 1f, 1f));
         ELEMENT_TINT.put(Element.BUTTER, new Color(1f, 0.92f, 0.35f, 1f));
     }
@@ -70,14 +96,14 @@ public final class ProjectileRenderer {
     private boolean warnedMissingRegion;
 
     public void draw(Batch batch, Projectile projectile, float alpha, float delta) {
-        TextureRegion region = peaRegion();
+        TextureRegion region = peaRegion(projectile.getElement());
         if (region == null) {
             // Silently drawing nothing is the worst outcome here: shots keep damaging zombies while
             // being invisible, which reads as the game cheating. Say so, once.
             if (!warnedMissingRegion) {
                 warnedMissingRegion = true;
                 com.badlogic.gdx.Gdx.app.error("ProjectileRenderer",
-                        DEFAULT_PEA + " unavailable -- shots will be invisible");
+                        PEA_GREEN + " unavailable -- shots will be invisible");
             }
             return;
         }
@@ -103,35 +129,23 @@ public final class ProjectileRenderer {
         }
 
         Color previous = batch.getColor().cpy();
+        // Only elements without their own sprite are tinted. A green pea and a blue pea are now two
+        // different images, so neither needs colouring.
         batch.setColor(ELEMENT_TINT.getOrDefault(projectile.getElement(), Color.WHITE));
 
         // Drawn inside GameRenderer's scaled pass, so world coordinates have to be converted the same
         // way SpritePlacer converts them -- otherwise the shot lands at 0.643 of where it should.
-        float w = region.getRegionWidth();
-        float h = region.getRegionHeight();
+        // Sized against the lawn, keeping the source's aspect ratio, so packing scale cannot leak into
+        // how big a pea looks.
+        float w = SpritePlacer.toSpriteSpace(PEA_WIDTH_CELLS * lawn.cellWidth());
+        float h = w * region.getRegionHeight() / (float) region.getRegionWidth();
         float sx = SpritePlacer.toSpriteSpace(x);
         float sy = SpritePlacer.toSpriteSpace(y);
         batch.draw(region, sx - w / 2f, sy - h / 2f, w, h);
 
-        // pvz-assets ships exactly one projectile sprite at 768 -- IMAGE_PROJECTILEPEA, and it is
-        // GREEN. A SpriteBatch tint multiplies, so green x cyan is still green: no tint can turn that
-        // sprite blue, which is why a Snow Pea kept firing a visibly normal pea.
-        //
-        // The overlay therefore has to come from a WHITE source, where multiplying by the element
-        // colour yields that colour exactly. Drawn slightly smaller than the pea so its silhouette
-        // still reads as a pea rather than a square.
-        Element element = projectile.getElement();
-        if (element != null && element != Element.NEUTRAL) {
-            if (wash == null) {
-                wash = assets.round(Color.WHITE);
-            }
-            Color c = ELEMENT_TINT.getOrDefault(element, Color.WHITE);
-            // Nearly opaque, and a DISC rather than a stretched pixel -- the square overlay was what
-            // made an ice pea look like a green pea wearing a cyan rectangle.
-            batch.setColor(c.r, c.g, c.b, 0.95f);
-            float d = Math.min(w, h) * 0.92f;
-            wash.draw(batch, sx - d / 2f, sy - d / 2f, d, d);
-        }
+        // The white disc that used to be stamped over non-neutral shots is gone. It was a workaround for
+        // not having the blue pea, and it always looked like what it was -- a coloured blob sitting on
+        // top of a pea. Real art needs nothing drawn over it.
 
         batch.setColor(previous);
 
@@ -208,14 +222,28 @@ public final class ProjectileRenderer {
     }
 
 
-    private TextureRegion peaRegion() {
-        if (pea == null) {
-            try {
-                pea = assets.region(DEFAULT_PEA);
-            } catch (RuntimeException e) {
-                com.badlogic.gdx.Gdx.app.error("ProjectileRenderer", "no " + DEFAULT_PEA, e);
-            }
+    // Cached per element: region() walks the bank's index, and this runs per shot per frame.
+    private final Map<Element, TextureRegion> regionCache = new java.util.EnumMap<>(Element.class);
+
+    private TextureRegion peaRegion(Element element) {
+        Element key = element == null ? Element.NEUTRAL : element;
+        TextureRegion cached = regionCache.get(key);
+        if (cached != null) {
+            return cached;
         }
-        return pea;
+        try {
+            // Elements with no sprite of their own fall back to the green pea, which is then tinted.
+            TextureRegion region = assets.region(ELEMENT_REGION.getOrDefault(key, PEA_GREEN));
+            if (region == null) {
+                region = assets.region(PEA_GREEN);
+            }
+            if (region != null) {
+                regionCache.put(key, region);
+            }
+            return region;
+        } catch (RuntimeException e) {
+            com.badlogic.gdx.Gdx.app.error("ProjectileRenderer", "no pea region for " + key, e);
+            return null;
+        }
     }
 }

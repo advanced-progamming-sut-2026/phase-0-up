@@ -55,10 +55,34 @@ public final class Assets implements Disposable {
         // Ships inside the pvz-skin jar as classpath resources (skin/pvz2_skin.json + atlas + TTFs).
         // Gdx.files.internal() falls back to the classpath, so this needs nothing on disk.
         this.skin = loadSkin();
+        smoothFonts(this.skin);
         this.whitePixel = createWhitePixel();
         this.disc = createDisc();
 
         Gdx.app.log("Assets", "asset root: " + root.file().getAbsolutePath());
+    }
+
+    // Makes the skin's fonts survive being scaled.
+    //
+    // The UI is laid out in a 1280x720 space and the window is 1920x1080, so every glyph is drawn at
+    // 1.5x. Two defaults make that look bad:
+    //
+    //  * the font's page texture filters Nearest, so an upscaled glyph gets hard, blocky edges rather
+    //    than a smooth ramp. Linear filtering is what actually removes the jaggedness.
+    //  * BitmapFont snaps glyphs to whole pixels by default (useIntegerPositions). At a fractional
+    //    scale that rounding lands letters unevenly, so spacing visibly wobbles along a word.
+    //
+    // Both are per-font settings, and the skin can carry several, so every one it defines is fixed.
+    private static void smoothFonts(Skin skin) {
+        for (com.badlogic.gdx.graphics.g2d.BitmapFont font
+                : skin.getAll(com.badlogic.gdx.graphics.g2d.BitmapFont.class).values()) {
+            font.setUseIntegerPositions(false);
+            for (com.badlogic.gdx.graphics.g2d.TextureRegion page : font.getRegions()) {
+                page.getTexture().setFilter(
+                        com.badlogic.gdx.graphics.Texture.TextureFilter.Linear,
+                        com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
+            }
+        }
     }
 
     // The skin normally comes out of the pvz-skin jar, which makes it convenient but uneditable. Point

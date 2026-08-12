@@ -92,6 +92,41 @@ public class Plant extends Entity {
         return false;
     }
 
+    // False only while a mine is still burying itself. Every other plant is "armed" from the moment it
+    // is placed, so this reads true for them and callers need no special case.
+    public boolean isArmed() {
+        if (abilities == null) {
+            return true;
+        }
+        for (PlantAbility ability : abilities) {
+            if (ability instanceof models.entities.plants.abilities.DelayedExplosiveAbility mine) {
+                return mine.isArmed();
+            }
+        }
+        return true;
+    }
+
+    // Whether plant food has been used on this plant. Set once and never cleared, so the view treats
+    // its RISING edge as "play the plant-food animation now".
+    public boolean hasPlantFood() {
+        return thisPlantHasFood;
+    }
+
+    // True while a plant-food boost is still playing out -- a shooter with queued burst shots left to
+    // fire. The view uses it to hold the plant-food animation for exactly that long.
+    public boolean isPlantFoodActive() {
+        if (abilities == null) {
+            return false;
+        }
+        for (PlantAbility ability : abilities) {
+            if (ability instanceof models.entities.plants.abilities.ShootProjectileAbility shooter
+                    && shooter.hasPendingBurst()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isDead() {
         return health == null || health.isDead();
     }

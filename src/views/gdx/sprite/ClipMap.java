@@ -23,7 +23,7 @@ public final class ClipMap {
     // repeating them makes the stone flicker as it re-crumbles several times a second.
     private static final java.util.Set<String> ONE_SHOT_PREFIXES = java.util.Set.of(
             "die", "damage", "undamaged", "attack", "special", "shooting", "plantfood",
-            "smash", "fire", "spawn", "enter", "exit");
+            "smash", "fire", "spawn", "enter", "exit", "explosion", "splat");
 
     public static boolean loops(String clip) {
         if (clip == null) {

@@ -22,6 +22,19 @@ public final class CollectibleRenderer {
 
     private static final String SUN_SPRITE = "SUN";
 
+    // The radioactive sun has its own animation rather than being a tinted or reclipped normal sun.
+    private static final String RADIOACTIVE_SPRITE = "SUN_BOMB";
+
+    // The sun value drawn at the sprite's natural size -- everything else is measured against it. 50 is
+    // the ordinary sky/plant sun, so the common case looks exactly as it always did and only the
+    // unusual values stand out.
+    private static final int REFERENCE_SUN_AMOUNT = 50;
+
+    // Bounds on the value-to-size mapping, so a cheat that hands out a 5000-sun does not fill the lawn
+    // and a 1-sun does not vanish.
+    private static final float MIN_SUN_SCALE = 0.6f;
+    private static final float MAX_SUN_SCALE = 1.8f;
+
     // How far above the lawn a sky sun starts, in cell heights. The model drops it from the top ROW,
     // which on screen is barely above the board and reads as the sun blinking into existence rather
     // than falling from the sky. Purely visual: the landing tile and the moment it lands stay the
@@ -76,7 +89,10 @@ public final class CollectibleRenderer {
 
     public void draw(Batch batch, GameSession session, float delta, float alpha) {
         EntitySprite sprite = sprites.get(SUN_SPRITE);
-        fallTime.keySet().retainAll(new java.util.HashSet<>(session.getActiveSuns()));
+        java.util.Set<Sun> live = new java.util.HashSet<>(session.getActiveSuns());
+        fallTime.keySet().retainAll(live);
+        drawnX.keySet().retainAll(live);
+        drawnY.keySet().retainAll(live);
 
         // GameSession.getActiveSuns(), NOT GameMap.getActiveCollectibles(). The map's list exists but
         // SunSystem never puts suns in it, so reading it renders nothing at all -- which is exactly
@@ -131,8 +147,23 @@ public final class CollectibleRenderer {
                 }
             }
 
-            String clip = clipFor(sprite, sun.getType());
-            float stateTime = ClipMap.sample(sprite, clip, clocks.advance(sun, clip, delta));
+            // Remembered so a click can hit the sun WHERE IT IS DRAWN. A falling sun is drawn up to
+            // 4.5 cells above the tile it is heading for, so testing the click against that tile means
+            // the player has to click empty sky far below the sun to catch it in the air.
+            drawnX.put(sun, x);
+            drawnY.put(sun, y);
+
+            drawSun(batch, sun, sprite, x, y, age, delta);
+        }
+    }
+
+    private void drawSun(Batch batch, Sun sun, EntitySprite sprite,
+                         float x, float y, float age, float delta) {
+            // A radioactive sun is a different object, not a recoloured one: it has its own animation.
+            EntitySprite drawn = sun.getType() == SunType.RADIOACTIVE
+                    ? sprites.get(RADIOACTIVE_SPRITE) : sprite;
+            String clip = clipFor(drawn, sun.getType());
+            float stateTime = ClipMap.sample(drawn, clip, clocks.advance(sun, clip, delta));
 
             // Packed rather than Color.cpy(): this runs per sun per frame and the copy would allocate.
             float previousColor = batch.getPackedColor();
@@ -141,14 +172,52 @@ public final class CollectibleRenderer {
                 com.badlogic.gdx.graphics.Color tint = batch.getColor();
                 batch.setColor(tint.r, tint.g, tint.b, tint.a * blink);
             }
-            SpritePlacer.drawCentred(batch, sprite, clip, stateTime, x, y, true);
+            // Bigger sun, more sun, measured against the ordinary 50. Scaling by the SQUARE ROOT makes
+            // the drawn AREA proportional to the value -- scaling the width instead makes a 100 look
+            // four times a 50, which overstates it badly.
+            float scale = (float) Math.sqrt(Math.max(1, sun.getAmount())
+                    / (double) REFERENCE_SUN_AMOUNT);
+            scale = Math.max(MIN_SUN_SCALE, Math.min(MAX_SUN_SCALE, scale));
+
+            if (Math.abs(scale - 1f) < 0.01f) {
+                SpritePlacer.drawCentred(batch, drawn, clip, stateTime, x, y, true);
+            } else {
+                drawScaled(batch, drawn, clip, stateTime, x, y, scale);
+            }
             batch.setPackedColor(previousColor);
-        }
     }
 
     // Seconds each sun has been on screen. Identity-keyed, and pruned every frame so a long level
     // cannot accumulate entries.
     private final java.util.Map<Sun, Float> fallTime = new java.util.IdentityHashMap<>();
+
+    // Where each sun was last DRAWN, in world coordinates. Input hit-tests against this rather than
+    // against the sun's model tile, because the two deliberately disagree while it is falling.
+    private final java.util.Map<Sun, Float> drawnX = new java.util.IdentityHashMap<>();
+    private final java.util.Map<Sun, Float> drawnY = new java.util.IdentityHashMap<>();
+
+    // The sun drawn under this world point, or null. Radius is generous: a sun is a small target and
+    // it is usually moving, and being slightly forgiving here is what makes catching one in mid-air
+    // feel possible rather than fiddly.
+    public Sun sunAt(float worldX, float worldY) {
+        float radius = lawn.cellWidth() * 0.55f;
+        for (java.util.Map.Entry<Sun, Float> entry : drawnX.entrySet()) {
+            Sun sun = entry.getKey();
+            if (sun.isRemovable()) {
+                continue;
+            }
+            Float sy = drawnY.get(sun);
+            if (sy == null) {
+                continue;
+            }
+            float dx = worldX - entry.getValue();
+            float dy = worldY - sy;
+            if (dx * dx + dy * dy <= radius * radius) {
+                return sun;
+            }
+        }
+        return null;
+    }
 
     // A sun that is about to time out flashes, so it reads as "grab me now" rather than vanishing with
     // no warning. The flash speeds up as the sun runs out -- a constant rate tells the player something
@@ -172,6 +241,25 @@ public final class CollectibleRenderer {
         float hz = BLINK_SLOW_HZ + (BLINK_FAST_HZ - BLINK_SLOW_HZ) * urgency;
         float wave = 0.5f + 0.5f * (float) Math.cos(age * hz * 2 * Math.PI);
         return BLINK_MIN_ALPHA + (1f - BLINK_MIN_ALPHA) * wave;
+    }
+
+    // Same placement as SpritePlacer.drawCentred, but around a scale applied at the batch transform.
+    // libPVZ's scaled draw overloads exist but take no visibility map, so keeping the scaling here is
+    // one code path for every entity that needs resizing.
+    private static void drawScaled(Batch batch, EntitySprite sprite, String clip, float stateTime,
+                                   float worldX, float worldY, float scale) {
+        com.badlogic.gdx.math.Rectangle bounds = sprite.bounds(clip);
+        com.badlogic.gdx.math.Matrix4 previous = batch.getTransformMatrix().cpy();
+        com.badlogic.gdx.math.Matrix4 scaled = new com.badlogic.gdx.math.Matrix4(previous)
+                .translate(SpritePlacer.toSpriteSpace(worldX),
+                        SpritePlacer.toSpriteSpace(worldY), 0f)
+                .scale(scale, scale, 1f);
+
+        batch.setTransformMatrix(scaled);
+        // The same y-down flip drawCentred applies: the art's centre sits at -(y + height/2).
+        float offsetY = bounds == null ? 0f : bounds.y + bounds.height / 2f;
+        sprite.draw(batch, clip, stateTime, 0f, offsetY, true);
+        batch.setTransformMatrix(previous);
     }
 
     // A sun's y is a continuous lane coordinate while it falls, so it is converted the same way a

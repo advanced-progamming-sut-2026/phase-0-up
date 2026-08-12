@@ -12,7 +12,7 @@ public class DesktopLauncher {
     public static void main(String[] args) {
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setTitle("Plants vs. Zombies 2 -- Sharif AP");
-        config.setWindowedMode((int) PvZGame.VIRTUAL_WIDTH, (int) PvZGame.VIRTUAL_HEIGHT);
+        config.setWindowedMode(PvZGame.WINDOW_WIDTH, PvZGame.WINDOW_HEIGHT);
 
         // The lawn is a 5x9 grid that must stay fully visible, so the window has a floor below which
         // the board would stop being readable. FitViewport letterboxes anything above it.

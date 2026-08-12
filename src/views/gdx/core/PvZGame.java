@@ -21,8 +21,18 @@ public class PvZGame extends Game {
     // Design resolution. Every Screen uses a FitViewport against these numbers, so widgets are laid out
     // once in this space and letterboxed to whatever the window actually is -- rather than every screen
     // re-deriving positions from Gdx.graphics.getWidth().
+    //
+    // This is the UI's coordinate space, NOT the window size, and it is deliberately left at 720p: the
+    // HUD is authored against it, and doubling it would halve the on-screen size of every widget and
+    // font. The window is what changes -- see WINDOW_WIDTH below. FitViewport scales this space up to
+    // fill it, so the HUD stays the same relative size at any resolution.
     public static final float VIRTUAL_WIDTH = 1280f;
     public static final float VIRTUAL_HEIGHT = 720f;
+
+    // Default window size. Same 16:9 shape as the design resolution, so the lawn fills the window with
+    // no letterboxing -- a different aspect would put black bars top and bottom.
+    public static final int WINDOW_WIDTH = 1920;
+    public static final int WINDOW_HEIGHT = 1080;
 
     private AppSession appSession;
     private Assets assets;
@@ -65,6 +75,19 @@ public class PvZGame extends Game {
                 Gdx.app.log("Parts", name + " = " + sprites.partNames(name));
             }
         }
+        // Diagnostic: -Dpvz.probeRegions=ID1,ID2 reports whether each RESOURCES.json image id resolves
+        // to a real atlas region, and how big it is. An id that does not resolve returns null and the
+        // caller silently falls back to a placeholder, so without this a typo looks like a layout bug.
+        String probe = System.getProperty("pvz.probeRegions");
+        if (probe != null && !probe.isBlank()) {
+            for (String id : probe.split("\\s*,\\s*")) {
+                com.badlogic.gdx.graphics.g2d.TextureRegion region = assets.region(id);
+                Gdx.app.log("Region", (region == null ? "MISSING  " : "ok       ") + id
+                        + (region == null ? "" : "  " + region.getRegionWidth()
+                                + "x" + region.getRegionHeight()));
+            }
+        }
+
         screens = new ScreenManager(context);
         registerScreens();
 

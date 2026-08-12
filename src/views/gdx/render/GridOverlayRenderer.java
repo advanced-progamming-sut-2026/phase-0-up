@@ -46,12 +46,18 @@ public final class GridOverlayRenderer implements Disposable {
     }
 
     // Fills one tile -- the white highlight under the cursor while planting (T2.1).
+    //
+    // Blending is turned on around the draw because ShapeRenderer does not do it for you: without this
+    // the colour's alpha is ignored and the tile comes out as a solid block that hides the plant
+    // standing on it, rather than a wash over the art.
     public void highlight(Matrix4 projection, LawnGeometry lawn, int col, int row, Color color) {
+        com.badlogic.gdx.Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
         shapes.setProjectionMatrix(projection);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         shapes.setColor(color);
         shapes.rect(lawn.worldX(col), lawn.worldY(row), lawn.cellWidth(), lawn.cellHeight());
         shapes.end();
+        com.badlogic.gdx.Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
     }
 
     @Override

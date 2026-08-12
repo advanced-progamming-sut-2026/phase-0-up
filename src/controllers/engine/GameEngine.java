@@ -12,7 +12,7 @@ import views.renderers.MapRenderer;
 
 public class GameEngine {
     private GameSession gameSession;
-    private final InGameRenderer inGameRenderer;
+    private InGameRenderer inGameRenderer;
     private final MapRenderer mapRenderer;
     private CombatSystem combatSystem;
     private SunSystem sunSystem;
@@ -206,6 +206,27 @@ public class GameEngine {
             inGameRenderer.render(new Result(true, "This lawn is already settled -- heading back."));
         }
         running = false;
+    }
+
+    // Where in-game command output goes. The terminal prints it; the graphical build swaps in a
+    // renderer that raises a toast instead. Everything else about a command -- parsing, the rules it
+    // runs, the Result it produces -- is identical either way, which is the entire point.
+    public void setInGameRenderer(InGameRenderer renderer) {
+        if (renderer != null) {
+            this.inGameRenderer = renderer;
+        }
+    }
+
+    // Runs one in-game command exactly as if it had been typed at the prompt.
+    //
+    // This is the seam the graphical build synthesises through: clicking a seed card and then a tile
+    // produces the string "plant plant -t Peashooter -l (3, 2)" and hands it here, so the click and
+    // the typed command are the SAME operation. Cost checks, cooldowns, occupied tiles, aquatic
+    // rules -- none of it is reimplemented for the mouse, and none of it can drift out of sync.
+    //
+    // Returns false for input no pattern claims, which the caller reports however it likes.
+    public boolean submitInGameCommand(String input) {
+        return input != null && routeAndExecute(input);
     }
 
     // Dispatches one in-game command. Split into four groups by what the command acts on, so each
