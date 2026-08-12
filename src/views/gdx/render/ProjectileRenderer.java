@@ -41,14 +41,20 @@ public final class ProjectileRenderer {
     // The answer was never a better tint -- it was that the blue pea is in the dump.
     private static final String PEA_GREEN = "IMAGE_PLANT_PEASHOOTER_PEASHOOTER_23X23";
     private static final String PEA_ICE = "IMAGE_PLANT_SNOWPEA_SNOWPEA_23X23";
-    private static final String PEA_FIRE = "IMAGE_EFFECTS_T_FIRE_PEA_T_FIRE_PEA_43X43";
+    // The fire pea is an ANIMATION, not a still. Pinning it to one sub-image froze the flame; the
+    // T_FIRE_PEA PAM is what the flicker lives in. Elements listed here are drawn through the sprite
+    // path below instead of as a region.
+    private static final Map<Element, String> ELEMENT_SPRITE = new java.util.EnumMap<>(Element.class);
+
+    static {
+        ELEMENT_SPRITE.put(Element.FIRE, "T_FIRE_PEA");
+    }
 
     private static final Map<Element, String> ELEMENT_REGION = new java.util.EnumMap<>(Element.class);
 
     static {
         ELEMENT_REGION.put(Element.NEUTRAL, PEA_GREEN);
         ELEMENT_REGION.put(Element.ICE, PEA_ICE);
-        ELEMENT_REGION.put(Element.FIRE, PEA_FIRE);
     }
 
     // How big a pea is drawn, as a fraction of a tile's width.
@@ -59,6 +65,9 @@ public final class ProjectileRenderer {
     // instead means every element's pea reads the same regardless of how its source was packed, and
     // the fire pea (authored 43x43) does not come out three times the size of a normal one.
     private static final float PEA_WIDTH_CELLS = 0.34f;
+
+    // The same pea, but measured across an effect box that also contains its trail.
+    private static final float SPRITE_PEA_WIDTH_CELLS = 1.05f;
 
     // Elements with no dedicated sprite in the dump still have to read apart, so those keep a tint over
     // the green pea. Ice and neutral are NOT tinted any more: they have their own art.
@@ -87,15 +96,26 @@ public final class ProjectileRenderer {
     // White fill used to colour non-neutral shots; see the draw method.
     private com.badlogic.gdx.scenes.scene2d.utils.Drawable wash;
 
-    public ProjectileRenderer(Assets assets, LawnGeometry lawn, EntityInterpolator interpolator) {
+    private final views.gdx.sprite.SpriteRegistry sprites;
+    private final AnimationClocks clocks = new AnimationClocks();
+
+    public ProjectileRenderer(Assets assets, LawnGeometry lawn, EntityInterpolator interpolator,
+                              views.gdx.sprite.SpriteRegistry sprites) {
         this.assets = assets;
         this.lawn = lawn;
         this.interpolator = interpolator;
+        this.sprites = sprites;
     }
 
     private boolean warnedMissingRegion;
 
     public void draw(Batch batch, Projectile projectile, float alpha, float delta) {
+        // Animated shots take the sprite path; everything else is a still region.
+        String animated = ELEMENT_SPRITE.get(
+                projectile.getElement() == null ? Element.NEUTRAL : projectile.getElement());
+        if (animated != null && drawAnimated(batch, projectile, alpha, delta, animated)) {
+            return;
+        }
         TextureRegion region = peaRegion(projectile.getElement());
         if (region == null) {
             // Silently drawing nothing is the worst outcome here: shots keep damaging zombies while
@@ -208,6 +228,7 @@ public final class ProjectileRenderer {
 
     // Drops launch records for shots that are gone, so a long level does not accumulate them.
     public void forgetAllExcept(java.util.Set<Projectile> alive) {
+        clocks.sweep();
         launchX.keySet().retainAll(alive);
         lastX.keySet().retainAll(alive);
         lastY.keySet().retainAll(alive);
@@ -221,6 +242,50 @@ public final class ProjectileRenderer {
         return 4f * ARC_HEIGHT_CELLS * lawn.cellHeight() * t * (1f - t);
     }
 
+
+    // Draws a shot whose art is a PAM animation rather than a still. Returns false if the sprite is
+    // unavailable, so the caller falls back to the region path and a shot is never simply invisible.
+    private boolean drawAnimated(Batch batch, Projectile projectile, float alpha, float delta,
+                                 String spriteName) {
+        views.gdx.sprite.EntitySprite sprite = sprites == null ? null : sprites.get(spriteName);
+        if (sprite == null || !sprite.isReady()) {
+            return false;
+        }
+        String clip = views.gdx.sprite.ClipMap.firstAvailable(sprite, "animation");
+        com.badlogic.gdx.math.Rectangle bounds = sprite.bounds(clip);
+        if (bounds == null || bounds.width <= 0f) {
+            return false;
+        }
+
+        float modelX = (float) projectile.getX();
+        launchX.putIfAbsent(projectile, modelX);
+        float lane = interpolator.lane(projectile, projectile.getY(), alpha);
+        float y = lawn.worldY((int) Math.round(lane)) + lawn.cellHeight() * MUZZLE_HEIGHT;
+        if (projectile.getTrajectory() == Trajectory.LOBBED) {
+            y += arcHeight(projectile, modelX);
+        }
+        float x = lawn.worldX(muzzleAdjusted(projectile, interpolator.x(projectile, modelX, alpha)));
+
+        // Sized against a WIDER target than the still peas. An animated shot's bounds cover the whole
+        // effect -- the flame's trail and sparks, not just the pea at its head -- so fitting that box
+        // to a pea's width shrinks the actual projectile to a speck. The box is roughly three times
+        // the pea it contains.
+        float scale = SpritePlacer.toSpriteSpace(SPRITE_PEA_WIDTH_CELLS * lawn.cellWidth())
+                / bounds.width;
+        float phase = clocks.advance(projectile, clip, delta);
+
+        com.badlogic.gdx.math.Matrix4 previous = batch.getTransformMatrix().cpy();
+        batch.setTransformMatrix(new com.badlogic.gdx.math.Matrix4(previous)
+                .translate(SpritePlacer.toSpriteSpace(x), SpritePlacer.toSpriteSpace(y), 0f)
+                .scale(scale, scale, 1f));
+        sprite.draw(batch, clip, views.gdx.sprite.ClipMap.sample(sprite, clip, phase),
+                0f, bounds.y + bounds.height / 2f, true);
+        batch.setTransformMatrix(previous);
+
+        lastX.put(projectile, lawn.worldX(modelX));
+        lastY.put(projectile, y);
+        return true;
+    }
 
     // Cached per element: region() walks the bank's index, and this runs per shot per frame.
     private final Map<Element, TextureRegion> regionCache = new java.util.EnumMap<>(Element.class);

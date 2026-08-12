@@ -33,8 +33,16 @@ public final class ExplosionEffects {
     private static final String REAR_SPRITE = "CHERRYBOMB_EXPLOSION_REAR";
     private static final String TOP_SPRITE = "CHERRYBOMB_EXPLOSION_TOP";
 
-    // The blast covers a 3x3, so it is drawn about three tiles across.
-    private static final float WIDTH_CELLS = 3.2f;
+    // A radioactive sun caught in mid-air blows up too, but with its own art: SUN_BOMB's "attack"
+    // clip, which is what that animation ships the burst as. One layer only -- unlike the Cherry Bomb
+    // there is no separate rear half.
+    private static final String SUN_BOMB_SPRITE = "SUN_BOMB";
+    private static final String SUN_BOMB_CLIP = "attack";
+    private static final String SUN_BOMB_NAME = "Radioactive sun";
+
+    // The blast covers a 3x3 (5x5 for a sun bomb), so it is drawn a little wider than three tiles --
+    // an explosion that exactly matches its damage box reads as smaller than it hits.
+    private static final float WIDTH_CELLS = 4.2f;
 
     // Lifted off the tile centre. The art is authored around the blast's own middle, but the "KA-BOOF!"
     // lettering sits in its upper half, so centring on the tile puts the text down among the zombies'
@@ -52,15 +60,31 @@ public final class ExplosionEffects {
         float x;
         float y;
         float age;
+        // Null for the default two-layer plant explosion; set for effects with their own art.
+        String sprite;
+        String clip;
     }
 
     private final SpriteRegistry sprites;
     private final LawnGeometry lawn;
     private final List<Blast> blasts = new ArrayList<>();
 
+    // Consulted only for the sun bomb, to find where a falling sun was actually drawn.
+    private CollectibleRenderer collectibles;
+
     public ExplosionEffects(SpriteRegistry sprites, LawnGeometry lawn) {
         this.sprites = sprites;
         this.lawn = lawn;
+    }
+
+    void setCollectibles(CollectibleRenderer collectibles) {
+        this.collectibles = collectibles;
+    }
+
+    private static void logBlast(int col, int row) {
+        if (views.gdx.core.DebugFlags.BOARD_COUNTS) {
+            com.badlogic.gdx.Gdx.app.log("Explosion", "blast at (" + col + ", " + row + ")");
+        }
     }
 
     // Offered every event the model drains. Anything that is not a detonation is ignored, so this can
@@ -78,11 +102,29 @@ public final class ExplosionEffects {
             int row = Integer.parseInt(matcher.group(3));
             Blast blast = new Blast();
             blast.x = lawn.centerX(col);
-            blast.y = lawn.centerY(row) + LIFT_CELLS * lawn.cellHeight();
-            blasts.add(blast);
-            if (views.gdx.core.DebugFlags.BOARD_COUNTS) {
-                com.badlogic.gdx.Gdx.app.log("Explosion", "blast at (" + col + ", " + row + ")");
+            boolean ownArt = SUN_BOMB_NAME.equalsIgnoreCase(matcher.group(1).trim());
+            if (ownArt) {
+                blast.sprite = SUN_BOMB_SPRITE;
+                blast.clip = SUN_BOMB_CLIP;
+                // Blow up WHERE THE SUN WAS DRAWN, not on the tile it was filed under. A falling sun is
+                // drawn several cells higher than its tile, so the tile is not where the player saw it.
+                float[] drawn = collectibles == null ? null
+                        : collectibles.lastRadioactivePosition(col, row);
+                if (drawn != null) {
+                    blast.x = drawn[0];
+                    blast.y = drawn[1];
+                    blasts.add(blast);
+                    logBlast(col, row);
+                    return;
+                }
             }
+            // The lift is for the Cherry Bomb ONLY. Its art carries the "KA-BOOF!" lettering in the
+            // upper half, so centring it on the tile put the text among the zombies' feet. The sun
+            // bomb's burst is centred on itself, and lifting it made the explosion float above the sun
+            // that produced it.
+            blast.y = lawn.centerY(row) + (ownArt ? 0f : LIFT_CELLS * lawn.cellHeight());
+            blasts.add(blast);
+            logBlast(col, row);
         } catch (NumberFormatException ignored) {
             // a message that looks like a detonation but is not; nothing to draw
         }
@@ -100,7 +142,7 @@ public final class ExplosionEffects {
                 blasts.remove(i);
             }
         }
-        draw(batch, REAR_SPRITE);
+        draw(batch, REAR_SPRITE, false);
     }
 
     // The blast lasts exactly as long as the longer of its two layers.
@@ -124,13 +166,24 @@ public final class ExplosionEffects {
 
     // In front of the board. Called after the lanes are drawn.
     public void drawFront(Batch batch) {
-        draw(batch, TOP_SPRITE);
+        draw(batch, TOP_SPRITE, true);
     }
 
-    private void draw(Batch batch, String spriteName) {
-        if (blasts.isEmpty()) {
-            return;
+    // `layer` is the default two-layer plant blast's sprite for this pass, or null for the front pass
+    // of a blast that brings its own art. A blast with its own sprite draws ONCE, on the front pass.
+    private void draw(Batch batch, String layer, boolean front) {
+        for (Blast blast : blasts) {
+            if (blast.sprite != null) {
+                if (front) {
+                    drawOne(batch, blast, blast.sprite, blast.clip);
+                }
+                continue;   // its own art replaces both default layers
+            }
+            drawOne(batch, blast, layer, null);
         }
+    }
+
+    private void drawOne(Batch batch, Blast blast, String spriteName, String wantedClip) {
         EntitySprite sprite = sprites.get(spriteName);
         if (sprite == null || !sprite.isReady()) {
             return;
@@ -138,23 +191,22 @@ public final class ExplosionEffects {
         // "explosion", not "animation". The blast animations name their clips explosion/explosion2/
         // explosion3 -- asking for "animation" first meant firstAvailable fell through to a clip that
         // does not exist, PamEntitySprite could not resolve it, and nothing was drawn at all.
-        String clip = ClipMap.firstAvailable(sprite, "explosion", "animation", ClipMap.IDLE);
+        String clip = wantedClip != null && sprite.hasClip(wantedClip)
+                ? wantedClip
+                : ClipMap.firstAvailable(sprite, "explosion", "animation", ClipMap.IDLE);
         Rectangle bounds = sprite.bounds(clip);
         if (bounds == null || bounds.width <= 0f) {
             return;
         }
         float scale = SpritePlacer.toSpriteSpace(WIDTH_CELLS * lawn.cellWidth()) / bounds.width;
 
-        for (Blast blast : blasts) {
-            Matrix4 previous = batch.getTransformMatrix().cpy();
-            Matrix4 scaled = new Matrix4(previous)
-                    .translate(SpritePlacer.toSpriteSpace(blast.x),
-                            SpritePlacer.toSpriteSpace(blast.y), 0f)
-                    .scale(scale, scale, 1f);
-            batch.setTransformMatrix(scaled);
-            sprite.draw(batch, clip, ClipMap.sample(sprite, clip, blast.age),
-                    0f, bounds.y + bounds.height / 2f, true);
-            batch.setTransformMatrix(previous);
-        }
+        Matrix4 previous = batch.getTransformMatrix().cpy();
+        batch.setTransformMatrix(new Matrix4(previous)
+                .translate(SpritePlacer.toSpriteSpace(blast.x),
+                        SpritePlacer.toSpriteSpace(blast.y), 0f)
+                .scale(scale, scale, 1f));
+        sprite.draw(batch, clip, ClipMap.sample(sprite, clip, blast.age),
+                0f, bounds.y + bounds.height / 2f, true);
+        batch.setTransformMatrix(previous);
     }
 }

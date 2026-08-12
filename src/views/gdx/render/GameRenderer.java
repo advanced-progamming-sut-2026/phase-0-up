@@ -71,11 +71,12 @@ public final class GameRenderer {
         this.terrain = new TerrainRenderer(sprites, lawn, clocks, environment);
         this.plants = new PlantRenderer(sprites, lawn, clocks);
         this.zombies = new ZombieRenderer(sprites, lawn, interpolator, clocks);
-        this.projectiles = new ProjectileRenderer(assets, lawn, interpolator);
+        this.projectiles = new ProjectileRenderer(assets, lawn, interpolator, sprites);
         this.collectibles = new CollectibleRenderer(sprites, lawn, interpolator, clocks);
         this.mowers = new LawnmowerRenderer(sprites, lawn, interpolator, clocks, environment);
         this.impacts = new ImpactEffects(sprites);
         this.explosions = new ExplosionEffects(sprites, lawn);
+        this.explosions.setCollectibles(this.collectibles);
         this.lawn = lawn;
     }
 

@@ -145,6 +145,12 @@ public class SunSystem {
     private void triggerRadioactiveExplosion(GameSession gameSession, Sun sun) {
         applyZombieAoE(gameSession, sun.getX(), sun.getY(), Constants.RADIOACTIVE_ZOMBIE_DAMAGE);
         applyPlantAoE(gameSession, sun.getX(), sun.getY(), Constants.RADIOACTIVE_PLANT_DAMAGE);
+
+        // Announce it, in the same shape a plant's detonation uses. The sun is removed on this very
+        // tick, so there is no state a renderer could poll afterwards -- saying so here is the only
+        // way anything downstream can know it happened.
+        gameSession.reportEvent("Radioactive sun detonates at ("
+                + columnFromX(sun.getX()) + ", " + sun.getY() + ")!");
     }
 
     private void applyZombieAoE(GameSession gameSession, double centerX, int centerY, int damage) {
@@ -286,13 +292,27 @@ public class SunSystem {
     }
 
 
+    // A radioactive sun that is allowed to land loses its charge and becomes an ordinary sun.
+    //
+    // Worth 50, not Constants.NORMAL_SUN_AMOUNT (25). "Normal sun" means different numbers in
+    // different places -- a sky sun is 25 while a Sunflower's is 50 -- and this one is the consolation
+    // prize for missing a 150-damage catch, so it pays the higher of the two.
+    private static final int CONVERTED_SUN_AMOUNT = 50;
+
     private Sun createGroundNormalSun(Sun radioactiveSun) {
+        // getTargetY(), not getY(). The replacement stands exactly where the radioactive sun was
+        // standing, so the swap is invisible.
+        //
+        // getY() is the ROUNDED row -- a sun aiming for 2.4 reports 2 once it lands -- and the view
+        // places a resting sun at its fractional target. Handing the new sun the rounded value moved it
+        // up to 0.6 of a cell in the single frame the swap happens, which is the jump.
+        double restY = radioactiveSun.getTargetY();
         return new Sun(
                 radioactiveSun.getX(),
-                radioactiveSun.getY(),
-                radioactiveSun.getY(),
+                restY,
+                restY,
                 SunType.NORMAL,
-                Constants.NORMAL_SUN_AMOUNT,
+                CONVERTED_SUN_AMOUNT,
                 false,
                 SKY_SUN_GROUND_EXPIRE_TICKS
         );

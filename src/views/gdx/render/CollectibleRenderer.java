@@ -153,6 +153,20 @@ public final class CollectibleRenderer {
             drawnX.put(sun, x);
             drawnY.put(sun, y);
 
+            // Radioactive suns also get remembered by TILE, because that is all the explosion has to go
+            // on. When one is caught mid-air the model reports the detonation with a tile, and by then
+            // the sun object is already gone -- but a falling sun is DRAWN several cells above the tile
+            // it is filed under, so placing the blast on the tile puts it well below the burst the
+            // player just clicked. Deliberately not pruned per frame: the sun is removed during the
+            // tick, before the frame that handles the event.
+            if (sun.getType() == SunType.RADIOACTIVE) {
+                if (drawnByTile.size() > 32) {
+                    drawnByTile.clear();
+                }
+                drawnByTile.put(tileKey((int) Math.floor(sun.getX()), sun.getY()),
+                        new float[] {x, y});
+            }
+
             drawSun(batch, sun, sprite, x, y, age, delta);
         }
     }
@@ -162,7 +176,7 @@ public final class CollectibleRenderer {
             // A radioactive sun is a different object, not a recoloured one: it has its own animation.
             EntitySprite drawn = sun.getType() == SunType.RADIOACTIVE
                     ? sprites.get(RADIOACTIVE_SPRITE) : sprite;
-            String clip = clipFor(drawn, sun.getType());
+            String clip = clipFor(drawn, sun);
             float stateTime = ClipMap.sample(drawn, clip, clocks.advance(sun, clip, delta));
 
             // Packed rather than Color.cpy(): this runs per sun per frame and the copy would allocate.
@@ -175,8 +189,11 @@ public final class CollectibleRenderer {
             // Bigger sun, more sun, measured against the ordinary 50. Scaling by the SQUARE ROOT makes
             // the drawn AREA proportional to the value -- scaling the width instead makes a 100 look
             // four times a 50, which overstates it badly.
-            float scale = (float) Math.sqrt(Math.max(1, sun.getAmount())
-                    / (double) REFERENCE_SUN_AMOUNT);
+            // The radioactive sun is exempt: it is a different sprite drawn at its own authored size,
+            // and its 150 is a damage figure rather than a wallet value, so sizing it by that number
+            // made it enormous for the wrong reason.
+            float scale = sun.getType() == SunType.RADIOACTIVE ? 1f
+                    : (float) Math.sqrt(Math.max(1, sun.getAmount()) / (double) REFERENCE_SUN_AMOUNT);
             scale = Math.max(MIN_SUN_SCALE, Math.min(MAX_SUN_SCALE, scale));
 
             if (Math.abs(scale - 1f) < 0.01f) {
@@ -195,6 +212,17 @@ public final class CollectibleRenderer {
     // against the sun's model tile, because the two deliberately disagree while it is falling.
     private final java.util.Map<Sun, Float> drawnX = new java.util.IdentityHashMap<>();
     private final java.util.Map<Sun, Float> drawnY = new java.util.IdentityHashMap<>();
+
+    // Last drawn world position of a radioactive sun that was filed under this tile, or null.
+    private final java.util.Map<Integer, float[]> drawnByTile = new java.util.HashMap<>();
+
+    private static Integer tileKey(int col, int row) {
+        return col * 100 + row;
+    }
+
+    public float[] lastRadioactivePosition(int col, int row) {
+        return drawnByTile.get(tileKey(col, row));
+    }
 
     // The sun drawn under this world point, or null. Radius is generous: a sun is a small target and
     // it is usually moving, and being slightly forgiving here is what makes catching one in mid-air
@@ -274,13 +302,21 @@ public final class CollectibleRenderer {
         return low + (high - low) * frac;
     }
 
-    private static String clipFor(EntitySprite sprite, SunType type) {
+    // Which clip a sun is playing right now.
+    //
+    // The radioactive sun has real states, and SUN_BOMB ships a clip for each: it is armed and
+    // dangerous only WHILE FALLING (animation2), and turns into an ordinary sun the moment it touches
+    // down (transition, then normalSunIdle). That is the spec's rule -- catch it in the air and it
+    // detonates, let it land and you get a plain sun -- so the art and the rule agree by construction.
+    private static String clipFor(EntitySprite sprite, Sun sun) {
+        SunType type = sun.getType();
         if (type == null) {
             return ClipMap.firstAvailable(sprite, "animation");
         }
         return switch (type) {
-            // Radioactive suns are the purple ones; "blue" is the closest alternate the animation has.
-            case RADIOACTIVE -> ClipMap.firstAvailable(sprite, "blue", "animation");
+            case RADIOACTIVE -> sun.isFalling()
+                    ? ClipMap.firstAvailable(sprite, "animation2", "animation")
+                    : ClipMap.firstAvailable(sprite, "transition", "normalSunIdle", "animation");
             // The big special sun reuses the warm variant so it reads apart from a normal drop.
             case SPECIAL -> ClipMap.firstAvailable(sprite, "red", "animation");
             case NORMAL -> ClipMap.firstAvailable(sprite, "animation");

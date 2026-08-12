@@ -24,6 +24,10 @@ public final class DebugFlags {
     // Answers "is it not being drawn, or is it not there?" without squinting at a screenshot.
     public static final boolean BOARD_COUNTS = flag("pvz.debugCounts");
 
+    // Sets the board up so every hard-to-trigger effect is on screen at once, for checking by eye.
+    // See views.gdx.screens.Showcase.
+    public static final boolean SHOWCASE = flag("pvz.showcase");
+
     // Starts the level paused. Lets a screenshot capture the pause overlay, and is handy for looking
     // at a board's opening state without it walking away from you.
     public static final boolean START_PAUSED = flag("pvz.pause");

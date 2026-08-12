@@ -26,6 +26,7 @@ public final class PlantRenderer {
     // How long a fed plant keeps its plant-food animation going. Roughly how long the boost itself
     // takes to play out -- a Peashooter's queued burst is several shots over a couple of seconds.
     private static final float PLANT_FOOD_SECONDS = 2.0f;
+    private static final float PLANT_FOOD_MAX_SECONDS = 3.5f;
 
     // Frozen plants are encased in ice. Phase 1 tints rather than drawing an ice block; the block
     // itself is Frostbite Caves work (T7.7). Three steps, matching Plant.getChillLevel()'s 1..3.
@@ -267,10 +268,14 @@ public final class PlantRenderer {
     private float plantFoodStageLength(EntitySprite sprite, Plant plant) {
         int stage = plantFoodStage.getOrDefault(plant, STAGE_ON);
         if (stage == STAGE_LOOP) {
-            // The loop lasts as long as the boost does. A fixed window is only the floor, for boosts
-            // that are instantaneous (a lane freeze) or already finished -- otherwise the animation
-            // stopped mid-burst, with the plant still visibly firing extra shots.
-            return plant.isPlantFoodActive() ? Float.MAX_VALUE : PLANT_FOOD_SECONDS;
+            // The loop lasts as long as the boost does, between a floor and a ceiling.
+            //
+            // The floor covers boosts that are instantaneous (a lane freeze) or already over. The
+            // ceiling matters because a queued burst is 60 shots an eighth of a second apart -- six
+            // seconds of animation -- and against zombies standing on the plant every one of those peas
+            // is absorbed the instant it spawns. The shots visibly stop long before the queue does, so
+            // an uncapped loop leaves the plant glowing at nothing.
+            return plant.isPlantFoodActive() ? PLANT_FOOD_MAX_SECONDS : PLANT_FOOD_SECONDS;
         }
         if (!sprite.hasClip(stageClip(stage))) {
             return PLANT_FOOD_SECONDS;

@@ -49,7 +49,12 @@ public final class ZombieRenderer {
         String clip = ClipMap.forZombie(sprite, zombie);
         // Per zombie, restarted on clip change: otherwise the whole horde steps in unison and a
         // zombie that stops to bite starts its "eat" animation halfway through.
-        float stateTime = ClipMap.sample(sprite, clip, clocks.advance(zombie, clip, delta));
+        // A frozen zombie's animation stops dead. The model already holds its x still, but the walk
+        // clip kept playing -- so it marched on the spot and read as "the freeze does nothing". Passing
+        // 0 here holds the pose instead; the clock is still touched so AnimationClocks does not sweep
+        // the entry and restart the walk from frame 0 when it thaws.
+        float animationDelta = zombie.getState().isFrozen() ? 0f : delta;
+        float stateTime = ClipMap.sample(sprite, clip, clocks.advance(zombie, clip, animationDelta));
 
         float modelX = (float) zombie.getMovement().getPositionX();
         int modelLane = zombie.getMovement().getPositionY();

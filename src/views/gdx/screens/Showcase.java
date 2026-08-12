@@ -1,0 +1,154 @@
+package views.gdx.screens;
+
+import controllers.engine.GameEngine;
+import models.entities.collectibles.Sun;
+import models.entities.collectibles.SunType;
+import models.game.GameSession;
+import views.gdx.input.ToolState;
+
+// A board set up so every effect that is hard to trigger by accident is on screen at once.
+//
+// Run it with:  gradlew runGui -Dpvz.showcase=1
+//
+// This exists because a handful of things could only be confirmed by looking at them, and none of them
+// happen in an ordinary opening minute: fire shots need a Fire Peashooter, the radioactive sun almost
+// never rolls, sun sizes only differ if several values are on screen together, and a mine's unarmed
+// pose lasts a few seconds once in a level.
+//
+// It changes nothing about the game -- every action here is a command string the prompt accepts, sent
+// through the same door as a mouse click.
+final class Showcase {
+
+    private final GameEngine engine;
+    private final GameSession session;
+
+    Showcase(GameEngine engine, GameSession session) {
+        this.engine = engine;
+        this.session = session;
+    }
+
+    // Called once, a few frames in, so Scene2D has laid out and the board is ready.
+    void run(ToolState tools) {
+        engine.submitInGameCommand("cheat add -n 9999 suns");
+        engine.submitInGameCommand("cheat remove-cooldown");
+
+        plantBoard();
+        spawnZombies();
+        makeSuns();
+
+        // Arm a seed so the ghost cursor is visible the moment you move the mouse over the lawn.
+        tools.selectSeed("Wall-nut");
+    }
+
+    // Row 0: fire. Row 1: ice, with the freeze fed in. Row 2: a fresh mine, still burying itself.
+    private void plantBoard() {
+        // Fire Peashooter is not in this level's seed bank, and plant() refuses anything that is not.
+        // Handing the session a packet for it is the only way to get a fire shot on screen -- there is
+        // no cheat command that adds a seed.
+        if (session.getSelectedSeed("Fire Peashooter") == null) {
+            session.addSeed(new models.game.SeedPacket("Fire Peashooter", 5));
+        }
+        boolean fire = engine.submitInGameCommand("plant plant -t Fire Peashooter -l (3, 0)");
+        com.badlogic.gdx.Gdx.app.log("Showcase", "Fire Peashooter placed at (3, 0): "
+                + (session.getMap().getRow(0).cellAt(1).hasPlant()
+                        ? session.getMap().getRow(0).cellAt(1).getCurrentPlant().getName()
+                        : "NOTHING (command accepted=" + fire + ", see the toast for why)"));
+        engine.submitInGameCommand("plant plant -t Snow Pea -l (1, 1)");
+        engine.submitInGameCommand("plant plant -t Potato Mine -l (3, 2)");
+        engine.submitInGameCommand("plant plant -t Peashooter -l (1, 3)");
+        engine.submitInGameCommand("plant plant -t Wall-nut -l (5, 3)");
+    }
+
+    private void spawnZombies() {
+        // Something for every shooter to hit, and something for the freeze to land on.
+        for (int row = 0; row <= 3; row++) {
+            engine.submitInGameCommand("cheat spawn-zombie -t ZombieDefault -l (8, " + row + ")");
+            engine.submitInGameCommand("cheat spawn-zombie -t ZombieDefault -l (7, " + row + ")");
+        }
+        engine.submitInGameCommand("cheat spawn-zombie -t ZombieDefault -l (4, 2)");
+    }
+
+    // Three sun values side by side in row 4, so the size difference is a comparison rather than a
+    // memory, plus a radioactive one which draws from its own SUN_BOMB animation.
+    private void makeSuns() {
+        addSun(1, 4, SunType.NORMAL, utils.Constants.NORMAL_SUN_AMOUNT);       // 25 -- smallest
+        addSun(3, 4, SunType.NORMAL, 50);                                      // 50 -- the reference
+        addSun(5, 4, SunType.SPECIAL, utils.Constants.SPECIAL_SUN_AMOUNT);     // 100 -- bigger
+
+        // The radioactive one has to FALL, because falling is the whole mechanic: caught in the air it
+        // detonates, allowed to land it turns into an ordinary 50. A stationary one shows neither.
+        session.addSun(new Sun(7.5, 0, 4, SunType.RADIOACTIVE,
+                utils.Constants.RADIOACTIVE_SUN_AMOUNT, true, 6000));
+    }
+
+    private void addSun(int col, int row, SunType type, int amount) {
+        // Not falling, so they sit still and can be compared; expiry is long enough to look at them.
+        session.addSun(new Sun(col + 0.5, row, row, type, amount, false, 6000));
+    }
+
+    // Fed a moment later than everything else: the Snow Pea has to exist and have zombies in its lane
+    // before the lane freeze has anything to show.
+    void feedSnowPea() {
+        engine.submitInGameCommand("cheat add-plant-food");
+        engine.submitInGameCommand("feed plant -l (1, 1)");
+
+        int frozen = 0;
+        int targetable = 0;
+        int total = 0;
+        for (models.entities.zombies.Zombie z : session.getMap().getRow(1).getZombies()) {
+            total++;
+            if (z.isTargetable()) {
+                targetable++;
+            }
+            if (z.getState().isFrozen()) {
+                frozen++;
+            }
+        }
+        com.badlogic.gdx.Gdx.app.log("LaneFreeze", "row 1: " + total + " zombies, "
+                + targetable + " targetable, " + frozen + " frozen");
+    }
+
+    // Catches the radioactive sun while it is still in the air, which is the only state in which it
+    // detonates. Reports what the model did so the blast can be told apart from a plain collection.
+    void detonateRadioactiveSun() {
+        Sun target = null;
+        for (Sun sun : session.getActiveSuns()) {
+            if (sun.getType() == SunType.RADIOACTIVE && sun.isFalling() && !sun.isRemovable()) {
+                target = sun;
+                break;
+            }
+        }
+        if (target == null) {
+            com.badlogic.gdx.Gdx.app.log("SunBomb", "no falling radioactive sun to catch");
+            return;
+        }
+        int col = (int) Math.floor(target.getX());
+        int row = (int) Math.floor(target.getTargetY());
+
+        // Health before and after, so the 5x5 zombie burst can be seen as a number rather than
+        // inferred from whether something looked hurt.
+        int centreRow = target.getY();
+        java.util.Map<models.entities.zombies.Zombie, Integer> before = new java.util.HashMap<>();
+        for (models.map.Row r : session.getMap().getRows()) {
+            for (models.entities.zombies.Zombie z : r.getZombies()) {
+                before.put(z, z.getHealth().getTotalHP());
+            }
+        }
+
+        boolean ok = engine.submitInGameCommand("collect sun -l (" + col + ", " + row + ")");
+
+        int hurt = 0;
+        int totalDamage = 0;
+        for (java.util.Map.Entry<models.entities.zombies.Zombie, Integer> e : before.entrySet()) {
+            int lost = e.getValue() - e.getKey().getHealth().getTotalHP();
+            if (lost > 0) {
+                hurt++;
+                totalDamage += lost;
+            }
+        }
+        com.badlogic.gdx.Gdx.app.log("SunBomb", "caught mid-air at (" + col + ", " + row
+                + ") centre row " + centreRow + " = " + ok
+                + "  |  zombies hurt: " + hurt + ", total damage: " + totalDamage
+                + " (expect " + utils.Constants.RADIOACTIVE_ZOMBIE_DAMAGE + " each, 5x5)");
+    }
+}

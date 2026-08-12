@@ -30,8 +30,11 @@ public class Constants {
     public static final double RADIOACTIVE_SUN_PROBABILITY = 0.05; // ۵ درصد احتمال خورشید رادیواکتیو
 
     // مشخصات خورشید رادیواکتیو
-    public static final int RADIOACTIVE_PLANT_DAMAGE = 150;
-    public static final int RADIOACTIVE_ZOMBIE_DAMAGE = 80;
+    // Spec: a radioactive sun caught in mid-air deals 150 to zombies in a 5x5 and 80 to plants in a
+    // 3x3. These two were the wrong way round -- the bigger number was going to the player's own
+    // plants, so catching one hurt you more than it hurt the horde.
+    public static final int RADIOACTIVE_PLANT_DAMAGE = 80;
+    public static final int RADIOACTIVE_ZOMBIE_DAMAGE = 150;
     public static final int RADIOACTIVE_PLANT_AOE_SIZE = 3;        // مربع ۳ در ۳ برای گیاهان
     public static final int RADIOACTIVE_ZOMBIE_AOE_SIZE = 5;       // مربع ۵ در ۵ برای زامبی‌ها
 

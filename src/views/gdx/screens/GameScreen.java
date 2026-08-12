@@ -100,6 +100,7 @@ public final class GameScreen extends ScreenAdapter {
                 new views.gdx.ui.UiArt(context.assets()), lawn);
         // Cheat buttons synthesise the same command strings the prompt accepts, through the same door.
         hud.installCheats(engine::submitInGameCommand);
+        this.showcase = new Showcase(engine, session);
 
         centreOnLawn();
         Gdx.app.log("GameScreen", "world " + (int) background.totalWidth() + "x"
@@ -205,6 +206,8 @@ public final class GameScreen extends ScreenAdapter {
         if (inputCheckFrames > 0 && --inputCheckFrames == 0) {
             runInputCheck();
         }
+
+        advanceShowcase();
 
         // Gameplay narration: the model queues events during the tick and the view drains them here.
         // Same seam the terminal build renders through, so nothing had to be added to the model.
@@ -347,6 +350,31 @@ public final class GameScreen extends ScreenAdapter {
     // on the wrong square -- silently, since a wrong-but-valid tile still plants something somewhere.
     private int inputCheckFrames = views.gdx.core.DebugFlags.INPUT_CHECK ? 3 : 0;
 
+    // Built in the constructor, not here: field initialisers run before the constructor body, so
+    // engine and session are still null at this point.
+    private final Showcase showcase;
+    private int showcaseFrames = views.gdx.core.DebugFlags.SHOWCASE ? 5 : 0;
+    private int showcaseFeedFrames;
+    private int showcaseSunFrames;
+
+    // -Dpvz.showcase=1, in three stages. The board is built a few frames in; the Snow Pea is fed once
+    // its zombies have actually walked into the lane; and the radioactive sun is caught while it is
+    // still in the air, which is the only state in which it detonates.
+    private void advanceShowcase() {
+        if (showcaseFrames > 0 && --showcaseFrames == 0) {
+            showcase.run(tools);
+            hud.toggleCheats();          // panel open, so it can be seen and clicked
+            showcaseFeedFrames = 120;
+        }
+        if (showcaseFeedFrames > 0 && --showcaseFeedFrames == 0) {
+            showcase.feedSnowPea();
+            showcaseSunFrames = 40;      // still mid-fall at this point
+        }
+        if (showcaseSunFrames > 0 && --showcaseSunFrames == 0) {
+            showcase.detonateRadioactiveSun();
+        }
+    }
+
     // Viewport.project returns y measured UP from the bottom (OpenGL's convention), while unproject --
     // and every real mouse event -- measures y DOWN from the top. LibGDX does not make the pair
     // symmetric, so the flip has to happen here. Without it this check reports all 45 tiles as wrong
@@ -426,6 +454,8 @@ public final class GameScreen extends ScreenAdapter {
 
         checkSnowPeaPlantFood();
         checkFeedWhileShooting();
+
+        checkWallnutPlantFood();
 
         // A detonation, so the two-layer explosion can be seen at all: nothing in a normal opening
         // minute blows up, and the effect is driven entirely by the model's narration.
@@ -581,6 +611,21 @@ public final class GameScreen extends ScreenAdapter {
         Gdx.app.log("FeedMidShot", "fed a winding-up Peashooter at (" + col + ", " + row + "): "
                 + "burst still queued = " + cell.getCurrentPlant().isPlantFoodActive()
                 + "  (false here is the bug)");
+    }
+
+    // Wall-nut is the plant that actually ships plantfood_on and plantfood_off, so it is the only way
+    // to exercise the full three-stage sequence. Fed here and then left alone: the stages are chosen by
+    // the RENDERER, so they only appear as the game draws frames -- advancing ticks synchronously would
+    // run the whole boost past without a single clip ever being selected.
+    private void checkWallnutPlantFood() {
+        int[] nut = findPlant("Wall-nut");
+        if (nut == null) {
+            return;
+        }
+        engine.submitInGameCommand("cheat add-plant-food");
+        boolean ok = engine.submitInGameCommand("feed plant -l (" + nut[0] + ", " + nut[1] + ")");
+        Gdx.app.log("NutFood", "fed Wall-nut at (" + nut[0] + ", " + nut[1] + ") = " + ok
+                + "; watch ClipChange for plantfood_on -> plantfood -> plantfood_off");
     }
 
     private int[] findPlant(String name) {
