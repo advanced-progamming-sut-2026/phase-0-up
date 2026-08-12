@@ -1,6 +1,7 @@
 package views.gdx.core;
 
 import models.user.AppSession;
+import views.Renderers;
 import views.gdx.sprite.SpriteRegistry;
 
 // Everything a Screen is allowed to reach for, handed to it in one parameter.
@@ -17,18 +18,24 @@ public final class GdxContext {
     private final SpriteRegistry sprites;
     private final AppSession appSession;
 
+    // The graphical View. A Screen builds the same Commands the terminal does and has to hand each one
+    // a renderer; taking it from here rather than constructing one means a screen never decides what
+    // the game's output looks like, which is the whole point of the Renderers seam.
+    private final Renderers renderers;
+
     // Assigned once, immediately after construction. The manager needs the context to build screens and
     // the screens need the manager to navigate, so one of the two references has to be set after the
     // other exists; this is the less invasive half of that knot.
     private ScreenManager screens;
 
     public GdxContext(PvZGame game, Assets assets, Toasts toasts, SpriteRegistry sprites,
-                      AppSession appSession) {
+                      AppSession appSession, Renderers renderers) {
         this.game = game;
         this.assets = assets;
         this.toasts = toasts;
         this.sprites = sprites;
         this.appSession = appSession;
+        this.renderers = renderers;
     }
 
     void attachScreens(ScreenManager screens) {
@@ -53,6 +60,10 @@ public final class GdxContext {
 
     public AppSession appSession() {
         return appSession;
+    }
+
+    public Renderers renderers() {
+        return renderers;
     }
 
     public ScreenManager screens() {

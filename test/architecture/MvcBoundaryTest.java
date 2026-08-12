@@ -80,6 +80,48 @@ class MvcBoundaryTest {
     }
 
     @Test
+    @DisplayName("controllers depend on renderer interfaces, never on an implementation")
+    void controllersDependOnRendererInterfacesOnly() {
+        // The Phase 3 invariant, and the one that quietly rots first. Every Command and both engines
+        // are written against views.renderers..; the moment one of them says `new ConsoleAllMenuRenderer()`
+        // or reaches for a Gdx renderer, that Command has picked a front end and the other build loses
+        // it. StartLevelCommand did exactly this before the extraction, which is why it is a rule now
+        // and not a convention.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("controllers..")
+                .should().dependOnClassesThat().resideInAnyPackage("views.console..", "views.gdx..")
+                .because("a Command must not know which View it is talking to -- only the composition "
+                        + "root (Main / PvZGame) may name an implementation");
+        rule.check(productionClasses);
+    }
+
+    @Test
+    @DisplayName("the terminal View stays free of LibGDX")
+    void consoleRenderersAreFreeOfLibGdx() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("views.console..")
+                .should().dependOnClassesThat().resideInAnyPackage("com.badlogic.gdx..")
+                .because("`gradlew run` must keep working with no window and no GL context");
+        rule.check(productionClasses);
+    }
+
+    @Test
+    @DisplayName("the graphical build never reads stdin")
+    void graphicalBuildDoesNotBlockOnInput() {
+        // views.InputHandler.readLine() blocks until a line arrives. LibGDX draws every frame on one
+        // thread and runs click listeners on that same thread, so a single call from anywhere in the
+        // GUI freezes the window with no error and no way out. RegisterCommand and ForgetPasswordCommand
+        // still prompt -- that is what the terminal needs -- but they now have non-interactive
+        // constructors, and this is what keeps the graphical path on them.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("views.gdx..")
+                .should().dependOnClassesThat().haveFullyQualifiedName("views.InputHandler")
+                .because("a blocking read on the render thread deadlocks the window; use the "
+                        + "non-interactive Command constructors instead");
+        rule.check(productionClasses);
+    }
+
+    @Test
     @DisplayName("libPVZ is reachable only through the sprite abstraction")
     void libPvzIsConfinedToTheSpriteLayer() {
         // The PAM runtime is a third-party dependency with no fallback of its own. Confining it to

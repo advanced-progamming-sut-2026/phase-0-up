@@ -12,10 +12,14 @@ public class Main {
         GameInitializer gameInitializer = new GameInitializer();
         gameInitializer.loadAllData();
 
+        // The composition root picks the View. Everything downstream -- InputRouter, GameEngine, all 57
+        // Commands -- is written against the renderer interfaces and never learns which one it got, so
+        // this line is the entire difference between the terminal build and the graphical one.
+        views.Renderers renderers = new views.console.ConsoleRenderers();
+
         // Wire the model's balance-change hook to the view. The model publishes, the view renders, and
         // this composition root is the only place that knows about both -- so Profile stays view-free.
-        views.renderers.CurrencyRenderer currencyRenderer = new views.renderers.CurrencyRenderer();
-        models.user.Profile.setCurrencyObserver(currencyRenderer::showBalance);
+        models.user.Profile.setCurrencyObserver(renderers.currency()::showBalance);
 
         DatabaseManager db =  DatabaseManager.getInstance();
 
@@ -34,7 +38,7 @@ public class Main {
             appSession.setCurrentMenu(MenuType.MAIN_MENU);
         }
 
-        InputRouter router = new InputRouter(appSession);
+        InputRouter router = new InputRouter(appSession, renderers);
         router.startLoop();
     }
 }

@@ -40,6 +40,7 @@ public class PvZGame extends Game {
     private ScreenManager screens;
     private GdxContext context;
     private SmokeHarness smoke;
+    private views.Renderers renderers;
 
     @Override
     public void create() {
@@ -59,7 +60,16 @@ public class PvZGame extends Game {
         views.gdx.sprite.SpriteRegistry sprites =
                 new views.gdx.sprite.SpriteRegistry(assets.pam(), assets.bank(), assets.root());
 
-        context = new GdxContext(this, assets, toasts, sprites, appSession);
+        // The graphical View. Built here and nowhere else -- this is the counterpart to Main's
+        // ConsoleRenderers line, and the only difference between the two builds.
+        renderers = new views.gdx.renderers.GdxRenderers(toasts);
+
+        // Now that a View exists, the model's balance hook can be claimed. It is a single static field,
+        // so exactly one implementation may hold it; the terminal and graphical builds never share a
+        // JVM, so each simply takes it at start-up.
+        models.user.Profile.setCurrencyObserver(renderers.currency()::showBalance);
+
+        context = new GdxContext(this, assets, toasts, sprites, appSession, renderers);
 
         // Diagnostic for building visibility maps: -Dpvz.dumpParts=ZombieArmor1,ZombieDefault
         String dump = System.getProperty("pvz.dumpParts");
@@ -98,7 +108,7 @@ public class PvZGame extends Game {
             screens.showDetached(new views.gdx.screens.SpriteSmokeScreen(context));
         } else {
             screens.showDetached(new views.gdx.screens.GameScreen(
-                    context, views.gdx.screens.DevBoot.start(appSession)));
+                    context, views.gdx.screens.DevBoot.start(appSession, renderers)));
         }
     }
 
@@ -133,9 +143,8 @@ public class PvZGame extends Game {
             appSession.setCurrentMenu(MenuType.MAIN_MENU);
         }
 
-        // Note: Profile.setCurrencyObserver is deliberately left unwired here. It is a single static
-        // hook, so the console CurrencyRenderer and a future HUD cannot both hold it; the GUI claims it
-        // in T3.4 once there is a HUD to claim it for. Profile.notifyBalance is null-safe until then.
+        // Profile.setCurrencyObserver is wired in create(), not here: it needs the View, and the View
+        // needs Assets, which this method runs before.
     }
 
     // The screen stack is installed in T0.5; until then this just proves the window and the render loop

@@ -7,6 +7,7 @@ import models.game.GameState;
 import utils.Result;
 import utils.regex.InGameRegex;
 import views.InputHandler;
+import views.Renderers;
 import views.renderers.InGameRenderer;
 import views.renderers.MapRenderer;
 
@@ -22,10 +23,12 @@ public class GameEngine {
     private EnvironmentSystem environmentSystem;
     private boolean running;
 
-    public GameEngine(GameSession gameSession) {
+    // The View arrives from the composition root. The engine used to build a terminal renderer here,
+    // which meant every level -- however it was started -- reported to stdout and nowhere else.
+    public GameEngine(GameSession gameSession, Renderers renderers) {
         this.gameSession = gameSession;
-        this.inGameRenderer = new InGameRenderer();
-        this.mapRenderer = new MapRenderer();
+        this.inGameRenderer = renderers.inGame();
+        this.mapRenderer = renderers.map();
         this.combatSystem = new CombatSystem();
         this.sunSystem = new SunSystem();
         this.timeSystem = new TimeSystem();

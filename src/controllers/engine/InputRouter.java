@@ -35,6 +35,7 @@ import utils.regex.MainMenuRegex;
 import utils.regex.SettingMenuRegex;
 import utils.regex.*;
 import views.InputHandler;
+import views.Renderers;
 import views.renderers.*;
 import views.renderers.MenuRenderer.*;
 
@@ -43,21 +44,26 @@ public class InputRouter {
 
     private boolean running;
 
-    private final AllMenuRenderer allMenuRenderer = new AllMenuRenderer();
-    private final CollectionMenuRenderer collectionMenuRenderer = new CollectionMenuRenderer();
-    private final PlayMenuRenderer playMenuRenderer = new PlayMenuRenderer();
-    private final LoginMenuRenderer loginMenuRenderer = new LoginMenuRenderer();
-    private final MainMenuRenderer mainMenuRenderer = new MainMenuRenderer();
-    private final NewsMenuRenderer newsMenuRenderer = new NewsMenuRenderer();
-    private final PlantMenuRenderer plantMenuRenderer = new PlantMenuRenderer();
-    private final ProfileMenuRenderer profileMenuRenderer = new ProfileMenuRenderer();
-    private final SettingMenuRenderer settingMenuRenderer = new SettingMenuRenderer();
-    private final SignUpMenuRenderer signUpMenuRenderer = new SignUpMenuRenderer();
-    private final GreenhouseRenderer greenhouseRenderer = new GreenhouseRenderer();
-    private final LeaderboardRenderer leaderboardRenderer = new LeaderboardRenderer();
-    private final MapRenderer mapRenderer = new MapRenderer();
-    private final ShopRenderer shopRenderer = new ShopRenderer();
-    private final TravelLogRenderer travelLogRenderer = new TravelLogRenderer();
+    // Every renderer comes from the injected View, never from `new`. That is the whole point of the
+    // Renderers seam: this class routes commands identically whether the answers end up on stdout or
+    // in a toast, and it is the composition root -- not the router -- that decides which.
+    private final Renderers renderers;
+
+    private final AllMenuRenderer allMenuRenderer;
+    private final CollectionMenuRenderer collectionMenuRenderer;
+    private final PlayMenuRenderer playMenuRenderer;
+    private final LoginMenuRenderer loginMenuRenderer;
+    private final MainMenuRenderer mainMenuRenderer;
+    private final NewsMenuRenderer newsMenuRenderer;
+    private final PlantMenuRenderer plantMenuRenderer;
+    private final ProfileMenuRenderer profileMenuRenderer;
+    private final SettingMenuRenderer settingMenuRenderer;
+    private final SignUpMenuRenderer signUpMenuRenderer;
+    private final GreenhouseRenderer greenhouseRenderer;
+    private final LeaderboardRenderer leaderboardRenderer;
+    private final MapRenderer mapRenderer;
+    private final ShopRenderer shopRenderer;
+    private final TravelLogRenderer travelLogRenderer;
     private final controllers.systems.game.QuestSystem questSystem = new controllers.systems.game.QuestSystem();
     private final LeaderboardSystem leaderboardSystem = LeaderboardSystem.getInstance();
 
@@ -66,9 +72,26 @@ public class InputRouter {
     private static final LbColumn DEFAULT_LB_COLUMN = LbColumn.MEOW_POINT;
     private static final boolean DEFAULT_LB_ASCENDING = false;
 
-    public InputRouter(AppSession appSession) {
+    public InputRouter(AppSession appSession, Renderers renderers) {
         this.running = true;
         this.appSession = appSession;
+        this.renderers = renderers;
+
+        this.allMenuRenderer = renderers.allMenu();
+        this.collectionMenuRenderer = renderers.collectionMenu();
+        this.playMenuRenderer = renderers.playMenu();
+        this.loginMenuRenderer = renderers.loginMenu();
+        this.mainMenuRenderer = renderers.mainMenu();
+        this.newsMenuRenderer = renderers.newsMenu();
+        this.plantMenuRenderer = renderers.plantMenu();
+        this.profileMenuRenderer = renderers.profileMenu();
+        this.settingMenuRenderer = renderers.settingMenu();
+        this.signUpMenuRenderer = renderers.signUpMenu();
+        this.greenhouseRenderer = renderers.greenhouse();
+        this.leaderboardRenderer = renderers.leaderboard();
+        this.mapRenderer = renderers.map();
+        this.shopRenderer = renderers.shop();
+        this.travelLogRenderer = renderers.travelLog();
     }
 
     // Read live: the router is built at startup, long before a level is chosen, so caching the
@@ -351,7 +374,7 @@ public class InputRouter {
             return true;
         }
         else if(SeedSelectionRegex.START_GAME.matches(input)){
-            new StartLevelCommand(gameSession , appSession).execute();
+            new StartLevelCommand(gameSession , appSession, plantMenuRenderer).execute();
             runGame(gameSession);
             return true;
         }
@@ -547,7 +570,7 @@ public class InputRouter {
     // goes through here: without it the session is left sitting in the IN_GAME menu once the loop
     // returns, where no menu command is routed and the player is stranded.
     private void runGame(GameSession session) {
-        new GameEngine(session).startLoop();
+        new GameEngine(session, renderers).startLoop();
         appSession.setCurrentGameSession(null);
         appSession.setCurrentMenu(MenuType.PLAY_MENU);
         allMenuRenderer.enterMenu(new utils.Result(true, "Back to the Play menu."));

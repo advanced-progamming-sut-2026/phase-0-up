@@ -89,7 +89,7 @@ public final class GameScreen extends ScreenAdapter {
         // printed to a console nobody is looking at.
         // The explosion effect taps this stream rather than session.drainEvents(): GameEngine drains
         // the model's events itself during the tick, so the screen's own drain sees nothing.
-        engine.setInGameRenderer(new views.gdx.bridge.ToastInGameRenderer(context.toasts(),
+        engine.setInGameRenderer(new views.gdx.renderers.GdxInGameRenderer(context.toasts(),
                 message -> entities.explosions().onEvent(message)));
 
         this.commands = new views.gdx.bridge.CommandBridge(engine::submitInGameCommand);
@@ -533,7 +533,7 @@ public final class GameScreen extends ScreenAdapter {
             Gdx.app.log("InputCheck", "click-collect: sun " + before + " -> "
                     + session.getSunAmount());
 
-            engine.setInGameRenderer(new views.gdx.bridge.ToastInGameRenderer(context.toasts(),
+            engine.setInGameRenderer(new views.gdx.renderers.GdxInGameRenderer(context.toasts(),
                     message -> entities.explosions().onEvent(message)));
 
             // Leave the shovel armed with the cursor parked on a tile, so pairing this flag with

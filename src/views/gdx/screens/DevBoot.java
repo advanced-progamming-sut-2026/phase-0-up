@@ -41,7 +41,7 @@ public final class DevBoot {
         this.engine = engine;
     }
 
-    public static DevBoot start(AppSession appSession) {
+    public static DevBoot start(AppSession appSession, views.Renderers renderers) {
         Profile profile = resolveProfile(appSession);
         Level level = resolveLevel(profile);
 
@@ -50,7 +50,7 @@ public final class DevBoot {
 
         selectSeeds(session);
 
-        GameEngine engine = new GameEngine(session);
+        GameEngine engine = new GameEngine(session, renderers);
         engine.init();   // startMode(), seed boosts, quest tracking -- exactly what startLoop() does
 
         prePlant(session);

@@ -2,14 +2,12 @@ package views.renderers;
 
 import utils.Result;
 
-public class ShopRenderer {
-    public void listAllProducts(String out){
-        System.out.println(out);
-    }
-    public void listDailyProducts(String out){
-        System.out.println(out);
-    }
-    public void successOfBuyingAProduct(Result result){
-        System.out.println(result.message());
-    }
+// The shop's presentation surface. The Commands build the product listing as text and hand it over;
+// what happens to that text is the implementation's business.
+public interface ShopRenderer {
+    void listAllProducts(String out);
+
+    void listDailyProducts(String out);
+
+    void successOfBuyingAProduct(Result result);
 }

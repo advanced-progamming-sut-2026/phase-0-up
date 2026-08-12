@@ -12,17 +12,50 @@ import utils.validation.PasswordValidator;
 import views.InputHandler;
 import views.renderers.MenuRenderer.LoginMenuRenderer;
 
+// Password recovery, in two flavours.
+//
+// The terminal flavour is a conversation: it asks the security question, waits, asks for a new
+// password, waits. Those waits are blocking reads on stdin, and calling them from the graphical build
+// would freeze the render thread forever -- LibGDX has one, it draws every frame on it, and it is the
+// same thread a button's click listener runs on.
+//
+// So there is a second constructor that takes every answer up front. The rules below do not change
+// between the two: the same regex, the same validators, the same refusal sentences. The only
+// difference is where the answers came from -- a prompt, or a form the player already filled in.
 public class ForgetPasswordCommand implements Command {
     private final String username;
     private final String email;
     private final AppSession appSession;
     private final LoginMenuRenderer loginMenuRenderer;
 
+    // Null in the interactive flavour, which is exactly what "ask the player" is encoded as. Non-null
+    // means the answers are already in hand and stdin must never be touched.
+    private final String suppliedSecurityAnswer;
+    private final String suppliedNewPassword;
+    private final boolean interactive;
+
     public ForgetPasswordCommand(String input, AppSession appSession, LoginMenuRenderer loginMenuRenderer) {
         this.username = LoginMenuRegex.FORGET_PASSWORD.getGroup(input, "username");
         this.email = LoginMenuRegex.FORGET_PASSWORD.getGroup(input, "email");
         this.appSession = appSession;
         this.loginMenuRenderer = loginMenuRenderer;
+        this.suppliedSecurityAnswer = null;
+        this.suppliedNewPassword = null;
+        this.interactive = true;
+    }
+
+    // Non-interactive: for any front end that collects the whole form before submitting it. Nothing on
+    // this path reads stdin, so it is safe to call from a render thread.
+    public ForgetPasswordCommand(String username, String email, String securityAnswer,
+                                 String newPassword, AppSession appSession,
+                                 LoginMenuRenderer loginMenuRenderer) {
+        this.username = username;
+        this.email = email;
+        this.appSession = appSession;
+        this.loginMenuRenderer = loginMenuRenderer;
+        this.suppliedSecurityAnswer = securityAnswer == null ? "" : securityAnswer;
+        this.suppliedNewPassword = newPassword == null ? "" : newPassword;
+        this.interactive = false;
     }
 
     @Override
@@ -48,19 +81,11 @@ public class ForgetPasswordCommand implements Command {
     }
 
     private boolean processSecurityAnswer(User user) {
-        loginMenuRenderer.showSecurityQuestion(user);
-        String input = InputHandler.readLine();
-        if (input == null) {   // EOF: abort the reset
-            return false;
-        }
-        input = input.trim();
-
-        if (!LoginMenuRegex.ANSWER_SECURITY.matches(input)) {
-            loginMenuRenderer.forgetPasswordRender(new Result(false, "That answer isn't in the right format."));
+        String answer = obtainSecurityAnswer(user);
+        if (answer == null) {   // EOF, malformed, or cancelled -- already reported where it happened
             return false;
         }
 
-        String answer = LoginMenuRegex.ANSWER_SECURITY.getGroup(input, "answer");
         if (SecurityAnswer.isBlank(answer)) {
             loginMenuRenderer.forgetPasswordRender(new Result(false, "An empty answer won't fool anyone."));
             return false;
@@ -81,13 +106,32 @@ public class ForgetPasswordCommand implements Command {
         return true;
     }
 
+    // The answer itself, however this front end gets one. Returns null when there is no answer to
+    // check, having already said why.
+    private String obtainSecurityAnswer(User user) {
+        if (!interactive) {
+            return suppliedSecurityAnswer;   // the screen showed the question and collected the answer
+        }
+
+        loginMenuRenderer.showSecurityQuestion(user);
+        String input = InputHandler.readLine();
+        if (input == null) {   // EOF: abort the reset
+            return null;
+        }
+        input = input.trim();
+
+        if (!LoginMenuRegex.ANSWER_SECURITY.matches(input)) {
+            loginMenuRenderer.forgetPasswordRender(new Result(false, "That answer isn't in the right format."));
+            return null;
+        }
+        return LoginMenuRegex.ANSWER_SECURITY.getGroup(input, "answer");
+    }
+
     private void processPasswordReset(User user) {
-        loginMenuRenderer.forgetPasswordRender(new Result(true, "Enter new password:"));
-        String newPassword = InputHandler.readLine();
+        String newPassword = obtainNewPassword();
         if (newPassword == null) {   // EOF: abort the reset
             return;
         }
-        newPassword = newPassword.trim();
 
         Result validationResult = new PasswordValidator().validate(newPassword);
         if (!validationResult.success()) {
@@ -99,5 +143,14 @@ public class ForgetPasswordCommand implements Command {
         DatabaseManager.getInstance().saveAll();
 
         loginMenuRenderer.forgetPasswordRender(new Result(true, "Password changed successfully!"));
+    }
+
+    private String obtainNewPassword() {
+        if (!interactive) {
+            return suppliedNewPassword;
+        }
+        loginMenuRenderer.forgetPasswordRender(new Result(true, "Enter new password:"));
+        String newPassword = InputHandler.readLine();
+        return newPassword == null ? null : newPassword.trim();
     }
 }

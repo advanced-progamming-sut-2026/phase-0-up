@@ -25,7 +25,7 @@ import static com.badlogic.gdx.scenes.scene2d.actions.Actions.sequence;
 //
 // This owns its own Stage so it can be drawn on top of any screen -- including the game board, which
 // uses a different camera -- without a screen having to cooperate.
-public final class Toasts implements Disposable {
+public final class Toasts implements ToastSink, Disposable {
 
     private static final float FADE_IN_SECONDS = 0.18f;
     private static final float HOLD_SECONDS = 2.6f;

@@ -18,6 +18,14 @@ import views.OutputHandler;
 import views.renderers.MenuRenderer.AllMenuRenderer;
 import views.renderers.MenuRenderer.SignUpMenuRenderer;
 
+// Registration, in two flavours.
+//
+// The terminal flavour is a conversation: it prints the security questions and loops on stdin until
+// the player picks one properly. That loop is a blocking read, and running it on LibGDX's render
+// thread would freeze the window -- so there is a second constructor that takes the completed form.
+//
+// Both flavours run the same validators and produce the same sentences. What differs is only where the
+// security question and answer come from.
 public class RegisterCommand implements Command {
     private final String username;
     private final String password;
@@ -29,7 +37,16 @@ public class RegisterCommand implements Command {
     private final AppSession appSession;
     private final AllMenuRenderer allMenuRenderer;
 
+    // Set only in the non-interactive flavour; null means "ask the player".
+    private final SecurityQuestionData suppliedSecurity;
+    private final boolean interactive;
+
     private record SecurityQuestionData(int questionNumber, String answer) {}
+
+    // The whole sign-up form, as a front end that collects it all before submitting would have it.
+    // questionNumber is 1-based, matching what the terminal asks the player to type.
+    public record Form(String username, String password, String passwordConfirm, String nickname,
+                       String email, String gender, int questionNumber, String securityAnswer) {}
 
     public RegisterCommand(String input, SignUpMenuRenderer signUpMenuRenderer,
                            AppSession appSession, AllMenuRenderer allMenuRenderer) {
@@ -42,6 +59,25 @@ public class RegisterCommand implements Command {
         this.signUpMenuRenderer = signUpMenuRenderer;
         this.appSession = appSession;
         this.allMenuRenderer = allMenuRenderer;
+        this.suppliedSecurity = null;
+        this.interactive = true;
+    }
+
+    // Non-interactive: nothing on this path reads stdin, so it is safe to call from a render thread.
+    public RegisterCommand(Form form, SignUpMenuRenderer signUpMenuRenderer,
+                           AppSession appSession, AllMenuRenderer allMenuRenderer) {
+        this.username = form.username();
+        this.password = form.password();
+        this.passwordConfirm = form.passwordConfirm();
+        this.nickname = form.nickname();
+        this.email = form.email();
+        this.gender = form.gender();
+        this.signUpMenuRenderer = signUpMenuRenderer;
+        this.appSession = appSession;
+        this.allMenuRenderer = allMenuRenderer;
+        this.suppliedSecurity = new SecurityQuestionData(form.questionNumber(),
+                form.securityAnswer() == null ? "" : form.securityAnswer());
+        this.interactive = false;
     }
 
     @Override
@@ -56,8 +92,10 @@ public class RegisterCommand implements Command {
             return;
         }
 
-        SecurityQuestionData securityData = handleSecurityQuestionInput();
-        if (securityData == null) {   // EOF while picking a security question -> abort registration
+        SecurityQuestionData securityData = interactive
+                ? handleSecurityQuestionInput()
+                : validateSuppliedSecurity();
+        if (securityData == null) {   // EOF, or a form that did not pass -- already reported
             return;
         }
 
@@ -91,11 +129,31 @@ public class RegisterCommand implements Command {
     }
 
     private Gender parseGender() {
+        if (gender == null) return null;
         if (gender.equalsIgnoreCase("male")) return Gender.MALE;
         if (gender.equalsIgnoreCase("female")) return Gender.FEMALE;
         return null;
     }
 
+    // The form's own security answers, checked once. There is no retry loop here on purpose: a form
+    // front end re-submits, it does not converse, so a bad field is reported and the command ends.
+    private SecurityQuestionData validateSuppliedSecurity() {
+        int questionNumber = suppliedSecurity.questionNumber();
+        if (questionNumber < 1 || questionNumber > Constants.SECURITY_QUESTIONS.length) {
+            signUpMenuRenderer.register(new Result(false, "Pick a question by number, 1 to "
+                    + Constants.SECURITY_QUESTIONS.length + "."));
+            return null;
+        }
+        if (SecurityAnswer.isBlank(suppliedSecurity.answer())) {
+            signUpMenuRenderer.register(new Result(false, "An empty answer won't fool anyone. Try again!"));
+            return null;
+        }
+        return suppliedSecurity;
+    }
+
+    // The terminal conversation. Its retry hints go straight to OutputHandler rather than through the
+    // renderer because they are prompt affordances -- "type it like this" only means anything to
+    // somebody who is typing. Nothing here runs on the graphical path.
     private SecurityQuestionData handleSecurityQuestionInput() {
         int questionNumber;
         String answer;
