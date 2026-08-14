@@ -56,6 +56,16 @@ public final class DebugFlags {
     // land the capture mid-transition or after it settles. -1 is off.
     public static final int WORLD_CHECK = number("pvz.worldCheck");
 
+    // Presses Escape on whichever menu screen is open and reports where the session ended up.
+    //
+    // Escape and the Back button run the same goBack(), so this checks the button's route without a
+    // mouse. Permanent rather than a one-off because Back has now been reported broken three times, and
+    // every failure looked identical from outside: the command IS posted, the model refuses it, the
+    // refusal arrives as a toast, and the button appears to do nothing.
+    //
+    //   gradlew runGui -Dpvz.menu=plants -Dpvz.backCheck=1 -Dpvz.smokeFrames=45
+    public static final boolean BACK_CHECK = flag("pvz.backCheck");
+
     private DebugFlags() { }
 
     private static int number(String key) {

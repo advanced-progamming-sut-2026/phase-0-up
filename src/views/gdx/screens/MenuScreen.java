@@ -320,8 +320,34 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
     @Override
     public void render(float delta) {
         refresh();
+        runBackCheck();
         stage.act(delta);
         stage.draw();
+    }
+
+    // Late enough that the screen's entrance has finished and the stage is taking input.
+    private static final int BACK_CHECK_FRAME = 30;
+
+    private int frames;
+
+    // -Dpvz.backCheck=1: presses Escape, and says where that left the session. See DebugFlags.
+    //
+    // Deliberately on the base class rather than on one screen. Every menu's Back funnels through
+    // goBack(), and the overrides are exactly where it has gone wrong -- so the check belongs where all
+    // of them inherit it, not where the last bug happened to be.
+    private void runBackCheck() {
+        if (!views.gdx.core.DebugFlags.BACK_CHECK) {
+            return;
+        }
+        frames++;
+        if (frames != BACK_CHECK_FRAME) {
+            return;
+        }
+        controllers.engine.MenuType before = context.appSession().getCurrentMenu();
+        stage.keyDown(Input.Keys.ESCAPE);
+        controllers.engine.MenuType after = context.appSession().getCurrentMenu();
+        Gdx.app.log("BackCheck", getClass().getSimpleName() + ": " + before + " -> " + after
+                + (before == after ? "   *** Back did nothing ***" : ""));
     }
 
     @Override

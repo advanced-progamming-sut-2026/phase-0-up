@@ -208,9 +208,15 @@ public final class SeedSelectionScreen extends MenuScreen {
     }
 
     // Leaving seed selection abandons the level rather than resuming it, so the session goes with it.
+    //
+    // "menu exit", not "menu enter play". The two are not interchangeable: EnterMenuCommand walks an
+    // explicit edge list and there is no edge OUT of the plants menu at all, so entering the play menu
+    // from here was refused with "You can't enter play menu from plants menu!" and the button did
+    // nothing but raise a toast. ExitMenuCommand is what knows the way back, and it already maps the
+    // plants menu to the play menu -- the same route the terminal build takes.
     @Override
     protected void goBack() {
         context.appSession().setCurrentGameSession(null);
-        commands.enter(controllers.engine.MenuType.PLAY_MENU.getMenuName());
+        commands.back();
     }
 }

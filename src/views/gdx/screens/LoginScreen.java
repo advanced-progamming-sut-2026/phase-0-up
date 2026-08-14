@@ -4,7 +4,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import controllers.engine.MenuType;
 import views.gdx.core.GdxContext;
 import views.gdx.ui.MenuStyles;
 
@@ -46,8 +45,8 @@ public final class LoginScreen extends MenuScreen {
         panel.add(signIn).width(220f).height(64f).padBottom(12f).row();
 
         Table links = new Table();
-        links.add(link("Forgot password?", MenuType.LOGIN_MENU, true)).padRight(20f);
-        links.add(link("Create an account", MenuType.SIGNUP_MENU, false));
+        links.add(link("Forgot password?", true)).padRight(20f);
+        links.add(link("Create an account", false));
         panel.add(links).row();
 
         root.setFillParent(true);
@@ -56,7 +55,7 @@ public final class LoginScreen extends MenuScreen {
 
     // The two side routes off this screen. "Forgot password" is a sibling view of the login menu rather
     // than a menu of its own -- the model has no MenuType for it -- so it is shown detached.
-    private TextButton link(String text, MenuType target, boolean forgotPassword) {
+    private TextButton link(String text, boolean forgotPassword) {
         TextButton button = MenuStyles.button(skin, text, MenuStyles.BUTTON_BROWN);
         button.addListener(new ChangeListener() {
             @Override
@@ -64,7 +63,7 @@ public final class LoginScreen extends MenuScreen {
                 if (forgotPassword) {
                     context.screens().showDetached(new ForgotPasswordScreen(context));
                 } else {
-                    commands.enter(target.getMenuName());
+                    goBack();
                 }
             }
         });
@@ -89,9 +88,14 @@ public final class LoginScreen extends MenuScreen {
                 + (stayChecked ? " -stay-logged-in" : ""));
     }
 
-    // Nowhere above the login menu. Escape would otherwise drop the player out of the application.
+    // Back from the login menu is the sign-up menu -- and it is reached by EXITING, not by entering.
+    //
+    // Same trap as the plants menu: EnterMenuCommand's edge list allows login -> main and nothing else,
+    // so "menu enter signup" was refused and both Escape and the "Create an account" link did nothing.
+    // ExitMenuCommand is the one that maps login back to sign-up, which is also why the link posts an
+    // exit rather than an enter: that IS the model's only route between the two.
     @Override
     protected void goBack() {
-        commands.enter(MenuType.SIGNUP_MENU.getMenuName());
+        commands.back();
     }
 }
