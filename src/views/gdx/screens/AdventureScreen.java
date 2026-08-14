@@ -58,8 +58,33 @@ public final class AdventureScreen extends MenuScreen {
 
     // Card framing and focus.
     private static final float CARD_BORDER = 5f;
-    private static final float UNSELECTED_SCALE = 0.85f;
+    private static final float SELECTED_SCALE = 1.1f;
+    private static final float UNSELECTED_SCALE = 0.9f;
     private static final float UNSELECTED_ALPHA = 0.6f;
+    // Hover is a multiplier on the card's resting scale, not an absolute -- so hovering a selected card
+    // lifts it from 1.1 rather than shrinking it to a button's 1.05.
+    private static final float HOVER_LIFT = 1.06f;
+
+    // The shelf the cards sit on: four cards, the gaps between them, the 10px the pane is inset by, and
+    // the room an end card needs to grow into when hovered. Deliberately not wider -- at 1220 the shelf
+    // ran to within 30px of both screen edges and read as a band across the whole screen rather than as
+    // something sitting ON the world.
+    private static final float CAROUSEL_WIDTH = 1130f;
+
+    // How long a change of world takes. The cards resize into their new roles, the level path dissolves
+    // and returns as the new world's, and the backdrop cross-fades under both -- the backdrop slowest,
+    // because it is the largest thing moving and a fast dissolve on a full-screen painting reads as a
+    // flicker.
+    private static final float SELECT_SECONDS = 0.28f;
+    private static final float SWAP_SECONDS = 0.14f;
+    private static final float BACKDROP_SECONDS = 0.45f;
+    private static final float NODE_FADE_SECONDS = 0.22f;
+    private static final float NODE_STAGGER = 0.05f;
+
+    // The dotted trail between level nodes.
+    private static final float DOT_SIZE = 9f;
+    private static final float DOT_SPACING = 26f;
+    private static final Color DOT_TINT = new Color(1f, 0.95f, 0.75f, 0.5f);
 
     // How far alternate nodes drop, so the row reads as a path rather than a row of buttons.
     private static final float ZIGZAG = 26f;
@@ -69,10 +94,16 @@ public final class AdventureScreen extends MenuScreen {
     // What a locked island is dimmed to, so it reads as unreachable without being invisible.
     private static final Color ISLAND_LOCKED = new Color(0.42f, 0.44f, 0.52f, 1f);
     // Stone, not a primary. A saturated badge beside painted castles reads as a debug overlay.
-    private static final Color BADGE_STONE = new Color(0.16f, 0.15f, 0.18f, 0.88f);
-    private static final Color BADGE_STONE_LOCKED = new Color(0.16f, 0.15f, 0.18f, 0.55f);
+    // Near-opaque with a lighter rim behind it, so the number sits on a defined medallion rather than
+    // on a faint smudge that the background colour shows straight through.
+    private static final Color BADGE_STONE = new Color(0.13f, 0.12f, 0.14f, 0.96f);
+    private static final Color BADGE_STONE_LOCKED = new Color(0.13f, 0.12f, 0.14f, 0.7f);
+    private static final Color BADGE_RIM = new Color(0.85f, 0.78f, 0.55f, 0.75f);
+    private static final Color BADGE_RIM_LOCKED = new Color(0.55f, 0.53f, 0.48f, 0.5f);
     // Behind card captions, so type stays legible over any of the four paintings.
     private static final Color TEXT_PLATE = new Color(0f, 0f, 0f, 0.5f);
+    // Behind the whole carousel, so the cards read as one shelf.
+    private static final Color CAROUSEL_PLATE = new Color(0f, 0f, 0f, 0.4f);
 
     private static final Color NODE_DONE = new Color(0.35f, 0.78f, 0.30f, 0.95f);
     private static final Color NODE_OPEN = new Color(0.95f, 0.72f, 0.20f, 0.95f);
@@ -84,6 +115,9 @@ public final class AdventureScreen extends MenuScreen {
     private Table levelPath;
     private Label chapterTitle;
     private Image worldBackdrop;
+    private Image worldBackdropOut;
+
+    private final java.util.List<WorldCard> cards = new java.util.ArrayList<>();
 
     public AdventureScreen(GdxContext context) {
         super(context);
@@ -91,16 +125,21 @@ public final class AdventureScreen extends MenuScreen {
 
     @Override
     protected void build(Table root) {
-        // The selected world's lawn, full bleed, between the title painting and the UI. Updated when the
+        // The selected world's painting, full bleed, between the title art and the UI. Updated when the
         // world changes, which is what makes picking one feel like travelling to it.
-        worldBackdrop = new Image();
-        worldBackdrop.setScaling(Scaling.fill);
-        worldBackdrop.setFillParent(true);
-        // Opaque. "One background per world" means exactly one: at 0.55 the title painting showed
+        //
+        // TWO images, not one: a single Image cannot cross-fade with itself. The outgoing world holds
+        // still on the upper layer while the new one is swapped in underneath it, and then dissolves --
+        // so there is never a frame with no world behind the level path.
+        //
+        // Both opaque. "One background per world" means exactly one: at 0.55 the title painting showed
         // through and the two fought each other in the middle of the screen, which is where the level
         // path sits.
-        worldBackdrop.getColor().a = 1f;
+        worldBackdrop = fullBleed();
+        worldBackdropOut = fullBleed();
+        worldBackdropOut.getColor().a = 0f;
         ambient.addActor(worldBackdrop);
+        ambient.addActor(worldBackdropOut);
 
         root.setFillParent(true);
         root.top().pad(18f);
@@ -108,7 +147,14 @@ public final class AdventureScreen extends MenuScreen {
         root.add(MenuStyles.title(skin, "Adventure")).padBottom(12f).row();
         // Tall enough for the selected card at full scale plus its frame, or the focused one is clipped
         // by the pane it sits in.
-        root.add(worldCarousel()).width(1180f).height(CARD_HEIGHT + 40f).padBottom(22f).row();
+        // A dark plate behind the whole carousel, so the row of cards reads as one shelf sitting on the
+        // world rather than as four images floating loose on the painting.
+        Stack carouselBand = new Stack();
+        carouselBand.add(new Image(context.assets().solid(CAROUSEL_PLATE)));
+        Table carouselHolder = new Table();
+        carouselHolder.add(worldCarousel()).grow().pad(10f);
+        carouselBand.add(carouselHolder);
+        root.add(carouselBand).width(CAROUSEL_WIDTH).height(CARD_HEIGHT + 56f).padBottom(22f).row();
 
         chapterTitle = MenuStyles.label(skin, "", MenuStyles.HEADING);
         root.add(chapterTitle).padBottom(16f).row();
@@ -117,7 +163,7 @@ public final class AdventureScreen extends MenuScreen {
         // painted islands on painted flagstone need something to separate them.
         Stack pathBand = new Stack();
         pathBand.add(new Image(context.assets().solid(PATH_SCRIM)));
-        levelPath = new Table();
+        levelPath = new LevelPath(context.assets().round(DOT_TINT));
         pathBand.add(levelPath);
         // expandY with centre, not top: the path is the subject of this screen and belongs in the
         // middle of the space between the carousel and the bar, not pinned under the world cards with
@@ -127,6 +173,65 @@ public final class AdventureScreen extends MenuScreen {
         root.add(bottomBar()).padTop(6f).row();
 
         rebuild();
+    }
+
+    private Image fullBleed() {
+        Image image = new Image();
+        image.setScaling(Scaling.fill);
+        image.setFillParent(true);
+        return image;
+    }
+
+    // A Table that keeps its origin at its own centre.
+    //
+    // Origin is measured in pixels, and a widget has no size until its first layout pass -- so
+    // setOrigin(Align.center) at build time records (0, 0), and every scale animation afterwards grows
+    // or shrinks the widget out of its bottom-left corner instead of about its middle. That is why the
+    // unselected cards sat low in the shelf and the gaps between them widened across the row, and why
+    // the pulsing "play me next" node drifted up and to the right as it breathed.
+    //
+    // Re-taking it on every layout also survives a resize, which setting it once after the first pass
+    // would not.
+    private static final class Centred extends Table {
+
+        Centred() {
+            setTransform(true);
+        }
+
+        @Override
+        public void layout() {
+            super.layout();
+            setOrigin(Align.center);
+        }
+    }
+
+    // A built card, kept so that changing world can be animated ONTO it rather than rebuilt around it.
+    //
+    // Rebuilding is what made picking a world snap: every card was discarded and a new one created
+    // already at its new size, so there was nothing left to animate from.
+    private static final class WorldCard {
+
+        private final Table root;
+        private final String chapterKey;
+
+        private boolean selected;
+        private boolean hovered;
+
+        WorldCard(Table root, String chapterKey) {
+            this.root = root;
+            this.chapterKey = chapterKey;
+        }
+
+        // Where this card should be right now, from its state -- never a fixed number. Hover is a
+        // multiplier on top of the resting size, so hovering a selected card lifts it from 1.1 instead
+        // of dragging it down to a button's 1.05.
+        float scale() {
+            return (selected ? SELECTED_SCALE : UNSELECTED_SCALE) * (hovered ? HOVER_LIFT : 1f);
+        }
+
+        float alpha() {
+            return selected ? 1f : UNSELECTED_ALPHA;
+        }
     }
 
     // A horizontal ScrollPane of world cards.
@@ -152,26 +257,22 @@ public final class AdventureScreen extends MenuScreen {
     // is. Locked worlds are not in the profile at all, so there is nothing to grey out -- but the card
     // still carries the padlock branch for when a future phase lists them.
     private void rebuildWorlds() {
-        worldRow.clear();
+        // clearChildren, never clear: Group.clear() is Actor.clear() plus the children, and Actor.clear
+        // throws away the actor's own ACTIONS and listeners too. See rebuildLevels, where that quietly
+        // deleted the fade that was in the middle of calling it.
+        worldRow.clearChildren();
+        cards.clear();
         java.util.List<Chapter> chapters = chapters();
         if (chapters.isEmpty()) {
             worldRow.add(MenuStyles.label(skin, "No worlds unlocked yet.", MenuStyles.TEXT));
             return;
         }
-        Chapter open = currentChapter();
         for (int i = 0; i < chapters.size(); i++) {
-            Chapter chapter = chapters.get(i);
-            boolean selected = open != null && open.getName() != null
-                    && open.getName().equals(chapter.getName());
-            Table card = worldCard(chapter, i + 1, selected);
-            worldRow.add(card).size(CARD_WIDTH, CARD_HEIGHT);
-            if (selected) {
-                focused = card;
-            }
+            WorldCard card = worldCard(chapters.get(i), i + 1);
+            cards.add(card);
+            worldRow.add(card.root).size(CARD_WIDTH, CARD_HEIGHT);
         }
-        // Bring the selected world into the middle of the pane. Deferred: the row has no laid-out
-        // coordinates until Scene2D's next layout pass, so scrolling now would scroll to (0, 0).
-        snapToFocused = true;
+        applySelection(false);
     }
 
     private Table focused;
@@ -188,13 +289,99 @@ public final class AdventureScreen extends MenuScreen {
                 true, false);
     }
 
-    private Table worldCard(Chapter chapter, int number, boolean selected) {
-        Stack inner = new Stack();
+    // The layout that gives the cards positions does not exist until the frame after they are built, so
+    // the snap is asked for here rather than at the point the selection changes.
+    @Override
+    protected void refresh() {
+        snapCarousel();
+        runWorldCheck();
+    }
+
+    // Proves that picking a world actually MOVES the cards, since a screenshot run has no mouse.
+    //
+    // -Dpvz.worldCheck=<chapter number> clicks that world's card once the screen has finished arriving,
+    // and logs every card's scale and alpha before and after. Driven through the Stage as a real touch
+    // rather than by calling selectWorld() directly, so what is being checked is the wired path -- "the
+    // listener is attached" and "the listener changes anything" are different claims.
+    // Late enough that the screen's own 0.3s entrance has finished, so the two animations are not read
+    // as one, and long enough after the click for the 0.28s selection tween to have settled.
+    private static final int WORLD_CHECK_FRAME = 30;
+    private static final int WORLD_CHECK_SETTLE = 25;
+
+    private int frames;
+
+    private void runWorldCheck() {
+        int wanted = views.gdx.core.DebugFlags.WORLD_CHECK;
+        frames++;
+        if (wanted < 1 || wanted > cards.size()) {
+            return;
+        }
+        if (frames == WORLD_CHECK_FRAME) {
+            com.badlogic.gdx.Gdx.app.log("WorldCheck", "before  " + cardStates());
+            clickCard(cards.get(wanted - 1).root);
+        } else if (frames == WORLD_CHECK_FRAME + WORLD_CHECK_SETTLE) {
+            com.badlogic.gdx.Gdx.app.log("WorldCheck", "settled " + cardStates());
+        }
+    }
+
+    private void clickCard(Table card) {
+        com.badlogic.gdx.math.Vector2 centre = card.localToStageCoordinates(
+                new com.badlogic.gdx.math.Vector2(card.getWidth() / 2f, card.getHeight() / 2f));
+        stage.getViewport().project(centre);
+        // y is flipped: project() returns y-up (OpenGL), the pointer events expect y-down (the mouse).
+        int x = (int) centre.x;
+        int y = (int) (com.badlogic.gdx.Gdx.graphics.getHeight() - centre.y);
+        // Moved onto the card before being pressed, as a real click is. That leaves the card selected
+        // AND hovered afterwards -- 1.1 x 1.06 -- which is the widest a card ever gets and therefore the
+        // case that decides whether the shelf is wide enough to show an end card without clipping it.
+        stage.mouseMoved(x, y);
+        stage.touchDown(x, y, 0, com.badlogic.gdx.Input.Buttons.LEFT);
+        stage.touchUp(x, y, 0, com.badlogic.gdx.Input.Buttons.LEFT);
+    }
+
+    private String cardStates() {
+        StringBuilder out = new StringBuilder();
+        for (WorldCard card : cards) {
+            out.append(card.chapterKey).append(card.selected ? "[*] " : "[ ] ")
+                    .append("scale=").append(String.format(java.util.Locale.ROOT, "%.2f",
+                            card.root.getScaleX()))
+                    .append(" alpha=").append(String.format(java.util.Locale.ROOT, "%.2f",
+                            card.root.getColor().a)).append("   ");
+        }
+        return out.toString();
+    }
+
+    // One card: the world's own painting, its name, and how far through it the player is.
+    //
+    // Selection state is deliberately NOT set here. applySelection owns it, so the same code paints a
+    // card on the frame it is built and re-paints it when the player picks a different world.
+    private WorldCard worldCard(Chapter chapter, int number) {
+        // The frame: a dark border drawn as padding around the art, so a card reads as a card rather
+        // than as a photograph butted against its neighbour.
+        Table card = new Centred();
+        card.setBackground(MenuStyles.panelFill(skin));
+        card.pad(CARD_BORDER);
+        // Clipped to that padded area, or the frame only has two sides.
+        //
+        // Scaling.fill covers a box by scaling until BOTH axes are filled, which for a 16:9 painting in
+        // a 240x140 hole overflows about four pixels at each side -- and Scene2D does not clip, so those
+        // pixels were painted straight over the left and right border. The result was a card framed dark
+        // top and bottom and framed in pale stretched artwork down the sides.
+        card.setClip(true);
+        card.add(cardFace(chapter)).grow();
+
+        WorldCard entry = new WorldCard(card, chapter.getName());
+        card.addListener(cardListener(entry, number));
+        return entry;
+    }
+
+    private Stack cardFace(Chapter chapter) {
+        Stack face = new Stack();
 
         Image art = new Image(worldArt(chapter));
         art.setScaling(Scaling.fill);
-        inner.add(art);
-        inner.add(new Image(context.assets().solid(CARD_SHADE)));
+        face.add(art);
+        face.add(new Image(context.assets().solid(CARD_SHADE)));
 
         // Text plates. The world paintings are bright and busy at the top AND bottom, so a caption laid
         // straight over one is unreadable on at least one of the four. A dark strip behind each line
@@ -205,30 +392,122 @@ public final class AdventureScreen extends MenuScreen {
         overlay.add().expand().row();
         overlay.add(plated(progressText(chapter), MenuStyles.TEXT, progressTint(chapter)))
                 .growX().bottom().row();
-        inner.add(overlay);
+        face.add(overlay);
+        return face;
+    }
 
-        // The frame: a dark border drawn as padding around the art, so a card reads as a card rather
-        // than as a photograph butted against its neighbour.
-        Table card = new Table();
-        card.setBackground(MenuStyles.panelFill(skin));
-        card.pad(CARD_BORDER);
-        card.add(inner).grow();
+    // NOT ButtonJuice.
+    //
+    // That is what caused the stuck-scale bug: its exit handler animates back to a hardcoded 1.0, which
+    // is the right resting size for a button and the wrong one for a card whose resting size depends on
+    // whether its world is selected. A hovered card therefore left the hover at 1.0, and a selected card
+    // silently lost its focus scale the first time the mouse crossed it.
+    //
+    // So the card carries its own listener, and it never animates to a number -- only to whatever its
+    // state says it should be, which is the one rule that makes hover and selection compose.
+    private ClickListener cardListener(WorldCard card, int number) {
+        return new ClickListener() {
+            @Override
+            public void enter(InputEvent event, float x, float y, int pointer, Actor from) {
+                if (pointer == -1) {
+                    card.hovered = true;
+                    retarget(card, 0.12f, Interpolation.sine);
+                }
+            }
 
-        // Focus. The selected world is full size and fully lit; the rest step back, which is what turns
-        // a row of four equal rectangles into a carousel with a subject.
-        card.setTransform(true);
-        card.setOrigin(Align.center);
-        card.setScale(selected ? 1f : UNSELECTED_SCALE);
-        card.getColor().a = selected ? 1f : UNSELECTED_ALPHA;
-        ButtonJuice.applyTo(card);
-        card.addListener(new ClickListener() {
+            @Override
+            public void exit(InputEvent event, float x, float y, int pointer, Actor to) {
+                if (pointer == -1) {
+                    card.hovered = false;
+                    retarget(card, 0.15f, Interpolation.sine);
+                }
+            }
+
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                // The model decides whether the world actually changed -- a chapter that refuses to
+                // open leaves the key alone, and animating a transition to where we already are would
+                // be a flicker for no reason.
+                String before = chapterKey();
                 commands.submit("menu enter chapter -c " + number);
-                rebuild();
+                if (!java.util.Objects.equals(before, chapterKey())) {
+                    selectWorld();
+                }
             }
-        });
-        return card;
+        };
+    }
+
+    // Animates a card to where its own state says it belongs, cancelling whatever it was doing.
+    private static void retarget(WorldCard card, float seconds, Interpolation ease) {
+        float scale = card.scale();
+        card.root.clearActions();
+        card.root.addAction(Actions.parallel(
+                Actions.scaleTo(scale, scale, seconds, ease),
+                Actions.alpha(card.alpha(), seconds, Interpolation.fade)));
+    }
+
+    // Paints selection onto the cards that already exist.
+    //
+    // animate is false on the first pass, where there is no previous state to travel from, and true
+    // when the player picks a world -- which is the whole difference between the carousel snapping and
+    // the carousel moving.
+    private void applySelection(boolean animate) {
+        String open = chapterKey();
+        for (WorldCard card : cards) {
+            card.selected = open != null && open.equals(card.chapterKey);
+            if (animate) {
+                retarget(card, SELECT_SECONDS, Interpolation.swingOut);
+            } else {
+                card.root.setScale(card.scale());
+                card.root.getColor().a = card.alpha();
+            }
+            if (card.selected) {
+                focused = card.root;
+            }
+        }
+        // Bring the selected world into the middle of the pane. Deferred: the row has no laid-out
+        // coordinates until Scene2D's next layout pass, so scrolling now would scroll to (0, 0).
+        snapToFocused = true;
+    }
+
+    // A change of world, as a move rather than a redraw: the cards resize into their new roles, the
+    // level path dissolves and returns as the new world's, and the backdrop cross-fades under both.
+    private void selectWorld() {
+        applySelection(true);
+        swapLevels();
+        updateBackdrop(true);
+    }
+
+    private void swapLevels() {
+        levelPath.clearActions();
+        levelPath.addAction(Actions.sequence(
+                Actions.alpha(0f, SWAP_SECONDS, Interpolation.fade),
+                Actions.run(() -> {
+                    rebuildLevels();
+                    staggerNodes();
+                }),
+                Actions.alpha(1f, SWAP_SECONDS, Interpolation.fade)));
+        // The heading names the world the path belongs to, so it goes with the path rather than
+        // flipping to the new name over the old one's levels. Same timings, so the two read as one
+        // movement -- rebuildLevels sets the text, and it runs at the bottom of both fades.
+        chapterTitle.clearActions();
+        chapterTitle.addAction(Actions.sequence(
+                Actions.alpha(0f, SWAP_SECONDS, Interpolation.fade),
+                Actions.alpha(1f, SWAP_SECONDS, Interpolation.fade)));
+    }
+
+    // The new world's levels arriving one after another rather than all at once.
+    //
+    // Alpha only. The node the player is meant to play next carries a forever scale action, and a second
+    // tween writing the same scale would fight it for the whole entrance.
+    private void staggerNodes() {
+        float delay = 0f;
+        for (Actor node : levelPath.getChildren()) {
+            node.getColor().a = 0f;
+            node.addAction(Actions.sequence(Actions.delay(delay),
+                    Actions.alpha(1f, NODE_FADE_SECONDS, Interpolation.fade)));
+            delay += NODE_STAGGER;
+        }
     }
 
     // A caption on its own dark plate, so it stays readable over any of the four paintings.
@@ -267,7 +546,11 @@ public final class AdventureScreen extends MenuScreen {
 
     // The open world's levels, as stepping stones rather than a grid of squares.
     private void rebuildLevels() {
-        levelPath.clear();
+        // clearChildren, NOT clear. This runs from inside the fade that swaps worlds, and Group.clear()
+        // takes the actor's own actions with it -- so clear() deleted the very sequence that had just
+        // called it, the fade-back-in never ran, and the whole path stayed at alpha 0. An empty strip
+        // where four castles should be, with nothing in the log to say why.
+        levelPath.clearChildren();
         Chapter chapter = currentChapter();
         if (chapter == null || chapter.getLevels() == null) {
             chapterTitle.setText("Pick a world to see its levels.");
@@ -311,7 +594,7 @@ public final class AdventureScreen extends MenuScreen {
         // artwork and made the node read as cluttered. As a base it does two jobs instead: it gives the
         // state its colour somewhere clean, and it gives a cut-out island something to stand on --
         // which is what stops a wispy one from looking like it is floating in nothing.
-        Table node = new Table();
+        Table node = new Centred();
 
         // The star sits CENTRED ABOVE the island, in a row of its own, so it is anchored to the node
         // rather than floating wherever the art's bounding box happened to put it.
@@ -342,18 +625,9 @@ public final class AdventureScreen extends MenuScreen {
         // it read as a debug overlay. State is carried by the star above and by the island's own dim
         // instead, so the badge only has to say WHICH level this is -- which a quiet stone-coloured
         // disc does without competing with the artwork.
-        Stack medallion = new Stack();
-        medallion.add(new Image(context.assets().round(
-                unlocked || cleared ? BADGE_STONE : BADGE_STONE_LOCKED)));
-        Table caption = new Table();
-        Label numberLabel = MenuStyles.label(skin, String.valueOf(number), MenuStyles.HEADING);
-        numberLabel.setColor(unlocked || cleared ? Color.WHITE : DIM);
-        caption.add(numberLabel);
-        medallion.add(caption);
-        node.add(medallion).size(BADGE_SIZE, BADGE_SIZE).padTop(BASE_OVERLAP);
+        node.add(medallion(number, unlocked || cleared)).size(BADGE_SIZE, BADGE_SIZE)
+                .padTop(BASE_OVERLAP);
 
-        node.setTransform(true);
-        node.setOrigin(Align.center);
         ButtonJuice.applyTo(node);
         if (next) {
             // The one node that asks to be pressed. A slow breath rather than a flash: it has to catch
@@ -369,6 +643,91 @@ public final class AdventureScreen extends MenuScreen {
             }
         });
         return node;
+    }
+
+    // A small dark medallion carrying the level number.
+    //
+    // Rim disc first, then the darker face inset inside it: two circles give a defined edge without a
+    // ring texture, which the dump does not have. That edge is the whole point -- a single flat disc
+    // was getting lost against whichever background colour happened to sit behind it.
+    private Stack medallion(int number, boolean reachable) {
+        Stack medallion = new Stack();
+        medallion.add(new Image(context.assets().round(reachable ? BADGE_RIM : BADGE_RIM_LOCKED)));
+
+        Table face = new Table();
+        face.add(new Image(context.assets().round(reachable ? BADGE_STONE : BADGE_STONE_LOCKED)))
+                .grow().pad(3f);
+        medallion.add(face);
+
+        Table caption = new Table();
+        Label numberLabel = MenuStyles.label(skin, String.valueOf(number), MenuStyles.HEADING);
+        numberLabel.setColor(reachable ? Color.WHITE : DIM);
+        caption.add(numberLabel);
+        medallion.add(caption);
+        return medallion;
+    }
+
+    // The row of level nodes, with a dotted trail drawn between them.
+    //
+    // A Table subclass rather than a ShapeRenderer: the dots are drawn from the SAME Batch as
+    // everything else, so they need no second renderer, no separate projection matrix and no
+    // begin/end pair interleaved with the Stage's. Overriding draw and calling super LAST is what puts
+    // the trail behind the castles -- drawn after, it would run over their faces.
+    //
+    // It reads its children's real positions, so the trail follows the zigzag automatically and stays
+    // correct if the node count or spacing ever changes.
+    private static final class LevelPath extends Table {
+
+        private final com.badlogic.gdx.scenes.scene2d.utils.Drawable dot;
+
+        LevelPath(com.badlogic.gdx.scenes.scene2d.utils.Drawable dot) {
+            this.dot = dot;
+        }
+
+        @Override
+        public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float parentAlpha) {
+            drawTrail(batch, parentAlpha);
+            super.draw(batch, parentAlpha);
+        }
+
+        private void drawTrail(com.badlogic.gdx.graphics.g2d.Batch batch, float parentAlpha) {
+            com.badlogic.gdx.utils.Array<Actor> nodes = getChildren();
+            if (dot == null || nodes.size < 2) {
+                return;
+            }
+            Color previous = batch.getColor().cpy();
+            // parentAlpha times THIS actor's own alpha.
+            //
+            // Scene2D hands an actor its parent's alpha and expects the actor to fold in its own --
+            // Group.drawChildren does exactly that on the way down. Drawing the trail at parentAlpha
+            // alone therefore ignored the fade the path was in the middle of, and the dots stayed at
+            // full strength on an otherwise empty strip while the levels were being swapped.
+            batch.setColor(1f, 1f, 1f, parentAlpha * getColor().a);
+            for (int i = 0; i < nodes.size - 1; i++) {
+                trace(batch, nodes.get(i), nodes.get(i + 1));
+            }
+            batch.setColor(previous);
+        }
+
+        // Dots evenly along the segment between two nodes, skipping the ends so the trail emerges from
+        // under each castle rather than colliding with it.
+        private void trace(com.badlogic.gdx.graphics.g2d.Batch batch, Actor from, Actor to) {
+            float x1 = getX() + from.getX() + from.getWidth() / 2f;
+            float x2 = getX() + to.getX() + to.getWidth() / 2f;
+            // Anchored at the medallions, which is where a path between two castles should run.
+            float y1 = getY() + from.getY() + BADGE_SIZE / 2f;
+            float y2 = getY() + to.getY() + BADGE_SIZE / 2f;
+
+            float dx = x2 - x1;
+            float dy = y2 - y1;
+            float length = (float) Math.sqrt(dx * dx + dy * dy);
+            int count = (int) (length / DOT_SPACING);
+            for (int i = 1; i < count; i++) {
+                float t = i / (float) count;
+                dot.draw(batch, x1 + dx * t - DOT_SIZE / 2f, y1 + dy * t - DOT_SIZE / 2f,
+                        DOT_SIZE, DOT_SIZE);
+            }
+        }
     }
 
     // Everywhere else the play menu leads, in one bar along the bottom.
@@ -408,13 +767,29 @@ public final class AdventureScreen extends MenuScreen {
     private void rebuild() {
         rebuildWorlds();
         rebuildLevels();
-        updateBackdrop();
+        updateBackdrop(false);
     }
 
-    private void updateBackdrop() {
+    // Swaps the world behind everything, dissolving out of the old one when asked.
+    //
+    // The outgoing painting is handed to the upper layer and left at full opacity while the new one is
+    // put on the lower layer underneath it, so the fade uncovers rather than blanks: at no point is
+    // there a frame showing the title backdrop through a half-transparent world.
+    private void updateBackdrop(boolean animate) {
         Chapter chapter = currentChapter();
         TextureRegion art = chapter == null ? null : worldRegion(chapter.getEnvironment());
+        if (animate) {
+            worldBackdropOut.setDrawable(worldBackdrop.getDrawable());
+            worldBackdropOut.getColor().a = 1f;
+            worldBackdropOut.clearActions();
+            worldBackdropOut.addAction(Actions.fadeOut(BACKDROP_SECONDS, Interpolation.fade));
+        }
         worldBackdrop.setDrawable(art == null ? null : new TextureRegionDrawable(art));
+    }
+
+    private String chapterKey() {
+        Chapter open = currentChapter();
+        return open == null ? null : open.getName();
     }
 
     private Drawable worldArt(Chapter chapter) {

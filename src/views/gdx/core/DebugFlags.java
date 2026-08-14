@@ -50,6 +50,12 @@ public final class DebugFlags {
     // without waiting forty seconds for zombies to chew through 4000 HP. -1 leaves health in charge.
     public static final int FORCE_DAMAGE_STAGE = number("pvz.forceDamage");
 
+    // Clicks a world card on the Adventure screen a second after it opens, and reports what every card
+    // did. Same reason as HOVER_CHECK: a screenshot run has no mouse, and "picking a world animates"
+    // cannot be seen in a still frame or asserted in a unit test. Pair it with -Dpvz.smokeFrames to
+    // land the capture mid-transition or after it settles. -1 is off.
+    public static final int WORLD_CHECK = number("pvz.worldCheck");
+
     private DebugFlags() { }
 
     private static int number(String key) {
