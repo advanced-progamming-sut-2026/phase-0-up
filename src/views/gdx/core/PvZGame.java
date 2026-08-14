@@ -41,6 +41,7 @@ public class PvZGame extends Game {
     private GdxContext context;
     private SmokeHarness smoke;
     private views.Renderers renderers;
+    private controllers.engine.InputRouter router;
 
     @Override
     public void create() {
@@ -69,8 +70,23 @@ public class PvZGame extends Game {
         // JVM, so each simply takes it at start-up.
         models.user.Profile.setCurrencyObserver(renderers.currency()::showBalance);
 
-        context = new GdxContext(this, assets, toasts, sprites, appSession, renderers);
+        // The same router the terminal build uses, minus its stdin loop. Menu buttons post the string
+        // the player would have typed; startLoop() is never called, so nothing here reads stdin.
+        router = new controllers.engine.InputRouter(appSession, renderers);
+        context = new GdxContext(this, assets, toasts, sprites, appSession, renderers,
+                new views.gdx.bridge.MenuCommands(router));
 
+        runAssetDiagnostics(sprites);
+
+        screens = new ScreenManager(context);
+        registerScreens();
+        openEntryScreen();
+    }
+
+    // The two asset probes. Both are off unless their system property is set, and both exist because
+    // the failure they diagnose is silent: an id that does not resolve returns null and the caller
+    // quietly falls back, so a typo looks exactly like a layout bug.
+    private void runAssetDiagnostics(views.gdx.sprite.SpriteRegistry sprites) {
         // Diagnostic for building visibility maps: -Dpvz.dumpParts=ZombieArmor1,ZombieDefault
         String dump = System.getProperty("pvz.dumpParts");
         if (dump != null && !dump.isBlank()) {
@@ -97,25 +113,106 @@ public class PvZGame extends Game {
                                 + "x" + region.getRegionHeight()));
             }
         }
+    }
 
-        screens = new ScreenManager(context);
-        registerScreens();
-
-        // Phase 1: boot straight onto the lawn. No menus exist yet, so the route in is hard-wired here
-        // and replaced at T4.8 by Adventure -> Seed Selection -> Game. -Dpvz.screen=sprites still opens
-        // the Phase 0 asset harness.
-        if ("sprites".equalsIgnoreCase(System.getProperty("pvz.screen", ""))) {
+    // Where the player lands.
+    //
+    // The default is the menus: sync() reads AppSession's current menu -- SIGNUP_MENU for a fresh
+    // install, MAIN_MENU for an auto-logged-in one -- and shows the screen registered against it, so
+    // the model decides the entry point exactly as it decides every later transition.
+    //
+    // The two overrides are development routes:
+    //   -Dpvz.screen=game     straight onto a pre-built lawn via DevBoot, skipping level choice
+    //   -Dpvz.screen=sprites  the Phase 0 asset harness
+    private void openEntryScreen() {
+        String entry = System.getProperty("pvz.screen", "").trim();
+        if ("sprites".equalsIgnoreCase(entry)) {
             screens.showDetached(new views.gdx.screens.SpriteSmokeScreen(context));
-        } else {
+        } else if ("game".equalsIgnoreCase(entry)) {
+            // The session's menu has to move too, not just the screen. showDetached leaves
+            // ScreenManager with nothing displayed, so the next sync() sees the session still sitting
+            // in MAIN_MENU and swaps the lawn straight back out from under this -- which is exactly
+            // what this flag stopped doing once the menus became the default entry point.
+            appSession.setCurrentMenu(MenuType.IN_GAME);
             screens.showDetached(new views.gdx.screens.GameScreen(
                     context, views.gdx.screens.DevBoot.start(appSession, renderers)));
+        } else {
+            openStartingMenu();
+            screens.sync();
         }
     }
 
+    // -Dpvz.menu=<name> opens straight onto one menu, using the same names the CLI takes
+    // ("main", "profile", "settings", "play"). Every Phase 4 screen is otherwise several clicks and a
+    // sign-in away, which makes checking one of them by eye far more work than fixing it.
+    //
+    // Menus past the sign-in wall need somebody signed in, so this borrows the first saved account
+    // rather than pretending. It changes nothing a real sign-in would not: the same Profile repairs
+    // run, and no rule is bypassed -- this is a route in, not a permission.
+    private void openStartingMenu() {
+        String wanted = System.getProperty("pvz.menu", "").trim();
+        if (wanted.isEmpty()) {
+            return;
+        }
+        MenuType menu = MenuType.fromName(wanted);
+        if (menu == null) {
+            Gdx.app.error("PvZGame", "-Dpvz.menu=" + wanted + " is not a menu name");
+            return;
+        }
+        if (appSession.getCurrentUser() == null) {
+            signInFirstSavedUser();
+        }
+        if (menu == MenuType.PLANTS_MENU || menu == MenuType.IN_GAME) {
+            openFirstLevel(menu);
+        } else {
+            appSession.setCurrentMenu(menu);
+        }
+        Gdx.app.log("PvZGame", "opening menu: " + appSession.getCurrentMenu());
+    }
+
+    // Seed selection and the lawn both need a level already chosen, so this walks the real route to one
+    // -- the same two commands the Adventure screen's buttons post -- rather than assembling a
+    // GameSession by hand. Anything the real flow does that a hand-built session would skip is exactly
+    // what this shortcut must not hide.
+    private void openFirstLevel(MenuType menu) {
+        // From the play menu, because the router dispatches on the menu the session is CURRENTLY in --
+        // "menu enter chapter" is a play-menu command and is not recognised anywhere else.
+        appSession.setCurrentMenu(MenuType.PLAY_MENU);
+        router.submit("menu enter chapter -c 1");
+        router.submit("level -l 1");
+        if (appSession.getCurrentGameSession() == null) {
+            Gdx.app.error("PvZGame", "-Dpvz.menu=" + menu.getMenuName()
+                    + ": could not open chapter 1 level 1");
+            return;
+        }
+        appSession.setCurrentMenu(menu);
+    }
+
+    private void signInFirstSavedUser() {
+        java.util.Collection<User> users = DatabaseManager.getInstance().getAllUsers();
+        if (users == null || users.isEmpty()) {
+            Gdx.app.log("PvZGame", "-Dpvz.menu: no saved accounts, staying signed out");
+            return;
+        }
+        User user = users.iterator().next();
+        appSession.setCurrentUser(user);
+        user.getProfile().ensureStartingPlants();
+        LevelInitializer.attachCampaign(user.getProfile());
+        Gdx.app.log("PvZGame", "-Dpvz.menu: signed in as " + user.getUsername());
+    }
+
     // Screens are registered against the MenuType the existing Commands already move between, so the
-    // model keeps driving navigation. Filled in as Phase 4 lands each screen.
+    // model keeps driving navigation: a button runs a Command, the Command moves the session, and
+    // ScreenManager.sync() catches up on the next frame. Filled in as Phase 4 lands each screen.
     private void registerScreens() {
-        // e.g. screens.register(MenuType.MAIN_MENU, MainMenuScreen::new);
+        screens.register(MenuType.SIGNUP_MENU, views.gdx.screens.RegisterScreen::new);
+        screens.register(MenuType.LOGIN_MENU, views.gdx.screens.LoginScreen::new);
+        screens.register(MenuType.MAIN_MENU, views.gdx.screens.MainMenuScreen::new);
+        screens.register(MenuType.PROFILE_MENU, views.gdx.screens.ProfileScreen::new);
+        screens.register(MenuType.SETTINGS_MENU, views.gdx.screens.SettingsScreen::new);
+        screens.register(MenuType.PLAY_MENU, views.gdx.screens.AdventureScreen::new);
+        screens.register(MenuType.PLANTS_MENU, views.gdx.screens.SeedSelectionScreen::new);
+        screens.register(MenuType.IN_GAME, views.gdx.screens.GameScreen::new);
     }
 
     // Mirrors Main.main's startup, minus the console wiring.

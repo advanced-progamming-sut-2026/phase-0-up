@@ -200,6 +200,18 @@ public class GameEngine {
     // are evaluated, a scoring run is settled, and the profile is saved. Then the loop is stopped, and
     // the caller (InputRouter.runGame) drops the player back on the Play menu.
     private void exitGame() {
+        abandonLevel();
+        running = false;
+    }
+
+    // Leaving a level early, from either front end.
+    //
+    // Public because the graphical build's "Save and Exit" needs exactly this and cannot get it any
+    // other way: calling GameSession.forfeit() alone would set the state and stop there, skipping the
+    // quest evaluation, the scoring-game settle and the save that make the exit count. Those all live
+    // in announceOutcome, which only ever runs from inside a tick -- and a forfeited session never
+    // ticks again.
+    public void abandonLevel() {
         GameState before = gameSession.getState();
         if (gameSession.forfeit()) {
             inGameRenderer.render(new Result(false,
@@ -208,7 +220,6 @@ public class GameEngine {
         } else {
             inGameRenderer.render(new Result(true, "This lawn is already settled -- heading back."));
         }
-        running = false;
     }
 
     // Where in-game command output goes. The terminal prints it; the graphical build swaps in a

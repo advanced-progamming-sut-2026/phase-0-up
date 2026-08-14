@@ -36,6 +36,9 @@ public final class ZombieRenderer {
     private final EntityInterpolator interpolator;
     private final AnimationClocks clocks;
 
+    // Watches health frame to frame; a drop is a hit. See DamageFlash.
+    private final DamageFlash flashes = new DamageFlash();
+
     public ZombieRenderer(SpriteRegistry sprites, LawnGeometry lawn, EntityInterpolator interpolator,
                           AnimationClocks clocks) {
         this.sprites = sprites;
@@ -73,7 +76,23 @@ public final class ZombieRenderer {
         boolean faceRight = zombie.getState().isHypnotized();
         SpritePlacer.drawStanding(batch, sprite, clip, stateTime, x, footY, faceRight, parts);
 
+        // Hit flash: the same frame again, additively, so the zombie lights up white. Total HP, not the
+        // body's -- a cone or a bucket absorbing a pea is still a hit, and the zombie should react.
+        float flash = zombie.getHealth() == null ? 0f
+                : flashes.intensity(zombie, zombie.getHealth().getTotalHP(), delta);
+        if (flash > 0f) {
+            SpritePlacer.beginAdditive(batch);
+            batch.setColor(flash, flash, flash, 1f);
+            SpritePlacer.drawStanding(batch, sprite, clip, stateTime, x, footY, faceRight, parts);
+            SpritePlacer.endAdditive(batch);
+        }
+
         batch.setColor(previous);
+    }
+
+    // Called once per frame by GameRenderer: drops entities that were not drawn.
+    void sweepFlashes() {
+        flashes.sweep();
     }
 
     // Fractional lane -> foot line, so a lane switch slides instead of snapping.

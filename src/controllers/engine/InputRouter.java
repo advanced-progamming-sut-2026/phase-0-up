@@ -114,6 +114,22 @@ public class InputRouter {
         }
     }
 
+    // One menu command, from a caller that is not the stdin loop.
+    //
+    // The graphical build has no prompt, but it has the same menus and must obey the same rules about
+    // which command is legal where. Rather than re-deriving that per screen, a button synthesises the
+    // string the player would have typed and posts it here -- the identical route, so "you can't do
+    // that from this menu" cannot mean two different things in the two builds.
+    //
+    // startLoop() is what the terminal calls; nothing here reads stdin, which is what makes this safe
+    // from the render thread.
+    public void submit(String input) {
+        if (input == null || input.isBlank()) {
+            return;
+        }
+        routeAndExecute(input);
+    }
+
     // Commands available from every menu are tried first; anything else is offered to the handler for
     // the menu the player is standing in. Each per-menu handler returns whether it consumed the input,
     // so an unrecognised command falls through to one shared "invalid" message.

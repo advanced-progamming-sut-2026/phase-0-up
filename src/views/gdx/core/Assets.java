@@ -55,34 +55,27 @@ public final class Assets implements Disposable {
         // Ships inside the pvz-skin jar as classpath resources (skin/pvz2_skin.json + atlas + TTFs).
         // Gdx.files.internal() falls back to the classpath, so this needs nothing on disk.
         this.skin = loadSkin();
-        smoothFonts(this.skin);
+        // Re-renders the skin's fonts at the resolution they are actually drawn at. See SkinFonts:
+        // the declared sizes suit the 1280x720 design space, and the window is 1920x1080.
+        SkinFonts.sharpen(this.skin, skinFile());
         this.whitePixel = createWhitePixel();
         this.disc = createDisc();
 
         Gdx.app.log("Assets", "asset root: " + root.file().getAbsolutePath());
     }
 
-    // Makes the skin's fonts survive being scaled.
-    //
-    // The UI is laid out in a 1280x720 space and the window is 1920x1080, so every glyph is drawn at
-    // 1.5x. Two defaults make that look bad:
-    //
-    //  * the font's page texture filters Nearest, so an upscaled glyph gets hard, blocky edges rather
-    //    than a smooth ramp. Linear filtering is what actually removes the jaggedness.
-    //  * BitmapFont snaps glyphs to whole pixels by default (useIntegerPositions). At a fractional
-    //    scale that rounding lands letters unevenly, so spacing visibly wobbles along a word.
-    //
-    // Both are per-font settings, and the skin can carry several, so every one it defines is fixed.
-    private static void smoothFonts(Skin skin) {
-        for (com.badlogic.gdx.graphics.g2d.BitmapFont font
-                : skin.getAll(com.badlogic.gdx.graphics.g2d.BitmapFont.class).values()) {
-            font.setUseIntegerPositions(false);
-            for (com.badlogic.gdx.graphics.g2d.TextureRegion page : font.getRegions()) {
-                page.getTexture().setFilter(
-                        com.badlogic.gdx.graphics.Texture.TextureFilter.Linear,
-                        com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
+    // Where the skin's own JSON is, so its font declarations can be re-read. The TTFs sit beside it,
+    // which is why SkinFonts is handed the file rather than the parsed Skin.
+    private static FileHandle skinFile() {
+        String path = System.getProperty("pvz.skin");
+        if (path != null && !path.isBlank()) {
+            FileHandle file = Gdx.files.absolute(new File(path.trim()).getAbsolutePath());
+            if (file.exists()) {
+                return file;
             }
         }
+        // Classpath, out of the pvz-skin jar -- the same handle PvzSkin itself loads.
+        return Gdx.files.internal("skin/pvz2_skin.json");
     }
 
     // The skin normally comes out of the pvz-skin jar, which makes it convenient but uneditable. Point
@@ -109,13 +102,33 @@ public final class Assets implements Disposable {
     }
 
     // Drawn once at 64px and scaled down in use, so the edge stays smooth at any projectile size.
+    // Antialiased by hand, per pixel.
+    //
+    // Pixmap.fillCircle does no antialiasing whatsoever -- it is a hard, stair-stepped stamp -- and
+    // linear filtering only smears those steps rather than removing them, which is why the level nodes
+    // came out visibly jagged. Computing coverage from the distance to the centre gives a genuinely
+    // smooth edge, and 256px means it is still smooth when a node is drawn large.
     private static com.badlogic.gdx.graphics.Texture createDisc() {
-        int size = 64;
+        int size = 256;
         com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(
                 size, size, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
         try {
-            pixmap.setColor(com.badlogic.gdx.graphics.Color.WHITE);
-            pixmap.fillCircle(size / 2, size / 2, size / 2 - 1);
+            // Straight writes, or each pixel would be blended against the one already there.
+            pixmap.setBlending(com.badlogic.gdx.graphics.Pixmap.Blending.None);
+            float centre = size / 2f;
+            float radius = centre - 1f;
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) {
+                    float dx = x + 0.5f - centre;
+                    float dy = y + 0.5f - centre;
+                    float distance = (float) Math.sqrt(dx * dx + dy * dy);
+                    // One pixel of ramp at the rim: fully opaque inside, fading to nothing across the
+                    // last pixel. Any wider reads as a glow rather than an edge.
+                    float alpha = Math.max(0f, Math.min(1f, radius - distance));
+                    pixmap.setColor(1f, 1f, 1f, alpha);
+                    pixmap.drawPixel(x, y);
+                }
+            }
             com.badlogic.gdx.graphics.Texture texture = new com.badlogic.gdx.graphics.Texture(pixmap);
             // Linear filtering: without it the circle's edge is visibly stair-stepped once scaled.
             texture.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.Linear,
@@ -226,10 +239,49 @@ public final class Assets implements Disposable {
                 + "  See README.md.";
     }
 
+    // Artwork that is NOT part of the PopCap dump: our own images, loaded from a plain file rather than
+    // resolved through RESOURCES.json and the atlas bank.
+    //
+    // Cached by path and disposed with everything else here, so the "only Assets loads, only Assets
+    // disposes" rule still holds. A missing file returns null and the caller falls back -- these are
+    // decoration, and the game must start without them.
+    private final java.util.Map<String, com.badlogic.gdx.graphics.Texture> ownArt =
+            new java.util.HashMap<>();
+
+    public com.badlogic.gdx.graphics.g2d.TextureRegion ownArt(String path) {
+        if (ownArt.containsKey(path)) {
+            com.badlogic.gdx.graphics.Texture cached = ownArt.get(path);
+            return cached == null ? null : new TextureRegion(cached);
+        }
+        com.badlogic.gdx.graphics.Texture texture = null;
+        try {
+            FileHandle file = Gdx.files.internal(path);
+            if (file.exists()) {
+                texture = new com.badlogic.gdx.graphics.Texture(file);
+                // These are photographic-scale backgrounds drawn at arbitrary sizes; without linear
+                // filtering the downscale to a 1280-wide viewport aliases badly.
+                texture.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.Linear,
+                        com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
+            } else {
+                Gdx.app.log("Assets", "no art at " + path + " -- falling back");
+            }
+        } catch (RuntimeException e) {
+            Gdx.app.error("Assets", "could not load " + path + ": " + e.getMessage());
+        }
+        ownArt.put(path, texture);
+        return texture == null ? null : new TextureRegion(texture);
+    }
+
     @Override
     public void dispose() {
         // Disposed in reverse order of creation. PamPlayer holds no GL resources of its own -- it draws
         // through the bank -- so there is deliberately nothing to dispose for it.
+        for (com.badlogic.gdx.graphics.Texture texture : ownArt.values()) {
+            if (texture != null) {
+                texture.dispose();
+            }
+        }
+        ownArt.clear();
         whitePixel.dispose();
         disc.dispose();
         skin.dispose();

@@ -52,6 +52,7 @@ public final class GameScreen extends ScreenAdapter {
     private final views.gdx.input.LawnInputProcessor lawnInput;
     private final views.gdx.ui.GameHud hud;
     private final views.gdx.render.CursorRenderer cursor;
+    private final views.gdx.ui.GameOverlays overlays;
 
     // Wash over the tile under the cursor. Faint on purpose: it has to read as "this one" without
     // hiding the plant already standing there.
@@ -63,10 +64,32 @@ public final class GameScreen extends ScreenAdapter {
 
     private boolean showGrid;
 
+    // The real way in: the level is already chosen and its seeds already picked, so the session is
+    // waiting on the AppSession and all this has to do is give it an engine and start ticking.
+    //
+    // init() is what startLoop() would have called first -- it places a mode's pre-set plants, applies
+    // seed boosts and arms quest tracking -- and skipping it produces a board that looks right and
+    // quietly plays by the wrong rules.
+    public GameScreen(GdxContext context) {
+        this(context, context.appSession().getCurrentGameSession(),
+                newEngine(context));
+    }
+
+    private static GameEngine newEngine(GdxContext context) {
+        GameEngine engine = new GameEngine(context.appSession().getCurrentGameSession(),
+                context.renderers());
+        engine.init();
+        return engine;
+    }
+
     public GameScreen(GdxContext context, DevBoot boot) {
+        this(context, boot.session(), boot.engine());
+    }
+
+    private GameScreen(GdxContext context, GameSession session, GameEngine engine) {
         this.context = context;
-        this.session = boot.session();
-        this.engine = boot.engine();
+        this.session = session;
+        this.engine = engine;
         this.environment = resolveEnvironment(session);
 
         this.background = new BackgroundRenderer(context.assets());
@@ -75,14 +98,15 @@ public final class GameScreen extends ScreenAdapter {
         this.lawn = LawnGeometry.forEnvironment(environment);
         this.viewport = new FitViewport(viewWidth(), LawnGeometry.WORLD_HEIGHT, camera);
 
-        // Grid defaults on during Phase 1 -- it is the calibration instrument. Once SettingsScreen
-        // exists (T4.4) this reads Profile.showGr instead.
-        this.showGrid = !"0".equals(System.getProperty("pvz.grid", "1"));
+        // The player's own setting, with -Dpvz.grid still able to force it either way for calibration
+        // work. The grid was on by default through Phase 1 because it WAS the calibration instrument;
+        // now that Settings owns it, the default is whatever the profile says.
+        this.showGrid = gridSetting(session);
 
         this.entities = new views.gdx.render.GameRenderer(
                 context.assets(), context.sprites(), lawn, interpolator, environment);
         this.loop = new views.gdx.bridge.GameLoopDriver(engine, session, interpolator);
-        this.loop.setGameSpeed(1);
+        this.loop.setGameSpeed(session.getPlayer() == null ? 1 : session.getPlayer().getGameSpeed());
         this.loop.setPaused(views.gdx.core.DebugFlags.START_PAUSED);
 
         // Command output goes to toasts from here on -- otherwise every "not enough sun" would be
@@ -100,7 +124,15 @@ public final class GameScreen extends ScreenAdapter {
                 new views.gdx.ui.UiArt(context.assets()), lawn);
         // Cheat buttons synthesise the same command strings the prompt accepts, through the same door.
         hud.installCheats(engine::submitInGameCommand);
+        this.overlays = new views.gdx.ui.GameOverlays(context.assets(), hud.stage(),
+                this::dismissObjective, this::resumePlay, this::restart, this::saveAndExit,
+                this::leaveLevel);
         this.showcase = new Showcase(engine, session);
+
+        // The board is built and armed but the player has not seen it yet, so it opens paused behind
+        // the objective card. Nothing ticks until they say go -- a level that starts running while the
+        // player is still reading what it wants is a level they have already partly lost.
+        openObjective();
 
         centreOnLawn();
         Gdx.app.log("GameScreen", "world " + (int) background.totalWidth() + "x"
@@ -196,7 +228,17 @@ public final class GameScreen extends ScreenAdapter {
 
         // Last, so it sits over the board and the grid. Its own viewport, so it does not move with the
         // camera as the lawn is centred.
-        hud.setPaused(loop.isPaused());
+        // The pause panel follows the loop, and the result panel is raised on the one frame the level
+        // stops being PLAYING. GameEngine has already settled quests, scored a scoring run and saved by
+        // then -- this only reports it.
+        overlays.setPauseVisible(loop.isPaused() && !overlays.isObjectiveVisible()
+                && !overlays.isOutcomeVisible());
+        if (!loop.isPlaying() && !overlays.isOutcomeVisible()) {
+            boolean won = session.getState() == models.game.GameState.WON;
+            overlays.showOutcome(won, won
+                    ? "The lawn is safe. For now."
+                    : "They got past you this time. Try a different loadout.");
+        }
         hud.update(loop.ticksRun());
         hud.render(delta);
 
@@ -258,8 +300,14 @@ public final class GameScreen extends ScreenAdapter {
                 tools.clear();
                 return true;
             }
+            // The cheat panel is a debug tool, so it is gated on the setting that says so. Without the
+            // gate a stray C during a real match hands the player a "Nuke Everything" button.
             if (keycode == com.badlogic.gdx.Input.Keys.C) {
-                hud.toggleCheats();
+                if (debugMode()) {
+                    hud.toggleCheats();
+                } else {
+                    context.toasts().info("Turn on Debug mode in Settings to use cheats.");
+                }
                 return true;
             }
             // Pausing stops the accumulator, so the model AND every animation clock freeze together --
@@ -658,6 +706,102 @@ public final class GameScreen extends ScreenAdapter {
 
     public LawnGeometry lawn() {
         return lawn;
+    }
+
+    // ---- the five things the overlays can do ----
+
+    // What this level wants, before it starts. The wave count is the objective for every standard
+    // level; a mode with its own goal says so itself through describeObjective.
+    private void openObjective() {
+        // The showcase drives scripted actions and needs a running board; -Dpvz.skipIntro does the same
+        // for a screenshot run. Both would otherwise capture this card instead of the lawn.
+        if (views.gdx.core.DebugFlags.SKIP_INTRO || views.gdx.core.DebugFlags.SHOWCASE) {
+            return;
+        }
+        loop.setPaused(true);
+        overlays.showObjective(levelName(), objectiveText());
+    }
+
+    private String levelName() {
+        if (session.getLevel() != null && session.getLevel().getTemplate() != null) {
+            return session.getLevel().getTemplate().getName();
+        }
+        return "The Lawn";
+    }
+
+    private String objectiveText() {
+        int waves = session.getLevel() == null ? 0 : session.getLevel().getWaveCount();
+        String goal = waves > 0
+                ? "Survive " + waves + (waves == 1 ? " wave" : " waves") + " of zombies."
+                : "Hold the lawn.";
+        return goal + "\nDon't let a zombie reach your house!";
+    }
+
+    private void dismissObjective() {
+        overlays.hideObjective();
+        loop.setPaused(false);
+    }
+
+    private void resumePlay() {
+        overlays.setPauseVisible(false);
+        loop.setPaused(false);
+    }
+
+    // Replays the level with the same loadout. A brand new GameSession, because a played board cannot
+    // be rewound -- plants are gone, mowers are spent and the wave system has advanced. The seed names
+    // are carried across so the player does not re-pick eight cards to retry.
+    private void restart() {
+        models.game.Level level = session.getLevel();
+        models.user.Profile profile = session.getPlayer();
+        if (level == null || profile == null) {
+            context.toasts().error("Nothing to restart.");
+            return;
+        }
+        java.util.List<String> loadout = new java.util.ArrayList<>();
+        for (models.game.SeedPacket packet : session.getSelectedSeeds()) {
+            loadout.add(packet.getPlantType());
+        }
+
+        GameSession fresh = new GameSession(profile, level);
+        for (String plantName : loadout) {
+            models.templates.PlantTemplate template =
+                    utils.registry.PlantRegistry.getInstance().getTemplateByName(plantName);
+            if (template != null) {
+                fresh.addSeed(new models.game.SeedPacket(plantName,
+                        (int) Math.round(template.getRecharge())));
+            }
+        }
+        context.appSession().setCurrentGameSession(fresh);
+        // The menu does not change, so sync() would do nothing -- the screen has to be replaced
+        // explicitly. This GameScreen is disposed by the swap.
+        context.screens().reopen();
+    }
+
+    // Quitting mid-level is a forfeit, and the engine treats it as one: quests settle, a scoring run is
+    // scored, the profile is saved. Doing less than that would let a losing level be escaped for free.
+    private void saveAndExit() {
+        engine.abandonLevel();
+        leaveLevel();
+    }
+
+    // Back to the level map, with the finished session let go.
+    private void leaveLevel() {
+        context.appSession().setCurrentGameSession(null);
+        context.appSession().setCurrentMenu(controllers.engine.MenuType.PLAY_MENU);
+    }
+
+    // -Dpvz.grid=1/0 overrides the profile in both directions, so calibration work does not require
+    // signing in and changing a setting first.
+    private static boolean gridSetting(GameSession session) {
+        String override = System.getProperty("pvz.grid");
+        if (override != null && !override.isBlank()) {
+            return !"0".equals(override.trim());
+        }
+        return session.getPlayer() != null && session.getPlayer().isShowGrid();
+    }
+
+    private boolean debugMode() {
+        return session.getPlayer() != null && session.getPlayer().isDebugMode();
     }
 
     public void setShowGrid(boolean showGrid) {

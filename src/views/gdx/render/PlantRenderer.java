@@ -43,6 +43,9 @@ public final class PlantRenderer {
     private final LawnGeometry lawn;
     private final AnimationClocks clocks;
 
+    // Watches health frame to frame; a drop is a hit. See DamageFlash.
+    private final DamageFlash flashes = new DamageFlash();
+
     // Seconds into its action clip, for each plant currently playing one. Set to 0 the frame the model
     // announces a wind-up, then advanced until the clip runs out.
     private final Map<Plant, Float> actionPhase = new IdentityHashMap<>();
@@ -140,10 +143,27 @@ public final class PlantRenderer {
         batch.setColor(tint);
         // Plants face right, toward the oncoming horde. The visibility map is what actually cracks a
         // Wall-nut's shell -- the damage clips only change its face.
-        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true,
-                PlantDamage.visibilityFor(sprite, plant.getName(), damageStage));
+        java.util.Map<String, Boolean> parts =
+                PlantDamage.visibilityFor(sprite, plant.getName(), damageStage);
+        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, parts);
+
+        // Hit flash: the same frame drawn again, additively, so the plant lights up white. Drawn after
+        // the sprite rather than instead of it, so the art stays readable underneath.
+        float flash = plant.getHealth() == null ? 0f
+                : flashes.intensity(plant, plant.getHealth().getCurrentHp(), delta);
+        if (flash > 0f) {
+            SpritePlacer.beginAdditive(batch);
+            batch.setColor(flash, flash, flash, 1f);
+            SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, parts);
+            SpritePlacer.endAdditive(batch);
+        }
 
         batch.setColor(previous);
+    }
+
+    // Called once per frame by GameRenderer: drops plants that were not drawn.
+    void sweepFlashes() {
+        flashes.sweep();
     }
 
     private String clipFor(EntitySprite sprite, Plant plant, float delta, int damageStage) {

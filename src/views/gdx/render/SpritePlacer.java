@@ -48,6 +48,24 @@ public final class SpritePlacer {
         batch.setTransformMatrix(previous);
     }
 
+    // Switches the batch to additive blending, for a hit flash.
+    //
+    // A tint cannot brighten anything: setColor MULTIPLIES, so the whitest a sprite can be tinted is
+    // its own colour. Drawing it a second time additively ADDS light on top, which is what actually
+    // makes a plant or a zombie flash white. The alternative is a shader, which would be one more
+    // thing to keep alive for a two-frame effect.
+    public static void beginAdditive(Batch batch) {
+        batch.setBlendFunction(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
+                com.badlogic.gdx.graphics.GL20.GL_ONE);
+    }
+
+    // Back to normal alpha blending. Leaving the batch additive would make everything drawn afterwards
+    // -- the rest of the lane, the suns, the HUD -- glow.
+    public static void endAdditive(Batch batch) {
+        batch.setBlendFunction(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
+                com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
+    }
+
     // World coordinate -> the scaled space sprites are drawn in, so an entity still lands on the world
     // position asked for.
     public static float toSpriteSpace(float worldValue) {

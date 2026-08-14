@@ -101,6 +101,8 @@ public final class GameRenderer {
             SpritePlacer.endScaled(batch, previousTransform);
         }
         clocks.sweep();
+        plants.sweepFlashes();
+        zombies.sweepFlashes();
     }
 
     // The model narrates detonations; this is where the view hears about them.

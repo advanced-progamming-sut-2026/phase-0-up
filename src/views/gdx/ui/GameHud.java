@@ -6,7 +6,6 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import models.game.GameSession;
@@ -36,7 +35,6 @@ public final class GameHud implements Disposable {
     private static final Color TOOL_ARMED = new Color(1f, 0.86f, 0.35f, 0.95f);
     private static final Color WAVE_TRACK = new Color(0.10f, 0.12f, 0.16f, 0.75f);
     private static final Color WAVE_FILL = new Color(0.85f, 0.25f, 0.22f, 0.95f);
-    private static final Color DIM = new Color(0f, 0f, 0f, 0.6f);
 
     private final Assets assets;
     private final UiArt art;
@@ -50,7 +48,6 @@ public final class GameHud implements Disposable {
     private final Table cardRow;
     private final Table shovelButton;
     private final Table plantFoodButton;
-    private final Table pauseOverlay;
     private final WaveBar waveBar;
 
     private final List<SeedCardActor> cards = new ArrayList<>();
@@ -74,9 +71,6 @@ public final class GameHud implements Disposable {
                 ToolState.Tool.PLANT_FOOD);
 
         layoutRoot();
-        this.pauseOverlay = buildPauseOverlay();
-        stage.addActor(pauseOverlay);
-        pauseOverlay.setVisible(false);
 
         if (DebugFlags.UI_DEBUG) {
             stage.setDebugAll(true);
@@ -208,25 +202,9 @@ public final class GameHud implements Disposable {
         stage.addActor(waveRow);
     }
 
-    private Table buildPauseOverlay() {
-        Table overlay = new Table();
-        overlay.setFillParent(true);
-        overlay.setBackground(assets.solid(DIM));
-
-        Label title = new Label("Paused", assets.skin());
-        title.setAlignment(Align.center);
-        overlay.add(title).padBottom(10f).row();
-
-        Label hint = new Label("P or Space to resume    -    Esc drops the held tool",
-                assets.skin());
-        hint.setAlignment(Align.center);
-        overlay.add(hint);
-        return overlay;
-    }
-
-    public void setPaused(boolean paused) {
-        pauseOverlay.setVisible(paused);
-    }
+    // The pause panel used to live here as a dimmed label. It is now GameOverlays, on this same Stage:
+    // once pausing gained Restart and Save-and-Exit buttons it stopped being a caption and became one
+    // of three interruption panels that all look and behave alike.
 
     // Pulled every frame from live state rather than pushed on change: there is no change notification
     // for sun, and polling four numbers is far cheaper than maintaining one.

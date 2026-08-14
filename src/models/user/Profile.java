@@ -55,6 +55,16 @@ public class Profile {
     private int winStreakAtMaxDifficulty;
     private Map<String, Integer> zombieKillsByChapter;
 
+    // Player preferences. They live on the Profile rather than in the view because they are per-account
+    // and have to survive a restart, which means going through ProfileRecord like everything else.
+    //
+    // gameSpeed multiplies the fixed-step accumulator's rate, so it changes how fast the model ticks
+    // rather than how fast it is drawn -- the terminal build has no use for it, but it costs nothing
+    // there and keeping one Profile shape for both builds is worth more than the saved field.
+    private int gameSpeed;
+    private boolean showGrid;
+    private boolean debugMode;
+
     public Profile() {
         this.gameNumbers = Constants.DEFAULT_GAME_NUMBERS;
         this.coins = Constants.DEFAULT_INITIAL_COINS;
@@ -67,6 +77,7 @@ public class Profile {
         this.dailyQuestsDone = Constants.DEFAULT_DAILY_QUESTS_DONE;
         this.noneDailyQuestsDone = Constants.DEFAULT_NONE_DAILY_QUESTS_DONE;
         this.hasBoughtDailyOfferToday = Constants.DEFAULT_HAS_BOUGHT_DAILY_OFFER;
+        this.gameSpeed = Constants.DEFAULT_GAME_SPEED;
         this.winStreakAtMaxDifficulty = 0;
         this.zombieKillsByChapter = new HashMap<>();
         this.questDayStamp = today();
@@ -159,6 +170,24 @@ public class Profile {
     public void addPlantFood(int n) { this.plantFoodCount += n; }
 
     public void spendPlantFood(int n) { this.plantFoodCount -= n; }
+
+    // Clamped on read, not on write: a save file from before this field existed deserialises it as 0,
+    // and a game that ticks zero times a second looks exactly like a freeze.
+    public int getGameSpeed() {
+        return gameSpeed < Constants.MIN_GAME_SPEED || gameSpeed > Constants.MAX_GAME_SPEED
+                ? Constants.DEFAULT_GAME_SPEED
+                : gameSpeed;
+    }
+
+    public void setGameSpeed(int gameSpeed) { this.gameSpeed = gameSpeed; }
+
+    public boolean isShowGrid() { return showGrid; }
+
+    public void setShowGrid(boolean showGrid) { this.showGrid = showGrid; }
+
+    public boolean isDebugMode() { return debugMode; }
+
+    public void setDebugMode(boolean debugMode) { this.debugMode = debugMode; }
 
     public int getDifficultyLevel() { return difficultyLevel; }
 

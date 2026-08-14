@@ -32,6 +32,15 @@ public final class DebugFlags {
     // at a board's opening state without it walking away from you.
     public static final boolean START_PAUSED = flag("pvz.pause");
 
+    // Skips the level's objective card, which otherwise opens paused over the board and waits for a
+    // click. Every unattended run needs this -- a screenshot harness and the showcase both exist to
+    // look at a board that is actually running.
+    public static final boolean SKIP_INTRO = flag("pvz.skipIntro");
+
+    // Parks the pointer on a main-menu button and reports whether the hover animation moved it. A
+    // screenshot run has no mouse, so this is the only way to check the effect unattended.
+    public static final boolean HOVER_CHECK = flag("pvz.hoverCheck");
+
     // Round-trips every lawn tile through project/unproject and reports any that come back as a
     // different tile, then plants one seed by simulated click. Verifies the screen-to-tile half of the
     // input path, which no unit test can reach because it needs a live viewport.

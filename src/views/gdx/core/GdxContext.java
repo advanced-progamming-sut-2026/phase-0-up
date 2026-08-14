@@ -23,19 +23,25 @@ public final class GdxContext {
     // the game's output looks like, which is the whole point of the Renderers seam.
     private final Renderers renderers;
 
+    // How a menu button reaches the game. Shares the terminal's InputRouter, so a button and the
+    // equivalent typed command take the same route through the same menu rules.
+    private final views.gdx.bridge.MenuCommands menuCommands;
+
     // Assigned once, immediately after construction. The manager needs the context to build screens and
     // the screens need the manager to navigate, so one of the two references has to be set after the
     // other exists; this is the less invasive half of that knot.
     private ScreenManager screens;
 
     public GdxContext(PvZGame game, Assets assets, Toasts toasts, SpriteRegistry sprites,
-                      AppSession appSession, Renderers renderers) {
+                      AppSession appSession, Renderers renderers,
+                      views.gdx.bridge.MenuCommands menuCommands) {
         this.game = game;
         this.assets = assets;
         this.toasts = toasts;
         this.sprites = sprites;
         this.appSession = appSession;
         this.renderers = renderers;
+        this.menuCommands = menuCommands;
     }
 
     void attachScreens(ScreenManager screens) {
@@ -64,6 +70,10 @@ public final class GdxContext {
 
     public Renderers renderers() {
         return renderers;
+    }
+
+    public views.gdx.bridge.MenuCommands menuCommands() {
+        return menuCommands;
     }
 
     public ScreenManager screens() {

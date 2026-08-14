@@ -46,6 +46,11 @@ public class ProfileRecord {
     private int mowerlessFirstColumnKillsToday;                 // Almost Victorious
     private Map<String, Integer> killsByPlantToday;             // Pro Plant Player
     private int lawnmowerKillsTotal;   // Mowing Time -- lifetime, not daily, so it never rolls over
+    // Settings. Plain values, so a save file written before they existed loads with Java's defaults
+    // (0/false) and Profile.getGameSpeed clamps the 0 back to 1.
+    private int gameSpeed;
+    private boolean showGrid;
+    private boolean debugMode;
 
     public static ProfileRecord from(Profile p) {
         ProfileRecord r = new ProfileRecord();
@@ -78,6 +83,9 @@ public class ProfileRecord {
         r.mowerlessFirstColumnKillsToday = p.getRawMowerlessFirstColumnKillsToday();
         r.killsByPlantToday = new HashMap<>(p.getKillsByPlantToday());
         r.lawnmowerKillsTotal = p.getLawnmowerKillsTotal();
+        r.gameSpeed = p.getGameSpeed();
+        r.showGrid = p.isShowGrid();
+        r.debugMode = p.isDebugMode();
         return r;
     }
 
@@ -100,6 +108,9 @@ public class ProfileRecord {
         p.setSunCollectedToday(sunCollectedToday);
         p.setMowerlessFirstColumnKillsToday(mowerlessFirstColumnKillsToday);
         p.setLawnmowerKillsTotal(lawnmowerKillsTotal);   // lifetime: restored as-is, never rolled over
+        p.setGameSpeed(gameSpeed);
+        p.setShowGrid(showGrid);
+        p.setDebugMode(debugMode);
         if (myGreenHouse != null) {
             p.setMyGreenHouse(myGreenHouse);
         }

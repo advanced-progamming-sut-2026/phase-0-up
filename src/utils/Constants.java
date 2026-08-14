@@ -147,6 +147,13 @@ public class Constants {
     // ==========================================
     public static final String PASSWORD_HASH_ALGORITHM = "SHA-256";
 
+    // Settings. Game speed multiplies the model's tick rate, so 3x is genuinely three times as fast a
+    // game rather than a faster animation; beyond that the fixed-step accumulator starts catching up
+    // several ticks per frame and the lawn stops being playable.
+    public static final int DEFAULT_GAME_SPEED = 1;
+    public static final int MIN_GAME_SPEED = 1;
+    public static final int MAX_GAME_SPEED = 3;
+
     public static final String[] SECURITY_QUESTIONS = {
             "1. What was the name of your first pet?",
             "2. Which city you were born in?",

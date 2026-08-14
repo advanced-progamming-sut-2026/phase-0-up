@@ -513,32 +513,28 @@
       "completedQuestIds": [],
       "winStreakAtMaxDifficulty": 0,
       "zombieKillsByChapter": {
-        "ancient_egypt": 4
+        "ancient_egypt": 9
       },
       "completedDailyQuestIds": [],
-      "questDayStamp": "2026-07-31",
-      "sunCollectedToday": 100,
-      "mowerlessFirstColumnKillsToday": 1,
-      "killsByPlantToday": {
-        "peashooter": 3,
-        "grapeshot": 2,
-        "squash": 1,
-        "starfruit": 2,
-        "cabbage-pult": 2,
-        "bonk choy": 1
-      },
-      "lawnmowerKillsTotal": 1
+      "questDayStamp": "2026-08-13",
+      "sunCollectedToday": 0,
+      "mowerlessFirstColumnKillsToday": 0,
+      "killsByPlantToday": {},
+      "lawnmowerKillsTotal": 6,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": false
     }
   },
   "parsa": {
     "username": "parsa",
-    "nickname": "\u003cnewNickname\u003e",
+    "nickname": "parsa",
     "email": "parsa_ay@yahoo.com",
     "gender": "MALE",
     "hashPassword": "cadabbeda0c6e310082c8e006d528d665891be080880495e67438c244617afaa",
     "securityQuestionIndex": 1,
     "securityAnswerHash": "cc06146070ec57abdbc03a0dc60ce6f201f4a687c6273d210b3084faaf178951",
-    "stayLoggedIn": false,
+    "stayLoggedIn": true,
     "profile": {
       "gameNumbers": 0,
       "coins": 19400,
@@ -1159,21 +1155,15 @@
         "ancient_egypt": 22,
         "frostbite_caves": 7
       },
-      "completedDailyQuestIds": [
-        "ocd",
-        "one_column_less",
-        "defenseless_row",
-        "symmetry",
-        "pro_demolisher",
-        "defenseless_cross"
-      ],
-      "questDayStamp": "2026-07-31",
-      "sunCollectedToday": 800,
-      "mowerlessFirstColumnKillsToday": 1,
-      "killsByPlantToday": {
-        "peashooter": 8
-      },
-      "lawnmowerKillsTotal": 18
+      "completedDailyQuestIds": [],
+      "questDayStamp": "2026-08-14",
+      "sunCollectedToday": 0,
+      "mowerlessFirstColumnKillsToday": 0,
+      "killsByPlantToday": {},
+      "lawnmowerKillsTotal": 18,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": true
     }
   },
   "Amir": {
@@ -1364,7 +1354,10 @@
       "sunCollectedToday": 0,
       "mowerlessFirstColumnKillsToday": 0,
       "killsByPlantToday": {},
-      "lawnmowerKillsTotal": 0
+      "lawnmowerKillsTotal": 0,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": false
     }
   },
   "Paniz": {
@@ -1667,7 +1660,10 @@
       "sunCollectedToday": 0,
       "mowerlessFirstColumnKillsToday": 0,
       "killsByPlantToday": {},
-      "lawnmowerKillsTotal": 0
+      "lawnmowerKillsTotal": 0,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": false
     }
   },
   "test1": {
@@ -1859,7 +1855,10 @@
       "sunCollectedToday": 0,
       "mowerlessFirstColumnKillsToday": 0,
       "killsByPlantToday": {},
-      "lawnmowerKillsTotal": 0
+      "lawnmowerKillsTotal": 0,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": false
     }
   }
 }
