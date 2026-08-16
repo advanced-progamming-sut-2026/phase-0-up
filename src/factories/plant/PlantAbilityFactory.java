@@ -106,7 +106,7 @@ public final class PlantAbilityFactory {
 
     private static PlantAbility produceSun(AbilityParams params, int actionIntervalTicks) {
         return new ProduceSunAbility(actionIntervalTicks, TriggerResolver.always(),
-                params.getSunAmountsByStage(), params.getStageUpTicks(),
+                copy(params.getSunAmountsByStage()), copy(params.getStageUpTicks()),
                 params.getDoubleSunChance(), spawnCount(params));
     }
 
@@ -131,8 +131,22 @@ public final class PlantAbilityFactory {
     private static PlantAbility melee(AbilityParams params, int actionIntervalTicks, int damageBuff) {
         int[] damageByStage = addToEach(params.getDamageByStage(), damageBuff);
         return new MeleeAttackAbility(actionIntervalTicks, TriggerResolver.forMelee(params),
-                damageByStage, params.getRowRadiusByStage(), params.getColRadiusByStage(),
-                params.getStageUpTicks(), element(params));
+                damageByStage, copy(params.getRowRadiusByStage()), copy(params.getColRadiusByStage()),
+                copy(params.getStageUpTicks()), element(params));
+    }
+
+    // Every per-stage array an ability can MUTATE is copied on the way out of the template.
+    //
+    // PlantTemplate is one immutable blueprint shared by every instance of that plant, for the life of
+    // the process -- but its int[] fields are only immutable by convention, and several upgrades write
+    // through them: ProduceSunAbility.reduceStageUpTicks (Sun-shroom's level-2 "grows faster") and
+    // increaseSunAmounts both edit in place. Handed the template's own array, upgrading ONE Sun-shroom
+    // silently re-tuned every Sun-shroom in every later level of the session, and the effect stacked
+    // each time. Caught by the showcase: shortening one mushroom's timers grew two of them.
+    //
+    // addToEach above already returns a fresh array, which is why the damage side never showed it.
+    private static int[] copy(int[] values) {
+        return values == null ? new int[0] : values.clone();
     }
 
     private static int[] addToEach(int[] base, int delta) {

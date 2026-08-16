@@ -58,6 +58,24 @@ public class Projectile extends Entity {
     private Zombie grapeTarget = null;
     private Set<Zombie> grapeVolleyHits = null;
 
+    // The shot's precise height, in lanes, before it is rounded to the row it is filed under.
+    //
+    // Read-only, and read by the view for the same reason Sun.getCurrentY() is: a diagonal shot moves
+    // half a lane per tick, and getY() is the ROUNDED row -- drawing from that makes a Rotobaga's
+    // shots cross the board in whole-lane jumps instead of flying diagonally. The value is exactly what
+    // move() advances; nothing new is stored.
+    public double getExactY() {
+        return exactY;
+    }
+
+    // What kind of shot this is. Read-only, and read by the view: the dump ships separate flight,
+    // muzzle and splat art for several shots, and element cannot tell them apart -- a rutabaga and a
+    // corn kernel are both NEUTRAL. The entity's name already carries type.toString(), so this exposes
+    // what was there rather than adding state.
+    public ProjectileType getType() {
+        return type;
+    }
+
     public Projectile(double x, double startY, ProjectileType type, int damage,
                       double speedX, double speedY, Plant shooter, double maxRange,
                       Element element, Trajectory trajectory) {

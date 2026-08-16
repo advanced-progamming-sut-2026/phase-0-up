@@ -127,6 +127,12 @@ public class PvZGame extends Game {
     private void openEntryScreen() {
         String entry = System.getProperty("pvz.screen", "").trim();
         if ("sprites".equalsIgnoreCase(entry)) {
+            // Same trap the "game" branch below documents, and this branch was still falling into it:
+            // showDetached leaves ScreenManager with nothing displayed, so the very next sync() sees
+            // the session sitting in MAIN_MENU and swaps the menu straight back over the harness. The
+            // sprite viewer belongs to no menu at all, so the session is pointed at none -- sync()
+            // returns early on a null target and leaves the harness alone.
+            appSession.setCurrentMenu(null);
             screens.showDetached(new views.gdx.screens.SpriteSmokeScreen(context));
         } else if ("game".equalsIgnoreCase(entry)) {
             // The session's menu has to move too, not just the screen. showDetached leaves
@@ -213,6 +219,10 @@ public class PvZGame extends Game {
         screens.register(MenuType.PLAY_MENU, views.gdx.screens.AdventureScreen::new);
         screens.register(MenuType.PLANTS_MENU, views.gdx.screens.SeedSelectionScreen::new);
         screens.register(MenuType.IN_GAME, views.gdx.screens.GameScreen::new);
+        screens.register(MenuType.NEWS_MENU, views.gdx.screens.NewsScreen::new);
+        screens.register(MenuType.LEADERBOARD, views.gdx.screens.LeaderboardScreen::new);
+        screens.register(MenuType.COLLECTION_MENU, views.gdx.screens.CollectionScreen::new);
+        screens.register(MenuType.SHOP_MENU, views.gdx.screens.StoreScreen::new);
     }
 
     // Mirrors Main.main's startup, minus the console wiring.

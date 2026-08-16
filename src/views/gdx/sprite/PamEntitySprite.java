@@ -104,6 +104,11 @@ final class PamEntitySprite implements EntitySprite {
     }
 
     @Override
+    public Set<String> clips() {
+        return java.util.Collections.unmodifiableSet(availableClips);
+    }
+
+    @Override
     public boolean hasPart(String partName) {
         return availableParts.contains(partName);
     }
@@ -131,6 +136,13 @@ final class PamEntitySprite implements EntitySprite {
 
     // Prefers "idle" -- the canonical standing pose, present on almost every entity -- and otherwise
     // the smallest-area clip box, which is the one least likely to be inflated by parked parts.
+    //
+    // The staged plants have no plain "idle" (see PlantStages), so their first stage's idle is named
+    // here too. Without it a Sun-shroom anchors on whichever of its fourteen clips happens to have the
+    // smallest box -- possibly a stage-3 or plant-food pose -- and stands at the wrong height for the
+    // whole level.
+    private static final String[] ANCHOR_CLIPS = {ClipMap.IDLE, "idle_stage1", "idle_stage1_"};
+
     @Override
     public com.badlogic.gdx.math.Rectangle anchorBounds() {
         if (anchorResolved) {
@@ -138,9 +150,11 @@ final class PamEntitySprite implements EntitySprite {
         }
         anchorResolved = true;
 
-        anchor = bounds(ClipMap.IDLE);
-        if (anchor != null) {
-            return anchor;
+        for (String preferred : ANCHOR_CLIPS) {
+            anchor = bounds(preferred);
+            if (anchor != null) {
+                return anchor;
+            }
         }
         for (String clip : availableClips) {
             com.badlogic.gdx.math.Rectangle candidate = bounds(clip);

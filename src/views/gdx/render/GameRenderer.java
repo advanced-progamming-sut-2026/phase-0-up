@@ -150,7 +150,7 @@ public final class GameRenderer {
 
             for (Projectile projectile : new ArrayList<>(lane.getActiveProjectiles())) {
                 knownShots.add(projectile);
-                projectiles.draw(batch, projectile, alpha, delta);
+                projectiles.draw(batch, projectile, alpha, delta, laneZombies);
             }
 
             // "Under its shooter, over everything else" cannot come from layer order alone -- it is a
@@ -177,11 +177,12 @@ public final class GameRenderer {
         for (Projectile spent : knownShots) {
             if (!liveShots.contains(spent)) {
                 impacts.spawn(projectiles.lastDrawnX(spent), projectiles.lastDrawnY(spent),
-                        projectiles.tintOf(spent), spent.getElement());
+                        projectiles.tintOf(spent), spent.getElement(), spent.getType());
             }
         }
         knownShots.retainAll(liveShots);
         projectiles.forgetAllExcept(liveShots);
+        collectEffects();
         impacts.draw(batch, delta, lawn.cellWidth());
 
         // Suns float above the whole board and are collected by hovering, so they are drawn over
@@ -191,5 +192,21 @@ public final class GameRenderer {
         // The blast's front half, over everything -- drawn after the suns so a detonation is not hidden
         // behind one that happens to be sitting on the same tile.
         explosions.drawFront(batch);
+    }
+
+    // Effects raised during the lane pass, handed to ImpactEffects once it is over.
+    //
+    // Not drawn where they were raised: the lane pass runs bottom lane to top, so anything drawn inside
+    // it is covered by the next lane's plants. Muzzle flashes come from the projectile renderer (the
+    // frame a shot appears is the frame its plant fired); strikes come from the plant renderer, for the
+    // three plants that hit something with nothing in flight at all.
+    private void collectEffects() {
+        for (ProjectileRenderer.Muzzle muzzle : projectiles.drainMuzzles()) {
+            impacts.spawnMuzzle(muzzle.x(), muzzle.y(), muzzle.sprite());
+        }
+        for (PlantRenderer.Strike strike : plants.drainStrikes()) {
+            impacts.spawnStrike(strike.fromX(), strike.fromY(), strike.toX(), strike.toY(),
+                    strike.sprite());
+        }
     }
 }

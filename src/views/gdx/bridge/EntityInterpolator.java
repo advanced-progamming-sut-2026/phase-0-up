@@ -73,7 +73,11 @@ public final class EntityInterpolator {
                         zombie.getMovement().getPositionY());
             }
             for (Projectile projectile : row.getActiveProjectiles()) {
-                sample(projectile, (float) projectile.getX(), projectile.getY());
+                // getExactY, not getY: a diagonal shot moves half a lane per tick and getY() is the
+                // rounded row it is filed under. Sampling that tracked a Rotobaga's shots as 0, 1, 1,
+                // 2 -- whole-lane jumps -- so there was nothing between the lanes to interpolate and
+                // the diagonals crossed the board sideways. Same reason suns sample getCurrentY().
+                sample(projectile, (float) projectile.getX(), (float) projectile.getExactY());
             }
             Lawnmower mower = row.getLawnmower();
             if (mower != null) {

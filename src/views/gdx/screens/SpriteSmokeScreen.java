@@ -146,8 +146,11 @@ public final class SpriteSmokeScreen extends ScreenAdapter {
         for (int i = 0; i < names.size(); i++) {
             EntitySprite sprite = sprites.get(names.get(i));
             String wanted = forcedClip != null && !forcedClip.isBlank() ? forcedClip : preferredClip;
-            // Not every entity defines the clip we would like -- fall back rather than draw nothing.
-            String clip = sprite.hasClip(wanted) ? wanted : "idle";
+            // Falling back to a literal "idle" drew NOTHING for a good part of the roster -- Caulipower,
+            // Grave Buster, Doom-shroom and the mints all name their resting pose something else. The
+            // viewer now asks the same resolver the lawn does, so it shows what the game shows.
+            String clip = sprite.hasClip(wanted)
+                    ? wanted : views.gdx.sprite.PlantStages.restingClip(sprite);
             // Same loop/clamp policy the lawn uses, so the preview shows what the game shows.
             sprite.draw(batch, clip, views.gdx.sprite.ClipMap.sample(sprite, clip, stateTime),
                     spacing * (i + 1), y, true);

@@ -61,6 +61,11 @@ public class MeleeAttackAbility extends PlantAbility implements Growable {
         this.currentStage = damageByStage.length - 1;
     }
 
+    @Override
+    public int growthStage() {
+        return currentStage;
+    }
+
     // Upgrade (GROWTH_STAGE_MAX_UP): appends one more growth stage (Kiwibeast "Max Size +1"),
     // extrapolating damage/reach from the current top stage.
     public void addGrowthStage() {

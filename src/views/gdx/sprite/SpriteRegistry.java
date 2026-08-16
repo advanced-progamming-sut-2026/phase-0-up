@@ -54,7 +54,9 @@ public final class SpriteRegistry {
         m.put("ZombieArmor1", "ZOMBIE_TUTORIAL");        // cone   -> base body + armor part
         m.put("ZombieArmor2", "ZOMBIE_TUTORIAL");        // bucket -> base body + armor part
         m.put("ZombieArmor4", "ZOMBIE_TUTORIAL");        // helmet -> base body + armor part
-        m.put("ZombieDarkArmor3", "ZOMBIE_DARK_KING");   // knight pauldron
+        // ZombieDarkArmor3 is NOT here any more: it used to borrow ZOMBIE_DARK_KING's body, which is a
+        // different zombie wearing a crown. It has no animation of its own in the dump, so it is served
+        // a still instead -- see STILL_IMAGES.
         m.put("ZombieGargantuar", "GARGANTUAR");
         m.put("ZombieImp", "GARGANTUAR_IMP");
         m.put("ZombieRa", "ZOMBIE_EGYPT_RA");
@@ -71,8 +73,36 @@ public final class SpriteRegistry {
         m.put("Twin Sunflower", "SUNFLOWER_TWIN");
         m.put("Mega Gatling Pea", "MEGAGATLING");
         m.put("Phat Beet", "PHATBEETS");
+        // The dump spells these two differently from our data: the vegetable is a rutabaga, and the
+        // kernel is an "a".
+        m.put("Rotobaga", "ROTORUTABAGA");
+        m.put("Kernel-pult", "KERNALPULT");
+
+        // The two mints this project invented.
+        //
+        // Seven of our nine Empower-mints match the dump by name alone (Appease/Arma/Bombard/Enchant/
+        // Enforce/Enlighten/Reinforce). "Pierce-mint" and "catTail-mint" are ours, not PopCap's, so
+        // there is no art with those names -- these two are a CHOICE, not a fact. Spear-mint is the
+        // dump's piercing-shot mint, which is what Pierce-mint boosts (STRIKE_THROUGH); Fila-mint is
+        // simply another unused one. Swap either line if a different mint reads better.
+        m.put("Pierce-mint", "SPEARMINT");
+        m.put("catTail-mint", "FILAMINT");
         return m;
     }
+
+    // Entities the dump has a PICTURE of but no animation for.
+    //
+    // The still-image path already exists as a last resort (see StaticEntitySprite), but it can only
+    // find a region whose id is guessable from the entity's name, which these two are not. Naming them
+    // turns "draws nothing, or borrows the wrong zombie's body" into "draws itself, standing still".
+    //
+    // This wins over NAME_OVERRIDES on purpose: a named still is a deliberate answer, and borrowing
+    // another entity's animation to avoid a blank is worse than not moving.
+    private static final Map<String, String> STILL_IMAGES = Map.of(
+            // A knight, not the crowned king it used to borrow. No animation ships for it.
+            "ZombieDarkArmor3", "IMAGE_UI_ALMANAC_PACKETS_ZOMBIES_DARK_ARMOR3",
+            // One of the handful of plants absent from the dump entirely; its seed packet is not.
+            "Iceberg Lettuce", "IMAGE_UI_PACKETS_ICEBURG");
 
     public SpriteRegistry(PamPlayer player, TextureBank bank, FileHandle assetRoot) {
         this.player = player;
@@ -154,6 +184,15 @@ public final class SpriteRegistry {
     }
 
     private EntitySprite build(String entityName) {
+        String still = STILL_IMAGES.get(entityName);
+        if (still != null) {
+            com.badlogic.gdx.graphics.g2d.TextureRegion region = regionOrNull(still);
+            if (region != null) {
+                return new StaticEntitySprite(region);
+            }
+            Gdx.app.error("SpriteRegistry", "still image " + still + " for " + entityName
+                    + " is not in the atlas");
+        }
         AnimationEntry entry = lookup(entityName);
         if (entry == null) {
             unresolved.add(entityName);
@@ -219,16 +258,21 @@ public final class SpriteRegistry {
         String key = normalise(entityName);
         String[] candidates = {"IMAGE_PLANT_" + key, "IMAGE_ZOMBIE_" + key, "IMAGE_" + key, key};
         for (String candidate : candidates) {
-            try {
-                com.badlogic.gdx.graphics.g2d.TextureRegion region = bank.region(candidate);
-                if (region != null) {
-                    return region;
-                }
-            } catch (RuntimeException ignored) {
-                // bank.region throws rather than returning null for some ids; treat both as "no match"
+            com.badlogic.gdx.graphics.g2d.TextureRegion region = regionOrNull(candidate);
+            if (region != null) {
+                return region;
             }
         }
         return null;
+    }
+
+    // bank.region throws rather than returning null for some ids; both mean "no match" here.
+    private com.badlogic.gdx.graphics.g2d.TextureRegion regionOrNull(String id) {
+        try {
+            return bank.region(id);
+        } catch (RuntimeException missing) {
+            return null;
+        }
     }
 
     // Everything that ended up on the still-image path. Log this once after warming the registry so

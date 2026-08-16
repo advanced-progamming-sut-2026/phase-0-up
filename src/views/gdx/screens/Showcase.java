@@ -33,6 +33,7 @@ final class Showcase {
         engine.submitInGameCommand("cheat remove-cooldown");
 
         plantBoard();
+        plantSunShrooms();
         spawnZombies();
         makeSuns();
 
@@ -53,10 +54,78 @@ final class Showcase {
                 + (session.getMap().getRow(0).cellAt(1).hasPlant()
                         ? session.getMap().getRow(0).cellAt(1).getCurrentPlant().getName()
                         : "NOTHING (command accepted=" + fire + ", see the toast for why)"));
+        // Rotobaga: the only shot in the game with its own flight animation, muzzle flash AND hit
+        // splat, so it is the one that proves all three at once.
+        if (session.getSelectedSeed("Rotobaga") == null) {
+            session.addSeed(new models.game.SeedPacket("Rotobaga", 5));
+        }
+        // Middle lane on purpose: it fires up-left, up-right, down-left and down-right, and from the
+        // top row half of those leave the board on the first tick.
+        engine.submitInGameCommand("plant plant -t Rotobaga -l (2, 2)");
         engine.submitInGameCommand("plant plant -t Snow Pea -l (1, 1)");
         engine.submitInGameCommand("plant plant -t Potato Mine -l (3, 2)");
         engine.submitInGameCommand("plant plant -t Peashooter -l (1, 3)");
         engine.submitInGameCommand("plant plant -t Wall-nut -l (5, 3)");
+        plantStrikers();
+    }
+
+    // The three plants that hit something with NOTHING in flight, plus the one whose throw has two
+    // forms. None of their effects can be seen in an ordinary level: Caulipower and Electric Blueberry
+    // pick a zombie anywhere on the board, and Kernel-pult's butter is a one-in-four roll.
+    private void plantStrikers() {
+        for (String name : new String[] {"Caulipower", "Electric Blueberry", "Kernel-pult"}) {
+            if (session.getSelectedSeed(name) == null) {
+                session.addSeed(new models.game.SeedPacket(name, 5));
+            }
+        }
+        engine.submitInGameCommand("plant plant -t Caulipower -l (1, 2)");
+        engine.submitInGameCommand("plant plant -t Electric Blueberry -l (2, 3)");
+        engine.submitInGameCommand("plant plant -t Kernel-pult -l (2, 1)");
+    }
+
+    // Three Sun-shrooms in the back row, one per growth stage.
+    //
+    // Sun-shroom's art is cut one clip set per stage (see PlantStages) and the stages are 24 and 72
+    // seconds apart, so an ordinary run shows exactly one of the three sizes and the transition between
+    // them almost never. Standing all three side by side turns "does the staged art work" into one look.
+    //
+    // Columns 6-8 of row 4: the sun demo has 1, 3 and 5, and no zombie is spawned in row 4, so nothing
+    // eats them before they have grown.
+    private void plantSunShrooms() {
+        if (session.getSelectedSeed("Sun-shroom") == null) {
+            session.addSeed(new models.game.SeedPacket("Sun-shroom", 5));
+        }
+        for (int col = 6; col <= 8; col++) {
+            engine.submitInGameCommand("plant plant -t Sun-shroom -l (" + col + ", 4)");
+        }
+        stageSunShrooms();
+    }
+
+    // Pushes each one to a different stage, through the model's own API rather than by reaching into
+    // its fields: the second has its thresholds shortened so it grows within the first second (and so
+    // the growth transition is catchable in a screenshot), and the third is jumped straight to the top
+    // exactly as InstantGrowing plant food does it.
+    private void stageSunShrooms() {
+        int found = 0;
+        for (models.map.Cell cell : session.getMap().getRow(4).getCells()) {
+            models.entities.plants.Plant plant = cell.getCurrentPlant();
+            if (plant == null || !"Sun-shroom".equalsIgnoreCase(plant.getName())) {
+                continue;
+            }
+            found++;
+            for (models.entities.plants.abilities.PlantAbility ability : plant.getAbilities()) {
+                if (!(ability instanceof models.entities.plants.abilities.ProduceSunAbility sun)) {
+                    continue;
+                }
+                if (found == 2) {
+                    sun.reduceStageUpTicks(235);   // stage 2 arrives at tick 5, half a second in
+                } else if (found == 3) {
+                    sun.growToMaxStage();
+                }
+            }
+        }
+        com.badlogic.gdx.Gdx.app.log("Showcase", found + " Sun-shrooms planted in row 4"
+                + " (stages 1, 2 and 3 left to right)");
     }
 
     private void spawnZombies() {

@@ -8,6 +8,7 @@ import views.gdx.map.LawnGeometry;
 import views.gdx.sprite.ClipMap;
 import views.gdx.sprite.EntitySprite;
 import views.gdx.sprite.PlantDamage;
+import views.gdx.sprite.PlantStages;
 import views.gdx.sprite.SpriteRegistry;
 
 import java.util.IdentityHashMap;
@@ -108,6 +109,12 @@ public final class PlantRenderer {
                 winding.remove(plant);
                 fed.remove(plant);
                 plantFood.remove(plant);
+                plantFoodStage.remove(plant);
+                lastStage.remove(plant);
+                growing.remove(plant);
+                idlePhase.remove(plant);
+                idleVariant.remove(plant);
+                lastStrike.remove(plant);
             }
             return;
         }
@@ -166,6 +173,128 @@ public final class PlantRenderer {
         flashes.sweep();
     }
 
+    // ---- strikes -------------------------------------------------------------------------------
+    //
+    // Caulipower and Electric Blueberry hit a zombie anywhere on the board with nothing in flight, and
+    // Grave Buster destroys the grave beneath itself. All three ship their own effect animation, and
+    // none of them has a Projectile the effect could ride. The model counts its strikes (see Striking);
+    // this watches the counter and sends the art from the plant to what it hit.
+    private static final java.util.Map<String, String> STRIKE_SPRITE = java.util.Map.of(
+            "caulipower", "CAULIPOWER_PROJECTILE",
+            "electric blueberry", "ELECTRICBLUEBERRY_CLOUD_PROJECTILE",
+            "grave buster", "GRAVEBUSTER_DIRT");
+
+    public record Strike(float fromX, float fromY, float toX, float toY, String sprite) { }
+
+    private final Map<Plant, Integer> lastStrike = new IdentityHashMap<>();
+    private final java.util.List<Strike> pendingStrikes = new java.util.ArrayList<>();
+
+    private void noteStrike(Plant plant) {
+        String sprite = plant.getName() == null ? null
+                : STRIKE_SPRITE.get(plant.getName().toLowerCase(java.util.Locale.ROOT));
+        if (sprite == null) {
+            return;
+        }
+        int count = plant.getStrikeCount();
+        Integer previous = lastStrike.put(plant, count);
+        if (previous == null || count <= previous) {
+            return;
+        }
+        // From the plant's mouth to the zombie it aimed at.
+        //
+        // This only reads right because the ability now HOLDS its effect for the length of the flight
+        // (GlobalTargetingAbility.WIND_UP_TICKS). Without that the damage landed on the tick the shot
+        // was fired, so a zombie taking 5000 from an Electric Blueberry was dead before its cloud left
+        // the plant -- the cloud then crossed the board to an empty tile, and what the player saw was
+        // a zombie dying for no reason followed by unrelated weather. The two are in step now.
+        //
+        // Grave Buster passes through here too, with both ends on its own tile: its dirt flies nowhere.
+        float fromX = lawn.worldX((float) plant.getX());
+        float fromY = lawn.worldY(plant.getY()) + lawn.cellHeight() * STRIKE_HEIGHT;
+        float toX = lawn.worldX((float) plant.getStrikeX());
+        float toY = lawn.worldY((int) Math.round(plant.getStrikeY()))
+                + lawn.cellHeight() * STRIKE_HEIGHT;
+        pendingStrikes.add(new Strike(fromX, fromY, toX, toY, sprite));
+    }
+
+    private static final float STRIKE_HEIGHT = 0.62f;
+
+    // Handed to ImpactEffects once per frame and cleared, for the same reason the muzzle flashes are:
+    // this renderer runs per lane, and an effect drawn here would be covered by the next lane.
+    public java.util.List<Strike> drainStrikes() {
+        if (pendingStrikes.isEmpty()) {
+            return java.util.List.of();
+        }
+        java.util.List<Strike> out = java.util.List.copyOf(pendingStrikes);
+        pendingStrikes.clear();
+        return out;
+    }
+
+    // ---- growth stages -------------------------------------------------------------------------
+    //
+    // Four plants are animated one clip set per growth stage, and two of them (Sun-shroom, Puff-shroom)
+    // have NO un-staged clips at all -- so every lookup below goes through PlantStages rather than
+    // asking for a bare name. See that class for what the dump actually ships.
+
+    // The stage each plant was last seen in, so a stage-up is caught on its rising edge and its growth
+    // clip played exactly once.
+    private final Map<Plant, Integer> lastStage = new IdentityHashMap<>();
+    // Plants currently playing a growth clip, which is a one-shot action like an attack.
+    private final java.util.Set<Plant> growing =
+            java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+
+    // Most plants ship two or more resting clips and the real game cycles them -- it is what makes a
+    // plant blink rather than sway forever on one loop. Which clips those are is PlantStages' problem;
+    // this only remembers where in the cycle each plant is.
+    private final Map<Plant, Float> idlePhase = new IdentityHashMap<>();
+    private final Map<Plant, Integer> idleVariant = new IdentityHashMap<>();
+
+    // A stage-up is announced by the model changing Plant.getGrowthStage(); the view notices and plays
+    // the transition. Nothing tells it to -- there is no event for this -- so it is watched, the same
+    // way DamageFlash watches health.
+    private void noteGrowth(EntitySprite sprite, Plant plant) {
+        int stage = plant.getGrowthStage();
+        Integer previous = lastStage.put(plant, stage);
+        if (previous == null || stage <= previous) {
+            return;
+        }
+        String growth = PlantStages.growthClip(sprite, previous);
+        if (growth == null) {
+            return;   // the last stage has no growth clip, and most plants have none at all
+        }
+        actionPhase.put(plant, 0f);
+        growing.add(plant);
+        // A growth that interrupts plant food would otherwise leave the plant-food sequence half-played
+        // and stuck, because its stage counter is never advanced past the interruption.
+        plantFood.remove(plant);
+        plantFoodStage.remove(plant);
+    }
+
+    // The resting clip, stepping to the next variant each time one finishes.
+    //
+    // Its own phase rather than AnimationClocks': that clock RESETS whenever the clip name changes, so
+    // the very act of cycling would restart the timer that decides when to cycle.
+    private String idleClip(EntitySprite sprite, Plant plant, float delta, int stage) {
+        java.util.List<String> variants =
+                PlantStages.idleVariants(sprite, stage, plant.getLevel());
+        if (variants.size() < 2) {
+            idlePhase.remove(plant);
+            idleVariant.remove(plant);
+            return variants.get(0);
+        }
+        int index = idleVariant.getOrDefault(plant, 0) % variants.size();
+        String current = variants.get(index);
+        float phase = idlePhase.getOrDefault(plant, 0f) + delta;
+        float cycle = sprite.clipDuration(current);
+        if (cycle > 0f && phase >= cycle) {
+            phase = 0f;
+            index = (index + 1) % variants.size();
+        }
+        idlePhase.put(plant, phase);
+        idleVariant.put(plant, index);
+        return current;
+    }
+
     private String clipFor(EntitySprite sprite, Plant plant, float delta, int damageStage) {
         // An action clip plays ONCE, WHOLE: wind-up, release, follow-through, then back to idle.
         //
@@ -176,7 +305,10 @@ public final class PlantRenderer {
         // the plant from a mid-lunge pose straight into the rest pose, and that discontinuity is the
         // jerk. Played out, the clip settles back to rest by itself, so the switch lands on two poses
         // that already match and there is nothing to see.
+        int stage = plant.getGrowthStage();
         noteNewActions(plant);
+        noteGrowth(sprite, plant);
+        noteStrike(plant);
 
         if (plant.isWindingUp()) {
             if (winding.add(plant)) {
@@ -188,43 +320,17 @@ public final class PlantRenderer {
 
         Float phase = actionPhase.get(plant);
         if (phase != null) {
-            // Plant food wins while it is playing: "plantfood" for the plants that ship one, otherwise
-            // the normal action clip. Peashooter's is a plain "plantfood"; some plants also carry
-            // plantfood_on/_off bookends, which are left for T8.6's aura work.
-            String action = plantFood.contains(plant)
-                    ? plantFoodClip(sprite, plant)
-                    // "attack"/"shooting" for shooters, "special" for sun producers (Sunflower's bloom).
-                    : ClipMap.firstAvailable(sprite, "attack", "shooting", "special");
-            if (!ClipMap.IDLE.equals(action)) {
-                float length = sprite.clipDuration(action);
-                if (length <= 0f) {
-                    length = ATTACK_SECONDS;
-                }
-                if (plantFood.contains(plant)) {
-                    length = plantFoodStageLength(sprite, plant);
-                }
-                float advanced = phase + delta;
-                if (advanced < length) {
-                    actionPhase.put(plant, advanced);
-                    return action;
-                }
-                // Plant food is a three-part sequence, so the end of one stage starts the next rather
-                // than ending the whole thing.
-                if (plantFood.contains(plant) && advancePlantFoodStage(sprite, plant)) {
-                    actionPhase.put(plant, 0f);
-                    return plantFoodClip(sprite, plant);
-                }
+            String action = actionClip(sprite, plant, delta, stage, phase);
+            if (action != null) {
+                return action;
             }
-            actionPhase.remove(plant);
-            plantFood.remove(plant);
-            plantFoodStage.remove(plant);
         }
 
         // A mine that has not finished burying itself is a lump in the dirt, not a live potato with its
         // eyes open. Checked after the action clips so an arming mine still animates if it acts.
         if (!plant.isArmed()) {
-            String buried = ClipMap.firstAvailable(sprite, "plant_idle");
-            if (!ClipMap.IDLE.equals(buried)) {
+            String buried = PlantStages.clip(sprite, stage, "plant_idle");
+            if (buried != null) {
                 return buried;
             }
         }
@@ -236,7 +342,59 @@ public final class PlantRenderer {
         if (damaged != null) {
             return damaged;
         }
-        return ClipMap.firstAvailable(sprite, ClipMap.IDLE);
+        return idleClip(sprite, plant, delta, stage);
+    }
+
+    // The one-shot clip this plant is in the middle of, advanced by delta -- or null once it has run
+    // out, at which point every trace of it is dropped and the caller falls through to idle.
+    private String actionClip(EntitySprite sprite, Plant plant, float delta, int stage, float phase) {
+        // Growing outranks everything: it is a one-shot transition between two sizes, and cutting away
+        // from it mid-way would leave the plant snapping from one to the other.
+        //
+        // Plant food comes next: "plantfood" for the plants that ship one, otherwise the normal action
+        // clip. Peashooter's is a plain "plantfood"; some plants also carry plantfood_on/_off bookends,
+        // which are left for T8.6's aura work.
+        String action;
+        if (growing.contains(plant)) {
+            action = PlantStages.growthClip(sprite, stage - 1);
+        } else if (plantFood.contains(plant)) {
+            action = plantFoodClip(sprite, plant, stage);
+        } else {
+            // "attack"/"shooting" for shooters, "special" for sun producers (Sunflower's bloom).
+            //
+            // A plant whose action has more than one form asks for the numbered clip first: Kernel-pult
+            // lobs a kernel or, on a roll, stunning butter, and the art has a separate swing for each.
+            // Only the ability knows which it threw, so the model reports it (see VariantAction).
+            int variant = plant.getActionVariant();
+            action = variant > 0
+                    ? PlantStages.clip(sprite, stage, "attack" + (variant + 1), "attack", "shooting")
+                    : PlantStages.clip(sprite, stage, "attack", "shooting", "special");
+        }
+        if (action != null) {
+            float length = sprite.clipDuration(action);
+            if (length <= 0f) {
+                length = ATTACK_SECONDS;
+            }
+            if (plantFood.contains(plant)) {
+                length = plantFoodStageLength(sprite, plant);
+            }
+            float advanced = phase + delta;
+            if (advanced < length) {
+                actionPhase.put(plant, advanced);
+                return action;
+            }
+            // Plant food is a three-part sequence, so the end of one stage starts the next rather than
+            // ending the whole thing.
+            if (plantFood.contains(plant) && advancePlantFoodStage(sprite, plant)) {
+                actionPhase.put(plant, 0f);
+                return plantFoodClip(sprite, plant, stage);
+            }
+        }
+        actionPhase.remove(plant);
+        plantFood.remove(plant);
+        plantFoodStage.remove(plant);
+        growing.remove(plant);
+        return null;
     }
 
     // Plant food is a one-off: the flag is set once and never cleared, so its rising edge is the cue.
@@ -272,15 +430,19 @@ public final class PlantRenderer {
         };
     }
 
-    private String plantFoodClip(EntitySprite sprite, Plant plant) {
-        int stage = plantFoodStage.getOrDefault(plant, STAGE_ON);
-        String wanted = stageClip(stage);
-        if (sprite.hasClip(wanted)) {
-            return wanted;
+    // growthStage is the plant's SIZE, plantFoodStage is where it is in the on/loop/off sequence. Two
+    // different stages with the same word in the name, unavoidably: the art uses "stage" for the first
+    // and this class has always used it for the second.
+    private String plantFoodClip(EntitySprite sprite, Plant plant, int growthStage) {
+        String wanted = stageClip(plantFoodStage.getOrDefault(plant, STAGE_ON));
+        String staged = PlantStages.clip(sprite, growthStage, wanted);
+        if (staged != null) {
+            return staged;
         }
         // Stage missing from this plant's art: fall back to the looping middle, then to the attack clip
         // so a fed plant still does something visible.
-        return ClipMap.firstAvailable(sprite, "plantfood", "plantfood2", "attack");
+        String fallback = PlantStages.clip(sprite, growthStage, "plantfood", "plantfood2", "attack");
+        return fallback == null ? ClipMap.IDLE : fallback;
     }
 
     // How long the current stage lasts. The bookends run for exactly their own length; the middle runs

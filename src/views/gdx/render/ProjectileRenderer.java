@@ -50,6 +50,33 @@ public final class ProjectileRenderer {
         ELEMENT_SPRITE.put(Element.FIRE, "T_FIRE_PEA");
     }
 
+    // Shots whose art belongs to the PLANT rather than to an element, checked first.
+    //
+    // Element is the wrong axis for these: a rutabaga and a corn kernel are both NEUTRAL, so both were
+    // drawn as a green pea. Rotobaga ships two flight animations (PROJECTILE1 and PROJECTILE2, the
+    // second being the return trip in the real game); the first is the one that leaves the plant.
+    private static final Map<models.entities.projectiles.ProjectileType, String> TYPE_SPRITE =
+            new java.util.EnumMap<>(models.entities.projectiles.ProjectileType.class);
+
+    static {
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.RUTABAGA,
+                "ROTORUTABAGA_PROJECTILE1");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.CORN_KERNEL,
+                "T_KERNALPULT_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.BUTTER,
+                "T_KERNALPULT_PROJECTILE");
+    }
+
+    // Fired at the plant's mouth on the frame a shot first appears. Only Rotobaga ships one; anything
+    // else simply has no entry and no burst is drawn.
+    private static final Map<models.entities.projectiles.ProjectileType, String> TYPE_MUZZLE =
+            new java.util.EnumMap<>(models.entities.projectiles.ProjectileType.class);
+
+    static {
+        TYPE_MUZZLE.put(models.entities.projectiles.ProjectileType.RUTABAGA,
+                "ROTORUTABAGA_MUZZLE_BURST");
+    }
+
     private static final Map<Element, String> ELEMENT_REGION = new java.util.EnumMap<>(Element.class);
 
     static {
@@ -68,6 +95,15 @@ public final class ProjectileRenderer {
 
     // The same pea, but measured across an effect box that also contains its trail.
     private static final float SPRITE_PEA_WIDTH_CELLS = 1.05f;
+
+    // Per-sprite override of that width.
+    //
+    // 1.05 cells is right for the fire pea, whose bounds are mostly flame trailing behind a small pea
+    // -- fit the BOX to a pea's width and the pea itself becomes a speck. A corn kernel has no trail,
+    // so its box is the kernel, and the same 1.05 made it the size of the plant that threw it.
+    private static final Map<String, Float> SPRITE_WIDTH_CELLS = Map.of(
+            "T_KERNALPULT_PROJECTILE", 0.40f,
+            "ROTORUTABAGA_PROJECTILE1", 0.70f);
 
     // Elements with no dedicated sprite in the dump still have to read apart, so those keep a tint over
     // the green pea. Ice and neutral are NOT tinted any more: they have their own art.
@@ -109,10 +145,18 @@ public final class ProjectileRenderer {
 
     private boolean warnedMissingRegion;
 
-    public void draw(Batch batch, Projectile projectile, float alpha, float delta) {
-        // Animated shots take the sprite path; everything else is a still region.
-        String animated = ELEMENT_SPRITE.get(
-                projectile.getElement() == null ? Element.NEUTRAL : projectile.getElement());
+    // laneZombies is the row this shot is flying down, so a lobbed one can be aimed. May be null.
+    public void draw(Batch batch, Projectile projectile, float alpha, float delta,
+                     java.util.List<models.entities.zombies.Zombie> laneZombies) {
+        noteArcSpan(projectile, laneZombies);
+        noteMuzzle(projectile);
+        // The plant's own art first, then the element's, then a still region. A rutabaga and a corn
+        // kernel are NEUTRAL, so keying on element alone drew both as a green pea.
+        String animated = projectile.getType() == null ? null : TYPE_SPRITE.get(projectile.getType());
+        if (animated == null) {
+            animated = ELEMENT_SPRITE.get(
+                    projectile.getElement() == null ? Element.NEUTRAL : projectile.getElement());
+        }
         if (animated != null && drawAnimated(batch, projectile, alpha, delta, animated)) {
             return;
         }
@@ -133,8 +177,10 @@ public final class ProjectileRenderer {
         // shot started, and the model does not expose its spawn point.
         launchX.putIfAbsent(projectile, modelX);
         float interpolatedX = interpolator.x(projectile, modelX, alpha);
-        float lane = interpolator.lane(projectile, projectile.getY(), alpha);
-        float y = lawn.worldY((int) Math.round(lane)) + lawn.cellHeight() * MUZZLE_HEIGHT;
+        if (!onLawn(laneOf(projectile, alpha))) {
+            return;
+        }
+        float y = laneY(projectile, alpha);
 
         // No time-based hold. Pinning the pea at the muzzle for a fixed delay looked right in theory
         // but peas are short-lived: many are destroyed BEFORE the delay elapses, so the shot never
@@ -208,6 +254,35 @@ public final class ProjectileRenderer {
     private static final float MUZZLE_BLEND_CELLS = 0.9f;
     private static final float MUZZLE_HEIGHT = 0.62f;   // fraction of a cell: roughly mouth height
 
+    // Where this shot sits vertically, as a CONTINUOUS lane rather than a row index.
+    //
+    // Rotobaga and Starfruit fire diagonally -- half a lane per tick -- and rounding the interpolated
+    // lane back to an integer threw that away twice over: once when the interpolator sampled the
+    // model's rounded row, and again here. The result was a diagonal shot that crossed the board in
+    // whole-lane jumps. The model's own exactY is what the interpolator now tracks, so this only has
+    // to stop discarding it.
+    private float laneY(Projectile projectile, float alpha) {
+        return lawn.worldY(laneOf(projectile, alpha)) + lawn.cellHeight() * MUZZLE_HEIGHT;
+    }
+
+    private float laneOf(Projectile projectile, float alpha) {
+        return interpolator.lane(projectile, projectile.getY(), alpha);
+    }
+
+    // Whether this shot is still over the lawn.
+    //
+    // The model keeps a shot alive until its ROUNDED row leaves the board, which is up to a lane and a
+    // half past the edge -- Math.round(-0.5) is 0, so a diagonal climbing out of the top row survives
+    // several more ticks. That was invisible while the view rounded the lane too and drew it on row 0;
+    // now that the diagonal is drawn where the model actually puts it, those ticks paint a shot on the
+    // background above the lawn.
+    //
+    // Half a lane of tolerance, so a shot still reads as leaving the board rather than blinking out on
+    // the edge line. This is a drawing decision only: the shot is alive and still collides.
+    private boolean onLawn(float lane) {
+        return lane >= -0.5f && lane <= utils.Constants.BOARD_ROWS - 0.5f;
+    }
+
     private float muzzleAdjusted(Projectile projectile, float interpolatedX) {
         Float start = launchX.get(projectile);
         if (start == null) {
@@ -226,10 +301,45 @@ public final class ProjectileRenderer {
         return interpolatedX - direction * MUZZLE_OFFSET_CELLS * easing;
     }
 
+    // Muzzle flashes waiting to be handed to ImpactEffects, which owns every one-shot effect on the
+    // board. Queued rather than drawn here because this renderer runs per lane inside the entity pass,
+    // and an effect drawn there would be covered by whatever is drawn after it.
+    public record Muzzle(float x, float y, String sprite) { }
+
+    private final java.util.List<Muzzle> pendingMuzzles = new java.util.ArrayList<>();
+
+    // The frame a shot first appears is the frame its plant fired, so that is when the flash goes off.
+    // launchX is the record of "seen before", and it is not written until later in draw().
+    private void noteMuzzle(Projectile projectile) {
+        if (launchX.containsKey(projectile) || projectile.getType() == null) {
+            return;
+        }
+        String sprite = TYPE_MUZZLE.get(projectile.getType());
+        if (sprite == null) {
+            return;
+        }
+        // The plant's mouth, which is where muzzleAdjusted pulls the first frame of the flight back to.
+        float x = lawn.worldX((float) projectile.getX() - MUZZLE_OFFSET_CELLS);
+        float y = lawn.worldY(projectile.getY()) + lawn.cellHeight() * MUZZLE_HEIGHT;
+        pendingMuzzles.add(new Muzzle(x, y, sprite));
+    }
+
+    // Handed over once per frame and cleared. Never accumulates: a flash not collected this frame would
+    // be collected the next.
+    public java.util.List<Muzzle> drainMuzzles() {
+        if (pendingMuzzles.isEmpty()) {
+            return java.util.List.of();
+        }
+        java.util.List<Muzzle> out = java.util.List.copyOf(pendingMuzzles);
+        pendingMuzzles.clear();
+        return out;
+    }
+
     // Drops launch records for shots that are gone, so a long level does not accumulate them.
     public void forgetAllExcept(java.util.Set<Projectile> alive) {
         clocks.sweep();
         launchX.keySet().retainAll(alive);
+        arcSpan.keySet().retainAll(alive);
         lastX.keySet().retainAll(alive);
         lastY.keySet().retainAll(alive);
     }
@@ -238,8 +348,36 @@ public final class ProjectileRenderer {
     private float arcHeight(Projectile projectile, float modelX) {
         float start = launchX.getOrDefault(projectile, modelX);
         float travelled = Math.abs(modelX - start);
-        float t = Math.min(1f, travelled / ARC_SPAN_CELLS);
+        float t = Math.min(1f, travelled / arcSpan.getOrDefault(projectile, ARC_SPAN_CELLS));
         return 4f * ARC_HEIGHT_CELLS * lawn.cellHeight() * t * (1f - t);
+    }
+
+    // How far this particular shot has to fly, so it comes DOWN on what it was aimed at.
+    //
+    // ARC_SPAN_CELLS was a fixed 3.2 for every lob, which is only right when the target happens to be
+    // 3.2 cells away. Anything further and the melon finished its arc in mid-lawn and then slid along
+    // the ground to its target, which is what "it slides after hitting" was: the arc had already
+    // landed. Measured once, at the shot's first frame -- re-measuring every frame would make the arc
+    // twitch as the target walks, and a zombie barely moves during a lob anyway.
+    private final Map<Projectile, Float> arcSpan = new IdentityHashMap<>();
+
+    private void noteArcSpan(Projectile projectile, java.util.List<models.entities.zombies.Zombie> lane) {
+        if (projectile.getTrajectory() != Trajectory.LOBBED || arcSpan.containsKey(projectile)) {
+            return;
+        }
+        float launch = (float) projectile.getX();
+        float nearest = Float.MAX_VALUE;
+        if (lane != null) {
+            for (models.entities.zombies.Zombie zombie : lane) {
+                float dx = (float) zombie.getMovement().getPositionX() - launch;
+                // Ahead of the shot, and far enough that a zombie already on top of the plant does not
+                // collapse the arc to nothing.
+                if (dx > 0.5f && dx < nearest) {
+                    nearest = dx;
+                }
+            }
+        }
+        arcSpan.put(projectile, nearest < Float.MAX_VALUE ? nearest : ARC_SPAN_CELLS);
     }
 
 
@@ -259,8 +397,10 @@ public final class ProjectileRenderer {
 
         float modelX = (float) projectile.getX();
         launchX.putIfAbsent(projectile, modelX);
-        float lane = interpolator.lane(projectile, projectile.getY(), alpha);
-        float y = lawn.worldY((int) Math.round(lane)) + lawn.cellHeight() * MUZZLE_HEIGHT;
+        if (!onLawn(laneOf(projectile, alpha))) {
+            return true;   // handled: off the lawn is a decision to draw nothing, not a failure
+        }
+        float y = laneY(projectile, alpha);
         if (projectile.getTrajectory() == Trajectory.LOBBED) {
             y += arcHeight(projectile, modelX);
         }
@@ -270,8 +410,8 @@ public final class ProjectileRenderer {
         // effect -- the flame's trail and sparks, not just the pea at its head -- so fitting that box
         // to a pea's width shrinks the actual projectile to a speck. The box is roughly three times
         // the pea it contains.
-        float scale = SpritePlacer.toSpriteSpace(SPRITE_PEA_WIDTH_CELLS * lawn.cellWidth())
-                / bounds.width;
+        float widthCells = SPRITE_WIDTH_CELLS.getOrDefault(spriteName, SPRITE_PEA_WIDTH_CELLS);
+        float scale = SpritePlacer.toSpriteSpace(widthCells * lawn.cellWidth()) / bounds.width;
         float phase = clocks.advance(projectile, clip, delta);
 
         com.badlogic.gdx.math.Matrix4 previous = batch.getTransformMatrix().cpy();

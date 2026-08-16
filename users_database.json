@@ -819,7 +819,7 @@
           "description": "primal potato mine has been added to your almanac. Give it a lawn to defend!",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "PLANT_UNLOCK"
         },
         {
@@ -828,7 +828,7 @@
           "description": "You\u0027ve met a ZombieRa and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "ZOMBIE_DISCOVERY"
         },
         {
@@ -837,7 +837,7 @@
           "description": "You\u0027ve met a ZombieTombRaiser and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "ZOMBIE_DISCOVERY"
         },
         {
@@ -846,7 +846,7 @@
           "description": "You\u0027ve met a ZombieIceAgeHunter and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "ZOMBIE_DISCOVERY"
         },
         {
@@ -855,7 +855,7 @@
           "description": "You\u0027ve met a ZombieIceAgeDodo and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "ZOMBIE_DISCOVERY"
         },
         {
@@ -864,7 +864,7 @@
           "description": "You\u0027ve met a ZombieDarkArmor3 and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "ZOMBIE_DISCOVERY"
         },
         {
@@ -873,7 +873,7 @@
           "description": "You\u0027ve met a ZombieWizard and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "ZOMBIE_DISCOVERY"
         },
         {
@@ -882,7 +882,7 @@
           "description": "cabbage-pult has been added to your almanac. Give it a lawn to defend!",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "PLANT_UNLOCK"
         },
         {
@@ -891,7 +891,7 @@
           "description": "lily pad has been added to your almanac. Give it a lawn to defend!",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "PLANT_UNLOCK"
         },
         {
@@ -900,7 +900,7 @@
           "description": "You\u0027ve met a ZombiePiano and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "ZOMBIE_DISCOVERY"
         },
         {
@@ -909,7 +909,7 @@
           "description": "You\u0027ve met a ZombieBeachOctopus and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-07-31",
-          "read": false,
+          "read": true,
           "type": "ZOMBIE_DISCOVERY"
         }
       ],

@@ -36,6 +36,14 @@ public interface EntitySprite {
     // "eat" to "idle" rather than drawing nothing.
     boolean hasClip(String clip);
 
+    // Every clip this animation defines, in the order the dump lists them.
+    //
+    // The dump uses at least four different naming schemes for a resting pose and several plants have
+    // no clip called "idle" at all, so PlantStages needs a genuine last resort -- "whatever this
+    // animation's first clip is" -- rather than a guess list that can run out and leave a plant
+    // invisible. Empty for a still-image fallback.
+    java.util.Set<String> clips();
+
     // Whether this animation has a part of that name to toggle. Armor, status overlays and severed
     // limbs are all parts; asking first means a zombie whose animation lacks a piece just renders
     // without it instead of erroring.

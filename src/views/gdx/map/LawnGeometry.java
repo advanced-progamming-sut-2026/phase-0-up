@@ -87,6 +87,15 @@ public final class LawnGeometry {
         return originY + (Constants.BOARD_ROWS - 1 - lane) * cellHeight;
     }
 
+    // The same line for a lane BETWEEN two rows.
+    //
+    // A diagonal shot is not in a lane, it is on its way from one to the next, and rounding it to the
+    // nearest integer makes it cross the board sideways in whole-lane jumps instead of flying. Row 0
+    // is the top lane, so the inversion is the same as above.
+    public float worldY(float lane) {
+        return originY + (Constants.BOARD_ROWS - 1 - lane) * cellHeight;
+    }
+
     // Vertical centre of a lane, for things that float rather than stand (suns, projectiles).
     public float centerY(int lane) {
         return worldY(lane) + cellHeight * 0.5f;

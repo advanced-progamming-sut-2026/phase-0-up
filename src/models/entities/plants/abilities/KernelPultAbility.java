@@ -10,7 +10,7 @@ import models.game.GameSession;
 
 import java.util.Random;
 
-public class KernelPultAbility extends PlantAbility{
+public class KernelPultAbility extends PlantAbility implements VariantAction {
     private static final double BASE_BUTTER_CHANCE = 0.25;
 
     private int kernelDamage;
@@ -18,6 +18,10 @@ public class KernelPultAbility extends PlantAbility{
     private double speedX;
     private double butterChance = BASE_BUTTER_CHANCE;
     private final Random random = new Random();
+
+    // Which of the two throws was last made. The art has a separate swing for the butter (attack2), and
+    // only this ability knows which one it just lobbed -- the choice is a coin flip inside execute().
+    private boolean lastWasButter;
 
     public KernelPultAbility(int actionInterval, TriggerStrategy triggerStrategy, int kernelDamage,
                              int butterDamage, double speedX) {
@@ -35,6 +39,7 @@ public class KernelPultAbility extends PlantAbility{
     @Override
     public void execute(Plant owner, GameSession gameSession) {
         boolean shootButter = random.nextDouble() < butterChance;
+        lastWasButter = shootButter;
 
         ProjectileType typeToShoot = shootButter ? ProjectileType.BUTTER : ProjectileType.CORN_KERNEL;
         int shootDamage = shootButter ? butterDamage : kernelDamage;
@@ -53,5 +58,10 @@ public class KernelPultAbility extends PlantAbility{
                 Trajectory.LOBBED);
 
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
+    }
+
+    @Override
+    public int actionVariant() {
+        return lastWasButter ? 1 : 0;
     }
 }

@@ -320,34 +320,84 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
     @Override
     public void render(float delta) {
         refresh();
-        runBackCheck();
+        runHarness();
         stage.act(delta);
         stage.draw();
     }
 
     // Late enough that the screen's entrance has finished and the stage is taking input.
-    private static final int BACK_CHECK_FRAME = 30;
+    private static final int HARNESS_FRAME = 30;
 
     private int frames;
 
-    // -Dpvz.backCheck=1: presses Escape, and says where that left the session. See DebugFlags.
+    // The unattended-run hooks, both of which drive the screen the way a player would.
     //
     // Deliberately on the base class rather than on one screen. Every menu's Back funnels through
-    // goBack(), and the overrides are exactly where it has gone wrong -- so the check belongs where all
-    // of them inherit it, not where the last bug happened to be.
-    private void runBackCheck() {
-        if (!views.gdx.core.DebugFlags.BACK_CHECK) {
-            return;
-        }
+    // goBack() and every menu is made of the same buttons, so the checks belong where all of them
+    // inherit them, not where the last bug happened to be.
+    private void runHarness() {
         frames++;
-        if (frames != BACK_CHECK_FRAME) {
+        if (frames != HARNESS_FRAME) {
             return;
         }
+        if (views.gdx.core.DebugFlags.BACK_CHECK) {
+            pressBack();
+        }
+        String label = views.gdx.core.DebugFlags.CLICK_LABEL;
+        if (!label.isEmpty()) {
+            pressButton(label);
+        }
+    }
+
+    // -Dpvz.backCheck=1: presses Escape, and says where that left the session.
+    private void pressBack() {
         controllers.engine.MenuType before = context.appSession().getCurrentMenu();
         stage.keyDown(Input.Keys.ESCAPE);
         controllers.engine.MenuType after = context.appSession().getCurrentMenu();
         Gdx.app.log("BackCheck", getClass().getSimpleName() + ": " + before + " -> " + after
                 + (before == after ? "   *** Back did nothing ***" : ""));
+    }
+
+    // -Dpvz.click=<label>: presses the first button carrying that text.
+    private void pressButton(String label) {
+        com.badlogic.gdx.scenes.scene2d.ui.TextButton target = findButton(stage.getRoot(), label);
+        if (target == null) {
+            Gdx.app.error("ClickCheck", "no button labelled \"" + label + "\" on "
+                    + getClass().getSimpleName());
+            return;
+        }
+        com.badlogic.gdx.math.Vector2 centre = target.localToStageCoordinates(
+                new com.badlogic.gdx.math.Vector2(target.getWidth() / 2f, target.getHeight() / 2f));
+        stage.getViewport().project(centre);
+        // y is flipped: project() returns y-up (OpenGL), the pointer events expect y-down.
+        int x = (int) centre.x;
+        int y = (int) (Gdx.graphics.getHeight() - centre.y);
+        stage.touchDown(x, y, 0, com.badlogic.gdx.Input.Buttons.LEFT);
+        stage.touchUp(x, y, 0, com.badlogic.gdx.Input.Buttons.LEFT);
+        Gdx.app.log("ClickCheck", "pressed \"" + label + "\" on " + getClass().getSimpleName());
+    }
+
+    // First match in draw order, depth first. Invisible branches are skipped: a hidden panel's buttons
+    // are still in the hierarchy and clicking one would do something the player cannot.
+    private static com.badlogic.gdx.scenes.scene2d.ui.TextButton findButton(
+            com.badlogic.gdx.scenes.scene2d.Group group, String label) {
+        for (com.badlogic.gdx.scenes.scene2d.Actor child : group.getChildren()) {
+            if (!child.isVisible()) {
+                continue;
+            }
+            if (child instanceof com.badlogic.gdx.scenes.scene2d.ui.TextButton button
+                    && button.getText() != null
+                    && button.getText().toString().equalsIgnoreCase(label)) {
+                return button;
+            }
+            if (child instanceof com.badlogic.gdx.scenes.scene2d.Group nested) {
+                com.badlogic.gdx.scenes.scene2d.ui.TextButton found = findButton(nested, label);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     @Override

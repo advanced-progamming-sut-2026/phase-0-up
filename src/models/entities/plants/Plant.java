@@ -106,6 +106,67 @@ public class Plant extends Entity {
         return true;
     }
 
+    // Which growth stage this plant is in, zero-based; 0 for the plants that do not grow.
+    //
+    // Informational, like isWindingUp(): several plants are animated as one clip set PER STAGE -- a
+    // Sun-shroom's art has idle_stage1..3 and no plain idle at all -- so the view has to know which
+    // stage to draw. It also watches this for changes, to play the growth animation between them.
+    public int getGrowthStage() {
+        if (abilities == null) {
+            return 0;
+        }
+        for (PlantAbility ability : abilities) {
+            if (ability instanceof models.entities.plants.abilities.Growable growable) {
+                return growable.growthStage();
+            }
+        }
+        return 0;
+    }
+
+    // How many times this plant has struck something at a distance, and where the last one landed.
+    //
+    // Caulipower and Electric Blueberry damage a zombie outright with nothing in flight, and Grave
+    // Buster destroys the grave under itself -- so there is no Projectile for the view to follow, and
+    // all three ship their own effect animation. The view watches the counter for a rising edge and
+    // sends the effect to the coordinates. See Striking; 0 for plants that do not do this.
+    public int getStrikeCount() {
+        return strikeAbility() == null ? 0 : strikeAbility().strikeCount();
+    }
+
+    public double getStrikeX() {
+        return strikeAbility() == null ? getX() : strikeAbility().strikeX();
+    }
+
+    public double getStrikeY() {
+        return strikeAbility() == null ? getY() : strikeAbility().strikeY();
+    }
+
+    private models.entities.plants.abilities.Striking strikeAbility() {
+        if (abilities == null) {
+            return null;
+        }
+        for (PlantAbility ability : abilities) {
+            if (ability instanceof models.entities.plants.abilities.Striking striking) {
+                return striking;
+            }
+        }
+        return null;
+    }
+
+    // Which form the last action took, for plants whose art has more than one -- Kernel-pult's kernel
+    // versus its butter. 0 for everything else. See VariantAction.
+    public int getActionVariant() {
+        if (abilities == null) {
+            return 0;
+        }
+        for (PlantAbility ability : abilities) {
+            if (ability instanceof models.entities.plants.abilities.VariantAction variant) {
+                return variant.actionVariant();
+            }
+        }
+        return 0;
+    }
+
     // Whether plant food has been used on this plant. Set once and never cleared, so the view treats
     // its RISING edge as "play the plant-food animation now".
     public boolean hasPlantFood() {

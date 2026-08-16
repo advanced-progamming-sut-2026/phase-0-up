@@ -123,6 +123,11 @@ public class ProduceSunAbility extends PlantAbility implements Growable {
         this.currentStage = sunAmountsByStage.length - 1;
     }
 
+    @Override
+    public int growthStage() {
+        return currentStage;
+    }
+
     // Upgrade (DOUBLE_SUN_CHANCE): sets the probability that a production run yields double sun.
     public void setDoubleSunChance(double chance) {
         this.doubleSunChance = chance;

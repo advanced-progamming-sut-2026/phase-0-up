@@ -66,7 +66,25 @@ public final class DebugFlags {
     //   gradlew runGui -Dpvz.menu=plants -Dpvz.backCheck=1 -Dpvz.smokeFrames=45
     public static final boolean BACK_CHECK = flag("pvz.backCheck");
 
+    // Opens a tabbed screen on a named tab instead of its default. The almanac's zombie half is two
+    // clicks in and therefore invisible to an unattended screenshot run, which is the same problem
+    // -Dpvz.menu solves one level up. Empty means "whatever the screen would have picked".
+    public static final String START_TAB = text("pvz.tab");
+
+    // Presses the first button with this label, a second after the screen opens, and says whether it
+    // found one. The general form of BACK_CHECK: anything a screen only shows AFTER a click -- a
+    // confirmation dialog, a filtered list, a detail page -- is invisible to a screenshot run
+    // otherwise. Matched case-insensitively against the button's own text.
+    //
+    //   gradlew runGui -Dpvz.menu=shop -Dpvz.click=Buy -Dpvz.smokeFrames=45
+    public static final String CLICK_LABEL = text("pvz.click");
+
     private DebugFlags() { }
+
+    private static String text(String key) {
+        String value = System.getProperty(key);
+        return value == null ? "" : value.trim();
+    }
 
     private static int number(String key) {
         try {

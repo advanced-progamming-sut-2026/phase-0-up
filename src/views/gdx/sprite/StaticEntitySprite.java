@@ -62,6 +62,13 @@ final class StaticEntitySprite implements EntitySprite {
         return region != null;
     }
 
+    // No named clips at all: hasClip already says yes to everything, so a caller hunting for a resting
+    // pose gets its first choice and never reaches the last-resort list.
+    @Override
+    public java.util.Set<String> clips() {
+        return java.util.Set.of();
+    }
+
     // A flat image has no parts to toggle, so armor and status overlays simply do not appear on the
     // fallback path. The entity is still visible, which is the point.
     @Override
@@ -69,13 +76,21 @@ final class StaticEntitySprite implements EntitySprite {
         return false;
     }
 
-    // Matches how draw() places the image: centred on x, sitting on y.
+    // Reported in the .PAM's own y-DOWN convention, not this class's y-up one.
+    //
+    // Every caller reads bounds the libPVZ way: the art hangs BELOW the origin, so its vertical span is
+    // [y, y + height] measured downward and callers centre on `y + height/2`. Returning y = 0 -- which
+    // is where draw() actually starts the image -- made that formula resolve to +height/2, so a still
+    // was drawn half its own height too high: Knight Zombie's card art climbed out of its tile and over
+    // the row above it, and on the lawn a still-image entity floated.
+    //
+    // y = -height puts the same rectangle in the convention everyone else is already using.
     @Override
     public com.badlogic.gdx.math.Rectangle bounds(String clip) {
         if (region == null) {
             return null;
         }
-        return new com.badlogic.gdx.math.Rectangle(-width / 2f, 0f, width, height);
+        return new com.badlogic.gdx.math.Rectangle(-width / 2f, -height, width, height);
     }
 
     // A still image never advances, so it has no duration.

@@ -59,7 +59,9 @@ public final class CursorRenderer {
         if (sprite == null || !sprite.isReady()) {
             return;
         }
-        String clip = ClipMap.firstAvailable(sprite, ClipMap.IDLE);
+        // Not ClipMap.firstAvailable: the staged plants have no plain "idle", so the ghost of a
+        // Sun-shroom or a Puff-shroom was an invisible cursor.
+        String clip = views.gdx.sprite.PlantStages.restingClip(sprite);
         Rectangle bounds = sprite.bounds(clip);
         if (bounds == null || bounds.width <= 0f) {
             return;
