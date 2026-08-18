@@ -356,15 +356,4 @@ public final class StoreScreen extends MenuScreen {
         return user == null ? null : user.getProfile();
     }
 
-    // Two exits, not one.
-    //
-    // The model's route out of the shop is the greenhouse (ExitMenuCommand: SHOP -> GREENHOUSE), and
-    // the greenhouse has no screen until Phase 6 -- so a single exit would land the session in a menu
-    // ScreenManager cannot draw, leaving the player looking at the store with a dead Back button. Both
-    // hops are real commands and both are legal; the second one comes out the day T6.1 lands.
-    @Override
-    protected void goBack() {
-        commands.back();
-        commands.back();
-    }
 }

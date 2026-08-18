@@ -93,6 +93,23 @@ final class StaticEntitySprite implements EntitySprite {
         return new com.badlogic.gdx.math.Rectangle(-width / 2f, -height, width, height);
     }
 
+    // A still image is one part, so there is nothing to hide and nothing to recompute.
+    @Override
+    public com.badlogic.gdx.math.Rectangle visibleBounds(String clip, java.util.Set<String> hidden) {
+        return bounds(clip);
+    }
+
+    // A still has no named parts at all, so nothing can be asked about one.
+    @Override
+    public com.badlogic.gdx.math.Rectangle partBounds(String clip, String partName) {
+        return null;
+    }
+
+    @Override
+    public com.badlogic.gdx.math.Rectangle[] partBoundsByFrame(String clip, String partName) {
+        return null;
+    }
+
     // A still image never advances, so it has no duration.
     @Override
     public float clipDuration(String clip) {

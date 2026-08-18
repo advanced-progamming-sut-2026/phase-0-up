@@ -537,8 +537,8 @@
     "stayLoggedIn": true,
     "profile": {
       "gameNumbers": 0,
-      "coins": 19400,
-      "gems": 376,
+      "coins": 19900,
+      "gems": 318,
       "plantFoodCount": 0,
       "difficultyLevel": 3,
       "bestNumberOfMeowPoints": 747,
@@ -974,7 +974,11 @@
         "repeater": 1,
         "cabbage-pult": 1
       },
-      "boostedSeeds": [],
+      "boostedSeeds": [
+        "iceberg lettuce",
+        "gold bloom",
+        "sun-shroom"
+      ],
       "myGreenHouse": {
         "pots": [
           [
@@ -987,26 +991,35 @@
             {
               "x": 1,
               "y": 0,
-              "state": "EMPTY",
-              "readyAtTimestamp": 0
+              "state": "GROWING",
+              "readyAtTimestamp": 1787006324384,
+              "onPot": {
+                "name": "cabbage-pult",
+                "isMarigold": false,
+                "growthDuration": 28800000
+              }
             },
             {
               "x": 2,
               "y": 0,
-              "state": "EMPTY",
-              "readyAtTimestamp": 0
+              "state": "GROWING",
+              "readyAtTimestamp": 1787004914793,
+              "onPot": {
+                "name": "sunflower",
+                "isMarigold": false,
+                "growthDuration": 28800000
+              }
             },
             {
               "x": 3,
               "y": 0,
-              "state": "EMPTY",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 4,
-              "y": 0,
-              "state": "EMPTY",
-              "readyAtTimestamp": 0
+              "state": "GROWING",
+              "readyAtTimestamp": 1787005659827,
+              "onPot": {
+                "name": "starfruit",
+                "isMarigold": false,
+                "growthDuration": 28800000
+              }
             }
           ],
           [
@@ -1025,19 +1038,13 @@
             {
               "x": 2,
               "y": 1,
-              "state": "LOCKED",
+              "state": "EMPTY",
               "readyAtTimestamp": 0
             },
             {
               "x": 3,
               "y": 1,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 4,
-              "y": 1,
-              "state": "LOCKED",
+              "state": "EMPTY",
               "readyAtTimestamp": 0
             }
           ],
@@ -1063,44 +1070,6 @@
             {
               "x": 3,
               "y": 2,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 4,
-              "y": 2,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            }
-          ],
-          [
-            {
-              "x": 0,
-              "y": 3,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 1,
-              "y": 3,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 2,
-              "y": 3,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 3,
-              "y": 3,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 4,
-              "y": 3,
               "state": "LOCKED",
               "readyAtTimestamp": 0
             }
@@ -1156,7 +1125,7 @@
         "frostbite_caves": 7
       },
       "completedDailyQuestIds": [],
-      "questDayStamp": "2026-08-14",
+      "questDayStamp": "2026-08-17",
       "sunCollectedToday": 0,
       "mowerlessFirstColumnKillsToday": 0,
       "killsByPlantToday": {},

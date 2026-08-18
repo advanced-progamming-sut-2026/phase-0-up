@@ -5,6 +5,7 @@ import models.entities.zombies.Components.HealthLayer;
 import models.entities.zombies.Zombie;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // Turns a zombie's HealthComponent layer stack into a libPVZ visibility map.
@@ -36,6 +37,36 @@ public final class ArmorVisibility {
 
     private ArmorVisibility() { }
 
+    // The undamaged stage, for a specimen nobody has shot at yet.
+    private static final String PRISTINE = "norm";
+
+    // The armor a zombie TYPE wears, with no live zombie to ask.
+    //
+    // The almanac lists templates, not zombies -- and Conehead, Buckethead and Brick are all the SAME
+    // animation: one body with a different hat switched on. ZombieArmor1, ZombieArmor2 and ZombieArmor4
+    // resolve to one PAM whose part list carries all three hats, so without a visibility map the three
+    // of them draw as an identical bare zombie, which is exactly what the almanac did.
+    //
+    // Always the pristine stage: an almanac page describes the zombie you are about to meet, not one
+    // that has already been chewed on.
+    public static Map<String, Boolean> forArmorTypes(List<ArmorType> armors, EntitySprite sprite) {
+        if (armors == null || sprite == null) {
+            return null;
+        }
+        Map<String, Boolean> visibility = null;
+        for (ArmorType type : armors) {
+            String part = partName(type, PRISTINE);
+            if (part == null || !sprite.hasPart(part)) {
+                continue;
+            }
+            if (visibility == null) {
+                visibility = new HashMap<>();
+            }
+            visibility.put(part, true);
+        }
+        return visibility;
+    }
+
     // Builds the visibility map for one zombie this frame. Returns null when there is nothing to
     // toggle, which lets PamEntitySprite take the cheaper no-map draw path.
     public static Map<String, Boolean> forZombie(Zombie zombie, EntitySprite sprite) {
@@ -43,12 +74,8 @@ public final class ArmorVisibility {
 
         for (HealthLayer layer : zombie.getHealth().getLayers()) {
             ArmorType type = layer.getType();
-            String stem = type == null ? null : STEMS.get(type);
-            if (stem == null) {
-                continue;
-            }
-            String part = stem + "_" + damageStage(layer, type);
-            if (!sprite.hasPart(part)) {
+            String part = type == null ? null : partName(type, damageStage(layer, type));
+            if (part == null || !sprite.hasPart(part)) {
                 continue;
             }
             if (visibility == null) {
@@ -67,6 +94,65 @@ public final class ArmorVisibility {
         }
 
         return visibility;
+    }
+
+    // Every damage stage of every armor stem, so the whole family can be named at once.
+    private static final String[] STAGES = {PRISTINE, "damage_01", "damage_02"};
+
+    // The parts of this sprite that are switched off unless something switches them on -- every armor
+    // piece it is not wearing, plus the status overlays.
+    //
+    // This is what a card has to leave out of its measurements. bounds() unions every part whether drawn
+    // or not, so a Conehead measured naively carries the brick helmet it has not got: a hat's worth of
+    // empty space above its head, and the zombie itself drawn small to make room for it.
+    //
+    // Callers subtract whatever they are actually showing -- see EntityIcon.
+    public static java.util.Set<String> togglePartsOf(EntitySprite sprite) {
+        java.util.Set<String> optional = new java.util.LinkedHashSet<>();
+        if (sprite == null) {
+            return optional;
+        }
+        for (String stem : STEMS.values()) {
+            for (String stage : STAGES) {
+                String part = stem + "_" + stage;
+                if (sprite.hasPart(part)) {
+                    optional.add(part);
+                }
+            }
+        }
+        if (sprite.hasPart(BUTTER_PART)) {
+            optional.add(BUTTER_PART);
+        }
+        // The squash-splat overlay, on the shared body alongside the butter.
+        if (sprite.hasPart("ink")) {
+            optional.add("ink");
+        }
+        return optional;
+    }
+
+    // What to leave out when measuring an entity that is being drawn with `shown`.
+    //
+    // Everything toggleable except the pieces actually switched on -- so a Conehead is measured with its
+    // cone but without the bucket and brick, and a bare zombie without any of the three. Pass this to
+    // EntitySprite.visibleBounds.
+    public static java.util.Set<String> hiddenParts(EntitySprite sprite,
+                                                    Map<String, Boolean> shown) {
+        java.util.Set<String> hidden = togglePartsOf(sprite);
+        if (shown != null) {
+            for (Map.Entry<String, Boolean> entry : shown.entrySet()) {
+                if (Boolean.TRUE.equals(entry.getValue())) {
+                    hidden.remove(entry.getKey());
+                }
+            }
+        }
+        return hidden;
+    }
+
+    // "zombie_armor_cone" + "norm" -> "zombie_armor_cone_norm". Null for an armor that lives on its own
+    // zombie's animation rather than the shared body (a barrel, an ice block, a knight's pauldron).
+    private static String partName(ArmorType type, String stage) {
+        String stem = STEMS.get(type);
+        return stem == null ? null : stem + "_" + stage;
     }
 
     // _norm above two thirds, _damage_01 above one third, _damage_02 below.

@@ -30,11 +30,15 @@ public class PlantPotCommand implements Command {
 
     @Override
     public void execute() {
-        if (!greenHouse.isValidCoordinate(potX, potY)){
+        // The player types 1-based coordinates; GreenHouse is 0-based throughout. This is the only
+        // place the two meet.
+        int x = potX - 1;
+        int y = potY - 1;
+        if (!greenHouse.isValidCoordinate(x, y)){
             greenhouseRenderer.plantPot(new Result(false, "Invalid coordinate"));
             return;
         }
-        Pot pot = greenHouse.getPot(potX - 1, potY - 1);
+        Pot pot = greenHouse.getPot(x, y);
 
         if (!pot.isEmpty()) {
             greenhouseRenderer.plantPot(new Result(false, "This pot is Unavailable!"));
@@ -53,7 +57,7 @@ public class PlantPotCommand implements Command {
             plantSeed = new GreenHousePlant(plantName, false);
         }
 
-        greenHouse.plantPot(potX - 1, potY - 1, plantSeed);
+        greenHouse.plantPot(x, y, plantSeed);
         greenhouseRenderer.plantPot(new Result(true, String.format("%s is planted at (%d, %d)",
                 plantSeed.getName(), potX, potY)));
 

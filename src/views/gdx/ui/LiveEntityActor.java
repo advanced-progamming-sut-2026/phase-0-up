@@ -41,16 +41,32 @@ public final class LiveEntityActor extends Actor {
     private Rectangle bounds;
     private float stateTime;
 
+    // Which optional parts to switch on -- a zombie's cone, bucket or brick. Null draws the animation's
+    // default set, which for the shared zombie body means a bare head.
+    private java.util.Map<String, Boolean> parts;
+
     public LiveEntityActor(TextureRegion turf) {
         this.turf = turf;
     }
 
+    public void show(EntitySprite sprite) {
+        show(sprite, null);
+    }
+
     // Swaps the subject. The clock restarts, so a newly selected entity is seen from the beginning of
     // its animation rather than joining the previous one's cycle wherever it happened to be.
-    public void show(EntitySprite sprite) {
+    //
+    // parts switches optional pieces on. Conehead, Buckethead and Brick share one animation carrying all
+    // three hats, so this is the only thing that tells them apart -- see ArmorVisibility.
+    public void show(EntitySprite sprite, java.util.Map<String, Boolean> parts) {
         this.sprite = sprite;
         this.clip = sprite == null ? null : PlantStages.restingClip(sprite);
-        this.bounds = sprite == null || clip == null ? null : sprite.bounds(clip);
+        this.parts = parts;
+        // Measured against what is DRAWN, not what the animation could draw. bounds() folds in every
+        // switched-off part, so a bare zombie carries the tallest hat it could wear and stands four
+        // fifths of the height it should, low in its frame. See EntitySprite.visibleBounds.
+        this.bounds = sprite == null || clip == null ? null
+                : sprite.visibleBounds(clip, views.gdx.sprite.ArmorVisibility.hiddenParts(sprite, parts));
         this.stateTime = 0f;
     }
 
@@ -62,7 +78,9 @@ public final class LiveEntityActor extends Actor {
 
     @Override
     public void draw(Batch batch, float parentAlpha) {
-        float turfHeight = getHeight() * TURF_FRACTION;
+        // No turf means no turf ROOM either: a plant in a greenhouse pot stands on soil the pot already
+        // draws, so reserving a seventh of the box for absent grass would only sink it.
+        float turfHeight = turf == null ? 0f : getHeight() * TURF_FRACTION;
         if (turf != null) {
             float turfWidth = getWidth() * TURF_WIDTH_FRACTION;
             com.badlogic.gdx.graphics.Color previous = batch.getColor().cpy();
@@ -92,7 +110,7 @@ public final class LiveEntityActor extends Actor {
         // NOT -(y + height), which is the same magnitude the other way and sinks the entity by twice
         // its own height: that is what buried the plants and zombies under the dirt.
         sprite.draw(batch, clip, ClipMap.sample(sprite, clip, stateTime),
-                0f, bounds.y + bounds.height, true);
+                0f, bounds.y + bounds.height, true, parts);
         batch.setTransformMatrix(previous);
     }
 }

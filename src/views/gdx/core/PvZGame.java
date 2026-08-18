@@ -95,12 +95,72 @@ public class PvZGame extends Game {
                 for (String clip : sprites.clipsOf(name)) {
                     Gdx.app.log("Bounds", name + " [" + clip + "] = " + s.bounds(clip));
                 }
+                // Which clip anything outside the lawn will actually rest on, and how big that clip's
+                // box is. Both matter together: a seed card and an almanac tile scale the art to fit
+                // this box, so an entity that rests on the wrong clip is not merely in the wrong pose --
+                // it is drawn at the wrong SIZE. Newspaper Zombie rested on "walk" (a box of 808x378
+                // against idle_newspaper's 175x204) and appeared less than half the size of its
+                // neighbours; nothing in the old output said so.
+                String resting = views.gdx.sprite.PlantStages.restingClip(s);
+                Gdx.app.log("Resting", name + " -> " + resting + "  " + s.bounds(resting));
+                reportVisibleBounds(name, s, resting);
+                reportGroundSwatch(name, s);
                 // The part list is the half this flag always claimed to print and never did. It is the
                 // useful half: when an entity's states are layers rather than clips -- a zombie's cone,
                 // a Wall-nut's cracked shell -- the part names are what a visibility map switches on.
                 Gdx.app.log("Parts", name + " = " + sprites.partNames(name));
             }
         }
+        reportProbedRegions();
+    }
+
+    // The full clip box against the box of only what is drawn, and which switched-off part accounts for
+    // the difference.
+    //
+    // On the shared zombie body the two differ by a whole helmet -- a bare Browncoat measures 169x250
+    // against a true 131x197 -- and since every card scales its art to FIT that box, the gap is drawn as
+    // a smaller zombie sitting low under a hat's worth of nothing. Naming the culprit part is what turns
+    // "this card looks off" into a fact.
+    private void reportVisibleBounds(String name, views.gdx.sprite.EntitySprite sprite, String clip) {
+        java.util.Set<String> toggles = views.gdx.sprite.ArmorVisibility.togglePartsOf(sprite);
+        com.badlogic.gdx.math.Rectangle full = sprite.bounds(clip);
+        com.badlogic.gdx.math.Rectangle drawn = sprite.visibleBounds(clip, toggles);
+        Gdx.app.log("Visible", name + ": full " + full + "  drawn " + drawn);
+        if (full == null) {
+            return;
+        }
+        for (String part : toggles) {
+            com.badlogic.gdx.math.Rectangle box = sprite.partBounds(clip, part);
+            // libPVZ reports these in the .PAM's own y-down space, so the SMALLEST y is the topmost edge.
+            if (box != null && box.y <= full.y + 0.01f) {
+                Gdx.app.log("Visible", "   ^ " + part + " is what makes it that tall: " + box);
+            }
+        }
+    }
+
+    // The path of the ground_swatch marker through the walk cycle, which is what foot-planting reads.
+    private void reportGroundSwatch(String name, views.gdx.sprite.EntitySprite sprite) {
+        com.badlogic.gdx.math.Rectangle[] frames =
+                sprite.partBoundsByFrame("walk", views.gdx.sprite.WalkCycle.GROUND_SWATCH);
+        if (frames == null) {
+            Gdx.app.log("Swatch", name + ": walk has no " + views.gdx.sprite.WalkCycle.GROUND_SWATCH);
+            return;
+        }
+        StringBuilder path = new StringBuilder();
+        for (int i = 0; i < frames.length; i++) {
+            if (frames[i] == null) {
+                path.append(i).append(":null  ");
+                continue;
+            }
+            if (i % 8 == 0 || i == frames.length - 1) {
+                path.append(i).append(':').append(Math.round(frames[i].x)).append("  ");
+            }
+        }
+        Gdx.app.log("Swatch", name + ": walk " + frames.length + " frames, duration "
+                + sprite.clipDuration("walk") + "s, x path -> " + path);
+    }
+
+    private void reportProbedRegions() {
         // Diagnostic: -Dpvz.probeRegions=ID1,ID2 reports whether each RESOURCES.json image id resolves
         // to a real atlas region, and how big it is. An id that does not resolve returns null and the
         // caller silently falls back to a placeholder, so without this a typo looks like a layout bug.
@@ -223,6 +283,8 @@ public class PvZGame extends Game {
         screens.register(MenuType.LEADERBOARD, views.gdx.screens.LeaderboardScreen::new);
         screens.register(MenuType.COLLECTION_MENU, views.gdx.screens.CollectionScreen::new);
         screens.register(MenuType.SHOP_MENU, views.gdx.screens.StoreScreen::new);
+        screens.register(MenuType.GREENHOUSE_MENU, views.gdx.screens.GreenhouseScreen::new);
+        screens.register(MenuType.TRAVEL_LOG_MENU, views.gdx.screens.TravelLogScreen::new);
     }
 
     // Mirrors Main.main's startup, minus the console wiring.

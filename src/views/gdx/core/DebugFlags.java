@@ -79,6 +79,42 @@ public final class DebugFlags {
     //   gradlew runGui -Dpvz.menu=shop -Dpvz.click=Buy -Dpvz.smokeFrames=45
     public static final String CLICK_LABEL = text("pvz.click");
 
+    // Logs the foot-planting curve for the first zombie drawn each frame: how far through its walk cycle
+    // it is, and how far off its straight-line position it is being drawn.
+    //
+    // Skating is motion, so no screenshot can show it and no unit test can reach a live viewport. What
+    // CAN be checked is the curve: the lead must be zero at both ends of the cycle (or the loop jumps),
+    // must never accumulate (or the drawing drifts off the model), and must be negative through the
+    // stance (the body waiting on a planted foot while the straight line runs ahead).
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.skipIntro=1 -Dpvz.footCheck=1 -Dpvz.smokeFrames=400
+    public static final boolean FOOT_CHECK = flag("pvz.footCheck");
+
+    // Opens the almanac on a named entity instead of whichever one it would have picked.
+    //
+    // The grid scrolls and shows about two and a half rows, so anything past the twentieth zombie cannot
+    // be reached by a screenshot run at all -- Newspaper Zombie is the twenty-second, which is why its
+    // resting-clip bug survived every capture taken of this screen. Matched against the plant's display
+    // name or the zombie's registry alias, ignoring case.
+    //
+    //   gradlew runGui -Dpvz.menu=collection -Dpvz.tab=zombies -Dpvz.entity=ZombieNewspaper
+    public static final String ENTITY = text("pvz.entity");
+
+    // Drives the greenhouse the way a player would, because none of it can be reached otherwise.
+    //
+    //   1  fills the first two pots and finishes one, so all four states -- locked, empty, growing and
+    //      ripe -- are on screen in the same frame
+    //   2  then harvests the ripe one, which is the only way to see the reward modal
+    //   3  then clicks the growing one, which is the only way to see the gem speed-up dialog
+    //
+    // -Dpvz.click cannot reach a pot: it is a clickable Table, not a TextButton, and the states it has
+    // to show otherwise take two and eight HOURS to arrive. Every hop is a real command, so this checks
+    // the plant, grow and collect paths as well as the look. It DOES spend a few gems and write to the
+    // save, which is why it is opt-in. -1 is off.
+    //
+    //   gradlew runGui -Dpvz.menu=greenhouse -Dpvz.potCheck=2 -Dpvz.smokeFrames=60
+    public static final int POT_CHECK = number("pvz.potCheck");
+
     private DebugFlags() { }
 
     private static String text(String key) {

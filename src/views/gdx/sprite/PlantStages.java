@@ -96,6 +96,9 @@ public final class PlantStages {
             addPlain(sprite, found);
         }
         if (found.isEmpty()) {
+            addIdlePrefixed(sprite, found);
+        }
+        if (found.isEmpty()) {
             addLastResort(sprite, found);
         }
         return found.isEmpty() ? List.of(ClipMap.IDLE) : found;
@@ -146,6 +149,23 @@ public final class PlantStages {
         for (String base : new String[] {ClipMap.IDLE, "idle2"}) {
             if (sprite.hasClip(base)) {
                 into.add(base);
+            }
+        }
+    }
+
+    // An idle named after the prop the entity is holding: "idle_newspaper", and any other entity whose
+    // resting pose carries a suffix none of the schemes above predict.
+    //
+    // This step exists because the LAST_RESORT list below contains "walk", and Newspaper Zombie has
+    // "walk" but no bare "idle" -- so it fell straight past every scheme and rested on its walk cycle.
+    // That is not merely the wrong pose: bounds() unions every frame of a clip, and a walk cycle sweeps
+    // the whole stride, so the box came back 808x378 against idle_newspaper's 175x204. Everything that
+    // scales art to fit a box -- a seed card, an almanac tile, the live view -- then drew the zombie at
+    // well under half the size of its neighbours. Anything literally named idle-something beats a guess.
+    private static void addIdlePrefixed(EntitySprite sprite, List<String> into) {
+        for (String clip : sprite.clips()) {
+            if (clip != null && clip.startsWith(ClipMap.IDLE)) {
+                into.add(clip);
             }
         }
     }

@@ -103,6 +103,7 @@ public final class GameRenderer {
         clocks.sweep();
         plants.sweepFlashes();
         zombies.sweepFlashes();
+        zombies.resetFootCheck();
     }
 
     // The model narrates detonations; this is where the view hears about them.

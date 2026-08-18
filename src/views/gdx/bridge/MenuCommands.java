@@ -15,17 +15,21 @@ import java.util.regex.Pattern;
 // what "you are not signed in" means and drifting from the terminal within a week.
 public final class MenuCommands {
 
-    // Three commands must never come through here, because the router answers them by blocking.
+    // Four commands must never come through here, because the router answers them by blocking.
     //
     //   register / forget password -> read stdin mid-execute for the security question
     //   start                      -> runs GameEngine.startLoop(), the terminal's blocking game loop
+    //   travel log play <game>     -> InputRouter.launchMinigame, which ends in the same startLoop()
+    //                                 for four of the five mini-games
     //
-    // On a render thread any of the three freezes the window with no error and no way out. Each has a
+    // On a render thread any of them freezes the window with no error and no way out. Each has a
     // non-blocking path a screen is meant to use instead (the non-interactive Command constructors from
-    // T3.5; StartLevelCommand on its own, letting GameScreen drive the loop). Catching them here turns
-    // "the window hangs" into a log line naming the caller's mistake.
+    // T3.5; StartLevelCommand on its own, letting GameScreen drive the loop; TravelLogScreen building
+    // the mini-game's Level from MinigameFactory itself). Catching them here turns "the window hangs"
+    // into a log line naming the caller's mistake.
     private static final Pattern BLOCKING = Pattern.compile(
-            "^\\s*(register\\s.*|forget\\s+password\\s.*|start\\s+game\\s*)$", Pattern.CASE_INSENSITIVE);
+            "^\\s*(register\\s.*|forget\\s+password\\s.*|start\\s+game\\s*|travel\\s+log\\s+play\\s.*)$",
+            Pattern.CASE_INSENSITIVE);
 
     private final InputRouter router;
 

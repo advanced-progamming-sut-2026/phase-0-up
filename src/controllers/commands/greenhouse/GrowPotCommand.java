@@ -27,12 +27,16 @@ public class GrowPotCommand implements Command {
 
     @Override
     public void execute() {
-        if (!greenHouse.isValidCoordinate(potX, potY)){
+        // The player types 1-based coordinates; GreenHouse is 0-based throughout. This is the only
+        // place the two meet.
+        int x = potX - 1;
+        int y = potY - 1;
+        if (!greenHouse.isValidCoordinate(x, y)){
             greenhouseRenderer.grow(new Result(false, "Invalid coordinate"));
             return;
         }
 
-        Pot pot = greenHouse.getPot(potX - 1, potY - 1);
+        Pot pot = greenHouse.getPot(x, y);
         pot.updateState();
 
         if (pot.isReady()){
@@ -45,7 +49,7 @@ public class GrowPotCommand implements Command {
             return;
         }
 
-        int cost = greenHouse.getGrowthCostInGems(potX - 1, potY - 1);
+        int cost = greenHouse.getGrowthCostInGems(x, y);
         Profile profile = appSession.getCurrentUser().getProfile();
 
         if (profile.getGems() < cost){
@@ -54,8 +58,13 @@ public class GrowPotCommand implements Command {
         }
 
         profile.spendGems(cost);
+        greenHouse.growPlantWithGems(x, y);
+        // Saved AFTER the growth is applied, not between the payment and it.
+        //
+        // The old order wrote the gems leaving the wallet and then finished the plant in memory only, so
+        // a player who quit before the next save had paid and still had a growing pot. Caught by reading
+        // users_database.json after a speed-up and finding GROWING with the gems already gone.
         DatabaseManager.getInstance().saveAll();
-        greenHouse.growPlantWithGems(potX - 1, potY - 1);
         greenhouseRenderer.grow(new Result(true, "Plant is ready to collect"));
     }
 }

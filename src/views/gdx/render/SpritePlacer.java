@@ -26,11 +26,20 @@ public final class SpritePlacer {
     // measures 148.8 px tall while a lawn cell is 97, and a basic zombie is 250 -- two and a half
     // tiles, which is plainly wrong.
     //
-    // The atlas gives the factor away: images named for their nominal size (peashooter_101x76) are
-    // stored as 65x49 regions -- 0.643. libPVZ draws them back at nominal size, so everything arrives
-    // 1/0.643 too big for a 768-tall background. Applying it here puts a Peashooter at 96.7 px, almost
-    // exactly one tile, and a zombie at 1.7 tiles.
-    public static final float SPRITE_SCALE = 0.643f;
+    // The factor is exactly 1/1.5625 = 0.64, which libPVZ's author confirms is the ratio between the
+    // animations and the backgrounds: either the characters go up by 1.5625 or the background comes down
+    // by 0.64. We shrink the characters, because the background is what the lane geometry is measured
+    // against.
+    //
+    // Was 0.643 here, estimated from a single sample -- IMAGE_PLANT_PEASHOOTER's nominal 101x76 is packed
+    // as a 65x49 region, and 65/101 is 0.6436. That is rounding noise: packed sizes are whole pixels, so
+    // every region is out by up to half a pixel in each axis. Averaged over the 16,064 atlas regions whose
+    // ids carry their nominal size, the ratio is 0.6407 wide and 0.6409 tall, and 0.64 lands within a
+    // pixel of the packed size in both axes for every one of them.
+    //
+    // The correction is under half a percent -- about one pixel on a zombie -- so this changes nothing
+    // visible. It is here so the number is the real one rather than an artefact of how it was measured.
+    public static final float SPRITE_SCALE = 0.64f;
 
     private SpritePlacer() { }
 

@@ -212,12 +212,77 @@ public final class SpriteRegistry {
         // Part names are read once here rather than per draw: ArmorVisibility asks "does this zombie
         // have a cone part?" every frame for every zombie on the lawn.
         Set<String> parts = new LinkedHashSet<>();
+        Set<String> drawable = new LinkedHashSet<>();
+        Map<String, Set<String>> descendants = new HashMap<>();
         try {
-            collectParts(player.getParts(entry.path), parts);
+            PamPlayer.AnimationPart tree = player.getParts(entry.path);
+            collectParts(tree, parts);
+            collectDrawable(tree, drawable);
+            collectDescendants(tree, descendants);
         } catch (RuntimeException e) {
             Gdx.app.log("SpriteRegistry", "no part list for " + entry.path + " (" + e + ")");
         }
-        return new PamEntitySprite(player, entry.path, entry.clips, parts, entry.durations);
+        return new PamEntitySprite(player, entry.path, entry.clips, parts, drawable, descendants,
+                entry.durations);
+    }
+
+    // The parts that actually carry an image, as opposed to the groups that hold them.
+    //
+    // A part tree has three kinds of node: ancestors like "root", groups like "zombie_armor_brick_norm"
+    // whose children are themselves groups, and nodes with a resource child, which are the things drawn.
+    // Only the last kind may be unioned to measure an extent -- ask libPVZ for "root" and it hands back
+    // the whole animation's box, which is how a first attempt at excluding a zombie's hats came back with
+    // the hats still in it.
+    private static void collectDrawable(PamPlayer.AnimationPart part,
+                                        java.util.Collection<String> into) {
+        if (part == null) {
+            return;
+        }
+        if (part.name != null && !part.name.isBlank() && !part.resource && hasResourceChild(part)) {
+            into.add(part.name);
+        }
+        if (part.children != null) {
+            for (PamPlayer.AnimationPart child : part.children) {
+                collectDrawable(child, into);
+            }
+        }
+    }
+
+    private static boolean hasResourceChild(PamPlayer.AnimationPart part) {
+        if (part.children == null) {
+            return false;
+        }
+        for (PamPlayer.AnimationPart child : part.children) {
+            if (child.resource) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Every name under each name, itself included. Hiding a group has to hide what it contains: a brick
+    // helmet is "zombie_armor_brick_norm" holding a brick, two cement highlights and a trowel, so naming
+    // only the group leaves four drawable pieces of it still being measured.
+    private static Set<String> collectDescendants(PamPlayer.AnimationPart part,
+                                                  Map<String, Set<String>> into) {
+        Set<String> mine = new LinkedHashSet<>();
+        if (part == null) {
+            return mine;
+        }
+        if (part.name != null && !part.name.isBlank()) {
+            mine.add(part.name);
+        }
+        if (part.children != null) {
+            for (PamPlayer.AnimationPart child : part.children) {
+                mine.addAll(collectDescendants(child, into));
+            }
+        }
+        if (part.name != null && !part.name.isBlank()) {
+            // merge rather than overwrite: a name can appear in more than one branch (the armor pieces are
+            // listed again under "_particles"), and both branches' children belong to it.
+            into.computeIfAbsent(part.name, key -> new LinkedHashSet<>()).addAll(mine);
+        }
+        return mine;
     }
 
     private AnimationEntry lookup(String entityName) {

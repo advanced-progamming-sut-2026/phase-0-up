@@ -38,7 +38,7 @@ public final class ConfirmDialog extends WidgetGroup {
     private static final float FILL_INSET = 18f;
 
     private ConfirmDialog(Assets assets, Skin skin, String title, String body,
-                          String confirmText, Runnable onConfirm) {
+                          String confirmText, Runnable onConfirm, boolean cancellable) {
         setFillParent(true);
 
         Table scrim = new Table();
@@ -56,12 +56,12 @@ public final class ConfirmDialog extends WidgetGroup {
 
         Table layer = new Table();
         layer.setFillParent(true);
-        layer.add(panel(skin, title, body, confirmText, onConfirm));
+        layer.add(panel(skin, title, body, confirmText, onConfirm, cancellable));
         addActor(layer);
     }
 
     private Table panel(Skin skin, String title, String body, String confirmText,
-                        Runnable onConfirm) {
+                        Runnable onConfirm, boolean cancellable) {
         Table panel = new Table();
         Drawable border = MenuStyles.drawable(skin, MenuStyles.PANEL_BORDER);
         Drawable fill = MenuStyles.panelFill(skin);
@@ -82,9 +82,11 @@ public final class ConfirmDialog extends WidgetGroup {
 
         Table buttons = new Table();
         buttons.add(button(skin, confirmText, MenuStyles.BUTTON_GREEN, onConfirm))
-                .width(230f).height(56f).padRight(12f);
-        buttons.add(button(skin, "Cancel", MenuStyles.BUTTON_BROWN, null))
-                .width(170f).height(56f);
+                .width(230f).height(56f).padRight(cancellable ? 12f : 0f);
+        if (cancellable) {
+            buttons.add(button(skin, "Cancel", MenuStyles.BUTTON_BROWN, null))
+                    .width(170f).height(56f);
+        }
         panel.add(buttons).row();
         return panel;
     }
@@ -118,6 +120,14 @@ public final class ConfirmDialog extends WidgetGroup {
     // keep a reference or remember to close it.
     public static void show(Stage stage, Assets assets, Skin skin, String title, String body,
                             String confirmText, Runnable onConfirm) {
-        stage.addActor(new ConfirmDialog(assets, skin, title, body, confirmText, onConfirm));
+        stage.addActor(new ConfirmDialog(assets, skin, title, body, confirmText, onConfirm, true));
+    }
+
+    // The same panel with nothing to decide: it reports something that has ALREADY happened, so there
+    // is no Cancel, because there is nothing left to cancel. The greenhouse harvest uses it -- a
+    // toast says what the model did, and this says it loudly enough to feel like a reward.
+    public static void announce(Stage stage, Assets assets, Skin skin, String title, String body,
+                                String dismissText) {
+        stage.addActor(new ConfirmDialog(assets, skin, title, body, dismissText, null, false));
     }
 }

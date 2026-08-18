@@ -330,6 +330,15 @@ public final class CollectionScreen extends MenuScreen {
             return;
         }
         List<String> aliases = zombiesInOrder();
+        // -Dpvz.entity=<alias> wins. See DebugFlags: the grid scrolls and a screenshot run cannot reach
+        // past its third row, so this is the only way to look at most of the roster unattended.
+        String wanted = views.gdx.core.DebugFlags.ENTITY;
+        for (String alias : aliases) {
+            if (alias.equalsIgnoreCase(wanted)) {
+                selectedZombie = alias;
+                return;
+            }
+        }
         for (String alias : aliases) {
             if (hasSeen(alias)) {
                 selectedZombie = alias;
@@ -473,13 +482,32 @@ public final class CollectionScreen extends MenuScreen {
 
     // The live view: the entity playing its resting animation on a patch of its own lawn.
     private Table stage(views.gdx.sprite.EntitySprite sprite) {
+        return stage(sprite, null);
+    }
+
+    private Table stage(views.gdx.sprite.EntitySprite sprite,
+                        java.util.Map<String, Boolean> parts) {
         LiveEntityActor live = new LiveEntityActor(turf());
-        live.show(sprite);
+        live.show(sprite, parts);
 
         Table frame = new Table();
         frame.setBackground(context.assets().solid(STAGE_BACK));
         frame.add(live).grow().pad(4f);
         return frame;
+    }
+
+    // The hats a zombie wears, as a libPVZ visibility map.
+    //
+    // The armour is the TEMPLATE's, because the almanac has no live zombie to read a health stack from --
+    // and it has to be read from somewhere, because ZombieArmor1, ZombieArmor2 and ZombieArmor4 are one
+    // animation with three hats in it. Left unset they all drew as the same bare zombie, which is what
+    // made Conehead, Buckethead and Brick indistinguishable on this screen.
+    private java.util.Map<String, Boolean> armorParts(String alias,
+                                                      views.gdx.sprite.EntitySprite sprite) {
+        ZombieTemplate template = ZombieRegistry.getInstance().getZombieTemplateByAlias(alias);
+        return template == null
+                ? null
+                : views.gdx.sprite.ArmorVisibility.forArmorTypes(template.getArmors(), sprite);
     }
 
     // A scrap of lawn for the live view to stand on.
@@ -596,7 +624,8 @@ public final class CollectionScreen extends MenuScreen {
 
     private EntityCardActor zombieCard(String alias) {
         boolean seen = hasSeen(alias);
-        EntityIcon icon = new EntityIcon(context.sprites().get(alias));
+        views.gdx.sprite.EntitySprite sprite = context.sprites().get(alias);
+        EntityIcon icon = new EntityIcon(sprite).showing(armorParts(alias, sprite));
         if (!seen) {
             icon.tinted(SILHOUETTE);
         }
@@ -628,7 +657,8 @@ public final class CollectionScreen extends MenuScreen {
         boolean seen = hasSeen(selectedZombie);
 
         if (seen) {
-            detail.add(stage(context.sprites().get(selectedZombie)))
+            views.gdx.sprite.EntitySprite sprite = context.sprites().get(selectedZombie);
+            detail.add(stage(sprite, armorParts(selectedZombie, sprite)))
                     .size(PAGE_WIDTH, STAGE_HEIGHT).padBottom(8f).row();
         }
         detail.add(MenuStyles.label(skin, seen ? EntityNames.zombie(selectedZombie) : "? ? ?",

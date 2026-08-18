@@ -52,6 +52,29 @@ public interface EntitySprite {
     // The drawn extent of a clip, relative to the draw origin. Null when unknown.
     com.badlogic.gdx.math.Rectangle bounds(String clip);
 
+    // The same extent counting only the parts that are actually drawn.
+    //
+    // bounds() unions every frame AND every part, switched-off ones included -- so every zombie sharing
+    // the base body reports a box tall enough for the brick helmet whether or not it is wearing one. That
+    // is invisible on the lawn, where entities are anchored by their feet, and very visible anywhere art
+    // is scaled to FIT a box: a Conehead's card sized off that box draws it small, with a hat's worth of
+    // dead space above its head.
+    //
+    // `hidden` names the parts to leave out. Empty or null gives exactly bounds(clip).
+    com.badlogic.gdx.math.Rectangle visibleBounds(String clip, java.util.Set<String> hidden);
+
+    // One part's own extent over a whole clip, unioned across its frames. Null when the clip never poses
+    // it. This is the primitive the two above are built from, and what answers "which part is making this
+    // box so big" -- the question no amount of staring at a screenshot can.
+    com.badlogic.gdx.math.Rectangle partBounds(String clip, String partName);
+
+    // One part's box for each frame of a clip, in frame order. Null when the clip never poses it.
+    //
+    // Where partBounds flattens the motion, this keeps it -- which is the whole point for anything that
+    // has to follow a part THROUGH a cycle rather than know how far it ranges. See WalkCycle, which reads
+    // the ground_swatch marker's path to stop zombies' feet skating.
+    com.badlogic.gdx.math.Rectangle[] partBoundsByFrame(String clip, String partName);
+
     // The extent to anchor this entity by, for ALL of its clips.
     //
     // Deliberately not per-clip. bounds() unions every frame of a clip, and some clips park hidden

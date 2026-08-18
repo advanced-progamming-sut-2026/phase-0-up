@@ -738,7 +738,7 @@ public final class AdventureScreen extends MenuScreen {
         bar.defaults().width(178f).height(46f).padRight(8f);
 
         bar.add(navButton("Almanac", "menu enter collection", MenuStyles.BUTTON_BROWN));
-        bar.add(storeButton());
+        bar.add(navButton("Greenhouse", "menu greenhouse", MenuStyles.BUTTON_BROWN));
         bar.add(navButton("Travel Log", "menu travel-log", MenuStyles.BUTTON_BROWN));
         bar.add(navButton("Leaderboard", "menu leaderboard", MenuStyles.BUTTON_BROWN));
         bar.add(navButton("Scoring Game", "menu scoring-game", MenuStyles.BUTTON_GREEN));
@@ -752,22 +752,6 @@ public final class AdventureScreen extends MenuScreen {
         });
         bar.add(back).padRight(0f);
         return bar;
-    }
-
-    // The store is behind the greenhouse in the model's menu graph -- "menu greenhouse" then
-    // "enter shop" -- and the greenhouse has no screen until Phase 6. Both commands are posted in the
-    // same frame, so the session lands on SHOP_MENU before ScreenManager next looks and the player
-    // never sees the menu in between. This collapses to a plain nav button once T6.1 lands.
-    private TextButton storeButton() {
-        TextButton button = MenuStyles.button(skin, "Store", MenuStyles.BUTTON_BROWN);
-        button.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                commands.submit("menu greenhouse");
-                commands.submit("enter shop");
-            }
-        });
-        return button;
     }
 
     private TextButton navButton(String text, String command, String style) {

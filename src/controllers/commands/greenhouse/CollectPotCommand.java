@@ -27,12 +27,16 @@ public class CollectPotCommand implements Command {
     @Override
     public void execute() {
         GreenHouse greenHouse = appSession.getCurrentUser().getProfile().getMyGreenHouse();
-        if (!greenHouse.isValidCoordinate(potX, potY)){
+        // The player types 1-based coordinates; GreenHouse is 0-based throughout. This is the only
+        // place the two meet.
+        int x = potX - 1;
+        int y = potY - 1;
+        if (!greenHouse.isValidCoordinate(x, y)){
             greenhouseRenderer.plantPot(new Result(false, "Invalid coordinate"));
             return;
         }
 
-        Pot pot = greenHouse.getPot(potX - 1, potY - 1);
+        Pot pot = greenHouse.getPot(x, y);
 
         pot.updateState();
 
@@ -46,7 +50,7 @@ public class CollectPotCommand implements Command {
             return;
         }
 
-        GreenHousePlant harvested = greenHouse.collect(potX - 1, potY - 1);
+        GreenHousePlant harvested = greenHouse.collect(x, y);
         Profile profile = appSession.getCurrentUser().getProfile();
 
         if (harvested.isMarigold()){

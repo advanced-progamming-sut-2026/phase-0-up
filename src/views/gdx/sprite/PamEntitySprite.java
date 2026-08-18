@@ -20,6 +20,10 @@ final class PamEntitySprite implements EntitySprite {
     private final String pamPath;
     private final Set<String> availableClips;
     private final Set<String> availableParts;
+    // The parts that carry an image, and the descendant closure of every name. Both exist for
+    // visibleBounds -- see SpriteRegistry.collectDrawable and collectDescendants.
+    private final Set<String> drawableParts;
+    private final Map<String, Set<String>> descendants;
     private final Map<String, Float> clipDurations;
     private final Map<String, ClipRef> clipCache = new HashMap<>();
 
@@ -28,11 +32,14 @@ final class PamEntitySprite implements EntitySprite {
     private final Set<String> warnedClips = new java.util.HashSet<>();
 
     PamEntitySprite(PamPlayer player, String pamPath, Set<String> availableClips,
-                    Set<String> availableParts, Map<String, Float> clipDurations) {
+                    Set<String> availableParts, Set<String> drawableParts,
+                    Map<String, Set<String>> descendants, Map<String, Float> clipDurations) {
         this.player = player;
         this.pamPath = pamPath;
         this.availableClips = availableClips;
         this.availableParts = availableParts;
+        this.drawableParts = drawableParts;
+        this.descendants = descendants;
         this.clipDurations = clipDurations;
     }
 
@@ -129,6 +136,104 @@ final class PamEntitySprite implements EntitySprite {
                 return null;
             }
         });
+    }
+
+    private final Map<String, com.badlogic.gdx.math.Rectangle> visibleCache = new HashMap<>();
+
+    // Built by unioning the per-part boxes of everything NOT hidden, which is the only way round it:
+    // libPVZ can report one part's extent but not "the extent of this subset", and bounds() cannot be
+    // shrunk after the fact because there is no telling which part reached the edge.
+    //
+    // Cached per clip and hidden-set. It walks every part and every frame -- some zombies have ninety
+    // parts -- so this is fine for a card built once and ruinous per frame. Nothing calls it per frame.
+    @Override
+    public com.badlogic.gdx.math.Rectangle visibleBounds(String clip, Set<String> hidden) {
+        if (hidden == null || hidden.isEmpty()) {
+            return bounds(clip);
+        }
+        String key = clip + "#" + new java.util.TreeSet<>(hidden);
+        com.badlogic.gdx.math.Rectangle cached = visibleCache.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        ClipRef ref = resolve(clip);
+        if (ref == null) {
+            return null;
+        }
+        com.badlogic.gdx.math.Rectangle union = union(ref, hidden);
+        // A subset that measured to nothing means every part was skipped or unmeasurable. The full box is
+        // wrong but drawable; null would blank the entity.
+        com.badlogic.gdx.math.Rectangle answer = union == null ? bounds(clip) : union;
+        if (answer != null) {
+            visibleCache.put(key, answer);
+        }
+        return answer;
+    }
+
+    @Override
+    public com.badlogic.gdx.math.Rectangle[] partBoundsByFrame(String clip, String partName) {
+        ClipRef ref = resolve(clip);
+        if (ref == null || partName == null) {
+            return null;
+        }
+        try {
+            return player.partBoundsByFrame(ref, partName);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public com.badlogic.gdx.math.Rectangle partBounds(String clip, String partName) {
+        com.badlogic.gdx.math.Rectangle[] frames = partBoundsByFrame(clip, partName);
+        if (frames == null) {
+            return null;
+        }
+        com.badlogic.gdx.math.Rectangle union = null;
+        for (com.badlogic.gdx.math.Rectangle frame : frames) {
+            if (frame == null || frame.width <= 0f || frame.height <= 0f) {
+                continue;
+            }
+            union = union == null ? new com.badlogic.gdx.math.Rectangle(frame) : union.merge(frame);
+        }
+        return union;
+    }
+
+    // Unions the drawable parts that survive `hidden`, expanded to descendants first.
+    //
+    // Only DRAWABLE parts, never the groups above them: libPVZ answers partBounds for any node, and for an
+    // ancestor it hands back everything underneath. Asking about "root" therefore returns exactly
+    // bounds(clip) -- which is how the first attempt at this excluded a zombie's three hats and got a box
+    // with all three still in it, byte for byte.
+    private com.badlogic.gdx.math.Rectangle union(ClipRef ref, Set<String> hidden) {
+        Set<String> excluded = new java.util.HashSet<>();
+        for (String name : hidden) {
+            Set<String> family = descendants.get(name);
+            excluded.addAll(family == null ? Set.of(name) : family);
+        }
+
+        com.badlogic.gdx.math.Rectangle union = null;
+        for (String part : drawableParts) {
+            if (excluded.contains(part)) {
+                continue;
+            }
+            com.badlogic.gdx.math.Rectangle[] frames;
+            try {
+                frames = player.partBoundsByFrame(ref, part);
+            } catch (RuntimeException e) {
+                continue;   // a part this clip never poses; not an error
+            }
+            if (frames == null) {
+                continue;
+            }
+            for (com.badlogic.gdx.math.Rectangle frame : frames) {
+                if (frame == null || frame.width <= 0f || frame.height <= 0f) {
+                    continue;
+                }
+                union = union == null ? new com.badlogic.gdx.math.Rectangle(frame) : union.merge(frame);
+            }
+        }
+        return union;
     }
 
     private com.badlogic.gdx.math.Rectangle anchor;

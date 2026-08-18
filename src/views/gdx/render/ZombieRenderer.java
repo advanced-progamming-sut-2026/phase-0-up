@@ -9,6 +9,7 @@ import views.gdx.sprite.ArmorVisibility;
 import views.gdx.sprite.ClipMap;
 import views.gdx.sprite.EntitySprite;
 import views.gdx.sprite.SpriteRegistry;
+import views.gdx.sprite.WalkCycle;
 
 import java.util.Map;
 
@@ -62,7 +63,8 @@ public final class ZombieRenderer {
         float modelX = (float) zombie.getMovement().getPositionX();
         int modelLane = zombie.getMovement().getPositionY();
 
-        float x = lawn.worldX(interpolator.x(zombie, modelX, alpha));
+        float x = lawn.worldX(interpolator.x(zombie, modelX, alpha)) + footPlanting(zombie, sprite,
+                clip, stateTime);
         float lane = interpolator.lane(zombie, modelLane, alpha);
         float footY = laneFootY(lane);
 
@@ -93,6 +95,76 @@ public final class ZombieRenderer {
     // Called once per frame by GameRenderer: drops entities that were not drawn.
     void sweepFlashes() {
         flashes.sweep();
+    }
+
+    // ---- foot planting ---------------------------------------------------------------------------
+
+    // Built once per animation and clip. WalkCycle reads every frame of a part to find its path, which is
+    // far too much work to repeat per zombie per frame; the answer only depends on the artwork.
+    private final Map<String, WalkCycle> walks = new java.util.HashMap<>();
+    // Clips already found to have no walk in them. null is a legitimate answer from WalkCycle.of, and
+    // computeIfAbsent would retry the whole scan every frame for every idle zombie.
+    private final java.util.Set<String> notWalks = new java.util.HashSet<>();
+
+    // How far to shift the drawing so the feet stay planted, in world pixels. Zero for anything that is
+    // not walking -- see WalkCycle.
+    //
+    // Drawing only. The model's x is untouched, so collisions, lane logic and everything the server would
+    // compute are exactly as they were; the zombie simply travels between the same two points in its own
+    // rhythm rather than at a constant glide.
+    private float footPlanting(Zombie zombie, EntitySprite sprite, String clip, float stateTime) {
+        WalkCycle walk = walkFor(zombie.getAlias(), sprite, clip);
+        if (walk == null) {
+            return 0f;
+        }
+        // One cycle's travel, in world pixels, from the MODEL: speed is cells per tick, so this follows a
+        // chilled zombie down to half pace and a hypnotised one back the other way.
+        double perTick = zombie.getMovement().getSpeed() * utils.Constants.ZOMBIE_SPEED_SCALE;
+        float stride = (float) (perTick * utils.Constants.TICKS_PER_SECOND
+                * sprite.clipDuration(clip)) * lawn.cellWidth();
+        // Zombies walk right-to-left, so "ahead" is -x; a hypnotised one has turned round.
+        float direction = zombie.getState().isHypnotized() ? 1f : -1f;
+        float lead = walk.lead(stateTime);
+        reportFootPlanting(zombie, sprite, clip, stateTime, lead, stride);
+        return direction * stride * lead;
+    }
+
+    // -Dpvz.footCheck=1. See DebugFlags: the effect is motion, so the curve is what can be checked.
+    private boolean footCheckDone;
+
+    private void reportFootPlanting(Zombie zombie, EntitySprite sprite, String clip, float stateTime,
+                                    float lead, float stride) {
+        if (!views.gdx.core.DebugFlags.FOOT_CHECK || footCheckDone) {
+            return;
+        }
+        float duration = sprite.clipDuration(clip);
+        com.badlogic.gdx.Gdx.app.log("FootCheck", String.format(
+                "%s [%s] phase %.3f  lead %+.3f  offset %+6.1f px  (stride %.1f px/cycle, %.2fs)",
+                zombie.getAlias(), clip, duration <= 0f ? 0f : stateTime / duration, lead,
+                -lead * stride, stride, duration));
+        // One zombie only, and only while it is walking: twelve of them at 60 fps is a wall of text with
+        // no more information in it than one has.
+        footCheckDone = true;
+    }
+
+    // Cleared each frame by GameRenderer's sweep, so the log is one line per frame rather than one ever.
+    void resetFootCheck() {
+        footCheckDone = false;
+    }
+
+    private WalkCycle walkFor(String alias, EntitySprite sprite, String clip) {
+        String key = alias + '#' + clip;
+        WalkCycle cached = walks.get(key);
+        if (cached != null || notWalks.contains(key)) {
+            return cached;
+        }
+        WalkCycle walk = WalkCycle.of(sprite, clip);
+        if (walk == null) {
+            notWalks.add(key);
+        } else {
+            walks.put(key, walk);
+        }
+        return walk;
     }
 
     // Fractional lane -> foot line, so a lane switch slides instead of snapping.

@@ -63,7 +63,12 @@ dependencies {
     // character frames, so there is no way to draw a plant or zombie without a PAM runtime. Always used
     // through views.gdx.sprite.EntitySprite, never called directly from a renderer -- see
     // documents/phase-2-roadmap.md, Part 3.
-    implementation 'com.github.pizpizi:libPVZ:v0.1.5'
+    // v0.1.6 for partBounds/partBoundsByFrame. bounds() unions every frame AND every part, including
+    // parts that are switched OFF -- so a Conehead's box carries the brick helmet it is not wearing, and
+    // every card that scales art to fit that box draws the zombie too small and too low. The per-part
+    // methods are what let a box be built from only what is actually drawn. Purely additive over v0.1.5
+    // (diffed: nothing removed).
+    implementation 'com.github.pizpizi:libPVZ:v0.1.6'
 
     // LibGDX 1.14.2 pulls LWJGL 3.3.3, which predates the JNI version JDK 22+ reports. On the JDK 25
     // installed here that prints "[LWJGL] Unsupported JNI version detected, this may result in a crash"

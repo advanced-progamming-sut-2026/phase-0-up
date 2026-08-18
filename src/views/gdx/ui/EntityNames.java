@@ -19,7 +19,10 @@ public final class EntityNames {
             Map.entry("zombiedefault", "Browncoat Zombie"),
             Map.entry("zombiearmor1", "Conehead Zombie"),
             Map.entry("zombiearmor2", "Buckethead Zombie"),
-            Map.entry("zombiearmor4", "Helmet Zombie"),
+            // "Brick", not "Helmet": ArmorType.BRICK is what the model calls it and
+            // zombie_armor_brick_norm is what the animation calls it, so the almanac now agrees with
+            // both instead of inventing a third name for the same hat.
+            Map.entry("zombiearmor4", "Brick Zombie"),
             Map.entry("zombiedarkarmor3", "Knight Zombie"),
             Map.entry("zombiebeachfisherman", "Fisherman Zombie"),
             Map.entry("zombiebeachoctopus", "Octopus Zombie"),
