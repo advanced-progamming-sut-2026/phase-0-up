@@ -10,7 +10,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import models.greenhouse.GreenHouse;
 import models.greenhouse.GreenHousePlant;
@@ -27,6 +26,7 @@ import views.gdx.sprite.EntitySprite;
 import views.gdx.ui.ConfirmDialog;
 import views.gdx.ui.MenuStyles;
 import views.gdx.ui.PotTile;
+import views.gdx.ui.WalletBar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,15 +79,11 @@ public final class GreenhouseScreen extends MenuScreen {
     private static final String BANNER_ART = "IMAGE_ZEN_GARDEN_FINISH_TIMER_BACKGROUND";
     private static final String GEM_ART = "IMAGE_ZEN_GARDEN_GEM_LARGE";
 
-    private static final String ICON_COINS = "image_ui_coins_stack_0";
-    private static final String ICON_GEMS = "image_ui_gems_stack_1";
 
     // The shop's id for a greenhouse pot. Pots are sold nowhere else, which is why the Buy button has to
     // go through the shop -- see buyPot.
     private static final int SHOP_ITEM_POT = 0;
 
-    private static final Color COIN_TEXT = new Color(1f, 0.88f, 0.45f, 1f);
-    private static final Color GEM_TEXT = new Color(0.55f, 0.82f, 1f, 1f);
     private static final Color DIM = new Color(0.90f, 0.88f, 0.84f, 1f);
     // Behind the title and the button bar only. The greenhouse art is bright -- pale mats, sunlit glass --
     // and outlined text alone is not enough over the top of it.
@@ -96,8 +92,7 @@ public final class GreenhouseScreen extends MenuScreen {
     private final List<PotTile> tiles = new ArrayList<>();
 
     private Group slots;
-    private Label coins;
-    private Label gems;
+    private WalletBar wallet;
     private int potCheckFrame;
 
     public GreenhouseScreen(GdxContext context) {
@@ -308,8 +303,7 @@ public final class GreenhouseScreen extends MenuScreen {
     protected void refresh() {
         runPotCheck();
         Profile profile = profile();
-        coins.setText(profile == null ? "0" : String.valueOf(profile.getCoins()));
-        gems.setText(profile == null ? "0" : String.valueOf(profile.getGems()));
+        wallet.refresh(profile);
 
         for (PotTile tile : tiles) {
             Pot pot = pot(tile.potX(), tile.potY());
@@ -375,10 +369,7 @@ public final class GreenhouseScreen extends MenuScreen {
     }
 
     private Table header() {
-        coins = MenuStyles.label(skin, "0", MenuStyles.TEXT);
-        coins.setColor(COIN_TEXT);
-        gems = MenuStyles.label(skin, "0", MenuStyles.TEXT);
-        gems.setColor(GEM_TEXT);
+        wallet = new WalletBar(skin);
 
         Table bar = new Table();
         bar.setBackground(context.assets().solid(CHROME));
@@ -387,10 +378,7 @@ public final class GreenhouseScreen extends MenuScreen {
         bar.add(subtitle("Plant a pot, wait a while, come back for something good."))
                 .padLeft(18f).left();
         bar.add().expandX();
-        bar.add(icon(ICON_COINS)).size(30f).padRight(6f);
-        bar.add(coins).minWidth(80f).left().padRight(18f);
-        bar.add(icon(ICON_GEMS)).size(30f).padRight(6f);
-        bar.add(gems).minWidth(70f).left();
+        bar.add(wallet).right();
         return bar;
     }
 
@@ -418,11 +406,6 @@ public final class GreenhouseScreen extends MenuScreen {
         bar.add(store).width(200f).height(52f).padRight(12f);
         bar.add(back).width(170f).height(52f);
         return bar;
-    }
-
-    private Actor icon(String id) {
-        Drawable art = MenuStyles.drawable(skin, id);
-        return art == null ? new Table() : new Image(art);
     }
 
     private Label subtitle(String text) {

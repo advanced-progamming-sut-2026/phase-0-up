@@ -39,6 +39,23 @@ public class BowlingType extends Entity {
         setY((int) Math.round(py));
     }
 
+    // The two headings a struck nut can leave on: down-and-forward, or up-and-forward.
+    private static final double DEFLECT_DOWN = 45.0;
+    private static final double DEFLECT_UP = 315.0;
+
+    // Bounces off a zombie: 45 degrees, and ALWAYS still travelling toward the horde.
+    //
+    // This replaces rotate(45), which ACCUMULATED. Two hits put the nut at 90 -- straight down its own
+    // column, hitting nothing -- and three at 135, rolling backwards up the lawn away from the house.
+    // A bowling nut that retreats is not a ricochet, and the doc's rule is a 45-degree turn per strike,
+    // not 45 degrees added to whatever it was doing.
+    //
+    // Which way it goes alternates, so a nut ploughing through a queue zig-zags between the lanes
+    // instead of committing to one diagonal and leaving the board.
+    public void deflect() {
+        headingDeg = headingDeg > 0.0 && headingDeg < 180.0 ? DEFLECT_UP : DEFLECT_DOWN;
+    }
+
     // Rotates the heading by the given signed degrees (kept in [0, 360)).
     public void rotate(double degrees) {
         headingDeg = (headingDeg + degrees) % 360.0;

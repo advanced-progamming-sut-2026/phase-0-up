@@ -148,6 +148,12 @@ public final class TravelLogScreen extends MenuScreen {
         rebuild();
     }
 
+    // Four filters and a door.
+    //
+    // ALL/MAIN/DAILY/EPIC narrow the same list; MINIGAMES leaves it entirely and shows something else,
+    // so it is set apart -- purple among the browns, with a gap in front of it. Made to look like a
+    // fifth filter it was routinely missed, which matters because it is the only way into the
+    // mini-games from anywhere in the game.
     private Table tabs() {
         Table row = new Table();
         addTab(row, Page.ALL, "All");
@@ -159,7 +165,8 @@ public final class TravelLogScreen extends MenuScreen {
     }
 
     private void addTab(Table row, Page target, String text) {
-        TextButton button = MenuStyles.button(skin, text, MenuStyles.BUTTON_BROWN);
+        boolean door = target == Page.MINIGAMES;
+        TextButton button = MenuStyles.button(skin, text, idleStyle(target));
         button.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
@@ -168,13 +175,18 @@ public final class TravelLogScreen extends MenuScreen {
             }
         });
         tabs.put(target, button);
-        row.add(button).width(target == Page.MINIGAMES ? 168f : 116f).height(46f).padRight(6f);
+        row.add(button).width(door ? 168f : 116f).height(46f).padRight(6f)
+                .padLeft(door ? 22f : 0f);
+    }
+
+    private static String idleStyle(Page target) {
+        return target == Page.MINIGAMES ? MenuStyles.BUTTON_PURPLE : MenuStyles.BUTTON_BROWN;
     }
 
     private void rebuild() {
         for (java.util.Map.Entry<Page, TextButton> entry : tabs.entrySet()) {
             entry.getValue().setStyle(skin.get(entry.getKey() == page
-                    ? MenuStyles.BUTTON_GREEN : MenuStyles.BUTTON_BROWN,
+                    ? MenuStyles.BUTTON_GREEN : idleStyle(entry.getKey()),
                     TextButton.TextButtonStyle.class));
         }
         list.clearChildren();

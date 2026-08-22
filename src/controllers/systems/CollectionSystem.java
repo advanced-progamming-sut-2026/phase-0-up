@@ -71,7 +71,7 @@ public class CollectionSystem {
         }
 
         int currentLevel = profile.getPlantsLevels().getOrDefault(plantName, 1);
-        if (currentLevel >= 4){
+        if (currentLevel >= Constants.PLANT_MAX_LEVEL){
             renderer.plantMaxLevel(plantName);
             return;
         }

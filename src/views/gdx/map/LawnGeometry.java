@@ -45,9 +45,19 @@ public final class LawnGeometry {
         // column pitch at 82.1 world px and the row pitch at 97.2. Tiles really are taller than they
         // are wide -- that is the board's perspective, not a mistake.
         //
-        // The four worlds share one lawn footprint (all four backgrounds are the same 278/1024/673
-        // three-slice layout), so one set of numbers covers them. Split into a switch the moment one
-        // of them actually disagrees.
+        // The four worlds share one lawn footprint (all four backgrounds are the same three-slice
+        // layout), so one set of numbers covers them. Verified with the grid overlay against all four
+        // backgrounds: every one lands on its painted seams at these values.
+        //
+        // Frostbite Caves appeared to disagree by 11px and briefly had its own originY here. It does not
+        // disagree. Its BACKGROUND was drawn wrong: the ICEAGE middle slice is 785 tall against its
+        // sides' 768, and BackgroundRenderer bottom-aligned all three, floating the painted lawn 17px
+        // up. Two layers of compensation had accumulated for that one bug -- DECAL_CENTRE fudged to 0.40
+        // and then this origin to 95 -- each fixing part of it in the wrong place and neither matching
+        // the real 17. Fixing the slice alignment made both unnecessary.
+        //
+        // The lesson is cheap to reuse: when the lawn looks misaligned, check the BACKGROUND against the
+        // grid overlay before re-tuning anything here.
         return new LawnGeometry(528f, 84f, 82f, 97f);
     }
 

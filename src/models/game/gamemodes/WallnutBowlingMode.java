@@ -233,7 +233,7 @@ public class WallnutBowlingMode extends StandardMode {
         switch (ball.getKind()) {
             case BOWLING:
                 zombie.getHealth().applyDamage(normalZombieHp, Element.NEUTRAL, null);
-                ball.rotate(45);                     // 45-degree turn after striking a zombie
+                ball.deflect();                      // 45 degrees, still forward -- see BowlingType
                 lastHit.put(ball, zombie);
                 break;
             case EXPLODE:

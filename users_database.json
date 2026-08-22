@@ -911,6 +911,15 @@
           "date": "2026-07-31",
           "read": true,
           "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 42,
+          "title": "A New Sprout Joins the Fight",
+          "description": "Magnet-shroom has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-08-15",
+          "read": false,
+          "type": "PLANT_UNLOCK"
         }
       ],
       "unlockedPlants": [
@@ -931,13 +940,15 @@
         "sun-shroom",
         "primal potato mine",
         "cabbage-pult",
-        "lily pad"
+        "lily pad",
+        "magnet-shroom"
       ],
       "lockedPlants": [],
       "ownedSeedPackets": {
         "potato mine": 4,
         "iceberg lettuce": 2,
         "peashooter": 2,
+        "magnet-shroom": 1,
         "lily pad": 1,
         "sunflower": 2,
         "twin sunflower": 2,
@@ -958,6 +969,7 @@
         "potato mine": 1,
         "iceberg lettuce": 1,
         "peashooter": 1,
+        "magnet-shroom": 1,
         "lily pad": 1,
         "sunflower": 1,
         "twin sunflower": 1,
@@ -1086,7 +1098,7 @@
         "Vasebreaker": 1,
         "Wall-nut Bowling": 1
       },
-      "dailyQuestsDone": 10,
+      "dailyQuestsDone": 12,
       "noneDailyQuestsDone": 3,
       "hasBoughtDailyOfferToday": false,
       "seenZombieAliases": [
@@ -1121,8 +1133,9 @@
       ],
       "winStreakAtMaxDifficulty": 0,
       "zombieKillsByChapter": {
-        "ancient_egypt": 22,
-        "frostbite_caves": 7
+        "ancient_egypt": 40,
+        "frostbite_caves": 7,
+        "dark_ages": 28
       },
       "completedDailyQuestIds": [],
       "questDayStamp": "2026-08-17",
@@ -1130,6 +1143,19 @@
       "mowerlessFirstColumnKillsToday": 0,
       "killsByPlantToday": {},
       "lawnmowerKillsTotal": 18,
+      "completedDailyQuestIds": [
+        "pro_plant_player",
+        "pro_demolisher"
+      ],
+      "questDayStamp": "2026-08-15",
+      "sunCollectedToday": 2675,
+      "mowerlessFirstColumnKillsToday": 8,
+      "killsByPlantToday": {
+        "peashooter": 13,
+        "potato mine": 3,
+        "cherry bomb": 5
+      },
+      "lawnmowerKillsTotal": 51,
       "gameSpeed": 1,
       "showGrid": false,
       "debugMode": true

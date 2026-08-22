@@ -413,6 +413,14 @@ public class VaseBreakerMode extends StandardMode {
         return droppedSeeds.containsKey(key(x, y));
     }
 
+    // Which plant is lying on that tile, or null if nothing is. The terminal only ever needed to know
+    // THAT a packet was there -- one character on a grid -- but a view that draws the packet has to
+    // draw the right plant on it.
+    public String droppedSeedAt(int x, int y) {
+        DroppedSeed seed = droppedSeeds.get(key(x, y));
+        return seed == null ? null : seed.plantType;
+    }
+
     public int droppedSeedCount() {
         return droppedSeeds.size();
     }

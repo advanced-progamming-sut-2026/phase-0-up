@@ -18,11 +18,21 @@ public final class ToolState {
         /** The shovel is out; clicking a tile digs up whatever is on it. */
         SHOVEL,
         /** Plant food is armed; clicking a plant feeds it. */
-        PLANT_FOOD
+        PLANT_FOOD,
+        /** A bowling nut is off the conveyor; clicking a tile behind the red line rolls it. */
+        NUT,
+        /** A zombie is off I-Zombie's roster; clicking a tile right of the red line summons it. */
+        ZOMBIE
     }
 
     private Tool tool = Tool.NONE;
-    private String seedName;
+
+    // What is held, whatever it is. Exactly one thing can be held at a time, so one field is the honest
+    // shape -- and every reader goes through an accessor that checks the TOOL first, so asking for the
+    // seed while a nut is armed answers null rather than a stale name. Three parallel fields would let a
+    // mismatched read return something plausible and build a command the router matches nothing for,
+    // which fails silently; this cannot.
+    private String held;
 
     public Tool tool() {
         return tool;
@@ -31,7 +41,25 @@ public final class ToolState {
     // The plant this seed packet will place, in the template's own display casing ("Snow Pea"), which
     // is what the plant command expects. Null unless a seed is armed.
     public String seedName() {
-        return seedName;
+        return tool == Tool.SEED ? held : null;
+    }
+
+    // The nut this throw will roll, as the token `bowl -t <token>` takes ("bowling", "explode",
+    // "giant"). Null unless a nut is armed.
+    public String nutToken() {
+        return tool == Tool.NUT ? held : null;
+    }
+
+    // The zombie this summon will raise, as the registry alias `summon -t <alias>` takes
+    // ("ZombieGargantuar"). Null unless a zombie is armed.
+    public String zombieAlias() {
+        return tool == Tool.ZOMBIE ? held : null;
+    }
+
+    // Whatever is held, without caring which kind it is. For the cursor, which draws all three the
+    // same way -- a sprite ghosted under the pointer.
+    public String heldName() {
+        return isHolding() ? held : null;
     }
 
     public boolean isHolding() {
@@ -41,12 +69,26 @@ public final class ToolState {
     // Arms a seed packet. Selecting the packet that is already armed puts it back -- clicking a card
     // twice to cancel is how the original game behaves, and it saves needing a separate cancel target.
     public void selectSeed(String name) {
-        if (tool == Tool.SEED && name != null && name.equalsIgnoreCase(seedName)) {
+        arm(Tool.SEED, name);
+    }
+
+    // Same toggle rule as a seed packet: taking the nut you are already holding puts it back.
+    public void selectNut(String token) {
+        arm(Tool.NUT, token);
+    }
+
+    // Same toggle rule again: picking the zombie already on the cursor puts it back on the roster.
+    public void selectZombie(String alias) {
+        arm(Tool.ZOMBIE, alias);
+    }
+
+    private void arm(Tool wanted, String name) {
+        if (tool == wanted && name != null && name.equalsIgnoreCase(held)) {
             clear();
             return;
         }
-        this.tool = Tool.SEED;
-        this.seedName = name;
+        this.tool = wanted;
+        this.held = name;
     }
 
     // Same toggle rule as seed packets: picking up the tool you are already holding puts it down.
@@ -56,11 +98,11 @@ public final class ToolState {
             return;
         }
         this.tool = wanted;
-        this.seedName = null;
+        this.held = null;
     }
 
     public void clear() {
         this.tool = Tool.NONE;
-        this.seedName = null;
+        this.held = null;
     }
 }

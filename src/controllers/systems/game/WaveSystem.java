@@ -9,7 +9,6 @@ import models.game.Wave;
 import models.templates.ZombieTemplate;
 import utils.Constants;
 import utils.Result;
-import utils.registry.ZombieRegistry;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -39,8 +38,16 @@ public class WaveSystem {
     private final EnvironmentSystem environmentSystem;
     private final Deque<PendingSpawn> pendingSpawns = new ArrayDeque<>();
     private long lastWaveTick;
-    private long lastSpawnTick;
     private Wave activeWave;
+
+    // Ticks left before the next queued zombie walks on.
+    //
+    // A COUNTDOWN rather than the "currentTick - lastSpawnTick >= interval" deadline this used to be,
+    // because the interval is now rolled fresh for every zombie: with a deadline the roll would have to
+    // be stored anyway, so the counter is the same state expressed once instead of twice. It is
+    // decremented exactly once per tick from releaseDueSpawns, which GameEngine.advanceOneTick calls
+    // exactly once per tick -- the same cadence the deadline was measured against.
+    private int ticksUntilNextSpawn;
 
     // A zombie bought for a wave but not yet on the lawn. The wave number rides along so its arrival
     // line still names the wave that paid for it.
@@ -74,7 +81,7 @@ public class WaveSystem {
             return events;
         }
         maybeStartWave(gameSession, currentTick, events);
-        releaseDueSpawns(gameSession, currentTick, events);
+        releaseDueSpawns(gameSession, events);
         return events;
     }
 
@@ -148,8 +155,10 @@ public class WaveSystem {
         gameSession.advanceWave();
         activeWave = wave;
         lastWaveTick = currentTick;
-        // The wave's first zombie arrives with the banner rather than one interval later.
-        lastSpawnTick = currentTick - spawnIntervalTicks(gameSession);
+        // Zero, not a rolled delay: the wave's first zombie arrives WITH the banner rather than a
+        // delay later. processTick runs releaseDueSpawns straight after this, so a zero counter
+        // releases one zombie on this same tick and the roll then governs the second onwards.
+        ticksUntilNextSpawn = 0;
     }
 
     // Ancient Egypt, final wave only: a tornado drops 1-4 of the wave's zombies straight onto the lawn
@@ -181,9 +190,19 @@ public class WaveSystem {
         }
     }
 
-    // Walks one queued zombie onto its lane per interval, so a wave arrives as a stream.
-    private void releaseDueSpawns(GameSession gameSession, long currentTick, List<Result> events) {
-        if (pendingSpawns.isEmpty() || currentTick - lastSpawnTick < spawnIntervalTicks(gameSession)) {
+    // Walks ONE queued zombie onto its lane, then waits a freshly rolled delay before the next, so a
+    // wave arrives as a stream with a rhythm rather than as a metronome or as a dump.
+    //
+    // The counter is decremented here and nowhere else. An empty queue resets it to zero rather than
+    // leaving it to run down, so the first zombie of the NEXT wave is never held back by a leftover
+    // fraction of the previous wave's delay.
+    private void releaseDueSpawns(GameSession gameSession, List<Result> events) {
+        if (pendingSpawns.isEmpty()) {
+            ticksUntilNextSpawn = 0;
+            return;
+        }
+        if (ticksUntilNextSpawn > 0) {
+            ticksUntilNextSpawn--;
             return;
         }
         PendingSpawn pending = pendingSpawns.poll();
@@ -191,7 +210,7 @@ public class WaveSystem {
         int lane = zombie.getMovement().getPositionY();
 
         gameSession.getMap().getRow(lane).getZombies().add(zombie);
-        lastSpawnTick = currentTick;
+        ticksUntilNextSpawn = rollSpawnDelayTicks(gameSession);
 
         events.add(spawnLine(zombie, pending.waveNumber(), lane));
     }
@@ -216,14 +235,14 @@ public class WaveSystem {
                 ? authored
                 : baseBudget(gameSession) * wave.difficultyFactor();
         int scaled = Math.max(0, (int) Math.round(base * difficultyScale(gameSession)));
-        return Math.max(scaled, cheapestAffordableFloor(wave));
+        return Math.max(scaled, cheapestAffordableFloor(gameSession, wave));
     }
 
     // The lowest wave-point cost among the zombies this wave may spend on, or 0 when the pool is empty
     // (nothing to field, so nothing to floor to). This is the smallest budget that can still buy one.
-    private int cheapestAffordableFloor(Wave wave) {
+    private int cheapestAffordableFloor(GameSession gameSession, Wave wave) {
         int cheapest = Integer.MAX_VALUE;
-        for (ZombieTemplate template : resolvePool(wave.getZombieAliases())) {
+        for (ZombieTemplate template : resolvePool(gameSession, wave)) {
             cheapest = Math.min(cheapest, template.getWavePointCost());
         }
         return cheapest == Integer.MAX_VALUE ? 0 : cheapest;
@@ -260,9 +279,22 @@ public class WaveSystem {
         return Math.min(scaledTicks(gameSession, delaySeconds), cap);
     }
 
-    // Higher difficulty also tightens the gap between zombies inside a wave.
-    private long spawnIntervalTicks(GameSession gameSession) {
-        return scaledTicks(gameSession, Constants.ZOMBIE_SPAWN_INTERVAL_SECONDS);
+    // The gap before the NEXT zombie of this wave walks on, rolled fresh every time.
+    //
+    // 20-40 ticks (2-4s at 10 Hz) at the default difficulty, then scaled the same way every other timer
+    // in this system is: harder means shorter, so a difficulty-5 run draws 12-24 ticks and a
+    // difficulty-1 run 60-120. The randomisation is the point -- a fixed 20-tick interval made every
+    // wave arrive on a metronome, which is both readable to the point of being dull and, because the
+    // old interval sat at the BOTTOM of this range, the tightest stream the engine could produce. The
+    // new mean of 30 ticks is what takes the edge off the spikes.
+    //
+    // Drawn from this system's own Random, so a seeded WaveSystem still replays a run exactly.
+    private int rollSpawnDelayTicks(GameSession gameSession) {
+        int min = Math.max(1, Constants.ZOMBIE_SPAWN_DELAY_MIN_TICKS);
+        int max = Math.max(min, Constants.ZOMBIE_SPAWN_DELAY_MAX_TICKS);
+        int rolled = min + random.nextInt(max - min + 1);
+        double scale = Constants.DEFAULT_DIFFICULTY_LEVEL / (double) difficultyLevel(gameSession);
+        return Math.max(1, (int) Math.round(rolled * scale));
     }
 
     private long scaledTicks(GameSession gameSession, int seconds) {
@@ -283,10 +315,17 @@ public class WaveSystem {
     // assigned a random lane here; it walks on later, when the spawn queue releases it.
     private List<Zombie> buyZombies(GameSession gameSession, Wave wave, int budget) {
         List<Zombie> bought = new ArrayList<>();
-        List<ZombieTemplate> pool = resolvePool(wave.getZombieAliases());
+        List<ZombieTemplate> pool = resolvePool(gameSession, wave);
         if (pool.isEmpty() || budget <= 0) {
             return bought;
         }
+        // Where this wave sits on the level's curve, which is what decides both which tiers the roster
+        // offers and how the draw is weighted. Computed once: it cannot change mid-purchase.
+        double progress = waveProgress(gameSession, wave);
+        // The whole roster, for the tier scale. Deliberately NOT the affordable subset -- as the budget
+        // runs down the affordable list loses its expensive end, and rescaling against that would make
+        // the last pick of every wave look "cheap" and get an early-wave weight.
+        List<ZombieTemplate> wholePool = new ArrayList<>(pool);
 
         int laneCount = gameSession.getMap().getRows().size();
         if (laneCount <= 0) {
@@ -303,7 +342,10 @@ public class WaveSystem {
             if (affordable.isEmpty()) {
                 break;
             }
-            ZombieTemplate pick = affordable.get(random.nextInt(affordable.size()));
+            ZombieTemplate pick = ZombiePool.pick(affordable, wholePool, progress, random);
+            if (pick == null) {
+                break;
+            }
             int lane = random.nextInt(laneCount);
 
             Zombie zombie = ZombieFactory.createZombie(pick.getAlias(), Constants.ZOMBIE_SPAWN_X, lane, gameSession);
@@ -323,23 +365,30 @@ public class WaveSystem {
         return bought;
     }
 
-    // Resolves the wave's authored aliases against the registry. Unknown aliases and non-positive
-    // costs are dropped: a free zombie would let the purchase loop run forever.
-    private List<ZombieTemplate> resolvePool(List<String> allowedZombies) {
-        List<ZombieTemplate> pool = new ArrayList<>();
-        if (allowedZombies == null) {
-            return pool;
+    // The wave's roster: what the level authored, UNIONED with what its chapter offers this far into the
+    // level, resolved against the registry. See ZombiePool for why it is a union rather than one or the
+    // other -- in short, so no level loses a zombie it deliberately asked for.
+    private List<ZombieTemplate> resolvePool(GameSession gameSession, Wave wave) {
+        return ZombiePool.resolveTemplates(ZombiePool.resolveAliases(
+                wave.getZombieAliases(),
+                EnvironmentSystem.environmentOf(gameSession),
+                waveProgress(gameSession, wave)));
+    }
+
+    // How far through the level this wave is, 0 for the first and 1 for the last.
+    //
+    // Off the wave's NUMBER against the level's wave count, not off elapsed time or health: the tier
+    // curve is a statement about level structure ("the last wave of any level may field a Gargantuar"),
+    // and a four-wave level and a seven-wave one should both open gently and end hard. A level with one
+    // wave is entirely its own finale, so it reports 1.
+    private double waveProgress(GameSession gameSession, Wave wave) {
+        Level level = gameSession.getLevel();
+        int total = level == null || level.getWaves() == null ? 0 : level.getWaves().length;
+        if (total <= 1) {
+            return 1d;
         }
-        for (String alias : allowedZombies) {
-            if (alias == null) {
-                continue;
-            }
-            ZombieTemplate template = ZombieRegistry.getInstance().getZombieTemplateByAlias(alias);
-            if (template != null && template.getWavePointCost() > 0) {
-                pool.add(template);
-            }
-        }
-        return pool;
+        int index = Math.max(0, wave.getNumber() - 1);          // getNumber is 1-based
+        return Math.min(1d, index / (double) (total - 1));
     }
 
     // The zombies worth drawing next, given what is left of the budget.

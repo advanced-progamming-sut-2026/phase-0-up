@@ -90,6 +90,31 @@ public final class SpritePlacer {
         sprite.draw(batch, clip, stateTime, x, y, faceRight, parts);
     }
 
+    // The same, at a fraction of the sprite's authored size, still standing on footY.
+    //
+    // Needed for entities the model spawns as one thing and the view draws as another: I, Zombie's sun
+    // makers are ordinary bucketheads in the model but are drawn as the disco mech, which is authored
+    // far larger -- five of them stacked in the back column overlapped two lanes each. The scale is
+    // applied to the batch transform rather than to the sprite, because a PAM has no scale of its own
+    // and its parts would each have to be scaled about the right point.
+    public static void drawStandingScaled(Batch batch, EntitySprite sprite, String clip,
+                                          float stateTime, float centreX, float footY,
+                                          boolean faceRight, Map<String, Boolean> parts,
+                                          float scale) {
+        if (scale == 1f) {
+            drawStanding(batch, sprite, clip, stateTime, centreX, footY, faceRight, parts);
+            return;
+        }
+        com.badlogic.gdx.math.Matrix4 previous = batch.getTransformMatrix().cpy();
+        // Translate to the FOOT point first, then scale about it, so the sprite shrinks toward the
+        // ground it is standing on rather than toward the origin of the board.
+        batch.setTransformMatrix(new com.badlogic.gdx.math.Matrix4(previous)
+                .translate(toSpriteSpace(centreX), toSpriteSpace(footY), 0f)
+                .scale(scale, scale, 1f));
+        sprite.draw(batch, clip, stateTime, 0f, -bottomOffset(sprite, clip), faceRight, parts);
+        batch.setTransformMatrix(previous);
+    }
+
     // Draws centred on a point, for things that float rather than stand (suns, projectiles).
     public static void drawCentred(Batch batch, EntitySprite sprite, String clip, float stateTime,
                                    float centreX, float centreY, boolean faceRight) {

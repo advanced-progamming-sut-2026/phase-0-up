@@ -3,6 +3,7 @@ package views.gdx.ui;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
@@ -66,6 +67,8 @@ public final class GameHud implements Disposable {
         this.waveBar = new WaveBar(assets, this.art);
 
         buildSeedBank(sprites);
+        buildConveyor();
+        buildRoster();
         this.shovelButton = toolButton(UiArt.SHOVEL_ICON, "Shovel [S]", ToolState.Tool.SHOVEL);
         this.plantFoodButton = toolButton(UiArt.PLANTFOOD_BUTTON, "Food [F]",
                 ToolState.Tool.PLANT_FOOD);
@@ -110,14 +113,29 @@ public final class GameHud implements Disposable {
 
     // One card per packet the player actually brought. Read once: the bank does not change mid-level
     // (modes that adjust the slots do so in onStart, before the first frame).
+    //
+    // Unless the mode never asked the player to pick a loadout. Vasebreaker's supply comes out of broken
+    // vases, Wall-nut Bowling's off a belt, I-Zombie's off a roster -- none of them has a bank of
+    // packets to build here, and each fills the same slot its own way afterwards.
+    //
+    // Asked through requiresSeedSelection() rather than by naming those modes: it is the same question
+    // the seed-selection screen is gated on, so a bank can never appear for a level nobody picked seeds
+    // for. Before this, DevBoot's convenience loadout put six plant cards over Wall-nut Bowling's belt.
     private void buildSeedBank(SpriteRegistry sprites) {
+        this.sprites = sprites;
         List<SeedPacket> packets = session.getSelectedSeeds();
-        if (packets == null) {
+        if (packets == null || session.getMode() == null
+                || !session.getMode().requiresSeedSelection(session)) {
             return;
         }
         for (SeedPacket packet : packets) {
             SeedCardActor card = new SeedCardActor(assets, art, packet, costOf(packet.getPlantType()),
                     new PlantIcon(sprites.get(packet.getPlantType())));
+            // Locked Plants bolts seeds to the bar. The badge carries over from seed selection so a
+            // packet means the same thing in both places -- asked through the GameMode hook, so any
+            // future mode that pins a seed gets the same mark without this line changing.
+            card.setLocked(session.getMode() != null
+                    && session.getMode().isSeedForced(packet.getPlantType()));
             card.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
@@ -127,6 +145,203 @@ public final class GameHud implements Disposable {
             cards.add(card);
             cardRow.add(card).size(SeedCardActor.CARD_WIDTH, SeedCardActor.CARD_HEIGHT).padRight(6f);
         }
+    }
+
+    // Kept so the hand can be rebuilt after the constructor has run.
+    private SpriteRegistry sprites;
+
+    // ---- Wall-nut Bowling's conveyor --------------------------------------------------------------
+
+    // Null on every other level. Non-null, it is added to the stage as its own left-edge column.
+    private Table conveyor;
+
+    // A VERTICAL belt down the left-hand side, nuts riding UP it.
+    //
+    // A vertical belt is a stack of horizontal slats, which is exactly what the shipped
+    // CONVEYOR_BELT strip is one of -- so the belt is built by repeating that strip once per slot
+    // rather than by rotating a single copy, which Scene2D cannot do to an Image without a transform
+    // group around it.
+    //
+    // Order matters and is not arbitrary: getConveyor() appends new nuts, so index 0 is the OLDEST and
+    // has therefore ridden furthest -- it goes at the TOP. Adding the list downward puts the newest at
+    // the bottom, where the next one will appear.
+    private static final float BELT_SLOT_WIDTH = 66f;
+    private static final float BELT_SLOT_HEIGHT = 80f;
+    private static final float BELT_TOP_HEIGHT = 12f;
+    private static final float BELT_PAD = 6f;
+
+    private String conveyorSignature = "";
+
+    private void buildConveyor() {
+        models.game.gamemodes.WallnutBowlingMode mode =
+                views.gdx.render.BowlingRenderer.modeOf(session);
+        if (mode == null) {
+            return;
+        }
+        Table column = new Table();
+        column.top();
+        addBeltPiece(column, UiArt.CONVEYOR_TOP, BELT_SLOT_WIDTH + BELT_PAD * 2f, BELT_TOP_HEIGHT);
+
+        // One slat per slot the belt can hold, always -- never per nut currently on it. A belt that
+        // shrank as nuts were taken would read as the belt itself being consumed, and the empty run
+        // below the last nut is the useful part: it is how much more is coming.
+        cardRow.top();
+        Stack track = new Stack();
+        Table slats = new Table();
+        slats.top();
+        for (int slot = 0; slot < mode.conveyorCapacity(); slot++) {
+            addBeltPiece(slats, UiArt.CONVEYOR_BELT, BELT_SLOT_WIDTH + BELT_PAD * 2f,
+                    BELT_SLOT_HEIGHT);
+        }
+        track.add(slats);
+        track.add(cardRow);
+        column.add(track).width(BELT_SLOT_WIDTH + BELT_PAD * 2f).row();
+
+        conveyor = new Table();
+        conveyor.setFillParent(true);
+        // Left edge, vertically centred, clear of the sun counter in the corner.
+        conveyor.left().padLeft(10f).padTop(90f);
+        conveyor.add(column).top();
+    }
+
+    // A missing piece costs the belt its art, not the player their nuts.
+    private void addBeltPiece(Table into, String regionId, float width, float height) {
+        com.badlogic.gdx.scenes.scene2d.utils.Drawable piece = art.drawable(regionId);
+        if (piece != null) {
+            into.add(new com.badlogic.gdx.scenes.scene2d.ui.Image(piece,
+                    com.badlogic.gdx.utils.Scaling.stretch)).size(width, height).row();
+        }
+    }
+
+    // The nuts currently on the belt, in belt order.
+    //
+    // Rebuilt on change for the same reason Vasebreaker's hand is: the conveyor is a LIST, not a set of
+    // counts -- the mode delivers a nut every five seconds and removes the one you bowl -- so positions
+    // shift and a card cannot simply be updated in place. The signature check is what keeps that from
+    // happening sixty times a second, which would hand every click an actor that no longer exists.
+    private void refreshConveyor() {
+        models.game.gamemodes.WallnutBowlingMode mode =
+                views.gdx.render.BowlingRenderer.modeOf(session);
+        if (mode == null) {
+            return;
+        }
+        java.util.List<models.entities.plants.bowling.BowlingKind> belt = mode.getConveyor();
+        String signature = String.valueOf(belt);
+        if (signature.equals(conveyorSignature)) {
+            return;
+        }
+        conveyorSignature = signature;
+
+        cards.clear();
+        cardRow.clearChildren();
+        for (models.entities.plants.bowling.BowlingKind kind : belt) {
+            // A ROW each, not a column: this belt runs top to bottom.
+            cardRow.add(nutCard(kind)).size(BELT_SLOT_WIDTH, BELT_SLOT_HEIGHT).row();
+        }
+    }
+
+    // ---- I, Zombie's roster -----------------------------------------------------------------------
+
+    // The zombies this level lets you buy, with what each costs in sun.
+    //
+    // Built once, unlike the belt and the hand: IZombieMode.buildRoster runs in onStart and the roster
+    // never changes afterwards. What DOES change is what you can afford, and that is already
+    // SeedCardActor.refresh's job -- the same dim it puts on a plant you have no sun for.
+    private void buildRoster() {
+        models.game.gamemodes.IZombieMode mode = views.gdx.render.IZombieRenderer.modeOf(session);
+        if (mode == null) {
+            return;
+        }
+        for (java.util.Map.Entry<String, Integer> entry : mode.getRoster().entrySet()) {
+            cardRow.add(rosterCard(entry.getKey(), entry.getValue()))
+                    .size(SeedCardActor.CARD_WIDTH, SeedCardActor.CARD_HEIGHT).padRight(6f);
+        }
+    }
+
+    private SeedCardActor rosterCard(String alias, int price) {
+        views.gdx.sprite.EntitySprite sprite = sprites.get(alias);
+        // With its armour switched on. Conehead, Buckethead and Brick are ONE animation with three
+        // hideable hats, so a roster built without this offers three identical bare zombies at 50, 150
+        // and 175 sun -- see ArmorVisibility.
+        EntityIcon icon = new EntityIcon(sprite)
+                .showing(views.gdx.sprite.ArmorVisibility.forAlias(alias, sprite));
+        // The alias is the packet type too, which is deliberate: art.packet finds no zombie packet, so
+        // the card falls through to the live animation above rather than drawing a plant's portrait.
+        SeedCardActor card = new SeedCardActor(assets, art, new SeedPacket(alias, 0), price, icon);
+        card.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                tools.selectZombie(alias);
+            }
+        });
+        cards.add(card);
+        return card;
+    }
+
+    private SeedCardActor nutCard(models.entities.plants.bowling.BowlingKind kind) {
+        String packetPlant = views.gdx.render.BowlingRenderer.packetPlantFor(kind);
+        String token = views.gdx.render.BowlingRenderer.tokenFor(kind);
+        // No price and no count: a nut off the belt is free, and one card on the belt IS one nut, so
+        // "x1" under every single card would say nothing the belt does not already show.
+        SeedCardActor card = new SeedCardActor(assets, art, new SeedPacket(packetPlant, 0), 0,
+                new PlantIcon(sprites.get(views.gdx.render.BowlingRenderer.spriteFor(kind))));
+        card.setSupply(0);
+        card.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                tools.selectNut(token);
+            }
+        });
+        cards.add(card);
+        return card;
+    }
+
+    // What the hand looked like last time it was drawn, so the bank is rebuilt only when it changes.
+    private String handSignature = "";
+
+    // Vasebreaker's bank: whatever the player is currently holding, straight off the mode.
+    //
+    // Rebuilt rather than updated because the SET changes, not just the counts -- a vase breaking adds
+    // a plant type that was not there a moment ago, and placing the last one takes it away again. The
+    // signature check is what stops that being a rebuild every frame; without it the cards would be
+    // discarded and recreated sixty times a second and a click would land on an actor that no longer
+    // exists.
+    private void refreshHand() {
+        if (session.getMode() == null || !session.getMode().managesPlantInventory()) {
+            return;
+        }
+        java.util.Map<String, Integer> hand = session.getMode().plantInventory();
+        String signature = String.valueOf(hand);
+        if (signature.equals(handSignature)) {
+            return;
+        }
+        handSignature = signature;
+
+        cards.clear();
+        cardRow.clearChildren();
+        for (java.util.Map.Entry<String, Integer> held : hand.entrySet()) {
+            if (held.getValue() == null || held.getValue() <= 0) {
+                continue;
+            }
+            cardRow.add(handCard(held.getKey(), held.getValue()))
+                    .size(SeedCardActor.CARD_WIDTH, SeedCardActor.CARD_HEIGHT).padRight(6f);
+        }
+    }
+
+    private SeedCardActor handCard(String plantType, int count) {
+        // A packet out of a vase has no recharge and no price: it is used once and it is gone. The
+        // SeedPacket here exists only to carry the plant's name into the card.
+        SeedCardActor card = new SeedCardActor(assets, art, new SeedPacket(plantType, 0),
+                costOf(plantType), new PlantIcon(sprites.get(plantType)));
+        card.setSupply(count);
+        card.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                tools.selectSeed(card.plantType());
+            }
+        });
+        cards.add(card);
+        return card;
     }
 
     // The template is the one authority on price, so the card and the plant command cannot disagree
@@ -179,7 +394,12 @@ public final class GameHud implements Disposable {
         counters.add(sunLabel).width(64f).left();
 
         root.add(counters).left().row();
-        root.add(cardRow).left().padTop(6f).row();
+        // Wall-nut Bowling's belt is NOT in this column: it runs vertically down the left edge and is
+        // added to the stage on its own below, so the toolbar keeps its place under the counters
+        // instead of being pushed off the bottom by a 480-unit-tall belt.
+        if (conveyor == null) {
+            root.add(cardRow).left().padTop(6f).row();
+        }
 
         Table toolbar = new Table();
         toolbar.add(shovelButton).padRight(6f);
@@ -189,6 +409,9 @@ public final class GameHud implements Disposable {
         root.add(toolbar).left().padTop(6f);
 
         stage.addActor(root);
+        if (conveyor != null) {
+            stage.addActor(conveyor);
+        }
 
         // The wave meter sits along the bottom, clear of the toasts in the top-right corner.
         Table waveRow = new Table();
@@ -209,6 +432,8 @@ public final class GameHud implements Disposable {
     // Pulled every frame from live state rather than pushed on change: there is no change notification
     // for sun, and polling four numbers is far cheaper than maintaining one.
     public void update(long currentTick) {
+        refreshHand();
+        refreshConveyor();
         sunLabel.setText(String.valueOf(session.getSunAmount()));
         plantFoodLabel.setText(String.valueOf(session.getPlantFoodCount()));
 

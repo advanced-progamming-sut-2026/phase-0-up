@@ -39,6 +39,8 @@ public final class GameScreen extends ScreenAdapter {
 
     private final BackgroundRenderer background;
     private final GridOverlayRenderer grid = new GridOverlayRenderer();
+    private final views.gdx.render.ModeOverlayRenderer modeOverlay =
+            new views.gdx.render.ModeOverlayRenderer();
     private final views.gdx.render.GameRenderer entities;
     private final views.gdx.bridge.EntityInterpolator interpolator =
             new views.gdx.bridge.EntityInterpolator();
@@ -54,6 +56,9 @@ public final class GameScreen extends ScreenAdapter {
     private final views.gdx.render.CursorRenderer cursor;
     private final views.gdx.ui.GameOverlays overlays;
 
+    // The unattended drivers for the three mini-games. Off unless one of their flags is set.
+    private final MinigameHarness harness;
+
     // Wash over the tile under the cursor. Faint on purpose: it has to read as "this one" without
     // hiding the plant already standing there.
     private static final com.badlogic.gdx.graphics.Color HOVER_TINT =
@@ -61,6 +66,10 @@ public final class GameScreen extends ScreenAdapter {
     // The shovel is destructive and does not ask twice, so its highlight is red rather than white.
     private static final com.badlogic.gdx.graphics.Color SHOVEL_TINT =
             new com.badlogic.gdx.graphics.Color(1f, 0.25f, 0.2f, 0.3f);
+    // A tile the shovel will be refused on -- Save Our Seeds' defended plants. Grey, not red: red says
+    // "this will be destroyed", and the whole point is that it will not.
+    private static final com.badlogic.gdx.graphics.Color NO_DIG_TINT =
+            new com.badlogic.gdx.graphics.Color(0.55f, 0.55f, 0.58f, 0.34f);
 
     private boolean showGrid;
 
@@ -113,8 +122,12 @@ public final class GameScreen extends ScreenAdapter {
         // printed to a console nobody is looking at.
         // The explosion effect taps this stream rather than session.drainEvents(): GameEngine drains
         // the model's events itself during the tick, so the screen's own drain sees nothing.
+        // Two consumers off one stream. Explosions ignore anything that is not a detonation and the
+        // weather ignores anything that is not a tornado or a gust, so neither has to know about the
+        // other -- and the wave events they both need arrive HERE rather than through the screen's own
+        // drain, because GameEngine drains the model during its tick.
         engine.setInGameRenderer(new views.gdx.renderers.GdxInGameRenderer(context.toasts(),
-                message -> entities.explosions().onEvent(message)));
+                this::onModelEvent));
 
         this.commands = new views.gdx.bridge.CommandBridge(engine::submitInGameCommand);
         this.lawnInput = new views.gdx.input.LawnInputProcessor(
@@ -128,6 +141,7 @@ public final class GameScreen extends ScreenAdapter {
                 this::dismissObjective, this::resumePlay, this::restart, this::saveAndExit,
                 this::leaveLevel);
         this.showcase = new Showcase(engine, session);
+        this.harness = new MinigameHarness(session, engine, lawn, viewport, lawnInput, tools);
 
         // The board is built and armed but the player has not seen it yet, so it opens paused behind
         // the objective card. Nothing ticks until they say go -- a level that starts running while the
@@ -195,26 +209,13 @@ public final class GameScreen extends ScreenAdapter {
         viewport.apply();
         batch.setProjectionMatrix(camera.combined);
 
-        batch.begin();
-        background.draw(batch);
-        entities.draw(batch, session, animationDelta, loop.alpha());
-        // The held plant or tool, drawn last inside the same scaled pass so it sits over the board.
-        // It uses `delta`, not `animationDelta`: the cursor keeps animating while the game is paused,
-        // because it belongs to the player rather than to the simulation.
-        com.badlogic.gdx.math.Matrix4 cursorTransform = views.gdx.render.SpritePlacer.beginScaled(batch);
-        try {
-            cursor.draw(batch, tools, lawnInput.cursorWorldX(), lawnInput.cursorWorldY(), delta);
-        } finally {
-            views.gdx.render.SpritePlacer.endScaled(batch, cursorTransform);
-        }
-        batch.end();
+        drawBoard(delta, animationDelta);
 
         // Under the grid but over the sprites: a wash on the tile the cursor is on, so it is obvious
         // where a click will land before it costs anything.
         views.gdx.map.GridPos hovered = lawnInput.hovered();
         if (hovered.isValid() && tools.isHolding()) {
-            grid.highlight(camera.combined, lawn, hovered.col(), hovered.row(),
-                    tools.tool() == views.gdx.input.ToolState.Tool.SHOVEL ? SHOVEL_TINT : HOVER_TINT);
+            grid.highlight(camera.combined, lawn, hovered.col(), hovered.row(), hoverTint(hovered));
         }
 
         // Drawn after the sprites so the lines sit over the board, not under it.
@@ -249,6 +250,9 @@ public final class GameScreen extends ScreenAdapter {
             runInputCheck();
         }
 
+        harness.tick();
+        runFastForward();
+        runOutcomeCheck();
         advanceShowcase();
 
         // Gameplay narration: the model queues events during the tick and the view drains them here.
@@ -259,9 +263,63 @@ public final class GameScreen extends ScreenAdapter {
             if (debugCounts) {
                 Gdx.app.log("Event", event.message());
             }
-            entities.explosions().onEvent(event.message());
+            onModelEvent(event.message());
             context.toasts().show(event);
         }
+    }
+
+    // Every view effect that is driven by the model's own narration, in one place.
+    //
+    // There are three call sites that hand events to the view (the in-game renderer, the screen's own
+    // drain, and the input-check harness) and three consumers, and before this they were wired
+    // pairwise -- which is how the harness path ended up with explosions and no weather. Each consumer
+    // ignores anything that is not its own sentence, so none of them needs to know about the others.
+    private void onModelEvent(String message) {
+        entities.explosions().onEvent(message);
+        entities.weather().onEvent(message);
+        entities.zombieActions().onEvent(message);
+    }
+
+    // Background, then the lawn's own markings, then everything standing on it.
+    //
+    // Three passes rather than one because the mode overlay is drawn with a ShapeRenderer, which cannot
+    // be interleaved inside an open SpriteBatch. Splitting the batch is what buys the correct z-order:
+    // a trip-wire, a no-plant line and a defended tile are paint ON the lawn, and drawn over the sprites
+    // they would read as effects on whatever happens to be standing there.
+    private void drawBoard(float delta, float animationDelta) {
+        batch.begin();
+        background.draw(batch);
+        batch.end();
+
+        modeOverlay.draw(camera.combined, session, lawn, animationDelta);
+
+        batch.begin();
+        entities.draw(batch, session, animationDelta, loop.alpha());
+        // The held plant or tool, drawn last inside the same scaled pass so it sits over the board.
+        // It uses `delta`, not `animationDelta`: the cursor keeps animating while the game is paused,
+        // because it belongs to the player rather than to the simulation.
+        com.badlogic.gdx.math.Matrix4 cursorTransform = views.gdx.render.SpritePlacer.beginScaled(batch);
+        try {
+            cursor.draw(batch, tools, lawnInput.cursorWorldX(), lawnInput.cursorWorldY(), delta);
+        } finally {
+            views.gdx.render.SpritePlacer.endScaled(batch, cursorTransform);
+        }
+        batch.end();
+    }
+
+    // What colour the tile under the cursor gets.
+    //
+    // The refusal itself stays in the model -- GameSession.removePlant asks the mode and answers with a
+    // message. This only stops the view PROMISING something the model will refuse: a red "about to be
+    // dug" wash over a Save Our Seeds plant is the view telling the player a lie the click then takes
+    // back.
+    private com.badlogic.gdx.graphics.Color hoverTint(views.gdx.map.GridPos hovered) {
+        if (tools.tool() != views.gdx.input.ToolState.Tool.SHOVEL) {
+            return HOVER_TINT;
+        }
+        models.game.gamemodes.GameMode mode = session.getMode();
+        boolean diggable = mode == null || mode.isPlantRemovable(hovered.col(), hovered.row());
+        return diggable ? SHOVEL_TINT : NO_DIG_TINT;
     }
 
     // An InputMultiplexer rather than setInputProcessor(lawnInput) directly: the HUD's Scene2D stage
@@ -431,6 +489,86 @@ public final class GameScreen extends ScreenAdapter {
         return (int) (Gdx.graphics.getHeight() - projectedY);
     }
 
+    // -Dpvz.showOutcome=win|lose: raises the end-of-level panel, once, without playing to the end.
+    private static final int OUTCOME_FRAME = 30;
+
+    private int outcomeCheckFrames;
+
+    private void runOutcomeCheck() {
+        String wanted = views.gdx.core.DebugFlags.SHOW_OUTCOME;
+        if (wanted.isEmpty() || ++outcomeCheckFrames != OUTCOME_FRAME) {
+            return;
+        }
+        boolean won = "win".equalsIgnoreCase(wanted);
+        // The same call the real end of a level makes, with the same two sentences, so the panel this
+        // shows is the panel a player would see and not a mock-up of it.
+        overlays.showOutcome(won, won
+                ? "The lawn is safe. For now."
+                : "They got past you this time. Try a different loadout.");
+        Gdx.app.log("OutcomeCheck", "raised the " + (won ? "win" : "loss") + " panel");
+    }
+
+    // -Dpvz.fastForward=N: N game ticks in one frame, once, a moment after the board opens.
+    //
+    // Late enough that the objective card has been dismissed and the loop is actually running -- ticks
+    // submitted while the level is still paused behind it are simply refused.
+    private static final int FAST_FORWARD_FRAME = 35;
+
+    private int fastForwardFrames;
+
+    private void runFastForward() {
+        if (views.gdx.core.DebugFlags.FAST_FORWARD < 1) {
+            return;
+        }
+        if (++fastForwardFrames != FAST_FORWARD_FRAME) {
+            return;
+        }
+        int ticks = views.gdx.core.DebugFlags.FAST_FORWARD;
+        engine.submitInGameCommand("advance time -t " + ticks + " ticks");
+        int rushed = rushWaves();
+        Gdx.app.log("FastForward", "ran " + ticks + " ticks and " + rushed
+                + " rushed waves; now on wave " + session.getCurrentWave()
+                + " of " + totalWaves());
+    }
+
+    // -Dpvz.rushWaves=N, on top of the fast-forward: N rounds of "clear the board, let the next wave
+    // come".
+    //
+    // Waves after the first are gated by HEALTH, not by time -- the next one launches once 75% of the
+    // current one's HP is gone -- so no amount of `advance time` alone reaches a late wave. That
+    // matters because Egypt's tornado fires on the FINAL wave and nowhere else, which made it the one
+    // world effect no capture could get to.
+    // Long enough for the wave to finish TRICKLING in: a wave is not eligible to be replaced while it
+    // still has pending spawns, so nuking the board and immediately asking for the next one changes
+    // nothing. This is the wait for the rest of the wave to walk on so the nuke can catch it.
+    private static final int RUSH_TICKS_PER_WAVE = 150;
+
+    // Stops the moment the FINAL wave has launched, and returns how many rounds it took.
+    //
+    // Rushing past it would be self-defeating: the next nuke clears the last wave, the level ends, and
+    // the loop stops advancing the animation clock -- so the tornado this exists to capture is raised
+    // on the very frame everything freezes, and never fades in. Stopping on arrival leaves the storm
+    // playing over a board that is still running.
+    private int rushWaves() {
+        int rushed = 0;
+        for (int i = 0; i < views.gdx.core.DebugFlags.RUSH_WAVES; i++) {
+            if (session.getCurrentWave() >= totalWaves()) {
+                break;
+            }
+            engine.submitInGameCommand("release the nuke");
+            engine.submitInGameCommand("advance time -t " + RUSH_TICKS_PER_WAVE + " ticks");
+            rushed++;
+        }
+        return rushed;
+    }
+
+    private int totalWaves() {
+        if (session.getLevel() == null || session.getLevel().getWaves() == null) {
+            return Integer.MAX_VALUE;   // no wave list: never claim to have reached the end of it
+        }
+        return session.getLevel().getWaves().length;
+    }
+
     private void runInputCheck() {
         com.badlogic.gdx.math.Vector3 point = new com.badlogic.gdx.math.Vector3();
         int mismatches = 0;
@@ -582,7 +720,7 @@ public final class GameScreen extends ScreenAdapter {
                     + session.getSunAmount());
 
             engine.setInGameRenderer(new views.gdx.renderers.GdxInGameRenderer(context.toasts(),
-                    message -> entities.explosions().onEvent(message)));
+                    this::onModelEvent));
 
             // Leave the shovel armed with the cursor parked on a tile, so pairing this flag with
             // -Dpvz.screenshot captures the hover highlight -- the one part of the input work that can

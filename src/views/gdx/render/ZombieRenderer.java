@@ -40,6 +40,13 @@ public final class ZombieRenderer {
     // Watches health frame to frame; a drop is a hit. See DamageFlash.
     private final DamageFlash flashes = new DamageFlash();
 
+    // Event-driven one-shots (the Gargantuar's imp throw, the Imp's landing).
+    private final ZombieActions actions = new ZombieActions();
+
+    public ZombieActions actions() {
+        return actions;
+    }
+
     public ZombieRenderer(SpriteRegistry sprites, LawnGeometry lawn, EntityInterpolator interpolator,
                           AnimationClocks clocks) {
         this.sprites = sprites;
@@ -48,9 +55,19 @@ public final class ZombieRenderer {
         this.clocks = clocks;
     }
 
+    // I, Zombie's sun makers. The model spawns them as plain bucketheads pinned at speed 0, because it
+    // wants an ordinary destructible zombie with an ordinary zombie's HP -- but a zombie that stands
+    // still in the back column and prints money is doing something no buckethead does, and it has to
+    // look like it. The game's disco mech is the machine that fits.
+    private static final String SUN_PRODUCER_SPRITE = "ZOMBIE_MECH_DISCO";
+
     public void draw(Batch batch, Zombie zombie, float delta, float alpha) {
-        EntitySprite sprite = sprites.get(zombie.getAlias());
-        String clip = ClipMap.forZombie(sprite, zombie);
+        EntitySprite sprite = sprites.get(spriteNameFor(zombie));
+        // An event-driven one-shot wins over the state's clip: the Gargantuar's throw and the Imp's
+        // landing are instants the model records only as a sentence, so ActionState still says WALKING
+        // all the way through them. See ZombieActions.
+        String action = actions.clipFor(zombie, sprite);
+        String clip = action != null ? action : ClipMap.forZombie(sprite, zombie);
         // Per zombie, restarted on clip change: otherwise the whole horde steps in unison and a
         // zombie that stops to bite starts its "eat" animation halfway through.
         // A frozen zombie's animation stops dead. The model already holds its x still, but the walk
@@ -68,7 +85,9 @@ public final class ZombieRenderer {
         float lane = interpolator.lane(zombie, modelLane, alpha);
         float footY = laneFootY(lane);
 
-        Map<String, Boolean> parts = ArmorVisibility.forZombie(zombie, sprite);
+        // No armour map for the mech: its parts are its own, and a bucket toggle would name nothing.
+        Map<String, Boolean> parts = isSunProducer(zombie)
+                ? null : ArmorVisibility.forZombie(zombie, sprite);
 
         Color previous = batch.getColor().cpy();
         batch.setColor(tintFor(zombie));
@@ -76,7 +95,8 @@ public final class ZombieRenderer {
         // Zombies walk right-to-left, so they face LEFT -- except a hypnotised one, which has turned
         // around and is walking back the other way for the player.
         boolean faceRight = zombie.getState().isHypnotized();
-        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, x, footY, faceRight, parts);
+        SpritePlacer.drawStandingScaled(batch, sprite, clip, stateTime, x, footY, faceRight, parts,
+                scaleFor(zombie));
 
         // Hit flash: the same frame again, additively, so the zombie lights up white. Total HP, not the
         // body's -- a cone or a bucket absorbing a pea is still a hit, and the zombie should react.
@@ -85,16 +105,43 @@ public final class ZombieRenderer {
         if (flash > 0f) {
             SpritePlacer.beginAdditive(batch);
             batch.setColor(flash, flash, flash, 1f);
-            SpritePlacer.drawStanding(batch, sprite, clip, stateTime, x, footY, faceRight, parts);
+            SpritePlacer.drawStandingScaled(batch, sprite, clip, stateTime, x, footY, faceRight, parts,
+                scaleFor(zombie));
             SpritePlacer.endAdditive(batch);
         }
 
         batch.setColor(previous);
     }
 
-    // Called once per frame by GameRenderer: drops entities that were not drawn.
-    void sweepFlashes() {
+    // The disco mech is authored about half again the size of a browncoat -- fine for the one-off boss
+    // it is in the real game, wrong for five of them parked in a column, where each overlapped the lane
+    // above and below. Brought down to roughly a normal zombie's footprint.
+    private static final float SUN_PRODUCER_SCALE = 0.62f;
+
+    private String spriteNameFor(Zombie zombie) {
+        return isSunProducer(zombie) ? SUN_PRODUCER_SPRITE : zombie.getAlias();
+    }
+
+    private float scaleFor(Zombie zombie) {
+        return isSunProducer(zombie) ? SUN_PRODUCER_SCALE : 1f;
+    }
+
+    // Asked of the MODE, which is the only thing that knows which five of the board's zombies it
+    // designated as makers -- they are otherwise ordinary bucketheads and indistinguishable from any
+    // other one the player might have summoned.
+    private boolean isSunProducer(Zombie zombie) {
+        models.game.gamemodes.IZombieMode mode =
+                IZombieRenderer.modeOf(zombie.getGameSession());
+        return mode != null && mode.isSunProducer(zombie);
+    }
+
+    // Called once per frame by GameRenderer: drops entities that were not drawn, and advances the
+    // one-shot sequences. Advancing here rather than in clipFor is deliberate -- clipFor is called once
+    // per zombie per frame, so ageing a sequence there would run it at several times its own speed.
+    void sweepFlashes(float delta) {
         flashes.sweep();
+        actions.advance(delta);
+        actions.sweep();
     }
 
     // ---- foot planting ---------------------------------------------------------------------------

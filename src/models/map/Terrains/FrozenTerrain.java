@@ -77,4 +77,11 @@ public class FrozenTerrain extends Terrain{
     public boolean isDestroyed() {
         return isMelted;
     }
+
+    // What this block is holding: "zombie", "plant", or null for a plain authored obstacle. The
+    // terminal only ever needed the symbol, but the game ships a DIFFERENT ice block for a caged plant
+    // and a caged zombie -- they are different shapes -- so a view that draws the block has to ask.
+    public String getInnerType() {
+        return type;
+    }
 }

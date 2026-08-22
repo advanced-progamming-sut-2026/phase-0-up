@@ -56,6 +56,15 @@ public final class ExplosionEffects {
     private float lifetime = FALLBACK_LIFETIME;
     private boolean lifetimeResolved;
 
+    // Jalapeno does not explode in a 3x3 -- it burns its whole LANE, which is what its
+    // explosionColRadius of 9 in plants.json means. A Cherry Bomb blast on its tile showed a plant
+    // whose entire point is the row doing something local, so it gets the game's own row flame instead,
+    // repeated once per column because JALAPENO_FIRE is authored as a single gout on a 390 canvas.
+    private static final String JALAPENO_NAME = "Jalapeno";
+    private static final String JALAPENO_SPRITE = "JALAPENO_FIRE";
+    private static final String JALAPENO_CLIP = "idle";
+    private static final float JALAPENO_WIDTH_CELLS = 1.9f;
+
     private static final class Blast {
         float x;
         float y;
@@ -63,6 +72,10 @@ public final class ExplosionEffects {
         // Null for the default two-layer plant explosion; set for effects with their own art.
         String sprite;
         String clip;
+        // How many copies to lay across the lane, and how wide each is. 1 and 0 mean "one, at the
+        // default blast width", which is every explosion except the Jalapeno's row burn.
+        int copies = 1;
+        float widthCells;
     }
 
     private final SpriteRegistry sprites;
@@ -102,7 +115,19 @@ public final class ExplosionEffects {
             int row = Integer.parseInt(matcher.group(3));
             Blast blast = new Blast();
             blast.x = lawn.centerX(col);
-            boolean ownArt = SUN_BOMB_NAME.equalsIgnoreCase(matcher.group(1).trim());
+            String plant = matcher.group(1).trim();
+            if (JALAPENO_NAME.equalsIgnoreCase(plant)) {
+                blast.sprite = JALAPENO_SPRITE;
+                blast.clip = JALAPENO_CLIP;
+                blast.copies = utils.Constants.BOARD_COLS;
+                blast.widthCells = JALAPENO_WIDTH_CELLS;
+                // The lane's own foot line, not a lifted centre: fire runs along the ground.
+                blast.y = lawn.worldY(row) + lawn.cellHeight() * 0.55f;
+                blasts.add(blast);
+                logBlast(col, row);
+                return;
+            }
+            boolean ownArt = SUN_BOMB_NAME.equalsIgnoreCase(plant);
             if (ownArt) {
                 blast.sprite = SUN_BOMB_SPRITE;
                 blast.clip = SUN_BOMB_CLIP;
@@ -198,15 +223,24 @@ public final class ExplosionEffects {
         if (bounds == null || bounds.width <= 0f) {
             return;
         }
-        float scale = SpritePlacer.toSpriteSpace(WIDTH_CELLS * lawn.cellWidth()) / bounds.width;
+        float width = blast.widthCells > 0f ? blast.widthCells : WIDTH_CELLS;
+        float scale = SpritePlacer.toSpriteSpace(width * lawn.cellWidth()) / bounds.width;
 
-        Matrix4 previous = batch.getTransformMatrix().cpy();
-        batch.setTransformMatrix(new Matrix4(previous)
-                .translate(SpritePlacer.toSpriteSpace(blast.x),
-                        SpritePlacer.toSpriteSpace(blast.y), 0f)
-                .scale(scale, scale, 1f));
-        sprite.draw(batch, clip, ClipMap.sample(sprite, clip, blast.age),
-                0f, bounds.y + bounds.height / 2f, true);
-        batch.setTransformMatrix(previous);
+        // One copy sits on the blast's own tile; several are laid evenly across the whole lane, which
+        // is what a row burn is.
+        int copies = Math.max(1, blast.copies);
+        float step = (lawn.rightEdge() - lawn.originX()) / copies;
+        float sample = ClipMap.sample(sprite, clip, blast.age);
+
+        for (int i = 0; i < copies; i++) {
+            float x = copies == 1 ? blast.x : lawn.originX() + step * (i + 0.5f);
+            Matrix4 previous = batch.getTransformMatrix().cpy();
+            batch.setTransformMatrix(new Matrix4(previous)
+                    .translate(SpritePlacer.toSpriteSpace(x),
+                            SpritePlacer.toSpriteSpace(blast.y), 0f)
+                    .scale(scale, scale, 1f));
+            sprite.draw(batch, clip, sample, 0f, bounds.y + bounds.height / 2f, true);
+            batch.setTransformMatrix(previous);
+        }
     }
 }

@@ -84,6 +84,18 @@ public final class EntityInterpolator {
                 sample(mower, (float) mower.getPositionX(), row.getIndex());
             }
         }
+        // Bowling nuts live on the MODE, not on the map, so the row walk above never sees them -- and
+        // without a track they were drawn straight from the model, which advances half a column per
+        // tick. At 10 Hz against 60 fps that is a nut teleporting a third of a tile six times a second,
+        // which is what "the rolling should be smoother" was about.
+        if (session.getMode() instanceof models.game.gamemodes.WallnutBowlingMode bowling) {
+            for (models.entities.plants.bowling.BowlingType ball : bowling.getBalls()) {
+                // py, not the rounded row: a ricocheted nut travels diagonally and rounding it would
+                // make the diagonal a staircase, exactly as it would for a Rotobaga's shots.
+                sample(ball, (float) ball.getPx(), (float) ball.getPy());
+            }
+        }
+
         // Suns live on the session, not on the map: GameMap.getActiveCollectibles() exists but
         // SunSystem never fills it.
         for (Sun sun : session.getActiveSuns()) {

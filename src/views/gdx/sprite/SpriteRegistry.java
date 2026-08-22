@@ -31,6 +31,10 @@ public final class SpriteRegistry {
     // normalised animation name -> entry, for the ~87% of plants that match on shape alone
     private final Map<String, AnimationEntry> byNormalisedName = new HashMap<>();
 
+    // A second key, "GROUP/NAME", for names that exist under more than one group and whose right answer
+    // depends on who is asking. See lookup.
+    private final Map<String, AnimationEntry> byGroupedName = new HashMap<>();
+
     private final Map<String, EntitySprite> cache = new HashMap<>();
     // Everything that fell back to a still image, reported once at the end of loading rather than
     // scattered through the log.
@@ -57,8 +61,18 @@ public final class SpriteRegistry {
         // ZombieDarkArmor3 is NOT here any more: it used to borrow ZOMBIE_DARK_KING's body, which is a
         // different zombie wearing a crown. It has no animation of its own in the dump, so it is served
         // a still instead -- see STILL_IMAGES.
-        m.put("ZombieGargantuar", "GARGANTUAR");
-        m.put("ZombieImp", "GARGANTUAR_IMP");
+        // The Dark Ages pair, chosen over the plain GARGANTUAR/GARGANTUAR_IMP for the clips they carry.
+        // DARK_GARGANTUAR has fire + cannon_fire, which together are the imp throw; ZOMBIE_DARK_IMP_MONK
+        // has fly + land, which is the imp ARRIVING. The default pair can only stand there. See
+        // views.gdx.render.ZombieActions, which is what plays them.
+        m.put("ZombieGargantuar", "DARK_GARGANTUAR");
+        m.put("ZombieImp", "ZOMBIE_DARK_IMP_MONK");
+        // The two adopted zombies whose animation name does not survive normalisation. The other four
+        // (Prospector, Jane, Piano, All-Star) match on shape alone and need no entry.
+        //   ZombieArcade      -> ZOMBIE80SARCADE          (the "80S" is not in the alias)
+        //   ZombieCrystalSkull-> ZOMBIELOSTCITYCRYSTALSKULL (the art keeps its home world in the name)
+        m.put("ZombieArcade", "ZOMBIE_80S_ARCADE");
+        m.put("ZombieCrystalSkull", "ZOMBIE_LOSTCITY_CRYSTALSKULL");
         m.put("ZombieRa", "ZOMBIE_EGYPT_RA");
         m.put("ZombieTombRaiser", "ZOMBIE_EGYPT_TOMBRAISER");
         m.put("ZombieIceAgeDodo", "ZOMBIE_ICEAGE_DODORIDER");
@@ -138,6 +152,10 @@ public final class SpriteRegistry {
             AnimationEntry entry = new AnimationEntry(name, path, clips, durations);
             keepBetter(byName, name, entry);
             keepBetter(byNormalisedName, normalise(name), entry);
+            String group = groupOf(path);
+            if (group != null) {
+                byGroupedName.putIfAbsent(group + "/" + name, entry);
+            }
         }
         Gdx.app.log("SpriteRegistry", "indexed " + byName.size() + " animations");
     }
@@ -285,7 +303,32 @@ public final class SpriteRegistry {
         return mine;
     }
 
+    // "768/FULL/VASEBREAKER/VASE_GARGANTUAR/VASE_GARGANTUAR.PAM" -> "VASEBREAKER".
+    //
+    // The folder one level above the animation's own is what the game files the asset under, which is
+    // exactly the distinction pathScore is guessing at from a handful of known group names.
+    private static String groupOf(String path) {
+        String[] parts = path.split("/");
+        return parts.length < 3 ? null : parts[parts.length - 3].toUpperCase(java.util.Locale.ROOT);
+    }
+
     private AnimationEntry lookup(String entityName) {
+        // "GROUP/NAME" asks for one specific asset, for the cases where the shared name is genuinely
+        // ambiguous and pathScore's heuristic cannot help because BOTH answers are gameplay actors.
+        //
+        // VASE_GARGANTUAR is the one that forced this: VASEBREAKER/VASE_GARGANTUAR is the vase, and
+        // ZOMBIE/VASE_GARGANTUAR is the Gargantuar that climbs out of it. pathScore awards /ZOMBIE/ a
+        // hundred points, so asking for the bare name drew a two-tile Gargantuar standing on the board
+        // in place of every special vase -- correct art, wrong asset, and nothing logged.
+        if (entityName.indexOf('/') >= 0) {
+            AnimationEntry grouped = byGroupedName.get(entityName.toUpperCase(java.util.Locale.ROOT));
+            if (grouped != null) {
+                return grouped;
+            }
+            Gdx.app.error("SpriteRegistry", "no animation " + entityName
+                    + " -- falling back to the unqualified name");
+            return lookup(entityName.substring(entityName.indexOf('/') + 1));
+        }
         String override = NAME_OVERRIDES.get(entityName);
         if (override != null) {
             AnimationEntry entry = byName.get(override);

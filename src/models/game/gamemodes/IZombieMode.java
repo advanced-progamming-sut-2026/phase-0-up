@@ -26,7 +26,12 @@ public class IZombieMode extends StandardMode {
     // Sun income: a DESTRUCTIBLE maker per lane drips sun, plus a bonus per plant broken.
     private static final int STARTING_SUN = 300;
     private static final String SUN_PRODUCER = "ZombieArmor2";     // the buckethead (Bucket, ~1290 HP)
-    private static final double SUN_PER_PRODUCER_PER_TICK = 0.12;  // 5 makers -> ~6 sun/sec at full strength
+    // One drop per maker per twenty seconds, worth a Sunflower's 25 -- see produceSun for why this is
+    // the same income the old per-tick trickle gave.
+    private static final int SUN_DROP_INTERVAL_TICKS = 20 * Constants.TICKS_PER_SECOND;
+    private static final int SUN_DROP_AMOUNT = 25;
+    // Long enough to cross the lawn for, short enough that an uncollected one is a real loss.
+    private static final int SUN_DROP_EXPIRE_TICKS = 25 * Constants.TICKS_PER_SECOND;
     private static final int PLANT_DESTROYED_SUN_REWARD = 50;      // paid when the horde breaks a plant
 
     // The 10-strong pool the level rosters are drawn from (alias -> summon cost). Each level shows a
@@ -43,7 +48,7 @@ public class IZombieMode extends StandardMode {
     private final Map<String, Integer> roster = new LinkedHashMap<>();
     private final List<Zombie> sunProducers = new ArrayList<>();
     private boolean[] brainEaten;
-    private double sunBudget;   // fractional sun carried between ticks until it rounds up to a whole one
+    private long sunTick;       // drives the staggered sun drops; see produceSun
     private boolean started;
 
     public IZombieMode(int difficulty) {
@@ -156,22 +161,42 @@ public class IZombieMode extends StandardMode {
 
     // --- Sun / brains ----------------------------------------------------------------------------
 
+    // Sun makers DROP suns for the player to collect, exactly as a Sunflower does.
+    //
+    // It used to trickle straight into the bank, which made the whole mechanic invisible: the number
+    // went up, and nothing on the board explained why or told the player which zombies were doing it.
+    // A sun that lands on the lawn and has to be clicked is the same economy with the reason attached
+    // -- and it is what makes "protect your sun-makers" mean something you can watch.
+    //
+    // The RATE is unchanged. Five makers used to yield 5 * 0.12 = 0.6 sun a tick, or 6 a second; one
+    // 25-sun drop per maker every 20 seconds is 1.25 a second each, 6.25 across five. Balance held,
+    // presentation replaced.
     private void produceSun(GameSession session) {
-        int alive = 0;
-        for (Zombie producer : sunProducers) {
-            if (!producer.getHealth().isDead()) {
-                alive++;
+        sunTick++;
+        int count = sunProducers.size();
+        for (int i = 0; i < count; i++) {
+            Zombie producer = sunProducers.get(i);
+            if (producer.getHealth().isDead()) {
+                continue;
             }
+            // Staggered across the interval, so five lanes do not all flash a sun on the same tick.
+            long offset = (long) i * SUN_DROP_INTERVAL_TICKS / Math.max(1, count);
+            if ((sunTick + offset) % SUN_DROP_INTERVAL_TICKS != 0) {
+                continue;
+            }
+            dropSun(session, producer);
         }
-        if (alive == 0) {
-            return;
-        }
-        sunBudget += alive * SUN_PER_PRODUCER_PER_TICK;
-        int whole = (int) sunBudget;
-        if (whole > 0) {
-            session.increaseSunAmount(whole);
-            sunBudget -= whole;
-        }
+    }
+
+    private void dropSun(GameSession session, Zombie producer) {
+        int lane = producer.getMovement().getPositionY();
+        // Not falling: this sun was never in the sky. Same reasoning as ProduceSunAbility -- flagging
+        // it as falling would make it drop in from above the board instead of landing beside its maker.
+        session.addSun(new models.entities.collectibles.Sun(producer.getX(), lane, lane,
+                models.entities.collectibles.SunType.NORMAL, SUN_DROP_AMOUNT, false,
+                SUN_DROP_EXPIRE_TICKS));
+        session.reportEvent("A sun-maker drops " + SUN_DROP_AMOUNT + " sun in lane " + lane
+                + ". Grab it before a plant shoots the maker down!");
     }
 
     private void eatBrains(GameSession session) {
@@ -299,6 +324,18 @@ public class IZombieMode extends StandardMode {
 
     public boolean isBrainEaten(int lane) {
         return brainEaten != null && lane >= 0 && lane < brainEaten.length && brainEaten[lane];
+    }
+
+    // Which zombies are this level's sun makers. The view draws them as the game's disco mech rather
+    // than as the plain buckethead the model spawns: a zombie that stands still and makes sun is doing
+    // something no ordinary buckethead does, and it has to look like it.
+    public boolean isSunProducer(Zombie zombie) {
+        for (Zombie producer : sunProducers) {
+            if (producer == zombie) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean isSummonable(String alias) {

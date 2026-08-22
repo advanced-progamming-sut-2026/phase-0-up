@@ -44,18 +44,37 @@ public final class CursorRenderer {
     public void draw(Batch batch, ToolState tools, float worldX, float worldY, float delta) {
         stateTime += delta;
         switch (tools.tool()) {
-            case SEED -> drawPlant(batch, tools.seedName(), worldX, worldY);
+            case SEED -> drawEntity(batch, tools.seedName(), worldX, worldY, null);
+            // A held nut is drawn as the nut itself, through the same path a held plant is: what the
+            // player is carrying IS a plant, it is simply about to be rolled rather than placed.
+            case NUT -> drawEntity(batch, BowlingRenderer.spriteFor(
+                    BowlingRenderer.kindFor(tools.nutToken())), worldX, worldY, null);
+            // And a held zombie, in I, Zombie. With its armour switched on: the roster sells a
+            // Buckethead for three times a Browncoat, and a ghost with no bucket is a ghost of the
+            // wrong purchase.
+            case ZOMBIE -> drawZombie(batch, tools.zombieAlias(), worldX, worldY);
             case SHOVEL -> drawTool(batch, UiArt.SHOVEL_ICON, worldX, worldY);
             case PLANT_FOOD -> drawTool(batch, UiArt.PLANTFOOD_BUTTON, worldX, worldY);
             default -> { }
         }
     }
 
-    private void drawPlant(Batch batch, String plantName, float worldX, float worldY) {
-        if (plantName == null) {
+    private void drawZombie(Batch batch, String alias, float worldX, float worldY) {
+        if (alias == null) {
             return;
         }
-        EntitySprite sprite = sprites.get(plantName);
+        EntitySprite sprite = sprites.get(alias);
+        drawEntity(batch, alias, worldX, worldY,
+                views.gdx.sprite.ArmorVisibility.forAlias(alias, sprite));
+    }
+
+    // parts may be null, which is every plant: only zombies have hideable armour.
+    private void drawEntity(Batch batch, String entityName, float worldX, float worldY,
+                            java.util.Map<String, Boolean> parts) {
+        if (entityName == null) {
+            return;
+        }
+        EntitySprite sprite = sprites.get(entityName);
         if (sprite == null || !sprite.isReady()) {
             return;
         }
@@ -80,7 +99,7 @@ public final class CursorRenderer {
         batch.setTransformMatrix(scaled);
         // Same y-down correction as everywhere else -- the art hangs below the .PAM origin.
         sprite.draw(batch, clip, ClipMap.sample(sprite, clip, stateTime),
-                0f, bounds.y + bounds.height / 2f, true);
+                0f, bounds.y + bounds.height / 2f, true, parts);
         batch.setTransformMatrix(previous);
 
         batch.setPackedColor(previousColor);

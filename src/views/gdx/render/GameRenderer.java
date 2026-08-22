@@ -37,6 +37,10 @@ public final class GameRenderer {
     private final ProjectileRenderer projectiles;
     private final CollectibleRenderer collectibles;
     private final LawnmowerRenderer mowers;
+    private final VaseRenderer vases;
+    private final BowlingRenderer nuts;
+    private final IZombieRenderer brains;
+    private final WeatherEffects weather;
     private final ImpactEffects impacts;
     private final ExplosionEffects explosions;
 
@@ -68,12 +72,16 @@ public final class GameRenderer {
 
     public GameRenderer(Assets assets, SpriteRegistry sprites, LawnGeometry lawn,
                         EntityInterpolator interpolator, EnvironmentType environment) {
-        this.terrain = new TerrainRenderer(sprites, lawn, clocks, environment);
+        this.terrain = new TerrainRenderer(assets, sprites, lawn, clocks, environment);
         this.plants = new PlantRenderer(sprites, lawn, clocks);
         this.zombies = new ZombieRenderer(sprites, lawn, interpolator, clocks);
         this.projectiles = new ProjectileRenderer(assets, lawn, interpolator, sprites);
         this.collectibles = new CollectibleRenderer(sprites, lawn, interpolator, clocks);
         this.mowers = new LawnmowerRenderer(sprites, lawn, interpolator, clocks, environment);
+        this.vases = new VaseRenderer(sprites, lawn, clocks, new views.gdx.ui.UiArt(assets));
+        this.nuts = new BowlingRenderer(sprites, lawn, clocks, interpolator);
+        this.brains = new IZombieRenderer(assets, lawn);
+        this.weather = new WeatherEffects(sprites, lawn);
         this.impacts = new ImpactEffects(sprites);
         this.explosions = new ExplosionEffects(sprites, lawn);
         this.explosions.setCollectibles(this.collectibles);
@@ -102,7 +110,7 @@ public final class GameRenderer {
         }
         clocks.sweep();
         plants.sweepFlashes();
-        zombies.sweepFlashes();
+        zombies.sweepFlashes(delta);
         zombies.resetFootCheck();
     }
 
@@ -111,63 +119,113 @@ public final class GameRenderer {
         return explosions;
     }
 
+    // And the Gargantuar's imp throw, which is an instant rather than a state -- so it too arrives as a
+    // sentence rather than as something readable off the board.
+    public ZombieActions zombieActions() {
+        return zombies.actions();
+    }
+
+    // Same seam, same reason: the tornado and the freezing wind leave nothing on the board to infer
+    // them from, so the model's own narration is what raises them.
+    public WeatherEffects weather() {
+        return weather;
+    }
+
     private void drawLanes(Batch batch, GameSession session, float delta, float alpha) {
         // The blast's rear half, under everything it engulfs.
         explosions.drawRear(batch, delta);
 
         for (int row = 0; row < Constants.BOARD_ROWS; row++) {
-            Row lane = session.getMap().getRow(row);
+            drawLane(batch, session, session.getMap().getRow(row), row, delta, alpha);
+        }
+        finishFrame(batch, session, delta, alpha);
+    }
 
-            mowers.draw(batch, lane.getLawnmower(), row, delta, alpha);
+    // Everything standing in one lane, back to front. Split out of drawLanes because the ORDER is the
+    // whole content of this method and it has to be readable in one screen -- eight layers now, and
+    // every one of them is a decision.
+    private void drawLane(Batch batch, GameSession session, Row lane, int row, float delta,
+                          float alpha) {
+        mowers.draw(batch, lane.getLawnmower(), row, delta, alpha);
+        // Where the mower would be, and never at the same time as one: I, Zombie removes the mowers
+        // in onStart and the brain takes the slot.
+        brains.drawRow(batch, session, row);
 
-            // Terrain before plants: a Grave Buster is planted ON a headstone and has to sit in front
-            // of it, and ice blocks likewise wrap what is underneath.
-            for (int col = 0; col < Constants.BOARD_COLS; col++) {
-                Cell cell = lane.cellAt(col);
-                terrain.drawCell(batch, cell, col, row, delta);
-            }
+        // The water's edge, before the tiles either side of it.
+        terrain.drawWaterline(batch, session, row, delta);
 
-            // Order within a lane: plants, then zombies, then shots.
-            //
-            // A zombie stands IN FRONT of the plant it is eating, so zombies draw over plants. Shots
-            // go last so a pea stays visible as it passes a zombie -- drawing them earlier hid every
-            // shot behind the target it was about to hit.
-            //
-            // This does mean a shot is no longer strictly "under" its shooter. That request is still
-            // satisfied in practice by ProjectileRenderer.muzzleAdjusted, which anchors the start of
-            // the flight to the plant's mouth: the pea emerges from the barrel rather than from the
-            // plant's face, which was the actual goal. The two cannot both hold literally once zombies
-            // sit above plants.
-            for (int col = 0; col < Constants.BOARD_COLS; col++) {
-                plants.drawCell(batch, lane.cellAt(col), col, row, delta);
-            }
+        // Save Our Seeds gilds the tiles it is defending. Under the plants, because it is the ground
+        // they are standing on rather than a badge pinned to them.
+        terrain.drawGuardedTiles(batch, session, row, delta);
 
-            laneZombies.clear();
-            laneZombies.addAll(lane.getZombies());
-            laneZombies.sort(BACK_TO_FRONT);
-            for (Zombie zombie : laneZombies) {
-                zombies.draw(batch, zombie, delta, alpha);
-            }
-
-            for (Projectile projectile : new ArrayList<>(lane.getActiveProjectiles())) {
-                knownShots.add(projectile);
-                projectiles.draw(batch, projectile, alpha, delta, laneZombies);
-            }
-
-            // "Under its shooter, over everything else" cannot come from layer order alone -- it is a
-            // per-entity relationship. So shots are drawn above all plants, and then any shooter with a
-            // pea still leaving its barrel is stamped back on top. Only that one plant is redrawn, and
-            // only while the shot overlaps it, so the pea emerges from behind the barrel and is in
-            // front of every other plant and zombie from then on.
-            for (Projectile projectile : lane.getActiveProjectiles()) {
-                models.entities.plants.Plant shooter = projectile.getShooter();
-                if (shooter != null
-                        && Math.abs(projectile.getX() - shooter.getX()) < MUZZLE_OVERLAP_CELLS) {
-                    plants.redraw(batch, shooter);
-                }
-            }
+        // Terrain before plants: a Grave Buster is planted ON a headstone and has to sit in front
+        // of it, and ice blocks likewise wrap what is underneath.
+        for (int col = 0; col < Constants.BOARD_COLS; col++) {
+            Cell cell = lane.cellAt(col);
+            terrain.drawCell(batch, cell, col, row, delta);
         }
 
+        // Order within a lane: plants, then zombies, then shots.
+        //
+        // A zombie stands IN FRONT of the plant it is eating, so zombies draw over plants. Shots
+        // go last so a pea stays visible as it passes a zombie -- drawing them earlier hid every
+        // shot behind the target it was about to hit.
+        //
+        // This does mean a shot is no longer strictly "under" its shooter. That request is still
+        // satisfied in practice by ProjectileRenderer.muzzleAdjusted, which anchors the start of
+        // the flight to the plant's mouth: the pea emerges from the barrel rather than from the
+        // plant's face, which was the actual goal. The two cannot both hold literally once zombies
+        // sit above plants.
+        for (int col = 0; col < Constants.BOARD_COLS; col++) {
+            plants.drawCell(batch, lane.cellAt(col), col, row, delta);
+        }
+
+        // Vases stand in their tile the way a plant does, and a zombie coming out of one walks in
+        // front of it, so they belong between the plants and the zombies. On any level that is not
+        // Vasebreaker this costs a single instanceof.
+        vases.drawRow(batch, session, row, delta);
+
+        laneZombies.clear();
+        laneZombies.addAll(lane.getZombies());
+        laneZombies.sort(BACK_TO_FRONT);
+        for (Zombie zombie : laneZombies) {
+            zombies.draw(batch, zombie, delta, alpha);
+        }
+
+        // After the zombies, because a bowling nut rolls OVER the ones it has already flattened and
+        // into the ones it has not -- drawn under them it disappears the moment it reaches the horde,
+        // which is the moment the player is watching it.
+        nuts.drawRow(batch, session, row, delta, alpha);
+
+        // The front half of an ice block, so whatever is frozen sits INSIDE it. Its rear half went
+        // down with the terrain, before the plants -- that is how the two-part art is meant to be
+        // used, and one layer alone puts the ice on top of its prisoner like a sticker.
+        for (int col = 0; col < Constants.BOARD_COLS; col++) {
+            terrain.drawCellFront(batch, lane.cellAt(col), col, row, delta);
+        }
+
+        for (Projectile projectile : new ArrayList<>(lane.getActiveProjectiles())) {
+            knownShots.add(projectile);
+            projectiles.draw(batch, projectile, alpha, delta, laneZombies);
+        }
+
+        // "Under its shooter, over everything else" cannot come from layer order alone -- it is a
+        // per-entity relationship. So shots are drawn above all plants, and then any shooter with a
+        // pea still leaving its barrel is stamped back on top. Only that one plant is redrawn, and
+        // only while the shot overlaps it, so the pea emerges from behind the barrel and is in
+        // front of every other plant and zombie from then on.
+        for (Projectile projectile : lane.getActiveProjectiles()) {
+            models.entities.plants.Plant shooter = projectile.getShooter();
+            if (shooter != null
+                    && Math.abs(projectile.getX() - shooter.getX()) < MUZZLE_OVERLAP_CELLS) {
+                plants.redraw(batch, shooter);
+            }
+        }
+    }
+
+    // What is left once every lane has been drawn: spent shots become impacts, the suns go over the
+    // whole board, and the blast's front half goes over those.
+    private void finishFrame(Batch batch, GameSession session, float delta, float alpha) {
         // Spent shots must not accumulate for the whole level: keep only what is still in flight.
         liveShots.clear();
         for (Row lane : session.getMap().getRows()) {
@@ -189,6 +247,10 @@ public final class GameRenderer {
         // Suns float above the whole board and are collected by hovering, so they are drawn over
         // everything rather than per lane.
         collectibles.draw(batch, session, delta, alpha);
+
+        // Weather is in front of the board it is happening to: a sandstorm the zombies walk over is not
+        // a sandstorm. Under the blast, which is the loudest thing on any frame it appears in.
+        weather.draw(batch, delta);
 
         // The blast's front half, over everything -- drawn after the suns so a detonation is not hidden
         // behind one that happens to be sitting on the same tile.

@@ -67,6 +67,21 @@ public final class ArmorVisibility {
         return visibility;
     }
 
+    // The same thing again, starting from a registry alias instead of a template.
+    //
+    // Every place that draws a zombie NOT on the lawn needs this -- the almanac's tiles and detail page,
+    // I-Zombie's roster bar, the cursor ghost of a zombie about to be summoned -- and all of them have
+    // an alias rather than a template in hand. It lives here rather than being looked up per screen
+    // because the failure is silent: forget it and the zombie simply comes out bare-headed.
+    public static Map<String, Boolean> forAlias(String alias, EntitySprite sprite) {
+        if (alias == null || sprite == null) {
+            return null;
+        }
+        models.templates.ZombieTemplate template =
+                utils.registry.ZombieRegistry.getInstance().getZombieTemplateByAlias(alias);
+        return template == null ? null : forArmorTypes(template.getArmors(), sprite);
+    }
+
     // Builds the visibility map for one zombie this frame. Returns null when there is nothing to
     // toggle, which lets PamEntitySprite take the cheaper no-map draw path.
     public static Map<String, Boolean> forZombie(Zombie zombie, EntitySprite sprite) {

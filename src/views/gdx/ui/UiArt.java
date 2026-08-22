@@ -47,6 +47,12 @@ public final class UiArt {
     public static final String PAUSE_BUTTON = "IMAGE_UI_HUD_INGAME_PAUSE_BUTTON";
     public static final String COIN = "IMAGE_UI_HUD_INGAME_COIN";
 
+    // The belt Wall-nut Bowling hands its nuts out on, in place of a seed bank. Two pieces: a 253x19
+    // lip the packets sit on and a 253x36 body under it. Both are authored to stretch along x, which is
+    // the only direction a conveyor ever needs to.
+    public static final String CONVEYOR_TOP = "IMAGE_UI_CONVEYOR_CONVEYOR_TOP";
+    public static final String CONVEYOR_BELT = "IMAGE_UI_CONVEYOR_CONVEYOR_BELT";
+
     private final Assets assets;
     private final Map<String, TextureRegion> regions = new HashMap<>();
     private final Map<String, Drawable> drawables = new HashMap<>();

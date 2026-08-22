@@ -83,13 +83,28 @@ public final class BackgroundRenderer {
         drawSlice(batch, right, x);
     }
 
+    // The three slices are TOP-aligned, not bottom-aligned.
+    //
+    // `[M]` This matters for exactly one world. Egypt, Beach and Dark Ages ship all three slices at
+    // 768 tall, so the distinction is invisible; ICEAGE's middle slice is **785** against its sides' 768,
+    // and drawing everything at y=0 aligned the bottoms and pushed the middle 17px up. The result was a
+    // hard vertical step at both seams -- the ice cracks and the lawn's white rim visibly did not meet
+    // the side slices -- which reads as "the middle of the background is too high", because it was.
+    //
+    // Verified by cropping the middle/right seam out of a render at both alignments: bottom-aligned has
+    // an obvious break in the crack pattern, top-aligned is seamless. So the extra 17px is content at the
+    // BOTTOM of the middle slice, and the tops are what line up.
+    //
+    // Anchored to WORLD_HEIGHT rather than to max(slice heights): 768 is the nominal height every world's
+    // sides are authored at and the height the camera frames, so this is a no-op for the three worlds
+    // that were already right, instead of shifting their sides up by 17.
     private static float drawSlice(Batch batch, TextureRegion region, float x) {
         if (region == null) {
             return 0f;
         }
-        // Drawn at native size at y=0: world units ARE background pixels, so there is no scale factor
-        // anywhere in this class. That is the property that keeps the lawn welded to the art.
-        batch.draw(region, x, 0f);
+        // Native size, no scaling: world units ARE background pixels, which is the property that keeps
+        // the lawn welded to the art.
+        batch.draw(region, x, views.gdx.map.LawnGeometry.WORLD_HEIGHT - region.getRegionHeight());
         return region.getRegionWidth();
     }
 

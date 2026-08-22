@@ -21,9 +21,12 @@ public final class ClipMap {
     //
     // The inverse mistake is just as visible: a headstone's damage poses are one-shot crumbles, and
     // repeating them makes the stone flicker as it re-crumbles several times a second.
+    // "cannon" and "land" are here for the Gargantuar's imp throw: `cannon_fire` is the launch and
+    // `land` is the Imp hitting the ground, and both are once-only. Note that "cannon_fire" does NOT
+    // match the "fire" entry -- startsWith, not contains -- which is why it needs its own.
     private static final java.util.Set<String> ONE_SHOT_PREFIXES = java.util.Set.of(
             "die", "damage", "undamaged", "attack", "special", "shooting", "plantfood",
-            "smash", "fire", "spawn", "enter", "exit", "explosion", "splat");
+            "smash", "fire", "cannon", "land", "spawn", "enter", "exit", "explosion", "splat");
 
     public static boolean loops(String clip) {
         if (clip == null) {
@@ -93,9 +96,14 @@ public final class ClipMap {
                 if (spinning) {
                     yield firstAvailable(sprite, "spin_walk", "spin", "walk");
                 }
+                // "play" after "walk": the Piano Zombie's animation has no walk clip at all -- the
+                // zombies are pushing a piano, and the art calls that clip `play`. Without this it fell
+                // through to `idle` and slid up the lane frozen. Safe as a general fallback: the four
+                // piano variants are the ONLY animations in the dump with a `play` clip, and none of
+                // them has a `walk`, so nothing else can ever reach it.
                 yield holdsNewspaper
                         ? firstAvailable(sprite, "walk_newspaper", "walk")
-                        : firstAvailable(sprite, "walk", IDLE);
+                        : firstAvailable(sprite, "walk", "play", IDLE);
             }
         };
     }

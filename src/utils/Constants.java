@@ -64,9 +64,17 @@ public class Constants {
     // فرصت اولیه‌ی بازیکن برای ساختن دفاع. این مقدار هم هدف است و هم سقف: سختی پایین‌تر می‌تواند
     // انتظار را کوتاه‌تر نکند اما هرگز نباید از این مقدار بیشتر شود، چون انتظار طولانی‌تر خسته‌کننده است.
     // در سختی پیش‌فرض (۳) موج اول دقیقاً بعد از این تعداد ثانیه می‌رسد؛ برای هر دو حالت ماجرا و امتیازی
-    public static final int FIRST_WAVE_DELAY_SECONDS = 30;
-    // زامبی‌های یک موج قطره‌ای وارد می‌شوند، نه همه با هم
-    public static final int ZOMBIE_SPAWN_INTERVAL_SECONDS = 2;
+    public static final int FIRST_WAVE_DELAY_SECONDS = 35;
+    // زامبی‌های یک موج قطره‌ای وارد می‌شوند، نه همه با هم. فاصله‌ی بین هر دو زامبی تصادفی است تا موج
+    // ریتم داشته باشد؛ فاصله‌ی ثابت قبلی (۲۰ تیک) ورود زامبی‌ها را ساعت‌وار و قابل‌پیش‌بینی می‌کرد و
+    // میانگین ۳۰ تیکی جدید فشار موج را هم کمی کم می‌کند. در سختی پیش‌فرض (۳) این بازه دست‌نخورده
+    // می‌ماند؛ سختی بالاتر آن را کوتاه و سختی پایین‌تر آن را بلند می‌کند.
+    public static final int ZOMBIE_SPAWN_DELAY_MIN_TICKS = 20;      // ۲ ثانیه در موتور ۱۰ هرتزی
+    public static final int ZOMBIE_SPAWN_DELAY_MAX_TICKS = 40;      // ۴ ثانیه
+
+    // سهم موج‌های ابتدایی و انتهایی از تنوع زامبی: در موج اول زامبی‌های ارزان چند برابر
+    // محتمل‌ترند و در موج آخر برعکس. عدد ۱ یعنی بی‌وزن (انتخاب کاملاً تصادفی).
+    public static final double ZOMBIE_TIER_BIAS = 6.0;
 
     // ==========================================
     // ۴. دراپ‌ها و جوایز (Loot Drops)
@@ -84,6 +92,9 @@ public class Constants {
     public static final int UPGRADE_PLANT_COST_COINS = 1000;          // هزینه سکه‌ای ارتقای گیاه (inferred)
     public static final int UPGRADE_PLANT_REQUIRED_SEED_PACKETS = 5;  // تعداد seed packet لازم برای ارتقا (inferred)
     public static final int BOOST_PLANT_COST_GEMS = 2;             // هزینه بوست کردن گیاه در صفحه انتخاب
+    // The ceiling CollectionSystem.upgradePlant refuses past. Named because the seed-selection screen
+    // has to say "Max level" on a button, and a 4 written in two places is a 4 that drifts.
+    public static final int PLANT_MAX_LEVEL = 4;                   // سقف سطح گیاه
 
     public static final int MAX_PLANT_FOOD_CAPACITY = 3;           // سقف نگهداری غذای گیاه
     public static final int PLANT_FOOD_COST_GEMS = 3;              // هزینه خرید غذای گیاه از فروشگاه

@@ -52,7 +52,31 @@ public final class ImpactEffects {
                 "SPLAT_KERNALPULT_KERNAL");
         SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.BUTTER,
                 "SPLAT_KERNALPULT_BUTTER");
+        // Each lobbed fruit bursts as itself. A cabbage that leaves a pea splat is the same lie as a
+        // Cabbage-pult throwing a pea, one frame later.
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.CABBAGE,
+                "SPLAT_CABBAGEPULT");
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.MELON,
+                "T_SPLAT_MELONPULT");
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.WINTER_MELON,
+                "T_SPLAT_WINTERMELON");
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.PEPPER,
+                "T_PEPPERPULT_PROJECTILE_SPLAT");
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.THORN,
+                "CACTUS_PROJECTILE_HIT");
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.STAR,
+                "T_STARFRUIT_PROJECTILE_HIT");
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.PIERCING_SPIKE,
+                "T_REDSTINGER_PROJECTILE_HIT");
     }
+
+    // How wide each splat is drawn. A melon bursting is a much bigger event than a thorn landing, and
+    // one size for all of them made the fruit splats look like specks.
+    private static final java.util.Map<String, Float> SPLAT_WIDTH_BY_SPRITE = java.util.Map.of(
+            "SPLAT_CABBAGEPULT", 0.75f,
+            "T_SPLAT_MELONPULT", 0.95f,
+            "T_SPLAT_WINTERMELON", 0.95f,
+            "T_PEPPERPULT_PROJECTILE_SPLAT", 0.80f);
 
     // Clip variants, so repeated hits do not look stamped from one mould. T_SPLAT_PEA ships six;
     // firstAvailable falls back for the splats that ship fewer.
@@ -105,12 +129,19 @@ public final class ImpactEffects {
         Burst burst = new Burst();
         burst.x = worldX;
         burst.y = worldY;
+        // A splat STAYS WHERE IT LANDED. Leaving these at their 0f default made drawSplat interpolate
+        // every splat from the hit toward world (0, 0) over its life -- a stream of pea fragments
+        // sliding off to the bottom-left corner of the board after every single shot. It also tripped
+        // the travelling-strike fade below, which holds full opacity for two thirds of the flight, so
+        // the wrong thing was drawn brightly rather than subtly.
+        burst.toX = worldX;
+        burst.toY = worldY;
         burst.color = new Color(color);
         String byType = type == null ? null : SPLAT_BY_TYPE.get(type);
         burst.sprite = byType != null ? byType : SPLAT_BY_ELEMENT.getOrDefault(
                 element == null ? models.entities.projectiles.Element.NEUTRAL : element,
                 SPLAT_DEFAULT);
-        burst.widthCells = SPLAT_WIDTH_CELLS;
+        burst.widthCells = SPLAT_WIDTH_BY_SPRITE.getOrDefault(burst.sprite, SPLAT_WIDTH_CELLS);
         // Cycled rather than random, so identical runs stay pixel-reproducible for the screenshot
         // harness -- the same reason the old burst used fixed angles.
         burst.clip = CLIPS[nextClip++ % CLIPS.length];

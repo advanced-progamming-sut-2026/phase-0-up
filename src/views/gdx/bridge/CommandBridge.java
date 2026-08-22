@@ -57,6 +57,34 @@ public final class CommandBridge {
         return at.isValid() && submit("collect sun -l " + at.toCommandArgs());
     }
 
+    // "break vase -l (x, y)" -- Vasebreaker. A bare click on a vase, with nothing held.
+    public boolean breakVase(GridPos at) {
+        return at.isValid() && submit("break vase -l " + at.toCommandArgs());
+    }
+
+    // "collect seed -l (x, y)" -- picking up what a vase dropped.
+    public boolean collectSeed(GridPos at) {
+        return at.isValid() && submit("collect seed -l " + at.toCommandArgs());
+    }
+
+    // "bowl -t <kind> -l (x, y)" -- Wall-nut Bowling. The kind is the mode's own token; the red-line
+    // rule and the "is that nut on the belt" check both stay in WallnutBowlingMode.bowlNut.
+    public boolean bowl(String kindToken, GridPos at) {
+        if (kindToken == null || kindToken.isBlank() || !at.isValid()) {
+            return false;
+        }
+        return submit("bowl -t " + kindToken.trim() + " -l " + at.toCommandArgs());
+    }
+
+    // "summon -t <alias> -l (x, y)" -- I, Zombie. The price, the roster check and the red-line rule are
+    // all IZombieMode.summonZombie's; this only names the zombie and the tile.
+    public boolean summon(String zombieAlias, GridPos at) {
+        if (zombieAlias == null || zombieAlias.isBlank() || !at.isValid()) {
+            return false;
+        }
+        return submit("summon -t " + zombieAlias.trim() + " -l " + at.toCommandArgs());
+    }
+
     private boolean submit(String command) {
         return sink.submit(command);
     }

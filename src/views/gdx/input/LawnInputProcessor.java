@@ -5,7 +5,9 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import models.entities.collectibles.Sun;
+import models.entities.interactables.Vase;
 import models.game.GameSession;
+import models.game.gamemodes.VaseBreakerMode;
 import views.gdx.bridge.CommandBridge;
 import views.gdx.map.GridPos;
 import views.gdx.map.LawnGeometry;
@@ -122,6 +124,19 @@ public final class LawnInputProcessor extends InputAdapter {
                 tools.clear();
                 return planted;
             }
+            case NUT -> {
+                // Put down whichever way it goes, for the same reason a seed is: a refusal ("stay
+                // behind the red line") arrives as a toast, and a nut left armed after one makes the
+                // next stray click spend a nut off the belt.
+                boolean bowled = commands.bowl(tools.nutToken(), at);
+                tools.clear();
+                return bowled;
+            }
+            case ZOMBIE -> {
+                boolean summoned = commands.summon(tools.zombieAlias(), at);
+                tools.clear();
+                return summoned;
+            }
             case SHOVEL -> {
                 commands.pluck(at);
                 tools.clear();
@@ -134,10 +149,32 @@ public final class LawnInputProcessor extends InputAdapter {
             }
             default -> {
                 // Nothing held: a bare click still collects a sun sitting on that tile, so suns can be
-                // clicked as well as hovered over.
-                return collectSunAt(at);
+                // clicked as well as hovered over -- and on a Vasebreaker board it is also the only
+                // gesture there is, because that mode hands out no seed packets to arm.
+                return collectSunAt(at) || vasebreaker(at);
             }
         }
+    }
+
+    // What a bare click means on a Vasebreaker board: pick up a packet lying there, or smash the vase.
+    //
+    // The packet is tried FIRST because a vase and the seed it dropped never share a tile -- a vase
+    // drops its packet onto its own cell as it breaks -- so the two are exclusive, and trying the smash
+    // first would be a coin toss on the one tile where it matters.
+    //
+    // Only ever asked when the tile actually holds one, for the same reason a sun is: `break vase` on
+    // an empty tile is refused with a message, and firing one on every stray click would flood the
+    // toast overlay with "there's no vase there".
+    private boolean vasebreaker(GridPos at) {
+        VaseBreakerMode mode = views.gdx.render.VaseRenderer.modeOf(session);
+        if (mode == null) {
+            return false;
+        }
+        if (mode.hasDroppedSeed(at.col(), at.row())) {
+            return commands.collectSeed(at);
+        }
+        Vase vase = mode.getVaseAt(at.col(), at.row());
+        return vase != null && !vase.isBroken() && commands.breakVase(at);
     }
 
     // Suns are collected by CLICKING them, not by passing the cursor over them.

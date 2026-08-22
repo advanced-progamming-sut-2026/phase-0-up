@@ -115,6 +115,76 @@ public final class DebugFlags {
     //   gradlew runGui -Dpvz.menu=greenhouse -Dpvz.potCheck=2 -Dpvz.smokeFrames=60
     public static final int POT_CHECK = number("pvz.potCheck");
 
+    // Puts N plants on the seed bar, so a capture shows filled slots, empty slots and the grid with
+    // those plants taken out of it in the same frame.
+    //
+    // -Dpvz.click cannot reach a seed card: cards are clickable Tables, not TextButtons, and an
+    // unattended run has no pointer to hover one with either -- which also means the detail strip is
+    // stuck on whatever plant the screen focused for itself. Every hop is a real "add plant" command,
+    // so this exercises the add path as well as the look. -1 is off.
+    //
+    //   gradlew runGui -Dpvz.menu=plants -Dpvz.seedCheck=3 -Dpvz.smokeFrames=60
+    public static final int SEED_CHECK = number("pvz.seedCheck");
+
+    // Smashes N vases on a Vasebreaker board by simulated click, then picks up whatever they dropped.
+    //
+    // Every other state of that board -- a smashed vase, a packet lying on the grid, a hand with
+    // anything in it -- is reachable only by clicking, and a lawn tile is not a TextButton so
+    // -Dpvz.click cannot reach one. Going through LawnInputProcessor rather than posting the command
+    // directly is the point: it exercises the unproject-to-tile half of the path as well as the look.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devMinigame=vasebreaker -Dpvz.vaseCheck=6
+    public static final int VASE_CHECK = number("pvz.vaseCheck");
+
+    // Rolls N nuts off Wall-nut Bowling's conveyor, one per lane, by simulated click.
+    //
+    // A nut only exists while it is travelling, so there is no still frame of that board that shows one
+    // without somebody having bowled it first -- and the belt cards are Scene2D actors on a tile-less
+    // HUD, so neither -Dpvz.click nor a tile click reaches the pair of gestures this needs. Arms the
+    // card through ToolState and clicks the lawn, exactly as a player would.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devMinigame=bowling -Dpvz.bowlCheck=3 -Dpvz.smokeFrames=150
+    public static final int BOWL_CHECK = number("pvz.bowlCheck");
+
+    // Summons N zombies off I, Zombie's roster, one per lane, by simulated click.
+    //
+    // Same problem as the belt: arming a roster card is a Scene2D click and placing the zombie is a lawn
+    // click, and no single existing flag does both. Buys the cheapest zombies first so a starting bank
+    // of 300 sun actually stretches to a few.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devMinigame=izombie -Dpvz.summonCheck=3
+    public static final int SUMMON_CHECK = number("pvz.summonCheck");
+
+    // Runs N game ticks in one frame, shortly after the board opens, through the game's own
+    // `advance time` command.
+    //
+    // The world effects are the reason: a freezing wind blows when a WAVE starts and Egypt's tornado
+    // only on the final one, so both are twenty-five to several hundred seconds of real play away, and
+    // each lasts about two seconds once it does arrive. Fast-forwarding to the wave and then capturing
+    // a few frames later is the only way a still frame catches either.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devChapter=2 -Dpvz.fastForward=300 -Dpvz.smokeFrames=70
+    public static final int FAST_FORWARD = number("pvz.fastForward");
+
+    // With -Dpvz.fastForward: N rounds of "clear the board, let the next wave come".
+    //
+    // Waves after the first are gated by HEALTH -- the next launches once 75% of the current one's HP
+    // is gone -- so no amount of advancing time alone reaches a late wave. Egypt's tornado fires on the
+    // FINAL wave and nowhere else, which made it the one world effect no capture could get to.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.fastForward=260 -Dpvz.rushWaves=6 -Dpvz.smokeFrames=60
+    public static final int RUSH_WAVES = number("pvz.rushWaves");
+
+    // Raises the end-of-level panel without playing to the end: "win" or "lose".
+    //
+    // Losing on purpose is surprisingly hard to stage -- the lawnmowers save every lane once, waves are
+    // health-gated so time alone does not advance them, and a board with no plants still takes several
+    // minutes to fall. The panel is pure VIEW, so a view-only shortcut to it is the honest instrument:
+    // it shows exactly what a real loss shows, because it is the same call GameScreen makes.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.showOutcome=lose -Dpvz.smokeFrames=50
+    public static final String SHOW_OUTCOME = text("pvz.showOutcome");
+
     private DebugFlags() { }
 
     private static String text(String key) {

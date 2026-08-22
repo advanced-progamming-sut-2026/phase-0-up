@@ -55,6 +55,10 @@ public final class ProjectileRenderer {
     // Element is the wrong axis for these: a rutabaga and a corn kernel are both NEUTRAL, so both were
     // drawn as a green pea. Rotobaga ships two flight animations (PROJECTILE1 and PROJECTILE2, the
     // second being the return trip in the real game); the first is the one that leaves the plant.
+    // Every type the plant data actually authors gets its own flight art. Element is the wrong axis for
+    // all of them: a cabbage, a thorn, a star, a melon and a corn kernel are all NEUTRAL, so keying on
+    // element drew every one of them as a green pea -- a Cabbage-pult lobbing peas, a Cactus firing
+    // peas. The type is what the plant chose and the type is what the dump has art for.
     private static final Map<models.entities.projectiles.ProjectileType, String> TYPE_SPRITE =
             new java.util.EnumMap<>(models.entities.projectiles.ProjectileType.class);
 
@@ -65,6 +69,32 @@ public final class ProjectileRenderer {
                 "T_KERNALPULT_PROJECTILE");
         TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.BUTTER,
                 "T_KERNALPULT_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.CABBAGE,
+                "T_CABBAGEPULT_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.MELON,
+                "T_MELON_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.WINTER_MELON,
+                "T_WINTERMELON_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.PEPPER,
+                "T_PEPPERPULT_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.THORN,
+                "T_CACTUS_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.STAR,
+                "T_STARFRUIT_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.SPORE,
+                "T_PUFFSHROOM_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.FUME,
+                "T_SPORESHROOM_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.GOO,
+                "GOOPEASHOOTER_PROJECTILES");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.GRAPE,
+                "GRAPESHOT_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.BOWLING_BULB,
+                "BOWLINGBULB_PROJECTILE1");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.PLASMA_BALL,
+                "BOWLINGBULB_PLANTFOOD_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.PIERCING_SPIKE,
+                "T_REDSTINGER_PROJECTILE");
     }
 
     // Fired at the plant's mouth on the frame a shot first appears. Only Rotobaga ships one; anything
@@ -101,9 +131,25 @@ public final class ProjectileRenderer {
     // 1.05 cells is right for the fire pea, whose bounds are mostly flame trailing behind a small pea
     // -- fit the BOX to a pea's width and the pea itself becomes a speck. A corn kernel has no trail,
     // so its box is the kernel, and the same 1.05 made it the size of the plant that threw it.
-    private static final Map<String, Float> SPRITE_WIDTH_CELLS = Map.of(
-            "T_KERNALPULT_PROJECTILE", 0.40f,
-            "ROTORUTABAGA_PROJECTILE1", 0.70f);
+    private static final Map<String, Float> SPRITE_WIDTH_CELLS = Map.ofEntries(
+            Map.entry("T_KERNALPULT_PROJECTILE", 0.40f),
+            Map.entry("ROTORUTABAGA_PROJECTILE1", 0.70f),
+            // The lobbed fruit are big things a plant heaves overhead -- roughly two thirds of a tile,
+            // sized against each other rather than against a pea so a melon outweighs a cabbage.
+            Map.entry("T_CABBAGEPULT_PROJECTILE", 0.55f),
+            Map.entry("T_MELON_PROJECTILE", 0.72f),
+            Map.entry("T_WINTERMELON_PROJECTILE", 0.72f),
+            Map.entry("T_PEPPERPULT_PROJECTILE", 0.55f),
+            // Small, fast, and fired flat.
+            Map.entry("T_CACTUS_PROJECTILE", 0.34f),
+            Map.entry("T_STARFRUIT_PROJECTILE", 0.40f),
+            Map.entry("T_PUFFSHROOM_PROJECTILE", 0.42f),
+            Map.entry("T_SPORESHROOM_PROJECTILE", 0.50f),
+            Map.entry("GOOPEASHOOTER_PROJECTILES", 0.36f),
+            Map.entry("GRAPESHOT_PROJECTILE", 0.30f),
+            Map.entry("BOWLINGBULB_PROJECTILE1", 0.55f),
+            Map.entry("BOWLINGBULB_PLANTFOOD_PROJECTILE", 0.60f),
+            Map.entry("T_REDSTINGER_PROJECTILE", 0.36f));
 
     // Elements with no dedicated sprite in the dump still have to read apart, so those keep a tint over
     // the green pea. Ice and neutral are NOT tinted any more: they have their own art.

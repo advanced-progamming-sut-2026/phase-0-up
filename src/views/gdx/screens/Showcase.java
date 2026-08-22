@@ -36,6 +36,7 @@ final class Showcase {
         plantSunShrooms();
         spawnZombies();
         makeSuns();
+        throwImp();
 
         // Arm a seed so the ghost cursor is visible the moment you move the mouse over the lawn.
         tools.selectSeed("Wall-nut");
@@ -81,6 +82,33 @@ final class Showcase {
         engine.submitInGameCommand("plant plant -t Caulipower -l (1, 2)");
         engine.submitInGameCommand("plant plant -t Electric Blueberry -l (2, 3)");
         engine.submitInGameCommand("plant plant -t Kernel-pult -l (2, 1)");
+        plantShotVariety();
+    }
+
+    // One of each SHOT that has its own art, side by side.
+    //
+    // Every one of these was a green pea until the projectile art was keyed on the plant's chosen
+    // ProjectileType rather than on its element -- a cabbage, a melon, a thorn and a star are all
+    // NEUTRAL, so element alone could never tell them apart. Standing them in adjacent lanes turns
+    // "does each plant throw its own thing" into a single look, the same way the Sun-shrooms do for
+    // staged art.
+    private void plantShotVariety() {
+        for (String name : new String[] {"Cabbage-pult", "Melon-pult", "Cactus", "Starfruit"}) {
+            if (session.getSelectedSeed(name) == null) {
+                session.addSeed(new models.game.SeedPacket(name, 5));
+            }
+        }
+        engine.submitInGameCommand("plant plant -t Cabbage-pult -l (2, 0)");
+        engine.submitInGameCommand("plant plant -t Melon-pult -l (0, 1)");
+        engine.submitInGameCommand("plant plant -t Cactus -l (0, 2)");
+        engine.submitInGameCommand("plant plant -t Starfruit -l (0, 3)");
+
+        // Jalapeno burns its whole lane and is gone in a second, so an ordinary run never shows it. Row 4
+        // is the Sun-shroom row and has no zombies in it, so nothing is destroyed by putting it here.
+        if (session.getSelectedSeed("Jalapeno") == null) {
+            session.addSeed(new models.game.SeedPacket("Jalapeno", 5));
+        }
+        engine.submitInGameCommand("plant plant -t Jalapeno -l (4, 4)");
     }
 
     // Three Sun-shrooms in the back row, one per growth stage.
@@ -135,6 +163,51 @@ final class Showcase {
             engine.submitInGameCommand("cheat spawn-zombie -t ZombieDefault -l (7, " + row + ")");
         }
         engine.submitInGameCommand("cheat spawn-zombie -t ZombieDefault -l (4, 2)");
+        hypnotiseOne();
+    }
+
+    // One zombie turned round, so the mirrored art can be compared with the ones beside it.
+    //
+    // Hypnosis is otherwise almost impossible to stage: it happens when a zombie EATS a Hypno-shroom,
+    // which means waiting for one to reach the plant and chew through it. The flag is set directly
+    // here rather than through a command because there is no cheat for it -- and the flag is all the
+    // renderer reads, so this shows exactly what a real hypnosis would.
+    private void hypnotiseOne() {
+        for (models.entities.zombies.Zombie zombie : session.getMap().getRow(0).getZombies()) {
+            zombie.getState().setHypnotized(true);
+            com.badlogic.gdx.Gdx.app.log("Showcase", "hypnotised " + zombie.getAlias()
+                    + " in row 0 -- it should be MIRRORED and walking right");
+            return;
+        }
+    }
+
+    // A Gargantuar already hurt enough to throw its Imp, in row 3.
+    //
+    // Row 3 and not row 4: the Jalapeno above burns row 4 end to end within the first second, and a
+    // Gargantuar standing there at half health was incinerated before it ever took its turn. Two runs
+    // of "the throw never fires" were that and nothing else.
+    //
+    // ThrowImp fires when the Gargantuar drops to HALF its starting health, and a 3600-HP Gargantuar is
+    // several minutes of shooting away from that -- so the throw, `fire` + `cannon_fire` on the thrower
+    // and `fly` + `land` on the Imp, is unreachable in any run short enough to screenshot.
+    //
+    // Damage is dealt through applyDamage rather than by writing the HP field, so this is a zombie that
+    // has genuinely been shot: the layers peel in the normal order and the ABILITY still decides for
+    // itself whether to throw, on its own rule. Same shape as hypnotiseOne() above and for the same
+    // reason -- there is no cheat command for either.
+    private void throwImp() {
+        engine.submitInGameCommand("cheat spawn-zombie -t ZombieGargantuar -l (7, 3)");
+        for (models.entities.zombies.Zombie zombie : session.getMap().getRow(3).getZombies()) {
+            if (!"ZombieGargantuar".equalsIgnoreCase(zombie.getAlias())) {
+                continue;
+            }
+            // Just past half, so the threshold in ThrowImp is crossed on the next tick.
+            int toHalf = zombie.getHealth().getMaxTotalHp() / 2 + 1;
+            zombie.getHealth().applyDamage(toHalf, models.entities.projectiles.Element.NEUTRAL, null);
+            com.badlogic.gdx.Gdx.app.log("Showcase", "Gargantuar in row 3 shot down to "
+                    + zombie.getHealth().getTotalHP() + " HP -- it should throw its Imp to column 2");
+            return;
+        }
     }
 
     // Three sun values side by side in row 4, so the size difference is a comparison rather than a

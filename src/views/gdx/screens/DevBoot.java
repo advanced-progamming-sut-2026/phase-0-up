@@ -77,7 +77,20 @@ public final class DevBoot {
         return profile;
     }
 
+    // Which mini-game to open instead of a campaign level, by the same names the Travel Log's tiles
+    // use. Mini-games are built by MinigameFactory and belong to no chapter, so there is no
+    // chapter/level pair that reaches one -- and the Travel Log route needs a click a screenshot run
+    // cannot make.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devMinigame=vasebreaker -Dpvz.skipIntro=1
+    private static final String MINIGAME_PROPERTY = "pvz.devMinigame";
+    private static final String DIFFICULTY_PROPERTY = "pvz.devDifficulty";
+
     private static Level resolveLevel(Profile profile) {
+        Level minigame = resolveMinigame();
+        if (minigame != null) {
+            return minigame;
+        }
         int chapterNumber = intProperty(CHAPTER_PROPERTY, 1);
         int levelNumber = intProperty(LEVEL_PROPERTY, 1);
 
@@ -87,6 +100,27 @@ public final class DevBoot {
         Chapter chapter = chapters.get(clamp(chapterNumber, 1, chapters.size()) - 1);
         Level[] levels = chapter.getLevels();
         return levels[clamp(levelNumber, 1, levels.length) - 1];
+    }
+
+    // Null when the property is absent, which is the ordinary campaign path.
+    private static Level resolveMinigame() {
+        String wanted = System.getProperty(MINIGAME_PROPERTY, "").trim().toLowerCase(java.util.Locale.ROOT);
+        if (wanted.isEmpty()) {
+            return null;
+        }
+        int difficulty = intProperty(DIFFICULTY_PROPERTY, 1);
+        Level level = switch (wanted) {
+            case "vasebreaker" -> factories.MinigameFactory.createVasebreaker(difficulty);
+            case "bowling", "wallnutbowling" -> factories.MinigameFactory.createWallnutBowling(difficulty);
+            case "izombie" -> factories.MinigameFactory.createIZombie(difficulty);
+            case "beghouled" -> factories.MinigameFactory.createBeghouled(difficulty);
+            case "zombotany" -> factories.MinigameFactory.createZombotany(difficulty);
+            default -> null;
+        };
+        if (level == null) {
+            Gdx.app.error("DevBoot", "-D" + MINIGAME_PROPERTY + "=" + wanted + " is not a mini-game");
+        }
+        return level;
     }
 
     // Mirrors ToggleSeedCommand's construction (recharge seconds rounded to a tick cooldown) without

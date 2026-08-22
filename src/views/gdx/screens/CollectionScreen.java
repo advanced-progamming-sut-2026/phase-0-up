@@ -504,10 +504,7 @@ public final class CollectionScreen extends MenuScreen {
     // made Conehead, Buckethead and Brick indistinguishable on this screen.
     private java.util.Map<String, Boolean> armorParts(String alias,
                                                       views.gdx.sprite.EntitySprite sprite) {
-        ZombieTemplate template = ZombieRegistry.getInstance().getZombieTemplateByAlias(alias);
-        return template == null
-                ? null
-                : views.gdx.sprite.ArmorVisibility.forArmorTypes(template.getArmors(), sprite);
+        return views.gdx.sprite.ArmorVisibility.forAlias(alias, sprite);
     }
 
     // A scrap of lawn for the live view to stand on.

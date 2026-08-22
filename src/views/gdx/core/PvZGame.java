@@ -241,17 +241,32 @@ public class PvZGame extends Game {
     // GameSession by hand. Anything the real flow does that a hand-built session would skip is exactly
     // what this shortcut must not hide.
     private void openFirstLevel(MenuType menu) {
+        // Which one, from the same two properties DevBoot takes, so -Dpvz.menu=plants and
+        // -Dpvz.screen=game are aimed the same way. It defaults to 1-1 and matters because every
+        // special mode lives on a `-3`: seed selection under Locked Plants cannot be reached at all
+        // without it, and that is the screen the mode's slot rules are about.
+        int chapter = intProperty("pvz.devChapter", 1);
+        int level = intProperty("pvz.devLevel", 1);
+
         // From the play menu, because the router dispatches on the menu the session is CURRENTLY in --
         // "menu enter chapter" is a play-menu command and is not recognised anywhere else.
         appSession.setCurrentMenu(MenuType.PLAY_MENU);
-        router.submit("menu enter chapter -c 1");
-        router.submit("level -l 1");
+        router.submit("menu enter chapter -c " + chapter);
+        router.submit("level -l " + level);
         if (appSession.getCurrentGameSession() == null) {
             Gdx.app.error("PvZGame", "-Dpvz.menu=" + menu.getMenuName()
-                    + ": could not open chapter 1 level 1");
+                    + ": could not open chapter " + chapter + " level " + level);
             return;
         }
         appSession.setCurrentMenu(menu);
+    }
+
+    private static int intProperty(String key, int fallback) {
+        try {
+            return Integer.parseInt(System.getProperty(key, String.valueOf(fallback)).trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 
     private void signInFirstSavedUser() {
