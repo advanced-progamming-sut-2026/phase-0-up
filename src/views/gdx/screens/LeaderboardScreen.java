@@ -2,11 +2,17 @@ package views.gdx.screens;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
+import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Align;
 import controllers.systems.LeaderboardSystem;
 import models.leaderboard.LbColumn;
@@ -53,13 +59,23 @@ public final class LeaderboardScreen extends MenuScreen {
 
     private static final Color HEADER = new Color(1f, 0.94f, 0.62f, 1f);
     private static final Color HEADER_IDLE = new Color(0.78f, 0.76f, 0.72f, 1f);
+    private static final Color HEADER_BAND = new Color(0f, 0f, 0f, 0.42f);
     private static final Color ROW_EVEN = new Color(0f, 0f, 0f, 0.32f);
     private static final Color ROW_ODD = new Color(0f, 0f, 0f, 0.18f);
     // The signed-in player's own row, so they can find themselves without reading every name.
     private static final Color ROW_SELF = new Color(0.20f, 0.34f, 0.16f, 0.75f);
+    // Added to a row's own colour on hover -- brighter AND slightly more opaque, so it lifts off the
+    // dark ones and the green self-row alike.
+    private static final Color ROW_HOVER = new Color(0.14f, 0.14f, 0.14f, 0.14f);
     private static final Color MEDAL_GOLD = new Color(1f, 0.85f, 0.35f, 1f);
     private static final Color MEDAL_SILVER = new Color(0.85f, 0.87f, 0.92f, 1f);
     private static final Color MEDAL_BRONZE = new Color(0.86f, 0.60f, 0.36f, 1f);
+
+    // The game's own sort markers, from the almanac's sort control -- 39x39 each, drawn small in the
+    // corner of whichever heading is doing the sorting.
+    private static final String SORT_ASCENDING = "image_ui_almanac_sort_ascending_up";
+    private static final String SORT_DESCENDING = "image_ui_almanac_sort_descending_up";
+    private static final float SORT_MARK = 20f;
 
     private final LeaderboardSystem leaderboard = LeaderboardSystem.getInstance();
 
@@ -114,10 +130,17 @@ public final class LeaderboardScreen extends MenuScreen {
 
     private void buildHeader() {
         header.clearChildren();
+        // A band of its own, so the five buttons read as one heading rather than as a row of controls
+        // floating above the table.
+        header.setBackground(context.assets().solid(HEADER_BAND));
+        Label player = label("Player");
+        player.setAlignment(Align.left);
         header.add(label("#")).width(RANK_WIDTH).height(HEADER_HEIGHT);
-        header.add(label("Player")).width(NAME_WIDTH).height(HEADER_HEIGHT);
+        header.add(player).width(NAME_WIDTH).height(HEADER_HEIGHT).left();
         for (LbColumn candidate : LbColumn.values()) {
-            header.add(headerCell(candidate)).width(COLUMN_WIDTH).height(HEADER_HEIGHT).padLeft(2f);
+            // No padding between headings: the button art carries its own transparent margin, and 2 units
+            // a column put the fifth heading ten units right of the numbers underneath it.
+            header.add(headerCell(candidate)).width(COLUMN_WIDTH).height(HEADER_HEIGHT);
         }
     }
 
@@ -131,11 +154,11 @@ public final class LeaderboardScreen extends MenuScreen {
 
     // A sortable column heading.
     //
-    // Which column is sorting is carried by the BUTTON, not by a caret in its text: green for the
-    // active one, brown for the rest, the same green/brown pairing every other screen uses for "this
-    // one" versus "the others". A glyph would have to fit inside "Non-Daily Quests" in a 138px button,
-    // which it does not -- the first attempt spilled the arrow out past the panel's edge. Which
-    // DIRECTION it is sorting is in the caption above, where there is room to say it in words.
+    // Which column is sorting is carried by the BUTTON: green for the active one, brown for the rest,
+    // the same green/brown pairing every other screen uses for "this one" versus "the others". Which
+    // DIRECTION is a mark in the corner, not a glyph in the text -- a caret has to fit inside
+    // "Non-Daily Quests" in a 152px button, which it does not, and the first attempt at that spilled
+    // the arrow out past the panel's edge. Stacked over the corner it costs the label nothing.
     private Actor headerCell(LbColumn target) {
         boolean active = target == column;
         TextButton button = MenuStyles.button(skin, target.getDisplayName(),
@@ -149,7 +172,26 @@ public final class LeaderboardScreen extends MenuScreen {
                 sortBy(target);
             }
         });
-        return button;
+        if (!active) {
+            return button;
+        }
+        Stack stacked = new Stack();
+        stacked.add(button);
+        Actor mark = sortMark();
+        if (mark != null) {
+            Table corner = new Table();
+            corner.setTouchable(Touchable.disabled);   // the whole heading must stay one click target
+            corner.add(mark).size(SORT_MARK).expand().bottom().right().pad(3f);
+            stacked.add(corner);
+        }
+        return stacked;
+    }
+
+    // Null if the art is missing: the heading still says which column is sorting, and the caption still
+    // says which way.
+    private Actor sortMark() {
+        Drawable arrow = MenuStyles.drawable(skin, ascending ? SORT_ASCENDING : SORT_DESCENDING);
+        return arrow == null ? null : new Image(arrow);
     }
 
     // Clicking the active column flips it; clicking another switches to it. A fresh column starts
@@ -186,24 +228,70 @@ public final class LeaderboardScreen extends MenuScreen {
         boolean self = me != null && me.equalsIgnoreCase(entry.getUsername());
 
         Table row = new Table();
-        row.setBackground(context.assets().solid(
-                self ? ROW_SELF : (rank % 2 == 0 ? ROW_EVEN : ROW_ODD)));
+        Color rest = self ? ROW_SELF : (rank % 2 == 0 ? ROW_EVEN : ROW_ODD);
+        row.setBackground(context.assets().solid(rest));
+        addHoverTint(row, rest);
 
         Label rankLabel = MenuStyles.label(skin, String.valueOf(rank), MenuStyles.TEXT);
         rankLabel.setColor(medal(rank));
         row.add(rankLabel).width(RANK_WIDTH);
 
-        Label name = MenuStyles.label(skin, entry.getUsername(), MenuStyles.TEXT);
+        // Your own row is tinted AND named in gold with a marker, because the tint alone is one green
+        // band among alternating dark ones and is easy to read as banding rather than as you.
+        Label name = MenuStyles.label(skin, self ? entry.getUsername() + "   (you)"
+                : entry.getUsername(), MenuStyles.TEXT);
         name.setAlignment(Align.left);
+        if (self) {
+            name.setColor(MEDAL_GOLD);
+        }
         row.add(name).width(NAME_WIDTH).left();
 
         // Same order as the headings, and read through the same enum, so a column added to LbColumn
         // shows up in both places or in neither.
         for (LbColumn candidate : LbColumn.values()) {
-            row.add(MenuStyles.label(skin, valueOf(entry, candidate), MenuStyles.TEXT))
-                    .width(COLUMN_WIDTH);
+            Label value = MenuStyles.label(skin, valueOf(entry, candidate), MenuStyles.TEXT);
+            // The column being sorted on is the one the reader is scanning, so it is the one that gets
+            // to be bright. Everything else is deliberately a shade back.
+            value.setColor(candidate == column ? HEADER : HEADER_IDLE);
+            row.add(value).width(COLUMN_WIDTH);
         }
         return row;
+    }
+
+    // A row lights up under the pointer. Nothing here is clickable, so this is orientation rather than
+    // affordance: on a seven-column table the eye loses its place somewhere between the name and the
+    // number, and a lit row is what carries it across.
+    //
+    // The background is swapped rather than a translucent panel laid over the row -- an overlay would
+    // have to be a non-cell child of a Table, which lays out only its cells, and it would dim the very
+    // numbers it is meant to help read.
+    private void addHoverTint(Table row, Color rest) {
+        Drawable idle = context.assets().solid(rest);
+        Drawable lit = context.assets().solid(brighten(rest));
+        row.setTouchable(Touchable.enabled);
+        row.addListener(new InputListener() {
+            @Override
+            public void enter(InputEvent event, float x, float y, int pointer, Actor from) {
+                if (pointer == -1) {
+                    row.setBackground(lit);
+                }
+            }
+
+            @Override
+            public void exit(InputEvent event, float x, float y, int pointer, Actor to) {
+                if (pointer == -1) {
+                    row.setBackground(idle);
+                }
+            }
+        });
+    }
+
+    private static Color brighten(Color rest) {
+        return new Color(
+                Math.min(1f, rest.r + ROW_HOVER.r),
+                Math.min(1f, rest.g + ROW_HOVER.g),
+                Math.min(1f, rest.b + ROW_HOVER.b),
+                Math.min(1f, rest.a + ROW_HOVER.a));
     }
 
     // Rank colour: the podium gets one, everybody else is plain. Rank comes from the ORDER, not from

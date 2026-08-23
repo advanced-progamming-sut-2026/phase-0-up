@@ -106,6 +106,12 @@ public final class GreenhouseScreen extends MenuScreen {
         return 0.97f;
     }
 
+    // The Zen Garden theme. This screen IS the Zen Garden -- it is drawn on that background.
+    @Override
+    protected String musicTrack() {
+        return views.gdx.core.AudioManager.MUSIC_GREENHOUSE;
+    }
+
     @Override
     protected void build(Table root) {
         addGardenBackdrop();

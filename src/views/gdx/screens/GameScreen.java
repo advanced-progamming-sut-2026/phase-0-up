@@ -39,12 +39,21 @@ public final class GameScreen extends ScreenAdapter {
 
     private final BackgroundRenderer background;
     private final GridOverlayRenderer grid = new GridOverlayRenderer();
+    private final views.gdx.render.DangerGlow danger = new views.gdx.render.DangerGlow();
+    private final views.gdx.core.AudioCues cues;
+    private final String[] lawnMusic;
+    private final String[] finalWaveMusic;
     private final views.gdx.render.ModeOverlayRenderer modeOverlay =
             new views.gdx.render.ModeOverlayRenderer();
     private final views.gdx.render.GameRenderer entities;
     private final views.gdx.bridge.EntityInterpolator interpolator =
             new views.gdx.bridge.EntityInterpolator();
     private final views.gdx.bridge.GameLoopDriver loop;
+    private final views.gdx.render.CameraShake shake = new views.gdx.render.CameraShake();
+    // Where the camera rests. A shake is applied as an offset FROM this rather than added to the live
+    // position, which would accumulate and walk the board off screen over a level's worth of blasts.
+    private float cameraBaseX;
+    private float cameraBaseY;
     private LawnGeometry lawn;
 
     // Interaction (phase 2). ToolState is what the cursor holds between two clicks; CommandBridge turns
@@ -129,7 +138,27 @@ public final class GameScreen extends ScreenAdapter {
         engine.setInGameRenderer(new views.gdx.renderers.GdxInGameRenderer(context.toasts(),
                 this::onModelEvent));
 
+        this.cues = new views.gdx.core.AudioCues(context.audio());
         this.commands = new views.gdx.bridge.CommandBridge(engine::submitInGameCommand);
+        this.commands.setAudio(context.audio());
+        // Built once rather than per frame: these are handed to playMusic on every render so the switch
+        // to the closing wave's theme needs nothing watching for it, and allocating two arrays a frame
+        // for a call that is usually a string compare would be silly.
+        // A mini-game has no world of its own -- MinigameFactory builds a Level with no template, which
+        // is the same fact resolveEnvironment falls back on -- so it asks for its own track first and
+        // only then for whatever world it happened to borrow a background from.
+        String minigame = isMinigame(session) ? views.gdx.core.AudioManager.MUSIC_MINIGAME : null;
+        this.lawnMusic = new String[] {
+            minigame,
+            views.gdx.core.AudioManager.lawnTrack(environment, false),
+            views.gdx.core.AudioManager.MUSIC_LAWN,
+        };
+        this.finalWaveMusic = new String[] {
+            minigame,
+            views.gdx.core.AudioManager.lawnTrack(environment, true),
+            views.gdx.core.AudioManager.lawnTrack(environment, false),
+            views.gdx.core.AudioManager.MUSIC_LAWN,
+        };
         this.lawnInput = new views.gdx.input.LawnInputProcessor(
                 viewport, lawn, session, commands, tools, entities.collectibles());
         this.hud = new views.gdx.ui.GameHud(context.assets(), context.sprites(), session, tools);
@@ -166,6 +195,13 @@ public final class GameScreen extends ScreenAdapter {
         return EnvironmentType.ANCIENT_EGYPT;
     }
 
+    // A level built by MinigameFactory carries no template. Same fact resolveEnvironment reads, asked
+    // the other way round.
+    private static boolean isMinigame(GameSession session) {
+        return session != null && session.getLevel() != null
+                && session.getLevel().getTemplate() == null;
+    }
+
     private static float viewWidth() {
         // -Dpvz.view=full shows the entire background at once. Only useful while calibrating the lawn
         // against the art, since it letterboxes heavily on a 16:9 window.
@@ -191,9 +227,31 @@ public final class GameScreen extends ScreenAdapter {
         // of the lawn looks like a rendering bug.
         float minX = halfView;
         float maxX = Math.max(halfView, background.totalWidth() - halfView);
-        camera.position.set(Math.max(minX, Math.min(maxX, lawnCentreX)),
-                LawnGeometry.WORLD_HEIGHT * 0.5f, 0f);
+        cameraBaseX = Math.max(minX, Math.min(maxX, lawnCentreX));
+        cameraBaseY = LawnGeometry.WORLD_HEIGHT * 0.5f;
+        camera.position.set(cameraBaseX, cameraBaseY, 0f);
         camera.update();
+    }
+
+    // The camera's kick, applied fresh from its resting place every frame.
+    //
+    // `delta` and not `animationDelta`: the shake belongs to the presentation rather than to the
+    // simulation, so pausing on the frame a Gargantuar's hammer lands must not leave the board sitting
+    // permanently askew with no way back.
+    //
+    // The zoom is what makes any of this legal -- the view frames the background's full height exactly,
+    // so the margin CameraShake moves within is margin it manufactures for itself. See that class.
+    private void applyShake(float delta) {
+        shake.advance(delta);
+        camera.zoom = shake.zoom();
+        camera.position.set(cameraBaseX + shake.offsetX(viewport.getWorldWidth()),
+                cameraBaseY + shake.offsetY(viewport.getWorldHeight()), 0f);
+        camera.update();
+        if (views.gdx.core.DebugFlags.SHAKE_CHECK && shake.isShaking()) {
+            Gdx.app.log("CameraShake", String.format(java.util.Locale.ROOT,
+                    "intensity %.4f  offset %+.2f, %+.2f  zoom %.4f", shake.intensity(),
+                    camera.position.x - cameraBaseX, camera.position.y - cameraBaseY, camera.zoom));
+        }
     }
 
     @Override
@@ -205,11 +263,21 @@ public final class GameScreen extends ScreenAdapter {
         // requires. Renderers keep their own per-entity clocks; this is just the gate.
         float animationDelta = (!loop.isPaused() && loop.isPlaying()) ? delta : 0f;
 
-        camera.update();
+        // Every frame, because that is what makes the level turn audible: playMusic is a string compare
+        // once the right track is going, and the moment the last wave launches the chain resolves to a
+        // different name and the theme changes by itself.
+        context.audio().playMusic(onFinalWave() ? finalWaveMusic : lawnMusic);
+
+        applyShake(delta);
         viewport.apply();
         batch.setProjectionMatrix(camera.combined);
 
         drawBoard(delta, animationDelta);
+
+        // Over the sprites, because it is a warning about them: a zombie two columns from the house
+        // has to be readable through the wash and more alarming for it. `delta`, not animationDelta --
+        // a pulse frozen behind the pause panel would be a level that looks already lost.
+        danger.draw(camera.combined, session, lawn, delta);
 
         // Under the grid but over the sprites: a wash on the tile the cursor is on, so it is obvious
         // where a click will land before it costs anything.
@@ -236,6 +304,9 @@ public final class GameScreen extends ScreenAdapter {
                 && !overlays.isOutcomeVisible());
         if (!loop.isPlaying() && !overlays.isOutcomeVisible()) {
             boolean won = session.getState() == models.game.GameState.WON;
+            // Raised on the one frame the level stops being PLAYING, so the sting plays exactly once.
+            context.audio().play(won ? views.gdx.core.AudioManager.SFX_WIN
+                    : views.gdx.core.AudioManager.SFX_LOSE);
             overlays.showOutcome(won, won
                     ? "The lawn is safe. For now."
                     : "They got past you this time. Try a different loadout.");
@@ -268,6 +339,14 @@ public final class GameScreen extends ScreenAdapter {
         }
     }
 
+    // The last wave has launched. Levels count waves from 1, so this is true from the moment the final
+    // one starts rather than when it is cleared -- which is the point at which the music should turn.
+    private boolean onFinalWave() {
+        models.game.Level level = session.getLevel();
+        return level != null && level.getWaveCount() > 0
+                && session.getCurrentWave() >= level.getWaveCount();
+    }
+
     // Every view effect that is driven by the model's own narration, in one place.
     //
     // There are three call sites that hand events to the view (the in-game renderer, the screen's own
@@ -278,6 +357,9 @@ public final class GameScreen extends ScreenAdapter {
         entities.explosions().onEvent(message);
         entities.weather().onEvent(message);
         entities.zombieActions().onEvent(message);
+        entities.ash().onEvent(message);
+        shake.onEvent(message);
+        cues.onEvent(message);
     }
 
     // Background, then the lawn's own markings, then everything standing on it.
@@ -462,6 +544,7 @@ public final class GameScreen extends ScreenAdapter {
     private int showcaseFrames = views.gdx.core.DebugFlags.SHOWCASE ? 5 : 0;
     private int showcaseFeedFrames;
     private int showcaseSunFrames;
+    private int showcaseShedFrames;
 
     // -Dpvz.showcase=1, in three stages. The board is built a few frames in; the Snow Pea is fed once
     // its zombies have actually walked into the lane; and the radioactive sun is caught while it is
@@ -478,6 +561,14 @@ public final class GameScreen extends ScreenAdapter {
         }
         if (showcaseSunFrames > 0 && --showcaseSunFrames == 0) {
             showcase.detonateRadioactiveSun();
+            showcaseShedFrames = 60;
+        }
+        // Deferred for a reason that is easy to miss: ZombieRenderer spots a destroyed armour by the
+        // layer VANISHING between two frames, so the armoured zombies have to be drawn intact at least
+        // once before they are shot. Breaking the cone in the same call that spawns the Conehead
+        // records the bare state as its first sighting and nothing is ever thrown.
+        if (showcaseShedFrames > 0 && --showcaseShedFrames == 0) {
+            showcase.shedArmour();
         }
     }
 
@@ -950,6 +1041,7 @@ public final class GameScreen extends ScreenAdapter {
     public void dispose() {
         batch.dispose();
         grid.dispose();
+        danger.dispose();
         hud.dispose();
     }
 }

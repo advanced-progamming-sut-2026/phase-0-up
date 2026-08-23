@@ -36,6 +36,7 @@ public class PvZGame extends Game {
 
     private AppSession appSession;
     private Assets assets;
+    private AudioManager audio;
     private Toasts toasts;
     private ScreenManager screens;
     private GdxContext context;
@@ -58,6 +59,7 @@ public class PvZGame extends Game {
 
         assets = new Assets();
         toasts = new Toasts(assets);
+        audio = new AudioManager();
         views.gdx.sprite.SpriteRegistry sprites =
                 new views.gdx.sprite.SpriteRegistry(assets.pam(), assets.bank(), assets.root());
 
@@ -77,6 +79,15 @@ public class PvZGame extends Game {
                 new views.gdx.bridge.MenuCommands(router));
 
         runAssetDiagnostics(sprites);
+
+        // The signed-in player's saved volume, applied before the first screen opens so nothing is
+        // heard at the default before their own setting takes effect.
+        models.user.User signedIn = appSession.getCurrentUser();
+        if (signedIn != null && signedIn.getProfile() != null) {
+            audio.setVolume(signedIn.getProfile().getVolume());
+        }
+        // Every button in the game clicks through one line. See ButtonJuice.setClickSound.
+        views.gdx.ui.ButtonJuice.setClickSound(() -> audio.play(AudioManager.SFX_BUTTON));
 
         screens = new ScreenManager(context);
         registerScreens();
@@ -397,6 +408,9 @@ public class PvZGame extends Game {
         if (toasts != null) {
             toasts.dispose();
         }
+        if (audio != null) {
+            audio.dispose();
+        }
         if (assets != null) {
             assets.dispose();
         }
@@ -413,5 +427,9 @@ public class PvZGame extends Game {
 
     public Assets getAssets() {
         return assets;
+    }
+
+    public AudioManager audio() {
+        return audio;
     }
 }

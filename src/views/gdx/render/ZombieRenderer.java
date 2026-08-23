@@ -43,8 +43,27 @@ public final class ZombieRenderer {
     // Event-driven one-shots (the Gargantuar's imp throw, the Imp's landing).
     private final ZombieActions actions = new ZombieActions();
 
+    // Falling apart: which arm is still on, and the pieces already thrown. See ZombieDamage.
+    private final views.gdx.sprite.ZombieDamage damage = new views.gdx.sprite.ZombieDamage();
+    private final Dismemberment pieces;
+
+    // The armor each zombie was wearing last frame. A type that is on this map and no longer on the
+    // stack was destroyed between two frames, and that transition IS the trigger for the fly-off --
+    // the same "watch it rather than ask for an event" reasoning as DamageFlash. There is no armour
+    // event in the model to listen for, and adding one would be a cosmetic concern in the tick loop.
+    private final Map<Zombie, java.util.EnumSet<models.entities.zombies.Components.ArmorType>> worn =
+            new java.util.IdentityHashMap<>();
+    // Filled and diffed each frame instead of allocating an EnumSet per zombie per frame.
+    private final java.util.EnumSet<models.entities.zombies.Components.ArmorType> scratchWorn =
+            java.util.EnumSet.noneOf(models.entities.zombies.Components.ArmorType.class);
+
     public ZombieActions actions() {
         return actions;
+    }
+
+    // Drawn by GameRenderer with the rest of the lane, after the living.
+    public Dismemberment pieces() {
+        return pieces;
     }
 
     public ZombieRenderer(SpriteRegistry sprites, LawnGeometry lawn, EntityInterpolator interpolator,
@@ -53,6 +72,7 @@ public final class ZombieRenderer {
         this.lawn = lawn;
         this.interpolator = interpolator;
         this.clocks = clocks;
+        this.pieces = new Dismemberment(sprites);
     }
 
     // I, Zombie's sun makers. The model spawns them as plain bucketheads pinned at speed 0, because it
@@ -95,6 +115,12 @@ public final class ZombieRenderer {
         // Zombies walk right-to-left, so they face LEFT -- except a hypnotised one, which has turned
         // around and is walking back the other way for the player.
         boolean faceRight = zombie.getState().isHypnotized();
+
+        // Falling apart. Both of these have to happen BEFORE the draw, because losing the arm changes
+        // the very visibility map the zombie is about to be drawn with.
+        if (!isSunProducer(zombie)) {
+            parts = shedPieces(zombie, sprite, parts, x, footY, Math.round(lane), faceRight);
+        }
         SpritePlacer.drawStandingScaled(batch, sprite, clip, stateTime, x, footY, faceRight, parts,
                 scaleFor(zombie));
 
@@ -142,6 +168,52 @@ public final class ZombieRenderer {
         flashes.sweep();
         actions.advance(delta);
         actions.sweep();
+        damage.sweep();
+        pieces.advance(delta);
+        worn.keySet().removeIf(zombie -> zombie.getHealth() == null
+                || zombie.getHealth().getTotalHP() <= 0);
+    }
+
+    // Everything a zombie loses on its way to dying: the armour that has just been destroyed, and the
+    // arm it sheds once its body is half gone. Returns the visibility map to draw it with.
+    //
+    // Both are watched rather than announced. The model raises no event for a cone breaking or for a
+    // body crossing a health fraction, and it should not: both are cosmetic, and either would fire
+    // dozens of times a second during a heavy wave. A layer leaving the stack IS the cone breaking,
+    // exactly as a projectile vanishing is the impact.
+    private Map<String, Boolean> shedPieces(Zombie zombie, EntitySprite sprite,
+                                            Map<String, Boolean> parts, float x, float footY,
+                                            int row, boolean faceRight) {
+        scratchWorn.clear();
+        for (models.entities.zombies.Components.HealthLayer layer : zombie.getHealth().getLayers()) {
+            if (layer.getType() != null) {
+                scratchWorn.add(layer.getType());
+            }
+        }
+        java.util.EnumSet<models.entities.zombies.Components.ArmorType> before = worn.get(zombie);
+        if (before == null) {
+            worn.put(zombie, java.util.EnumSet.copyOf(scratchWorn));
+        } else {
+            for (models.entities.zombies.Components.ArmorType type : before) {
+                if (!scratchWorn.contains(type)) {
+                    pieces.throwArmor(sprite, spriteNameFor(zombie),
+                            ArmorVisibility.destroyedPartName(type), x, footY, row, faceRight);
+                }
+            }
+            before.clear();
+            before.addAll(scratchWorn);
+        }
+
+        // Asked exactly once: armState CONSUMES the rising edge, so a second call this frame would
+        // answer LOST and the arm would never be thrown.
+        views.gdx.sprite.ZombieDamage.ArmState arm = damage.armState(zombie);
+        if (arm == views.gdx.sprite.ZombieDamage.ArmState.INTACT) {
+            return parts;
+        }
+        if (arm == views.gdx.sprite.ZombieDamage.ArmState.JUST_LOST) {
+            pieces.throwArm(sprite, spriteNameFor(zombie), x, footY, row, faceRight);
+        }
+        return views.gdx.sprite.ZombieDamage.applyArmLoss(sprite, parts);
     }
 
     // ---- foot planting ---------------------------------------------------------------------------

@@ -56,6 +56,12 @@ public final class GdxContext {
         return assets;
     }
 
+    // Delegated rather than held, so the seven-argument constructor does not grow an eighth: PvZGame
+    // owns the AudioManager for the same reason it owns Assets -- one creation, one disposal.
+    public AudioManager audio() {
+        return game.audio();
+    }
+
     public Toasts toasts() {
         return toasts;
     }

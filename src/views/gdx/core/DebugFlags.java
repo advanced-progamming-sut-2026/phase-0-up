@@ -185,6 +185,18 @@ public final class DebugFlags {
     //   gradlew runGui -Dpvz.screen=game -Dpvz.showOutcome=lose -Dpvz.smokeFrames=50
     public static final String SHOW_OUTCOME = text("pvz.showOutcome");
 
+    // Logs every camera shake as it is raised, and then the curve it follows frame by frame.
+    //
+    // A shake is motion and lasts about half a second, so no screenshot can show it and no still frame
+    // can tell a correct one from a camera that has simply come off its rails -- the same problem the
+    // foot planting and the weather have. What CAN be checked is the curve: it has to decay to exactly
+    // zero, never exceed the margin the zoom-in creates, and start from the events it claims to.
+    //
+    // Pair it with the showcase, whose Jalapeno detonates within the first second:
+    //
+    //   gradlew runGui -Dpvz.showcase=1 -Dpvz.skipIntro=1 -Dpvz.shakeCheck=1 -Dpvz.smokeFrames=120
+    public static final boolean SHAKE_CHECK = flag("pvz.shakeCheck");
+
     private DebugFlags() { }
 
     private static String text(String key) {

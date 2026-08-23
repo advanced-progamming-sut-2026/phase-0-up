@@ -96,6 +96,14 @@ public final class TerrainRenderer {
     private final LawnGeometry lawn;
     private final EnvironmentType environment;
     private final AnimationClocks clocks;
+
+    // Headstones flash white when hit, exactly as plants and zombies do. Swept from GameRenderer's
+    // per-frame sweep alongside the other two.
+    private final DamageFlash flashes = new DamageFlash();
+
+    void sweepFlashes() {
+        flashes.sweep();
+    }
     private final Assets assets;
 
     private float clock;
@@ -210,11 +218,26 @@ public final class TerrainRenderer {
         EntitySprite sprite = sprites.get(graveSpriteName(grave));
         String clip = ClipMap.firstAvailable(sprite, damageClipFor(grave));
         float stateTime = ClipMap.sample(sprite, clip, clocks.advance(grave, clip, delta));
+        float centreX = lawn.centerX(col);
+        float footY = lawn.worldY(row) + lawn.cellHeight() * SpritePlacer.FOOT_INSET;
 
-        SpritePlacer.drawStanding(batch, sprite, clip, stateTime,
-                lawn.centerX(col),
-                lawn.worldY(row) + lawn.cellHeight() * SpritePlacer.FOOT_INSET,
-                true, null);
+        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, centreX, footY, true, null);
+
+        // A headstone takes fire like anything else, so it flashes like anything else (T8.4).
+        //
+        // DamageFlash is keyed on Object and only ever asked for a number, so it needed no widening to
+        // cover a Terrain -- and it fills a real gap: a grave's five damage clips are the only feedback
+        // it has, and they are five steps across thousands of HP, so most shots into a headstone
+        // currently register as nothing at all.
+        float flash = flashes.intensity(grave, grave.getHp(), delta);
+        if (flash > 0f) {
+            float previous = batch.getPackedColor();
+            SpritePlacer.beginAdditive(batch);
+            batch.setColor(flash, flash, flash, 1f);
+            SpritePlacer.drawStanding(batch, sprite, clip, stateTime, centreX, footY, true, null);
+            SpritePlacer.endAdditive(batch);
+            batch.setPackedColor(previous);
+        }
     }
 
     // Which way the tile shoves a zombie is the whole rule, so the two directions get the two

@@ -165,6 +165,13 @@ public class Constants {
     public static final int MIN_GAME_SPEED = 1;
     public static final int MAX_GAME_SPEED = 3;
 
+    // Master audio volume, as a percentage. Stored on the Profile like the other preferences so it
+    // survives a restart. Defaults to a shade under full: a game that opens at maximum volume is a game
+    // whose first act is to make the player reach for the slider.
+    public static final int DEFAULT_VOLUME = 80;
+    public static final int MIN_VOLUME = 0;
+    public static final int MAX_VOLUME = 100;
+
     public static final String[] SECURITY_QUESTIONS = {
             "1. What was the name of your first pet?",
             "2. Which city you were born in?",

@@ -64,6 +64,15 @@ public class Profile {
     private int gameSpeed;
     private boolean showGrid;
     private boolean debugMode;
+    // Master volume, 0-100. Same reasoning as gameSpeed: the terminal build has no use for it and it
+    // costs nothing there, and one Profile shape for both builds is worth more than the saved field.
+    //
+    // Boxed, unlike the three above, and that is load-bearing. Gson allocates a Profile without running
+    // its constructor, so a field missing from an older save keeps its zero value -- and for gameSpeed
+    // that is safe, because 0 is not a legal speed and getGameSpeed() can read it as "unset". Zero IS a
+    // legal volume: it is mute. An int here would open every pre-existing save silently, with no way to
+    // tell that from a player who had chosen silence. Null is the only value that means "never set".
+    private Integer volume;
 
     public Profile() {
         this.gameNumbers = Constants.DEFAULT_GAME_NUMBERS;
@@ -78,6 +87,7 @@ public class Profile {
         this.noneDailyQuestsDone = Constants.DEFAULT_NONE_DAILY_QUESTS_DONE;
         this.hasBoughtDailyOfferToday = Constants.DEFAULT_HAS_BOUGHT_DAILY_OFFER;
         this.gameSpeed = Constants.DEFAULT_GAME_SPEED;
+        this.volume = Constants.DEFAULT_VOLUME;
         this.winStreakAtMaxDifficulty = 0;
         this.zombieKillsByChapter = new HashMap<>();
         this.questDayStamp = today();
@@ -184,6 +194,19 @@ public class Profile {
     public boolean isShowGrid() { return showGrid; }
 
     public void setShowGrid(boolean showGrid) { this.showGrid = showGrid; }
+
+    // Null means the save predates this setting, so it gets the default; anything else is the player's
+    // own choice, including a deliberate 0.
+    public int getVolume() {
+        if (volume == null) {
+            return Constants.DEFAULT_VOLUME;
+        }
+        return Math.max(Constants.MIN_VOLUME, Math.min(Constants.MAX_VOLUME, volume));
+    }
+
+    public void setVolume(int volume) {
+        this.volume = Math.max(Constants.MIN_VOLUME, Math.min(Constants.MAX_VOLUME, volume));
+    }
 
     public boolean isDebugMode() { return debugMode; }
 

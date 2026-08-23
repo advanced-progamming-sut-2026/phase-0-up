@@ -1,7 +1,6 @@
 package views.gdx.render;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Rectangle;
 import views.gdx.map.LawnGeometry;
 import views.gdx.sprite.ClipMap;
@@ -81,6 +80,9 @@ public final class ExplosionEffects {
     private final SpriteRegistry sprites;
     private final LawnGeometry lawn;
     private final List<Blast> blasts = new ArrayList<>();
+    // A Jalapeno's row burn is nine copies drawn twice a frame, so this class was on its own producing
+    // eighteen throwaway matrices per frame for as long as the fire lasted. See LocalTransform.
+    private final LocalTransform transform = new LocalTransform();
 
     // Consulted only for the sun bomb, to find where a falling sun was actually drawn.
     private CollectibleRenderer collectibles;
@@ -234,13 +236,10 @@ public final class ExplosionEffects {
 
         for (int i = 0; i < copies; i++) {
             float x = copies == 1 ? blast.x : lawn.originX() + step * (i + 0.5f);
-            Matrix4 previous = batch.getTransformMatrix().cpy();
-            batch.setTransformMatrix(new Matrix4(previous)
-                    .translate(SpritePlacer.toSpriteSpace(x),
-                            SpritePlacer.toSpriteSpace(blast.y), 0f)
-                    .scale(scale, scale, 1f));
+            transform.begin(batch, SpritePlacer.toSpriteSpace(x),
+                    SpritePlacer.toSpriteSpace(blast.y), scale);
             sprite.draw(batch, clip, sample, 0f, bounds.y + bounds.height / 2f, true);
-            batch.setTransformMatrix(previous);
+            transform.end(batch);
         }
     }
 }

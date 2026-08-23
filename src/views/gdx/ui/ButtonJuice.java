@@ -28,6 +28,18 @@ public final class ButtonJuice extends ClickListener {
     private static final float PRESS_SCALE = 0.95f;
     private static final float HOVER_SECONDS = 0.12f;
 
+    // The click sound, for every button in the game at once.
+    //
+    // A single static, set once by PvZGame, on the same reasoning as Profile.setCurrencyObserver: this
+    // class is built by MenuStyles.button, which is static and holds no context, and threading a
+    // GdxContext down to it would mean changing every screen that makes a button. One global for a
+    // sound that is the same everywhere is the smaller cost. Null until it is set, and null in tests.
+    private static Runnable clickSound;
+
+    public static void setClickSound(Runnable sound) {
+        clickSound = sound;
+    }
+
     private final Actor target;
 
     private ButtonJuice(Actor target) {
@@ -78,6 +90,11 @@ public final class ButtonJuice extends ClickListener {
     @Override
     public boolean touchDown(InputEvent event, float x, float y, int pointer, int mouseButton) {
         animate(PRESS_SCALE, 0.06f, Interpolation.sine, HOVER);
+        // On the press rather than the release: the press is the moment the widget visibly sinks, and a
+        // click that sounds a fifth of a second after it looks like it happened feels laggy.
+        if (clickSound != null) {
+            clickSound.run();
+        }
         return super.touchDown(event, x, y, pointer, mouseButton);
     }
 

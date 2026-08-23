@@ -30,12 +30,26 @@ public final class ZombieActions {
     private static final Pattern THROW =
             Pattern.compile("^(.+?) hurls its Imp over your defences onto \\((\\d+), (\\d+)\\)!$");
 
+    // KillPlantsAbility, on the branch that does NOT require a torch: "ZombieGargantuar smashes
+    // Peashooter to pieces at (3, 2)." The torch branch says "sets ... ablaze at (" and must not match --
+    // a zombie setting a plant alight is not swinging anything.
+    //
+    // This is the `smash` clip T8.1 names, and it was the one entry on that task's list playing nowhere:
+    // the model pulverises a plant in a single call, so ActionState says WALKING right through the blow
+    // and a Gargantuar used to flatten a Wall-nut without moving a muscle. The same sentence also raises
+    // the camera shake, from the other side of the fan-out.
+    private static final Pattern SMASH =
+            Pattern.compile("^(.+?) smashes (.+?) to pieces at \\((\\d+), (\\d+)\\)\\.$");
+
     private static final String IMP_ALIAS = "ZombieImp";
 
     // The thrower: wind up, then launch.
     private static final String[] THROWER_CLIPS = {"fire", "cannon_fire"};
     // The Imp: airborne, then the landing.
     private static final String[] IMP_CLIPS = {"fly", "land"};
+    // The hammer. DARK_GARGANTUAR ships `smash_left` (1.77s) and no `smash_right`; start() keeps only
+    // the clips a sprite actually has, so naming both costs nothing and covers the art that has them.
+    private static final String[] SMASH_CLIPS = {"smash_left", "smash_right"};
 
     // `fly` is a single frame (0.0333s in the dump) -- it is a POSE, not a movement, so it is held for a
     // readable beat instead of being played for its own length. Anything shorter and the Imp is on the
@@ -54,11 +68,20 @@ public final class ZombieActions {
     // claim happens at DRAW time, when the renderer is holding the actual zombie: the first Gargantuar
     // drawn in that lane takes the thrower's part and the first Imp takes the Imp's.
     private static final class Claim {
-        String throwerAlias;
+        String alias;
+        String[] clips;
         int lane;
         float age;
-        boolean throwerClaimed;
-        boolean impClaimed;
+        boolean claimed;
+        // The imp throw is the one event with TWO parts to hand out -- the Gargantuar's launch and the
+        // Imp's arrival. Null for a single-actor event like the smash, which is most of them.
+        String partnerAlias;
+        String[] partnerClips;
+        boolean partnerClaimed;
+
+        boolean finished() {
+            return claimed && (partnerAlias == null || partnerClaimed);
+        }
     }
 
     // A clip sequence in progress on one zombie.
@@ -80,18 +103,33 @@ public final class ZombieActions {
         if (message == null) {
             return;
         }
-        Matcher matcher = THROW.matcher(message.trim());
-        if (!matcher.matches()) {
+        String text = message.trim();
+        Matcher throwing = THROW.matcher(text);
+        if (throwing.matches()) {
+            Claim claim = raise(throwing.group(1).trim(), THROWER_CLIPS,
+                    Integer.parseInt(throwing.group(3)), "throws an Imp");
+            claim.partnerAlias = IMP_ALIAS;
+            claim.partnerClips = IMP_CLIPS;
             return;
         }
+        // Group 4 is the row: the sentence is "... at (col, row).", so the lane is the SECOND number.
+        Matcher smashing = SMASH.matcher(text);
+        if (smashing.matches()) {
+            raise(smashing.group(1).trim(), SMASH_CLIPS,
+                    Integer.parseInt(smashing.group(4)), "swings at " + smashing.group(2).trim());
+        }
+    }
+
+    private Claim raise(String alias, String[] clips, int lane, String what) {
         Claim claim = new Claim();
-        claim.throwerAlias = matcher.group(1).trim();
-        claim.lane = Integer.parseInt(matcher.group(3));
+        claim.alias = alias;
+        claim.clips = clips;
+        claim.lane = lane;
         claims.add(claim);
         if (views.gdx.core.DebugFlags.BOARD_COUNTS) {
-            com.badlogic.gdx.Gdx.app.log("ZombieActions",
-                    claim.throwerAlias + " throws an Imp in lane " + claim.lane);
+            com.badlogic.gdx.Gdx.app.log("ZombieActions", alias + " " + what + " in lane " + lane);
         }
+        return claim;
     }
 
     // Ages every sequence and drops the finished ones. Called once per frame, NOT per zombie: advancing
@@ -101,7 +139,7 @@ public final class ZombieActions {
         for (int i = claims.size() - 1; i >= 0; i--) {
             Claim claim = claims.get(i);
             claim.age += delta;
-            if (claim.age >= CLAIM_SECONDS || (claim.throwerClaimed && claim.impClaimed)) {
+            if (claim.age >= CLAIM_SECONDS || claim.finished()) {
                 claims.remove(i);
             }
         }
@@ -148,13 +186,14 @@ public final class ZombieActions {
             if (claim.lane != lane) {
                 continue;
             }
-            if (!claim.throwerClaimed && alias.equalsIgnoreCase(claim.throwerAlias)) {
-                claim.throwerClaimed = true;
-                return start(zombie, sprite, THROWER_CLIPS);
+            if (!claim.claimed && alias.equalsIgnoreCase(claim.alias)) {
+                claim.claimed = true;
+                return start(zombie, sprite, claim.clips);
             }
-            if (!claim.impClaimed && IMP_ALIAS.equalsIgnoreCase(alias)) {
-                claim.impClaimed = true;
-                return start(zombie, sprite, IMP_CLIPS);
+            if (claim.partnerAlias != null && !claim.partnerClaimed
+                    && claim.partnerAlias.equalsIgnoreCase(alias)) {
+                claim.partnerClaimed = true;
+                return start(zombie, sprite, claim.partnerClips);
             }
         }
         return null;

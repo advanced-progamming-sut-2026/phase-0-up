@@ -122,12 +122,61 @@ public final class SettingsScreen extends MenuScreen {
                 on -> apply(p -> p.setShowGrid(on))));
         form.add().row();
 
+        form.add(caption("Volume:"));
+        form.add(volumeControl(profile));
+        form.add().row();
+
         form.add(caption("Debug mode:"));
         form.add(switchBox(profile != null && profile.isDebugMode(),
                 on -> apply(p -> p.setDebugMode(on))));
         form.add().row();
         return form;
     }
+
+    // The volume slider, plus a live readout of what it is set to.
+    //
+    // A slider with no number is a guess: "about two thirds" is not a setting anybody can come back and
+    // reproduce, and 0 and 1 are the two values that most need to be unambiguous. The skin's only
+    // SliderStyle is `default-horizontal`, an almanac fuel bar with a fill and no knob -- which is
+    // exactly what a volume bar should look like, and it is the game's own art.
+    //
+    // Applied to the AudioManager on every change rather than on leaving the screen, so dragging it is
+    // audible while it is being dragged. That is the only way to set a volume by ear.
+    private Table volumeControl(Profile profile) {
+        int start = profile == null ? Constants.DEFAULT_VOLUME : profile.getVolume();
+
+        com.badlogic.gdx.scenes.scene2d.ui.Slider slider =
+                new com.badlogic.gdx.scenes.scene2d.ui.Slider(
+                        Constants.MIN_VOLUME, Constants.MAX_VOLUME, 1f, false, skin);
+        slider.setValue(start);
+
+        Label readout = MenuStyles.label(skin, volumeText(start), MenuStyles.TEXT);
+        readout.setAlignment(Align.center);
+
+        slider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                int value = Math.round(slider.getValue());
+                readout.setText(volumeText(value));
+                apply(p -> p.setVolume(value));
+                context.audio().setVolume(value);
+            }
+        });
+
+        Table row = new Table();
+        row.add(slider).width(CONTROL_WIDTH - VOLUME_READOUT_WIDTH - 8f).height(VOLUME_HEIGHT);
+        row.add(readout).width(VOLUME_READOUT_WIDTH).padLeft(8f);
+        return row;
+    }
+
+    // "Muted" rather than "0%", because zero is a state and not a quantity -- and it is the one value
+    // a player will want to confirm at a glance.
+    private static String volumeText(int value) {
+        return value <= Constants.MIN_VOLUME ? "Muted" : value + "%";
+    }
+
+    private static final float VOLUME_READOUT_WIDTH = 62f;
+    private static final float VOLUME_HEIGHT = 22f;
 
     // Index is 0-based; the command and the model are 1-based.
     private void setDifficulty(int index) {

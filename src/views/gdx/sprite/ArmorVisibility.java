@@ -163,6 +163,16 @@ public final class ArmorVisibility {
         return hidden;
     }
 
+    // The part name for a piece of armor that has just been destroyed, for the fly-off effect.
+    //
+    // Always the most damaged stage, and that is not an approximation: armor is destroyed by being
+    // whittled through every stage in turn, so the piece that comes loose was in `damage_02` on the
+    // frame before it went. Null for an armor with no part on the shared body -- a barrel, an ice
+    // block, a knight's pauldron -- which correctly means "nothing to throw".
+    public static String destroyedPartName(ArmorType type) {
+        return partName(type, "damage_02");
+    }
+
     // "zombie_armor_cone" + "norm" -> "zombie_armor_cone_norm". Null for an armor that lives on its own
     // zombie's animation rather than the shared body (a barrel, an ice block, a knight's pauldron).
     private static String partName(ArmorType type, String stage) {

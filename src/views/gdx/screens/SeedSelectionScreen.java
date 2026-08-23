@@ -114,6 +114,12 @@ public final class SeedSelectionScreen extends MenuScreen {
         this.art = new UiArt(context.assets());
     }
 
+    // The soundtrack has a "Choose Your Seeds" cue, and this is the screen it is for.
+    @Override
+    protected String musicTrack() {
+        return views.gdx.core.AudioManager.MUSIC_SEED_SELECT;
+    }
+
     @Override
     protected void build(Table root) {
         Table panel = MenuPanel.build(skin, "Choose Your Plants");

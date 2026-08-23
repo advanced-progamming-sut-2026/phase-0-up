@@ -277,6 +277,13 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
     // is fully initialised before it is asked to lay itself out.
     protected abstract void build(Table root);
 
+    // The track this screen would like, if a file for it exists. Defaults to the shared menu one, so a
+    // screen only overrides this when it has a reason -- the greenhouse is the Zen Garden and has its
+    // own theme in the soundtrack, and seed selection has a "Choose Your Seeds" cue per world.
+    protected String musicTrack() {
+        return views.gdx.core.AudioManager.MUSIC_MENU;
+    }
+
     // Called every frame before drawing, for screens whose contents depend on live model state (a
     // badge count, a wallet balance). Most screens do not need it.
     protected void refresh() {
@@ -290,6 +297,10 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
 
     @Override
     public void show() {
+        // This screen's own track if there is a file for it, otherwise the shared menu one. playMusic
+        // no-ops when the winning name is already playing, so walking between screens that share a
+        // track does not restart it -- only arriving from the lawn, or from a screen with its own, does.
+        context.audio().playMusic(musicTrack(), views.gdx.core.AudioManager.MUSIC_MENU);
         if (!built) {
             built = true;
             build(root);

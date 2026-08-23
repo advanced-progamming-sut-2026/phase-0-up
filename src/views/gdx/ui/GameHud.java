@@ -187,13 +187,16 @@ public final class GameHud implements Disposable {
         // below the last nut is the useful part: it is how much more is coming.
         cardRow.top();
         Stack track = new Stack();
-        Table slats = new Table();
-        slats.top();
-        for (int slot = 0; slot < mode.conveyorCapacity(); slot++) {
-            addBeltPiece(slats, UiArt.CONVEYOR_BELT, BELT_SLOT_WIDTH + BELT_PAD * 2f,
-                    BELT_SLOT_HEIGHT);
+        // One scrolling actor rather than a column of static Images -- see ConveyorBelt. A belt that
+        // does not move is the one thing a conveyor must not be.
+        com.badlogic.gdx.scenes.scene2d.utils.Drawable slatArt = art.drawable(UiArt.CONVEYOR_BELT);
+        if (slatArt != null) {
+            Table slats = new Table();
+            slats.add(new ConveyorBelt(slatArt, BELT_SLOT_HEIGHT))
+                    .size(BELT_SLOT_WIDTH + BELT_PAD * 2f,
+                            BELT_SLOT_HEIGHT * mode.conveyorCapacity());
+            track.add(slats);
         }
-        track.add(slats);
         track.add(cardRow);
         column.add(track).width(BELT_SLOT_WIDTH + BELT_PAD * 2f).row();
 

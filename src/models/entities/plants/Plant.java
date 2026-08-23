@@ -432,6 +432,11 @@ public class Plant extends Entity {
 
     public boolean hasOctopus() { return hasOctopus; }
 
+    // Read-only, for the view. hasOctopus() answers "is it snared" but not "how nearly is it free", and
+    // the renderer needs the number to flash the octopus as it is shot off (see PlantRenderer).
+    // Nothing in the model or the controllers reads this.
+    public int getOctopusHp() { return octopusHp; }
+
     // Note: abilities are gated centrally in update() via isDisabled() (frozen / octopus / cat),
     // so individual shoot / produce-sun abilities do not need their own guard.
 

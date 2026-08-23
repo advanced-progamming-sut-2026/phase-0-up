@@ -37,6 +37,7 @@ final class Showcase {
         spawnZombies();
         makeSuns();
         throwImp();
+        snareOne();
 
         // Arm a seed so the ghost cursor is visible the moment you move the mouse over the lawn.
         tools.selectSeed("Wall-nut");
@@ -163,7 +164,41 @@ final class Showcase {
             engine.submitInGameCommand("cheat spawn-zombie -t ZombieDefault -l (7, " + row + ")");
         }
         engine.submitInGameCommand("cheat spawn-zombie -t ZombieDefault -l (4, 2)");
+        // One almost at the house, for the danger glow (T8.6). Column 1 in row 2 rather than a lane a
+        // shooter can reach: plants fire to the RIGHT, so a zombie behind them is not shot at and stays
+        // put long enough to be looked at. It is also the only warning on this board that is a property
+        // of a POSITION rather than of an event, so nothing else would raise it.
+        engine.submitInGameCommand("cheat spawn-zombie -t ZombieDefault -l (1, 2)");
+        // A Conehead and a Buckethead for the dismemberment work (T8.5). Spawned here and shot later,
+        // in shedArmour(), because the effect is triggered by the armour VANISHING between two frames.
+        engine.submitInGameCommand("cheat spawn-zombie -t ZombieArmor1 -l (6, 2)");
+        engine.submitInGameCommand("cheat spawn-zombie -t ZombieArmor2 -l (5, 2)");
         hypnotiseOne();
+    }
+
+    // Breaks the armour off the two in row 2 and takes their bodies past half, so the fly-off and the
+    // bone arm are both on screen.
+    //
+    // Unreachable otherwise in any run short enough to screenshot: a Buckethead is 1100 points of bucket
+    // over 190 of body, which is most of a minute of Peashooter fire, and the fly-off itself lasts under
+    // a second. Damage goes through applyDamage rather than into the HP fields, so the layers peel in
+    // the real order and the renderer sees exactly what a shot-off bucket looks like -- the same
+    // reasoning as throwImp() above.
+    void shedArmour() {
+        for (models.entities.zombies.Zombie zombie : session.getMap().getRow(2).getZombies()) {
+            if (!zombie.getHealth().hasArmor()) {
+                continue;
+            }
+            int before = zombie.getHealth().getTotalHP();
+            // Everything except a sliver of body, so the armour is destroyed AND the body ends up
+            // under the half that sheds the arm.
+            int leave = 20;
+            zombie.getHealth().applyDamage(Math.max(1, before - leave),
+                    models.entities.projectiles.Element.NEUTRAL, null);
+            com.badlogic.gdx.Gdx.app.log("Showcase", "stripped " + zombie.getAlias() + " in row 2: "
+                    + before + " -> " + zombie.getHealth().getTotalHP()
+                    + " HP -- its armour should fly off and it should walk on with a bone arm");
+        }
     }
 
     // One zombie turned round, so the mirrored art can be compared with the ones beside it.
@@ -177,6 +212,25 @@ final class Showcase {
             zombie.getState().setHypnotized(true);
             com.badlogic.gdx.Gdx.app.log("Showcase", "hypnotised " + zombie.getAlias()
                     + " in row 0 -- it should be MIRRORED and walking right");
+            return;
+        }
+    }
+
+    // One plant with an octopus on it (T8.4).
+    //
+    // Staged directly for the same reason hypnosis is: there is no cheat for it, and the real route is
+    // a Beach-only ThrowOctopusAbility landing on a lane this board does not have. The flag and the HP
+    // are all the renderer reads, so this shows exactly what a real snare would.
+    private void snareOne() {
+        for (models.map.Cell cell : session.getMap().getRow(2).getCells()) {
+            models.entities.plants.Plant plant = cell.getCurrentPlant();
+            if (plant == null || plant.isDead() || plant.hasOctopus()) {
+                continue;
+            }
+            plant.bindWithOctopus();
+            com.badlogic.gdx.Gdx.app.log("Showcase", "snared " + plant.getName() + " at ("
+                    + (int) plant.getX() + ", " + plant.getY()
+                    + ") -- an octopus should be clinging to it");
             return;
         }
     }

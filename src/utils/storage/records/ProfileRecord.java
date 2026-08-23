@@ -51,6 +51,9 @@ public class ProfileRecord {
     private int gameSpeed;
     private boolean showGrid;
     private boolean debugMode;
+    // Boxed, unlike the three above: 0 is a legal volume (mute), so it cannot double as "absent from
+    // an older save" the way gameSpeed's 0 does. See Profile.volume.
+    private Integer volume;
 
     public static ProfileRecord from(Profile p) {
         ProfileRecord r = new ProfileRecord();
@@ -86,6 +89,7 @@ public class ProfileRecord {
         r.gameSpeed = p.getGameSpeed();
         r.showGrid = p.isShowGrid();
         r.debugMode = p.isDebugMode();
+        r.volume = p.getVolume();
         return r;
     }
 
@@ -111,6 +115,11 @@ public class ProfileRecord {
         p.setGameSpeed(gameSpeed);
         p.setShowGrid(showGrid);
         p.setDebugMode(debugMode);
+        // Left at the Profile's own default when the save predates the setting, rather than forced to
+        // the 0 an unboxed field would have produced -- which is mute.
+        if (volume != null) {
+            p.setVolume(volume);
+        }
         if (myGreenHouse != null) {
             p.setMyGreenHouse(myGreenHouse);
         }

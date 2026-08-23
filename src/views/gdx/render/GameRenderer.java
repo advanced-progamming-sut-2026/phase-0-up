@@ -43,6 +43,7 @@ public final class GameRenderer {
     private final WeatherEffects weather;
     private final ImpactEffects impacts;
     private final ExplosionEffects explosions;
+    private final AshEffects ash;
 
     // Reused per lane so a full board does not allocate a list per row per frame.
     private final List<Zombie> laneZombies = new ArrayList<>();
@@ -85,6 +86,7 @@ public final class GameRenderer {
         this.impacts = new ImpactEffects(sprites);
         this.explosions = new ExplosionEffects(sprites, lawn);
         this.explosions.setCollectibles(this.collectibles);
+        this.ash = new AshEffects(sprites, lawn);
         this.lawn = lawn;
     }
 
@@ -109,7 +111,8 @@ public final class GameRenderer {
             SpritePlacer.endScaled(batch, previousTransform);
         }
         clocks.sweep();
-        plants.sweepFlashes();
+        plants.sweepFlashes(delta);
+        terrain.sweepFlashes();
         zombies.sweepFlashes(delta);
         zombies.resetFootCheck();
     }
@@ -131,9 +134,17 @@ public final class GameRenderer {
         return weather;
     }
 
+    // And a zombie's ash, which is the strongest case of all: the model removes a dead zombie on the
+    // tick it dies, so there is no frame in which it can be seen dying. See AshEffects.
+    public AshEffects ash() {
+        return ash;
+    }
+
     private void drawLanes(Batch batch, GameSession session, float delta, float alpha) {
         // The blast's rear half, under everything it engulfs.
         explosions.drawRear(batch, delta);
+        // Once per frame, before the lane pass visits it five times. See AshEffects.advance.
+        ash.advance(delta);
 
         for (int row = 0; row < Constants.BOARD_ROWS; row++) {
             drawLane(batch, session, session.getMap().getRow(row), row, delta, alpha);
@@ -191,6 +202,13 @@ public final class GameRenderer {
         for (Zombie zombie : laneZombies) {
             zombies.draw(batch, zombie, delta, alpha);
         }
+
+        // The pieces coming off the living -- a broken cone, a shed arm -- in front of the zombies
+        // they came off. Then where a zombie died: a body-sized thing standing on the same ground,
+        // behind the living, because the horde walking over its own dead is what the row should read
+        // as. See Dismemberment and AshEffects.
+        zombies.pieces().drawRow(batch, row);
+        ash.drawRow(batch, row);
 
         // After the zombies, because a bowling nut rolls OVER the ones it has already flattened and
         // into the ones it has not -- drawn under them it disappears the moment it reaches the horde,

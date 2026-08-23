@@ -38,7 +38,19 @@ public final class PlantRenderer {
             new Color(0.45f, 0.76f, 1f, 1f),
     };
 
-    private static final Color OCTOPUS_TINT = new Color(0.85f, 0.6f, 0.85f, 1f);
+    // A snared plant used to get a flat purple tint and nothing else, which read as poisoned rather
+    // than as grabbed -- and left T8.4 with no octopus to flash, because there was no octopus. The dump
+    // ships one, so it is drawn instead: an orange octopus clinging to the plant, over the top of it.
+    //
+    // `animation3` is the 3s clinging loop; `animation` is the 0.3s throw and `die` the 2s release,
+    // neither of which is the state a snared plant is in.
+    private static final String OCTOPUS_SPRITE = "ZOMBIE_OCTOPUS_PROJECTILE";
+    private static final String[] OCTOPUS_CLIPS = {"animation3", "animation4", "animation2"};
+
+    // Drawn a shade wider than the plant it has hold of, so the tentacles read as wrapping round it
+    // rather than sitting on it, and lifted to the plant's middle rather than its feet.
+    private static final float OCTOPUS_WIDTH_CELLS = 0.95f;
+    private static final float OCTOPUS_LIFT_CELLS = 0.42f;
 
     private final SpriteRegistry sprites;
     private final LawnGeometry lawn;
@@ -154,23 +166,94 @@ public final class PlantRenderer {
                 PlantDamage.visibilityFor(sprite, plant.getName(), damageStage);
         SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, parts);
 
-        // Hit flash: the same frame drawn again, additively, so the plant lights up white. Drawn after
-        // the sprite rather than instead of it, so the art stays readable underneath.
-        float flash = plant.getHealth() == null ? 0f
-                : flashes.intensity(plant, plant.getHealth().getCurrentHp(), delta);
-        if (flash > 0f) {
-            SpritePlacer.beginAdditive(batch);
-            batch.setColor(flash, flash, flash, 1f);
-            SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, parts);
-            SpritePlacer.endAdditive(batch);
+        drawHitFlash(batch, sprite, plant, clip, stateTime, cx, fy, parts, delta);
+
+        if (plant.hasOctopus()) {
+            drawOctopus(batch, plant, cx, fy, delta);
         }
 
         batch.setColor(previous);
     }
 
-    // Called once per frame by GameRenderer: drops plants that were not drawn.
-    void sweepFlashes() {
+    // Hit flash: the same frame drawn again, additively, so the plant lights up white. Drawn after the
+    // sprite rather than instead of it, so the art stays readable underneath.
+    private void drawHitFlash(Batch batch, EntitySprite sprite, Plant plant, String clip,
+                              float stateTime, float cx, float fy,
+                              java.util.Map<String, Boolean> parts, float delta) {
+        float flash = plant.getHealth() == null ? 0f
+                : flashes.intensity(plant, plant.getHealth().getCurrentHp(), delta);
+        if (flash <= 0f) {
+            return;
+        }
+        SpritePlacer.beginAdditive(batch);
+        batch.setColor(flash, flash, flash, 1f);
+        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, parts);
+        SpritePlacer.endAdditive(batch);
+    }
+
+    // The octopus clinging to a snared plant, and its own hit flash (T8.4).
+    //
+    // It gets a flash of its own rather than borrowing the plant's, because they take damage
+    // SEPARATELY: Projectile.onHit sends a shot into damageOctopus while the plant underneath is
+    // untouched, so flashing the plant would credit the hit to the wrong thing -- and the plant, being
+    // undamaged, would never flash at all while the player shot the octopus off it.
+    private void drawOctopus(Batch batch, Plant plant, float cx, float footY, float delta) {
+        EntitySprite octopus = sprites.get(OCTOPUS_SPRITE);
+        if (octopus == null || !octopus.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(octopus, OCTOPUS_CLIPS);
+        // One shared clock, advanced once a frame in sweepFlashes, plus a per-plant phase derived from
+        // the tile it is on. AnimationClocks is an IdentityHashMap, so a per-octopus key would have to
+        // be an object that survives between frames -- and a stable offset off the coordinates gives the
+        // same "they do not writhe in unison" result with no state at all.
+        float phase = (float) (plant.getX() * 0.37 + plant.getY() * 0.61);
+        float stateTime = ClipMap.sample(octopus, clip, octopusClock + phase);
+        float centreY = footY + lawn.cellHeight() * OCTOPUS_LIFT_CELLS;
+
+        com.badlogic.gdx.math.Rectangle bounds = octopus.bounds(clip);
+        if (bounds == null || bounds.width <= 0f) {
+            return;
+        }
+        float scale = SpritePlacer.toSpriteSpace(OCTOPUS_WIDTH_CELLS * lawn.cellWidth())
+                / bounds.width;
+
+        float previous = batch.getPackedColor();
+        batch.setColor(Color.WHITE);
+        drawOctopusAt(batch, octopus, clip, stateTime, cx, centreY, scale, bounds);
+
+        // Keyed on the PLANT, in a DamageFlash of its own. The plant is the only stable identity the
+        // octopus has -- it is not an entity in the model, just two fields on the plant it grabbed --
+        // and a second instance is what keeps its hits from being confused with the plant's own.
+        float flash = octopusFlashes.intensity(plant, plant.getOctopusHp(), delta);
+        if (flash > 0f) {
+            SpritePlacer.beginAdditive(batch);
+            batch.setColor(flash, flash, flash, 1f);
+            drawOctopusAt(batch, octopus, clip, stateTime, cx, centreY, scale, bounds);
+            SpritePlacer.endAdditive(batch);
+        }
+        batch.setPackedColor(previous);
+    }
+
+    private void drawOctopusAt(Batch batch, EntitySprite octopus, String clip, float stateTime,
+                               float cx, float centreY, float scale,
+                               com.badlogic.gdx.math.Rectangle bounds) {
+        octopusTransform.begin(batch, SpritePlacer.toSpriteSpace(cx),
+                SpritePlacer.toSpriteSpace(centreY), scale);
+        octopus.draw(batch, clip, stateTime, 0f, bounds.y + bounds.height / 2f, true);
+        octopusTransform.end(batch);
+    }
+
+    private final LocalTransform octopusTransform = new LocalTransform();
+    private final DamageFlash octopusFlashes = new DamageFlash();
+    private float octopusClock;
+
+    // Called once per frame by GameRenderer: drops plants that were not drawn, and advances the one
+    // clock the octopuses share. Advancing it in draw() would run it once per snared plant per frame.
+    void sweepFlashes(float delta) {
         flashes.sweep();
+        octopusFlashes.sweep();
+        octopusClock += delta;
     }
 
     // ---- strikes -------------------------------------------------------------------------------
@@ -486,9 +569,8 @@ public final class PlantRenderer {
     }
 
     private static Color tintFor(Plant plant) {
-        if (plant.hasOctopus()) {
-            return OCTOPUS_TINT;
-        }
+        // No octopus case: the octopus itself is drawn on top now, and tinting the plant purple as well
+        // would say the same thing twice in two different visual languages.
         int chill = plant.getChillLevel();
         if (chill > 0) {
             return CHILL_TINT[Math.min(chill, CHILL_TINT.length - 1)];

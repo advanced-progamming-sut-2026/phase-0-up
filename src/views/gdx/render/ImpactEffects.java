@@ -100,7 +100,7 @@ public final class ImpactEffects {
     // coincidence -- change one and the other has to move with it.
     private static final float STRIKE_LIFETIME = 0.5f;
 
-    private static final class Burst {
+    private static final class Burst implements com.badlogic.gdx.utils.Pool.Poolable {
         float x;
         float y;
         // Where it ends up. Equal to x/y for the ones that stay put, which is most of them.
@@ -111,11 +111,38 @@ public final class ImpactEffects {
         float widthCells;
         String clip;
         String sprite;
-        Color color;
+        // Owned by the Burst and set in place, never reassigned: a recycled burst must not drag a
+        // fresh Color allocation along with it, which was the point of pooling it at all.
+        final Color color = new Color();
+
+        @Override
+        public void reset() {
+            x = 0f;
+            y = 0f;
+            toX = 0f;
+            toY = 0f;
+            age = 0f;
+            lifetime = 0f;
+            widthCells = 0f;
+            clip = null;
+            sprite = null;
+            color.set(Color.WHITE);
+        }
     }
+
+    // One burst per shot that lands, which on a busy board is a dozen a second for the length of a
+    // level. Recycled rather than allocated -- this is the hottest effect in the game and the reason
+    // the blueprint asked for a pool.
+    private final com.badlogic.gdx.utils.Pool<Burst> pool = new com.badlogic.gdx.utils.Pool<>() {
+        @Override
+        protected Burst newObject() {
+            return new Burst();
+        }
+    };
 
     private final SpriteRegistry sprites;
     private final List<Burst> bursts = new ArrayList<>();
+    private final LocalTransform transform = new LocalTransform();
     private int nextClip;
 
     public ImpactEffects(SpriteRegistry sprites) {
@@ -126,7 +153,7 @@ public final class ImpactEffects {
     public void spawn(float worldX, float worldY, Color color,
                       models.entities.projectiles.Element element,
                       models.entities.projectiles.ProjectileType type) {
-        Burst burst = new Burst();
+        Burst burst = pool.obtain();
         burst.x = worldX;
         burst.y = worldY;
         // A splat STAYS WHERE IT LANDED. Leaving these at their 0f default made drawSplat interpolate
@@ -136,7 +163,7 @@ public final class ImpactEffects {
         // the wrong thing was drawn brightly rather than subtly.
         burst.toX = worldX;
         burst.toY = worldY;
-        burst.color = new Color(color);
+        burst.color.set(color);
         String byType = type == null ? null : SPLAT_BY_TYPE.get(type);
         burst.sprite = byType != null ? byType : SPLAT_BY_ELEMENT.getOrDefault(
                 element == null ? models.entities.projectiles.Element.NEUTRAL : element,
@@ -169,12 +196,12 @@ public final class ImpactEffects {
         if (spriteName == null) {
             return;
         }
-        Burst burst = new Burst();
+        Burst burst = pool.obtain();
         burst.x = fromX;
         burst.y = fromY;
         burst.toX = toX;
         burst.toY = toY;
-        burst.color = new Color(Color.WHITE);
+        burst.color.set(Color.WHITE);
         burst.sprite = spriteName;
         burst.widthCells = widthCells;
         burst.lifetime = lifetime;
@@ -186,7 +213,7 @@ public final class ImpactEffects {
         if (bursts.isEmpty()) {
             return;
         }
-        Color previous = batch.getColor().cpy();
+        float previous = batch.getPackedColor();
 
         for (int i = bursts.size() - 1; i >= 0; i--) {
             Burst burst = bursts.get(i);
@@ -194,6 +221,7 @@ public final class ImpactEffects {
             float life = burst.lifetime > 0f ? burst.lifetime : LIFETIME;
             if (burst.age >= life) {
                 bursts.remove(i);
+                pool.free(burst);
                 continue;
             }
             float t = burst.age / life;
@@ -205,7 +233,7 @@ public final class ImpactEffects {
             batch.setColor(burst.color.r, burst.color.g, burst.color.b, fade);
             drawSplat(batch, burst, SpritePlacer.toSpriteSpace(burst.widthCells * cellSize), t);
         }
-        batch.setColor(previous);
+        batch.setPackedColor(previous);
     }
 
     private void drawSplat(Batch batch, Burst burst, float width, float t) {
@@ -224,17 +252,12 @@ public final class ImpactEffects {
         float drawX = burst.x + (burst.toX - burst.x) * t;
         float drawY = burst.y + (burst.toY - burst.y) * t;
 
-        com.badlogic.gdx.math.Matrix4 previous = batch.getTransformMatrix().cpy();
-        com.badlogic.gdx.math.Matrix4 scaled = new com.badlogic.gdx.math.Matrix4(previous)
-                .translate(SpritePlacer.toSpriteSpace(drawX),
-                        SpritePlacer.toSpriteSpace(drawY), 0f)
-                .scale(scale, scale, 1f);
-
-        batch.setTransformMatrix(scaled);
+        transform.begin(batch, SpritePlacer.toSpriteSpace(drawX),
+                SpritePlacer.toSpriteSpace(drawY), scale);
         // Same y-down correction as everywhere else: libPVZ reports bounds in the .PAM's Flash-style
         // coordinates, where the art hangs below the origin.
         splat.draw(batch, clip, ClipMap.sample(splat, clip, t * LIFETIME),
                 0f, bounds.y + bounds.height / 2f, true);
-        batch.setTransformMatrix(previous);
+        transform.end(batch);
     }
 }

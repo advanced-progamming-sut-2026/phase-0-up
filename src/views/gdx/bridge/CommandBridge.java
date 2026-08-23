@@ -27,8 +27,25 @@ public final class CommandBridge {
 
     private final CommandSink sink;
 
+    // Optional, and null in every test: CommandBridgeTest builds this with a collecting sink and no
+    // game around it. A cue is played only when the command actually SUCCEEDED, which is the whole
+    // reason the sounds live here rather than in the input processor -- a click on a tile the player
+    // cannot afford should be silent, or the sound becomes a lie about what happened.
+    private views.gdx.core.AudioManager audio;
+
     public CommandBridge(CommandSink sink) {
         this.sink = sink;
+    }
+
+    public void setAudio(views.gdx.core.AudioManager audio) {
+        this.audio = audio;
+    }
+
+    private boolean cue(boolean happened, String sfx) {
+        if (happened && audio != null) {
+            audio.play(sfx);
+        }
+        return happened;
     }
 
     // "plant plant -t <type> -l (x, y)". The type is passed through untouched: PlantRegistry matches
@@ -37,12 +54,14 @@ public final class CommandBridge {
         if (plantType == null || plantType.isBlank() || !at.isValid()) {
             return false;
         }
-        return submit("plant plant -t " + plantType.trim() + " -l " + at.toCommandArgs());
+        return cue(submit("plant plant -t " + plantType.trim() + " -l " + at.toCommandArgs()),
+                views.gdx.core.AudioManager.SFX_PLANT);
     }
 
     // "pluck plant -l (x, y)" -- the shovel.
     public boolean pluck(GridPos at) {
-        return at.isValid() && submit("pluck plant -l " + at.toCommandArgs());
+        return cue(at.isValid() && submit("pluck plant -l " + at.toCommandArgs()),
+                views.gdx.core.AudioManager.SFX_SHOVEL);
     }
 
     // "feed plant -l (x, y)" -- plant food.
@@ -54,7 +73,8 @@ public final class CommandBridge {
     // locates a sun by flooring its x to a column and comparing rows, so the tile under the cursor is
     // exactly the right thing to send.
     public boolean collectSun(GridPos at) {
-        return at.isValid() && submit("collect sun -l " + at.toCommandArgs());
+        return cue(at.isValid() && submit("collect sun -l " + at.toCommandArgs()),
+                views.gdx.core.AudioManager.SFX_SUN_COLLECT);
     }
 
     // "break vase -l (x, y)" -- Vasebreaker. A bare click on a vase, with nothing held.
