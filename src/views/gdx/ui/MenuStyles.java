@@ -110,6 +110,31 @@ public final class MenuStyles {
         }
     }
 
+    // Draws one drawable over another as a single background: an opaque fill tucked under the ornate
+    // frame, because the frame's own middle is translucent and anything lit behind it reads through the
+    // text.
+    //
+    // `inset` is how far the fill is pulled inside the frame's bounds. The frame is a rounded shape in a
+    // rectangular region, so a fill drawn to the same rectangle shows as square shoulders sticking out
+    // past the gold edge; insetting tucks it under the border, which is thick enough to cover the seam.
+    //
+    // MenuPanel and GameOverlays each grew their own private copy of this before it was worth naming,
+    // and each has its inset tuned to a panel that already looks right -- so they are left alone rather
+    // than migrated for tidiness. New panels use this one.
+    public static Drawable layered(Drawable under, Drawable over, float inset) {
+        if (under == null) {
+            return over;
+        }
+        return new com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable(over) {
+            @Override
+            public void draw(com.badlogic.gdx.graphics.g2d.Batch batch,
+                             float x, float y, float width, float height) {
+                under.draw(batch, x + inset, y + inset, width - inset * 2f, height - inset * 2f);
+                over.draw(batch, x, y, width, height);
+            }
+        };
+    }
+
     // The same drawable, reporting more horizontal padding.
     //
     // Widgets that inset their contents -- TextField's text, a Table's cells -- read the padding off

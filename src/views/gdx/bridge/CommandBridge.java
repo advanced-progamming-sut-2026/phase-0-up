@@ -41,7 +41,8 @@ public final class CommandBridge {
         this.audio = audio;
     }
 
-    private boolean cue(boolean happened, String sfx) {
+    // `sfx` is a fallback chain: the first name there is a file for wins. See AudioManager.play.
+    private boolean cue(boolean happened, String... sfx) {
         if (happened && audio != null) {
             audio.play(sfx);
         }
@@ -54,7 +55,10 @@ public final class CommandBridge {
         if (plantType == null || plantType.isBlank() || !at.isValid()) {
             return false;
         }
+        // The plant's own placement sound if there is a file for it, otherwise the generic one.
         return cue(submit("plant plant -t " + plantType.trim() + " -l " + at.toCommandArgs()),
+                views.gdx.core.AudioManager.forEntity(
+                        views.gdx.core.AudioManager.SFX_PLANT, plantType),
                 views.gdx.core.AudioManager.SFX_PLANT);
     }
 
@@ -103,6 +107,44 @@ public final class CommandBridge {
             return false;
         }
         return submit("summon -t " + zombieAlias.trim() + " -l " + at.toCommandArgs());
+    }
+
+    // "swap -l (x1, y1) (x2, y2)" -- Beghouled's only gesture.
+    //
+    // ## The coordinate trap, flagged in the roadmap since Phase 0
+    //
+    // Three orderings meet at this command and two of them disagree:
+    //
+    //   the command   swap -l (x1, y1) (x2, y2)            x FIRST
+    //   GameSession   swapPlants(x1, y1, x2, y2)           x FIRST
+    //   BeghouledMode swap(session, r1, c1, r2, c2)        ROW FIRST
+    //
+    // `GameSession.swapPlants` already transposes for the mode (`swap(this, y1, x1, y2, x2)`), so the
+    // transposition is done and this side must NOT do it again. GridPos is (col, row) and
+    // `toCommandArgs` prints it that way, which is exactly what the pattern wants -- so the safe
+    // spelling is the one that never mentions x or y at all.
+    //
+    // Getting it wrong does not throw: it silently swaps the transposed cell, and on a board that is
+    // nearly square that usually still looks plausible. Which is the worst kind of wrong, and why
+    // `CommandBridgeTest` asserts the exact string.
+    public boolean swap(GridPos from, GridPos to) {
+        if (from == null || to == null || !from.isValid() || !to.isValid()) {
+            return false;
+        }
+        return cue(submit("swap -l " + from.toCommandArgs() + " " + to.toCommandArgs()),
+                views.gdx.core.AudioManager.SFX_PLANT);
+    }
+
+    // "upgrade -t <type>" -- Beghouled's sun sink. The affordability check, the "not one of those on the
+    // lawn" refusal and the actual promotion all stay in BeghouledMode.upgrade.
+    public boolean upgrade(String plantType) {
+        if (plantType == null || plantType.isBlank()) {
+            return false;
+        }
+        return cue(submit("upgrade -t " + plantType.trim()),
+                views.gdx.core.AudioManager.forEntity(
+                        views.gdx.core.AudioManager.SFX_PLANT, plantType),
+                views.gdx.core.AudioManager.SFX_PLANT);
     }
 
     private boolean submit(String command) {

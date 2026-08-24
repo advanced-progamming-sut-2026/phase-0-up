@@ -136,7 +136,10 @@ public final class SpritePlacer {
     // above the ground (measured: 33 world px for a Wall-nut).
     //
     // Flipping gives the true span as [-(y + height), -y], so the bottom edge is -(y + height).
-    private static float bottomOffset(EntitySprite sprite, String clip) {
+    // Package-private rather than private: ZombotanyHead has to rebuild the exact origin a body was
+    // drawn from in order to hang a head off it, and re-deriving that arithmetic there would be two
+    // copies of the y-down flip to keep in step.
+    static float bottomOffset(EntitySprite sprite, String clip) {
         // anchorBounds(), not bounds(clip): see EntitySprite.anchorBounds for why using the playing
         // clip's box made walking zombies float a lane above the ground.
         Rectangle bounds = sprite.anchorBounds();

@@ -55,7 +55,8 @@ public final class GameOverlays {
         outcomeTitle = MenuStyles.label(skin, "", MenuStyles.TITLE);
         outcomeBody = body();
         outcomeArt = gameOverArt();
-        outcome = panel(outcomeArt, outcomeTitle, outcomeBody,
+        scorecard = new Table();
+        outcome = panel(outcomeArt, scorecard, outcomeTitle, outcomeBody,
                 button("Continue", MenuStyles.BUTTON_GREEN, onContinue));
 
         for (Table overlay : new Table[] {objective, pause, outcome}) {
@@ -77,6 +78,12 @@ public final class GameOverlays {
     // The cell holding it, so a win can collapse it to nothing.
     private com.badlogic.gdx.scenes.scene2d.ui.Cell<?> artCell;
 
+    // The scoring game's end-of-level breakdown, and the cell that collapses it away on every other
+    // level. Built empty and filled by showOutcome, because what it says is only known when the run
+    // ends.
+    private final Table scorecard;
+    private com.badlogic.gdx.scenes.scene2d.ui.Cell<?> scoreCell;
+
     private com.badlogic.gdx.scenes.scene2d.ui.Image gameOverArt() {
         try {
             com.badlogic.gdx.graphics.g2d.TextureRegion region = assets.region(GAME_OVER_ART);
@@ -91,12 +98,15 @@ public final class GameOverlays {
     }
 
     private Table panel(Label title, Label text, TextButton... buttons) {
-        return panel(null, title, text, buttons);
+        return panel(null, null, title, text, buttons);
     }
 
-    // Dimmed full-screen layer with a framed panel in the middle. `art` may be null.
-    private Table panel(com.badlogic.gdx.scenes.scene2d.ui.Image art, Label title, Label text,
-                        TextButton... buttons) {
+    // Dimmed full-screen layer with a framed panel in the middle. `art` and `extra` may both be null;
+    // only the outcome panel passes either. Passed in rather than read off a field, because an Actor
+    // has exactly one parent -- a shared builder reading `scorecard` directly would try to adopt the
+    // same table into all three panels, and the last one to ask would win.
+    private Table panel(com.badlogic.gdx.scenes.scene2d.ui.Image art, Table extra, Label title,
+                        Label text, TextButton... buttons) {
         Table layer = new Table();
         layer.setFillParent(true);
         layer.setBackground(assets.solid(DIM));
@@ -123,6 +133,14 @@ public final class GameOverlays {
         }
         box.add(title).padBottom(10f).row();
         box.add(text).width(440f).padBottom(16f).row();
+        // The Meow Point breakdown, empty and zero-height on every level that is not the scoring game.
+        // Its cell is kept for the same reason the art's is: a hidden actor still holds its cell, and a
+        // collapsed one is what stops an ordinary win panel growing a band of empty frame. See
+        // scene2d-nested-cell-trap -- this cell lives in the inner box, not in the returned layer.
+        if (extra != null) {
+            scoreCell = box.add(extra).width(440f).height(0f);
+            box.row();
+        }
         for (TextButton button : buttons) {
             box.add(button).width(280f).height(56f).padBottom(8f).row();
         }
@@ -185,6 +203,10 @@ public final class GameOverlays {
         objectiveTitle.setText(levelName);
         objectiveBody.setText(goal);
         objective.setVisible(true);
+        // In front of anything added to this Stage AFTER these three were built -- which is every score
+        // popup, since they are created as they happen. Scene2D draws in child order, so without this a
+        // Meow Point award floats up THROUGH the panel that is reporting it.
+        objective.toFront();
     }
 
     public boolean isObjectiveVisible() {
@@ -197,6 +219,61 @@ public final class GameOverlays {
 
     public void setPauseVisible(boolean visible) {
         pause.setVisible(visible);
+        if (visible) {
+            pause.toFront();   // see showObjective
+        }
+    }
+
+    // The result of a SCORING run: the same panel, with the Meow Point breakdown under the message.
+    //
+    // Built from the manager's own numbers rather than from `buildScorecard()`. That string exists and
+    // is correct, but it is a fixed-width terminal card -- column-aligned with %-20s and printf padding
+    // -- and the skin's font is proportional, so pasting it into a Label produces ragged columns that
+    // look like a layout bug. The rule labels and awards live on `MeowPointRule`, so a Scene2D table
+    // reads the same source the text does and neither can drift from the other.
+    //
+    // `points` may be null, which is simply an ordinary level.
+    public void showOutcome(boolean won, String message,
+                            models.game.scoring.MeowPointManager points) {
+        buildScorecard(points);
+        showOutcome(won, message);
+    }
+
+    // Rules that never fired are left out, exactly as the terminal card leaves them out: the panel shows
+    // what the player DID, not a checklist of what they missed.
+    private void buildScorecard(models.game.scoring.MeowPointManager points) {
+        scorecard.clearChildren();
+        if (points == null) {
+            return;
+        }
+        for (models.game.scoring.MeowPointRule rule : models.game.scoring.MeowPointRule.values()) {
+            int hits = points.getHits(rule);
+            if (hits == 0) {
+                continue;
+            }
+            scoreRow(rule.getLabel() + "  x" + hits, "+" + points.getPoints(rule), false);
+        }
+        if (scorecard.getChildren().size == 0) {
+            scoreRow("No bonuses earned this run.", "", false);
+        }
+        scoreRow("TOTAL", String.valueOf(points.getTotal()), true);
+        scoreRow("Zombies destroyed", String.valueOf(points.getKills()), false);
+    }
+
+    // Meow Points wear the scoring game's gold, so the total reads as a score rather than as more body
+    // text. Everything else stays the panel's ordinary colour.
+    private static final Color SCORE_TOTAL = new Color(1f, 0.86f, 0.32f, 1f);
+
+    private void scoreRow(String name, String value, boolean total) {
+        Label left = MenuStyles.label(skin, name, MenuStyles.TEXT);
+        Label right = MenuStyles.label(skin, value, MenuStyles.TEXT);
+        if (total) {
+            left.setColor(SCORE_TOTAL);
+            right.setColor(SCORE_TOTAL);
+        }
+        scorecard.add(left).left().expandX();
+        scorecard.add(right).right();
+        scorecard.row();
     }
 
     // The result. The two sentences are the model's own, taken from the events GameEngine already
@@ -204,10 +281,21 @@ public final class GameOverlays {
     public void showOutcome(boolean won, String message) {
         outcomeTitle.setText(won ? "Level Complete!" : "The Zombies Ate Your Brains");
         outcomeBody.setText(message);
+        boolean scored = scorecard.getChildren().size > 0;
+        if (scoreCell != null) {
+            // Sized to whatever the card came out as -- the number of rows depends on how many rules
+            // actually paid, and a fixed height would either clip a full card or leave a gap under a
+            // thin one. Collapsed to nothing when there is no card at all.
+            scoreCell.height(scored ? scorecard.getPrefHeight() : 0f);
+            scoreCell.padBottom(scored ? 16f : 0f);
+        }
         if (outcomeArt != null) {
             // Losing gets the picture; winning does not. A half-eaten brain over "Level Complete!"
             // would be congratulating the wrong side.
-            outcomeArt.setVisible(!won);
+            //
+            // Nor does a scored run, win or lose: the brain and the breakdown together are 400 units of
+            // panel, and the thing the player came back to read is the score.
+            outcomeArt.setVisible(!won && !scored);
             // Hidden actors still hold their cell, so the cell is collapsed as well -- otherwise a win
             // panel is a title floating under 235 units of empty frame.
             //
@@ -215,12 +303,14 @@ public final class GameOverlays {
             // dimmed layer and the art lives in the framed box INSIDE it, so getCell returned null and
             // every loss threw an NPE out of the render loop -- the one moment the panel exists for.
             if (artCell != null) {
-                artCell.height(won ? 0f : GAME_OVER_WIDTH * 383f / 586f);
-                artCell.padBottom(won ? 0f : 8f);
-                outcome.invalidateHierarchy();
+                boolean showArt = outcomeArt.isVisible();
+                artCell.height(showArt ? GAME_OVER_WIDTH * 383f / 586f : 0f);
+                artCell.padBottom(showArt ? 8f : 0f);
             }
         }
+        outcome.invalidateHierarchy();
         outcome.setVisible(true);
+        outcome.toFront();   // see showObjective
     }
 
     public boolean isOutcomeVisible() {

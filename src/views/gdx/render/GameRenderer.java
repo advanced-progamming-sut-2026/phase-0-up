@@ -43,10 +43,22 @@ public final class GameRenderer {
     private final WeatherEffects weather;
     private final ImpactEffects impacts;
     private final ExplosionEffects explosions;
-    private final AshEffects ash;
+    private final DeathEffects deaths;
+    // Craters and the settle flash after a match. Idle on every board that is not Beghouled.
+    private final BeghouledRenderer beghouled;
 
     // Reused per lane so a full board does not allocate a list per row per frame.
     private final List<Zombie> laneZombies = new ArrayList<>();
+
+    // Set by GameScreen. Null in any harness that builds a renderer without a game around it, and the
+    // one cue raised from in here is guarded accordingly.
+    private views.gdx.core.AudioManager audio;
+
+    public void setAudio(views.gdx.core.AudioManager audio) {
+        this.audio = audio;
+        // The head pop is raised from inside Dismemberment, where the throw happens.
+        zombies.pieces().setAudio(audio);
+    }
 
     // How close a shot has to be to its shooter for the shooter to be redrawn over it.
     private static final double MUZZLE_OVERLAP_CELLS = 0.75;
@@ -82,11 +94,20 @@ public final class GameRenderer {
         this.vases = new VaseRenderer(sprites, lawn, clocks, new views.gdx.ui.UiArt(assets));
         this.nuts = new BowlingRenderer(sprites, lawn, clocks, interpolator);
         this.brains = new IZombieRenderer(assets, lawn);
+        this.beghouled = new BeghouledRenderer(assets, lawn);
         this.weather = new WeatherEffects(sprites, lawn);
         this.impacts = new ImpactEffects(sprites);
         this.explosions = new ExplosionEffects(sprites, lawn);
         this.explosions.setCollectibles(this.collectibles);
-        this.ash = new AshEffects(sprites, lawn);
+        this.deaths = new DeathEffects(sprites, lawn);
+        // A death asks the blasts whether one of them is what killed it -- that is what decides between
+        // the zombie's own `die` clip and a heap of ash. See DeathEffects.
+        this.deaths.setExplosions(this.explosions);
+        // And where a killed zombie's head goes.
+        this.deaths.setPieces(this.zombies.pieces());
+        // Shared rather than a second instance: the head a corpse wears has to be measured and scaled
+        // by exactly the thing that was drawing it a frame earlier, and both halves cache per clip.
+        this.deaths.setBotany(this.zombies.botany());
         this.lawn = lawn;
     }
 
@@ -134,17 +155,18 @@ public final class GameRenderer {
         return weather;
     }
 
-    // And a zombie's ash, which is the strongest case of all: the model removes a dead zombie on the
-    // tick it dies, so there is no frame in which it can be seen dying. See AshEffects.
-    public AshEffects ash() {
-        return ash;
+    // And what a zombie leaves behind, which is the strongest case of all: the model removes a dead
+    // zombie on the tick it dies, so there is no frame in which it can be seen dying. See DeathEffects.
+    public DeathEffects deaths() {
+        return deaths;
     }
 
     private void drawLanes(Batch batch, GameSession session, float delta, float alpha) {
         // The blast's rear half, under everything it engulfs.
         explosions.drawRear(batch, delta);
-        // Once per frame, before the lane pass visits it five times. See AshEffects.advance.
-        ash.advance(delta);
+        // Once per frame, before the lane pass visits it five times. See DeathEffects.advance.
+        deaths.advance(delta);
+        beghouled.advance(session, delta);
 
         for (int row = 0; row < Constants.BOARD_ROWS; row++) {
             drawLane(batch, session, session.getMap().getRow(row), row, delta, alpha);
@@ -176,6 +198,10 @@ public final class GameRenderer {
             terrain.drawCell(batch, cell, col, row, delta);
         }
 
+        // Beghouled craters go down with the terrain: a hole a zombie chewed is ground, not something
+        // standing on it, and a plant can never sit on one anyway.
+        beghouled.drawCraters(batch, session, row);
+
         // Order within a lane: plants, then zombies, then shots.
         //
         // A zombie stands IN FRONT of the plant it is eating, so zombies draw over plants. Shots
@@ -191,10 +217,19 @@ public final class GameRenderer {
             plants.drawCell(batch, lane.cellAt(col), col, row, delta);
         }
 
+        // And the flash on whatever a match just dropped into place, AFTER them, so it lights the piece
+        // that arrived rather than the ground it landed on.
+        beghouled.drawSettles(batch, session, row);
+
         // Vases stand in their tile the way a plant does, and a zombie coming out of one walks in
         // front of it, so they belong between the plants and the zombies. On any level that is not
         // Vasebreaker this costs a single instanceof.
         vases.drawRow(batch, session, row, delta);
+
+        // The dead go down BEFORE the living, so the horde walks over its own casualties. Drawn after
+        // them a corpse sits on top of the zombie stepping past it, which reads as the body being held
+        // up rather than trampled. See DeathEffects.
+        deaths.drawRow(batch, row);
 
         laneZombies.clear();
         laneZombies.addAll(lane.getZombies());
@@ -203,12 +238,9 @@ public final class GameRenderer {
             zombies.draw(batch, zombie, delta, alpha);
         }
 
-        // The pieces coming off the living -- a broken cone, a shed arm -- in front of the zombies
-        // they came off. Then where a zombie died: a body-sized thing standing on the same ground,
-        // behind the living, because the horde walking over its own dead is what the row should read
-        // as. See Dismemberment and AshEffects.
+        // The pieces coming off the living -- a broken cone, a shed arm -- in front of the zombies they
+        // came off, because they are leaving the body toward the viewer. See Dismemberment.
         zombies.pieces().drawRow(batch, row);
-        ash.drawRow(batch, row);
 
         // After the zombies, because a bowling nut rolls OVER the ones it has already flattened and
         // into the ones it has not -- drawn under them it disappears the moment it reaches the horde,
@@ -284,6 +316,17 @@ public final class GameRenderer {
     private void collectEffects() {
         for (ProjectileRenderer.Muzzle muzzle : projectiles.drainMuzzles()) {
             impacts.spawnMuzzle(muzzle.x(), muzzle.y(), muzzle.sprite());
+            // A muzzle flash IS "a plant just fired", which is the trigger the shooting sound needs and
+            // the only place the view already computes it. The plant's own sound if there is a file for
+            // it, otherwise the generic pea. AudioManager collapses repeats inside 50ms, so a row of
+            // Peashooters firing on one frame is one pea rather than eight stacked copies of one
+            // waveform -- but two DIFFERENT plants firing together are still two sounds, because the
+            // cooldown is keyed on whichever name won.
+            if (audio != null) {
+                audio.play(views.gdx.core.AudioManager.forEntity(
+                        views.gdx.core.AudioManager.SFX_SHOOT, muzzle.shooter()),
+                        views.gdx.core.AudioManager.SFX_SHOOT);
+            }
         }
         for (PlantRenderer.Strike strike : plants.drainStrikes()) {
             impacts.spawnStrike(strike.fromX(), strike.fromY(), strike.toX(), strike.toY(),

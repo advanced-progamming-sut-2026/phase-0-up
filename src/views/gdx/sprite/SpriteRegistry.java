@@ -82,6 +82,15 @@ public final class SpriteRegistry {
         m.put("ZombieCrystalSkull", "ZOMBIE_LOSTCITY_CRYSTALSKULL");
         m.put("ZombieNewspaper", "ZOMBIE_MODERN_NEWSPAPER");
         m.put("ZombieArcade", "ZOMBIE_80S_ARCADE");
+        // The four Zombotany plant-zombies, and the one group here that is a COMPOSITION rather than a
+        // rename. The dump has no Zombotany art at all -- "botany" appears nowhere in animations.json or
+        // RESOURCES.json -- so before this they resolved to nothing and drew nothing, not even a still.
+        // They borrow the shared body, exactly as the armored zombies do, and views.gdx.render
+        // .ZombotanyHead switches the skull off and stands the plant's own animation on the neck.
+        m.put(factories.zombie.ZombotanyRoster.PEASHOOTER, "ZOMBIE_TUTORIAL");
+        m.put(factories.zombie.ZombotanyRoster.WALLNUT, "ZOMBIE_TUTORIAL");
+        m.put(factories.zombie.ZombotanyRoster.JALAPENO, "ZOMBIE_TUTORIAL");
+        m.put(factories.zombie.ZombotanyRoster.SQUASH, "ZOMBIE_TUTORIAL");
 
         // --- plants --------------------------------------------------------------------------------
         m.put("Twin Sunflower", "SUNFLOWER_TWIN");

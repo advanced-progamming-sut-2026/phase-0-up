@@ -115,6 +115,10 @@ public final class DevBoot {
             case "izombie" -> factories.MinigameFactory.createIZombie(difficulty);
             case "beghouled" -> factories.MinigameFactory.createBeghouled(difficulty);
             case "zombotany" -> factories.MinigameFactory.createZombotany(difficulty);
+            // Not a mini-game strictly -- the scoring game is reachable from the Adventure screen, which
+            // a screenshot run cannot click. It belongs here for the same reason the others do: it is a
+            // board with no chapter/level pair that reaches it.
+            case "scoring" -> factories.MinigameFactory.createScoringGame();
             default -> null;
         };
         if (level == null) {

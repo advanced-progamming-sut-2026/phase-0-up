@@ -211,8 +211,12 @@ public class PvZGame extends Game {
             // in MAIN_MENU and swaps the lawn straight back out from under this -- which is exactly
             // what this flag stopped doing once the menus became the default entry point.
             appSession.setCurrentMenu(MenuType.IN_GAME);
-            screens.showDetached(new views.gdx.screens.GameScreen(
-                    context, views.gdx.screens.DevBoot.start(appSession, renderers)));
+            // showAs, NOT showDetached: a detached screen is filed under no menu, so the next sync()
+            // would see IN_GAME and build a second GameScreen -- with a second GameEngine, a second
+            // init() on the same session, and the DevBoot one discarded. See ScreenManager.showAs.
+            screens.showAs(new views.gdx.screens.GameScreen(
+                    context, views.gdx.screens.DevBoot.start(appSession, renderers)),
+                    MenuType.IN_GAME);
         } else {
             openStartingMenu();
             screens.sync();

@@ -255,23 +255,87 @@ final class PamEntitySprite implements EntitySprite {
         }
         anchorResolved = true;
 
+        String resting = null;
         for (String preferred : ANCHOR_CLIPS) {
             anchor = bounds(preferred);
             if (anchor != null) {
-                return anchor;
+                resting = preferred;
+                break;
             }
         }
-        for (String clip : availableClips) {
-            com.badlogic.gdx.math.Rectangle candidate = bounds(clip);
-            if (candidate == null) {
+        if (anchor == null) {
+            for (String clip : availableClips) {
+                com.badlogic.gdx.math.Rectangle candidate = bounds(clip);
+                if (candidate == null) {
+                    continue;
+                }
+                if (anchor == null
+                        || candidate.width * candidate.height < anchor.width * anchor.height) {
+                    anchor = candidate;
+                    resting = clip;
+                }
+            }
+        }
+        standOnFeet(resting);
+        return anchor;
+    }
+
+    // Parts whose name says they are what the entity stands on.
+    //
+    // "leg" is only taken together with "lower": an upper leg is a thigh, and a thigh's box reaches the
+    // hip. `foot`, `toe` and `heel` need no qualifier.
+    private static boolean isFootPart(String partName) {
+        String lower = partName.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("foot") || lower.contains("toe") || lower.contains("heel")
+                || (lower.contains("leg") && lower.contains("lower"));
+    }
+
+    // Moves the anchor's ground line from the bottom of the ARTWORK to the bottom of the FEET.
+    //
+    // The two are usually the same and for most entities this changes nothing. They are not the same
+    // for a Gargantuar: its hammer hangs below its boots, so the idle box bottom is the hammer head,
+    // and standing that on the lane's foot line lifted the whole Gargantuar a full row -- its feet came
+    // out level with the row above's, which is exactly where a player sees it.
+    //
+    // This is the same shape of bug as bounds() counting switched-off armour, recorded during the
+    // sprite-sizing work: a box that unions everything answers a question nobody asked. What the
+    // placement actually needs is "where does this thing touch the ground", and the parts named for
+    // feet are the honest answer to that.
+    //
+    // Only DRAWABLE parts are unioned, never groups or ancestors -- partBounds answers for any node and
+    // returns the whole animation for `root`, which would silently undo the correction. And the union
+    // takes the LOWEST point, so an Imp riding on a Gargantuar's back contributes its own feet without
+    // affecting the result.
+    private void standOnFeet(String restingClip) {
+        if (anchor == null || restingClip == null) {
+            return;
+        }
+        Float lowest = null;
+        for (String part : drawableParts) {
+            if (!isFootPart(part)) {
                 continue;
             }
-            if (anchor == null
-                    || candidate.width * candidate.height < anchor.width * anchor.height) {
-                anchor = candidate;
+            com.badlogic.gdx.math.Rectangle box = partBounds(restingClip, part);
+            if (box == null || box.width <= 0f) {
+                continue;
             }
+            // PAM bounds are y-DOWN, so the ground is the greatest y.
+            float bottom = box.y + box.height;
+            lowest = lowest == null ? bottom : Math.max(lowest, bottom);
         }
-        return anchor;
+        if (lowest == null) {
+            return;   // nothing named for a foot: keep the artwork's own bottom, as before
+        }
+        float was = anchor.y + anchor.height;
+        // Only the ground line moves. The box's x, width and top are untouched, because bottomOffset is
+        // the sole consumer and it reads nothing else.
+        anchor = new com.badlogic.gdx.math.Rectangle(anchor.x, anchor.y,
+                anchor.width, lowest - anchor.y);
+        if (views.gdx.core.DebugFlags.LANE_CHECK && Math.abs(was - lowest) > 1f) {
+            com.badlogic.gdx.Gdx.app.log("Anchor", pamPath() + " [" + restingClip
+                    + "] ground line " + was + " -> " + lowest + " (moved "
+                    + (was - lowest) + " units up to the feet)");
+        }
     }
 
     String pamPath() {

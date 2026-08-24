@@ -87,6 +87,8 @@ public final class AudioManager implements Disposable {
     public static final String SFX_SHOOT = "shoot";
     public static final String SFX_ZOMBIE_EAT = "zombie_eat";
     public static final String SFX_ZOMBIE_DIES = "zombie_dies";
+    /** The head coming off, on the instant a zombie is killed. */
+    public static final String SFX_HEAD_POP = "head_pop";
     public static final String SFX_EXPLOSION = "explosion";
     public static final String SFX_SUN_COLLECT = "sun_collect";
     public static final String SFX_SHOVEL = "shovel";
@@ -122,12 +124,65 @@ public final class AudioManager implements Disposable {
         return Math.round(master * 100f);
     }
 
-    // A one-shot effect. Silently does nothing when there is no file for it.
-    public void play(String name) {
-        Sound sound = sound(name);
-        if (sound != null && master > 0f) {
-            sound.play(master * SFX_MIX);
+    // The shortest gap between two plays of the SAME effect.
+    //
+    // A safety valve rather than a design choice. Eight Peashooters firing in one frame is eight
+    // identical clips starting on the same millisecond, which does not sound like eight peas -- it
+    // sounds like one pea eight times as loud, because that is literally what summing identical
+    // waveforms does. Nothing in the game legitimately needs the same sound more than twenty times a
+    // second, so collapsing that costs nothing and removes a whole class of noise.
+    private static final long MIN_REPEAT_MS = 50L;
+
+    private final Map<String, Long> lastPlayed = new HashMap<>();
+
+    // A one-shot effect: the first of these names there is a file for.
+    //
+    // The chain is what makes per-entity sound optional rather than all-or-nothing, exactly as it does
+    // for music. A Cactus firing asks for `shoot_cactus` and then `shoot`, so dropping in one file
+    // gives that one plant its own voice and every other plant keeps the generic pea. Nobody has to
+    // supply fifty files to get any benefit, and no plant can end up silent for want of its own.
+    public void play(String... names) {
+        if (master <= 0f || names == null) {
+            return;
         }
+        long now = com.badlogic.gdx.utils.TimeUtils.millis();
+        for (String name : names) {
+            if (name == null) {
+                continue;
+            }
+            Sound sound = sound(name);
+            if (sound == null) {
+                continue;
+            }
+            // Guarded on the name that actually WINS, so a per-entity cue and the generic one it falls
+            // back to do not share a cooldown -- two different plants firing on one frame are two
+            // different sounds and must not suppress each other.
+            Long previous = lastPlayed.get(name);
+            if (previous == null || now - previous >= MIN_REPEAT_MS) {
+                lastPlayed.put(name, now);
+                sound.play(master * SFX_MIX);
+            }
+            return;
+        }
+    }
+
+    // "shoot" + "Cabbage-pult" -> "shoot_cabbagepult".
+    //
+    // Normalised the same way SpriteRegistry normalises an animation name -- lower-cased with every
+    // non-alphanumeric stripped -- so the file a person has to name is predictable from what the game
+    // calls the entity, and "Snow Pea", "snow pea" and "Snow-Pea" all land on the same file.
+    public static String forEntity(String cue, String entityName) {
+        if (cue == null || entityName == null || entityName.isBlank()) {
+            return null;
+        }
+        StringBuilder key = new StringBuilder(cue).append('_');
+        for (int i = 0; i < entityName.length(); i++) {
+            char c = entityName.charAt(i);
+            if (Character.isLetterOrDigit(c)) {
+                key.append(Character.toLowerCase(c));
+            }
+        }
+        return key.toString();
     }
 
     // Starts a looping track: the first of these names there is actually a file for.
@@ -216,6 +271,10 @@ public final class AudioManager implements Disposable {
         for (String extension : EXTENSIONS) {
             FileHandle file = Gdx.files.local(ROOT + "/" + folder + "/" + name + extension);
             if (file.exists()) {
+                if (DebugFlags.AUDIO_CHECK) {
+                    Gdx.app.log("AudioManager", "resolved " + folder + "/" + name + " -> "
+                            + file.path() + " (" + file.length() / 1024 + " KB)");
+                }
                 return file;
             }
         }

@@ -85,6 +85,46 @@ class CommandBridgeTest {
     }
 
     @Test
+    @DisplayName("a Beghouled swap names the two tiles x-first, in the order the pattern expects")
+    void swapMatchesTheEnginePattern() {
+        // THE trap this whole file exists for, and the one the roadmap has flagged since Phase 0.
+        // Three orderings meet at this command and two disagree: the command and GameSession take x
+        // first, BeghouledMode.swap takes ROW first, and GameSession.swapPlants is the one that
+        // transposes between them. A bridge that transposed as well would silently swap the mirrored
+        // cell -- which on a nearly square board usually still looks plausible.
+        //
+        // So the assertion is on the exact groups, not just on "it matches": a transposed pair matches
+        // the pattern perfectly well.
+        bridge.swap(new GridPos(3, 1), new GridPos(4, 1));
+
+        String command = lastCommand();
+        assertTrue(InGameRegex.SWAP_PLANTS.matches(command), "engine would ignore: " + command);
+        assertEquals("3", InGameRegex.SWAP_PLANTS.getGroup(command, "x1"));
+        assertEquals("1", InGameRegex.SWAP_PLANTS.getGroup(command, "y1"));
+        assertEquals("4", InGameRegex.SWAP_PLANTS.getGroup(command, "x2"));
+        assertEquals("1", InGameRegex.SWAP_PLANTS.getGroup(command, "y2"));
+    }
+
+    @Test
+    @DisplayName("a swap with an off-board end is dropped, and an upgrade names its plant")
+    void swapAndUpgradeGuards() {
+        assertFalse(bridge.swap(new GridPos(0, 0), new GridPos(-1, 0)));
+        assertFalse(bridge.swap(null, new GridPos(0, 0)));
+        assertTrue(sent.isEmpty(), "nothing off the lawn should have been sent: " + sent);
+
+        bridge.upgrade("Cabbage-pult");
+        String command = lastCommand();
+        assertTrue(InGameRegex.UPGRADE_PLANT.matches(command), "engine would ignore: " + command);
+        // Two-word upgrade targets exist (Mega Gatling Pea, Winter Melon), and the -t group is greedy
+        // to the end of the line, so the name must survive whole.
+        assertEquals("Cabbage-pult", InGameRegex.UPGRADE_PLANT.getGroup(command, "type"));
+
+        sent.clear();
+        assertFalse(bridge.upgrade("  "));
+        assertTrue(sent.isEmpty());
+    }
+
+    @Test
     @DisplayName("a blank plant name is refused rather than sent")
     void blankPlantNameIsRefused() {
         // An unarmed cursor has no seed name. Sending "plant plant -t  -l (3, 2)" would match nothing

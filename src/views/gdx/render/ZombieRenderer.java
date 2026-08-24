@@ -47,6 +47,9 @@ public final class ZombieRenderer {
     private final views.gdx.sprite.ZombieDamage damage = new views.gdx.sprite.ZombieDamage();
     private final Dismemberment pieces;
 
+    // Zombotany's plant heads. A no-op for every other zombie in the game.
+    private final ZombotanyHead botany;
+
     // The armor each zombie was wearing last frame. A type that is on this map and no longer on the
     // stack was destroyed between two frames, and that transition IS the trigger for the fly-off --
     // the same "watch it rather than ask for an event" reasoning as DamageFlash. There is no armour
@@ -73,6 +76,11 @@ public final class ZombieRenderer {
         this.interpolator = interpolator;
         this.clocks = clocks;
         this.pieces = new Dismemberment(sprites);
+        this.botany = new ZombotanyHead(sprites);
+    }
+
+    public ZombotanyHead botany() {
+        return botany;
     }
 
     // I, Zombie's sun makers. The model spawns them as plain bucketheads pinned at speed 0, because it
@@ -104,6 +112,7 @@ public final class ZombieRenderer {
                 clip, stateTime);
         float lane = interpolator.lane(zombie, modelLane, alpha);
         float footY = laneFootY(lane);
+        reportLane(zombie, modelLane, lane, footY);
 
         // No armour map for the mech: its parts are its own, and a bucket toggle would name nothing.
         Map<String, Boolean> parts = isSunProducer(zombie)
@@ -121,7 +130,11 @@ public final class ZombieRenderer {
         if (!isSunProducer(zombie)) {
             parts = shedPieces(zombie, sprite, parts, x, footY, Math.round(lane), faceRight);
         }
-        SpritePlacer.drawStandingScaled(batch, sprite, clip, stateTime, x, footY, faceRight, parts,
+        // A Zombotany zombie loses its skull here rather than in ArmorVisibility: the head is not armour
+        // and switching it off is a decision about WHICH zombie this is, not about what it is wearing.
+        String alias = zombie.getAlias();
+        parts = ZombotanyHead.hideSkull(alias, sprite, parts);
+        drawWhole(batch, alias, sprite, clip, stateTime, x, footY, faceRight, parts,
                 scaleFor(zombie));
 
         // Hit flash: the same frame again, additively, so the zombie lights up white. Total HP, not the
@@ -131,12 +144,37 @@ public final class ZombieRenderer {
         if (flash > 0f) {
             SpritePlacer.beginAdditive(batch);
             batch.setColor(flash, flash, flash, 1f);
-            SpritePlacer.drawStandingScaled(batch, sprite, clip, stateTime, x, footY, faceRight, parts,
-                scaleFor(zombie));
+            drawWhole(batch, alias, sprite, clip, stateTime, x, footY, faceRight, parts,
+                    scaleFor(zombie));
             SpritePlacer.endAdditive(batch);
         }
 
         batch.setColor(previous);
+    }
+
+    // Body, then whatever stands in for its head. One method because the hit flash redraws the SAME
+    // frame additively, and a plant-headed zombie that lit up only from the neck down would read as the
+    // head belonging to something else.
+    private void drawWhole(Batch batch, String alias, EntitySprite sprite, String clip,
+                           float stateTime, float x, float footY, boolean faceRight,
+                           Map<String, Boolean> parts, float scale) {
+        SpritePlacer.drawStandingScaled(batch, sprite, clip, stateTime, x, footY, faceRight, parts,
+                scale);
+        botany.draw(batch, alias, sprite, clip, stateTime, x, footY, faceRight);
+    }
+
+    // -Dpvz.laneCheck=1. See DebugFlags: a tall sprite covering the rows above its feet is
+    // indistinguishable by eye from one standing in the wrong row, so the numbers are what can be
+    // checked. `drawn` differing from `model` by anything but a fraction mid-lane-switch is the bug.
+    private void reportLane(Zombie zombie, int modelLane, float drawnLane, float footY) {
+        if (!views.gdx.core.DebugFlags.LANE_CHECK) {
+            return;
+        }
+        boolean off = Math.abs(drawnLane - modelLane) > 0.01f;
+        com.badlogic.gdx.Gdx.app.log("LaneCheck", String.format(java.util.Locale.ROOT,
+                "%-22s model lane %d  drawn lane %.3f  footY %.1f (lane %d foot line is %.1f)%s",
+                zombie.getAlias(), modelLane, drawnLane, footY, modelLane,
+                laneFootY(modelLane), off ? "   <-- OFF" : ""));
     }
 
     // The disco mech is authored about half again the size of a browncoat -- fine for the one-off boss

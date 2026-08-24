@@ -48,6 +48,159 @@ final class MinigameHarness {
         runVaseCheck();
         runBowlCheck();
         runSummonCheck();
+        runSpawn();
+        runCommands();
+        runSwapCheck();
+    }
+
+    // -Dpvz.swapCheck=N. Makes N matches on a Beghouled board by trying neighbours, the way a player
+    // does.
+    //
+    // Every state that board has worth looking at -- a cascade settling, a run of craters, enough sun
+    // for an upgrade, the match counter past zero -- exists only AFTER a successful swap, and a swap is
+    // two clicks on lawn tiles. -Dpvz.click reaches neither (a tile is not an actor) and -Dpvz.run
+    // could post the command string directly, but that would skip the entire half of this task that is
+    // actually new: unproject, pick the tile, decide it is a neighbour, build the string.
+    //
+    // Brute force on purpose. The mode can say whether a move exists (`hasAnyValidMove`) but not WHICH,
+    // and adding a finder to the model for a harness would be the tail wagging the dog. A refused swap
+    // is free -- the model puts the plants back and says so -- so walking the pairs until one lands is
+    // exactly what a player does, and it exercises the refusal path as well.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devMinigame=beghouled -Dpvz.skipIntro=1 \
+    //       -Dpvz.swapCheck=3 -Dpvz.smokeFrames=120
+    private static final int SWAP_START_FRAME = 30;
+    // One pair per frame. Faster than a player, slow enough that each swap's resolve lands in its own
+    // frame -- and the settle flash is 0.35s, so a whole burst on one frame would be one flash.
+    private static final int SWAP_EVERY_FRAMES = 2;
+
+    private int swapCheckFrames;
+    // Where the sweep has got to, as a flat index over (row, col, direction) so it never retries a pair.
+    private int swapCursor;
+    private int swapsMade;
+    // The tile the second tap is due to land on, held over to the next frame. See runSwapCheck.
+    private int[] pendingSwap;
+
+    private void runSwapCheck() {
+        if (DebugFlags.SWAP_CHECK < 1) {
+            return;
+        }
+        models.game.gamemodes.BeghouledMode mode = views.gdx.ui.UpgradePanel.modeOf(session);
+        if (mode == null || ++swapCheckFrames < SWAP_START_FRAME
+                || swapCheckFrames % SWAP_EVERY_FRAMES != 0) {
+            return;
+        }
+        if (swapsMade >= DebugFlags.SWAP_CHECK) {
+            return;
+        }
+        int before = mode.getMatchesMade();
+        // The second tap lands a frame after the first, on purpose: with both on one frame the picked-up
+        // tile is selected and released inside a single render, so its highlight never survives to be
+        // drawn -- and a highlight nothing can screenshot is a highlight nobody can check.
+        if (pendingSwap != null) {
+            clickTile(pendingSwap[0], pendingSwap[1]);
+            pendingSwap = null;
+        } else if (!tryNextPair(mode)) {
+            return;
+        }
+        if (mode.getMatchesMade() > before) {
+            swapsMade++;
+            Gdx.app.log("SwapCheck", "match " + swapsMade + " of " + DebugFlags.SWAP_CHECK
+                    + " -- board is now " + mode.getMatchesMade() + "/" + mode.getMatchTarget()
+                    + ", sun " + session.getSunAmount());
+        }
+    }
+
+    // Clicks one pair of neighbours. False once the sweep has run out of pairs, which on a board with a
+    // valid move somewhere should never happen before the target is reached.
+    private boolean tryNextPair(models.game.gamemodes.BeghouledMode mode) {
+        int rows = mode.getRows();
+        int cols = mode.getCols();
+        int pairs = rows * cols * 2;
+        while (swapCursor < pairs) {
+            int index = swapCursor++;
+            int direction = index % 2;
+            int col = (index / 2) % cols;
+            int row = (index / 2) / cols;
+            int toCol = direction == 0 ? col + 1 : col;
+            int toRow = direction == 0 ? row : row + 1;
+            if (toCol >= cols || toRow >= rows) {
+                continue;
+            }
+            // The two presses are deliberately on DIFFERENT frames -- see pendingSwap. This is the
+            // tap-tap half of the gesture; the drag half goes through the same beghouledDown and
+            // isNeighbour, so one of them covers both.
+            clickTile(col, row);
+            pendingSwap = new int[] {toCol, toRow};
+            return true;
+        }
+        Gdx.app.error("SwapCheck", "ran out of pairs after " + swapsMade + " matches");
+        return false;
+    }
+
+    // -Dpvz.run=<cmd>;<cmd>. See DebugFlags: the general escape hatch for anything a command can say.
+    //
+    // Deliberately LATER than -Dpvz.spawn's frame and the fast-forward's, because the useful cases set
+    // something up and then act on it -- a bomb dropped on an empty lawn is a no-op that looks exactly
+    // like the flag not working.
+    private static final int RUN_FRAME = 50;
+
+    private int runFrames;
+
+    private void runCommands() {
+        if (DebugFlags.RUN.isEmpty() || runFrames > RUN_FRAME) {
+            return;
+        }
+        if (++runFrames != RUN_FRAME) {
+            return;
+        }
+        for (String command : DebugFlags.RUN.split(";")) {
+            String trimmed = command.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            // As with -Dpvz.spawn, the return value only says the string ROUTED. A command the engine
+            // ran and then refused answers in a toast.
+            boolean routed = engine.submitInGameCommand(trimmed);
+            Gdx.app.log("Run", trimmed + (routed ? "" : "  -- matched no command pattern"));
+        }
+    }
+
+    // -Dpvz.spawn=<alias,alias,...>. See DebugFlags: the only way to put ONE named zombie on real
+    // ground and look at it.
+    //
+    // Delayed a few frames rather than run from the constructor, for the same reason the click checks
+    // are: the board opens paused behind its objective card, and a zombie placed before the first tick
+    // is placed into a session that has not started moving yet.
+    private static final int SPAWN_FRAME = 20;
+    private static final int DEFAULT_SPAWN_COLUMN = 5;
+
+    private int spawnFrames;
+
+    private void runSpawn() {
+        if (DebugFlags.SPAWN.isEmpty() || spawnFrames > SPAWN_FRAME) {
+            return;
+        }
+        if (++spawnFrames != SPAWN_FRAME) {
+            return;
+        }
+        int column = DebugFlags.SPAWN_COLUMN >= 0
+                ? DebugFlags.SPAWN_COLUMN : DEFAULT_SPAWN_COLUMN;
+        String[] aliases = DebugFlags.SPAWN.split(",");
+        for (int i = 0; i < aliases.length && i < utils.Constants.BOARD_ROWS; i++) {
+            String alias = aliases[i].trim();
+            if (alias.isEmpty()) {
+                continue;
+            }
+            // The game's own cheat command, so an unknown alias is refused with a sentence instead of
+            // quietly putting nothing on the lawn. Its return value only says the string ROUTED, not
+            // that a zombie appeared -- the refusal ("no zombie called X has ever shambled by") arrives
+            // as a toast, which is where to look when a lane comes up empty.
+            boolean routed = engine.submitInGameCommand(
+                    "cheat spawn-zombie -t " + alias + " -l (" + column + ", " + i + ")");
+            Gdx.app.log("Spawn", alias + " in lane " + i + " at column " + column
+                    + (routed ? "" : " -- the command did not even parse"));
+        }
     }
 
     // -Dpvz.vaseCheck=N. Two passes, because a packet cannot be picked up on the frame the vase holding

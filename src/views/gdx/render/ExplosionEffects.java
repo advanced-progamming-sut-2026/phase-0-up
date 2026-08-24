@@ -64,9 +64,27 @@ public final class ExplosionEffects {
     private static final String JALAPENO_CLIP = "idle";
     private static final float JALAPENO_WIDTH_CELLS = 1.9f;
 
+    // How fresh a blast has to be to have caused a death. A detonation kills on the tick it happens,
+    // and its event is queued BEFORE the deaths it causes -- the ability fires during the plant pass
+    // and processDeaths runs at the end of the same tick, so both arrive in one drain. A tight window
+    // is therefore not a guess: it is the difference between "this blast killed it" and "something else
+    // died near a blast that went off half a second ago".
+    private static final float KILL_WINDOW_SECONDS = 0.12f;
+
+    // Blast footprints, in cells either side of the centre. The model's real radii live in plants.json
+    // and the view does not read them; these match the three cases this class already distinguishes.
+    private static final int DEFAULT_RADIUS = 1;      // 3x3
+    private static final int SUN_BOMB_RADIUS = 2;     // 5x5
+
     private static final class Blast {
         float x;
         float y;
+        // The tile it went off on, for asking what it caught.
+        int col;
+        int row;
+        // Jalapeno burns its whole lane rather than a box around itself.
+        boolean laneWide;
+        int radius = DEFAULT_RADIUS;
         float age;
         // Null for the default two-layer plant explosion; set for effects with their own art.
         String sprite;
@@ -117,10 +135,13 @@ public final class ExplosionEffects {
             int row = Integer.parseInt(matcher.group(3));
             Blast blast = new Blast();
             blast.x = lawn.centerX(col);
+            blast.col = col;
+            blast.row = row;
             String plant = matcher.group(1).trim();
             if (JALAPENO_NAME.equalsIgnoreCase(plant)) {
                 blast.sprite = JALAPENO_SPRITE;
                 blast.clip = JALAPENO_CLIP;
+                blast.laneWide = true;
                 blast.copies = utils.Constants.BOARD_COLS;
                 blast.widthCells = JALAPENO_WIDTH_CELLS;
                 // The lane's own foot line, not a lifted centre: fire runs along the ground.
@@ -133,6 +154,7 @@ public final class ExplosionEffects {
             if (ownArt) {
                 blast.sprite = SUN_BOMB_SPRITE;
                 blast.clip = SUN_BOMB_CLIP;
+                blast.radius = SUN_BOMB_RADIUS;
                 // Blow up WHERE THE SUN WAS DRAWN, not on the tile it was filed under. A falling sun is
                 // drawn several cells higher than its tile, so the tile is not where the player saw it.
                 float[] drawn = collectibles == null ? null
@@ -155,6 +177,35 @@ public final class ExplosionEffects {
         } catch (NumberFormatException ignored) {
             // a message that looks like a detonation but is not; nothing to draw
         }
+    }
+
+    // Did a blast that just went off cover this tile?
+    //
+    // This is how a zombie's death is told apart from an EXPLOSIVE death, which is the difference
+    // between it falling over and it being reduced to ash. The model does not record how a zombie died
+    // -- HealthComponent.applyDamage takes an Element and keeps only the attacker -- so rather than
+    // widen the model for a cosmetic distinction, the view answers it from what it already tracks:
+    // where every live blast is. The same reasoning that makes a vanished projectile an impact.
+    //
+    // Only blasts inside KILL_WINDOW_SECONDS count, so a corpse falling next to a blast that went off
+    // half a second ago is not mistaken for one caught in it.
+    boolean killedByBlast(int col, int row) {
+        for (Blast blast : blasts) {
+            if (blast.age > KILL_WINDOW_SECONDS) {
+                continue;
+            }
+            if (blast.laneWide) {
+                if (blast.row == row) {
+                    return true;
+                }
+                continue;
+            }
+            if (Math.abs(blast.col - col) <= blast.radius
+                    && Math.abs(blast.row - row) <= blast.radius) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Behind the board. Called before the lanes are drawn.

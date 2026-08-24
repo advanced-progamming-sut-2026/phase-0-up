@@ -99,12 +99,78 @@ public final class LawnInputProcessor extends InputAdapter {
         if (button == Input.Buttons.RIGHT) {
             boolean wasHolding = tools.isHolding();
             tools.clear();
+            // Right-click also drops a half-made swap, for the same reason it drops a seed: there has to
+            // be a way out of a gesture that is not "finish it".
+            swapFrom = null;
             return wasHolding;
         }
         if (button != Input.Buttons.LEFT || !hovered.isValid()) {
             return false;
         }
+        if (beghouledDown(hovered)) {
+            return true;
+        }
         return act(hovered);
+    }
+
+    // ---- Beghouled: swapping two neighbours -------------------------------------------------------
+
+    // The tile the player has picked up, or null. Doubles as the drag origin and the tap selection,
+    // which is why there is only one field: a drag and a tap-tap are the same two points, and the only
+    // difference is whether the button came up on the second one or the first.
+    private GridPos swapFrom;
+
+    // What the view has selected, for the highlight. Read by GameScreen.
+    public GridPos swapSelection() {
+        return swapFrom;
+    }
+
+    // Picking a tile up, or completing a swap onto a neighbour.
+    //
+    // Both gestures the original supports fall out of one rule: a press on a NEW tile selects it, and a
+    // press on a tile ADJACENT to the selection swaps. Drag-and-release is then handled by touchUp,
+    // which only has to ask the same question about wherever the button came up.
+    //
+    // Returns false on every board that is not Beghouled, so an ordinary lawn's click path is untouched.
+    private boolean beghouledDown(GridPos at) {
+        if (views.gdx.render.BeghouledRenderer.modeOf(session) == null || tools.isHolding()) {
+            return false;
+        }
+        if (swapFrom != null && isNeighbour(swapFrom, at)) {
+            commands.swap(swapFrom, at);
+            swapFrom = null;
+            return true;
+        }
+        // Pressing the selected tile again puts it back down, which is the only way to change your mind
+        // without making a move you did not want.
+        swapFrom = at.equals(swapFrom) ? null : at;
+        return true;
+    }
+
+    // Releasing the button. Only interesting as the end of a DRAG: the button went down on one tile and
+    // came up on its neighbour, which is the gesture the roadmap asks for and the one a player used to
+    // match-3 will reach for first.
+    //
+    // A release on the tile it started from is left alone deliberately -- that is a tap, and the
+    // selection it made has to survive for the second tap.
+    @Override
+    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+        if (button != Input.Buttons.LEFT || swapFrom == null) {
+            return false;
+        }
+        updateHover(screenX, screenY);
+        if (!hovered.isValid() || !isNeighbour(swapFrom, hovered)) {
+            return false;
+        }
+        commands.swap(swapFrom, hovered);
+        swapFrom = null;
+        return true;
+    }
+
+    // Orthogonally adjacent, which is the same test BeghouledMode.swap applies -- it refuses anything
+    // else with a message, so this only stops the view offering a move the model will reject.
+    private static boolean isNeighbour(GridPos a, GridPos b) {
+        return Math.abs(a.col() - b.col()) + Math.abs(a.row() - b.row()) == 1;
     }
 
     // A click on a tile means whatever the cursor is holding.

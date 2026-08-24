@@ -46,6 +46,9 @@ public final class GameHud implements Disposable {
     private final Label sunLabel;
     private final Label plantFoodLabel;
     private final Label waveLabel;
+    // The scoring game's running Meow Point total. Built unconditionally and only ADDED to the layout
+    // on a scoring board, so nothing else has to know whether it is on screen.
+    private final Label meowLabel;
     private final Table cardRow;
     private final Table shovelButton;
     private final Table plantFoodButton;
@@ -63,6 +66,7 @@ public final class GameHud implements Disposable {
         this.sunLabel = new Label("0", assets.skin());
         this.plantFoodLabel = new Label("0", assets.skin());
         this.waveLabel = new Label("", assets.skin());
+        this.meowLabel = new Label("0", assets.skin());
         this.cardRow = new Table();
         this.waveBar = new WaveBar(assets, this.art);
 
@@ -104,6 +108,28 @@ public final class GameHud implements Disposable {
     }
 
     private Table cheatHolder;
+
+    // Beghouled's upgrade shop. Null on every other board, and installed rather than built in the
+    // constructor because it needs somewhere to post its commands.
+    private UpgradePanel upgrades;
+
+    public void installUpgrades(java.util.function.Predicate<String> onUpgrade) {
+        if (upgrades != null || UpgradePanel.modeOf(session) == null) {
+            return;
+        }
+        upgrades = new UpgradePanel(assets, art, session, onUpgrade);
+        Table holder = new Table();
+        holder.setFillParent(true);
+        // BOTTOM-right, and pushed as far down as it goes. Six rows is a tall panel: middle-right, where
+        // the cheat panel sits, ran its top two rows up behind the toast stack -- and on this board that
+        // stack is never empty, because every refused swap says so. Measured rather than guessed: the
+        // panel is ~474 stage units and five toasts are ~230, which is 704 of the 720 available, so it
+        // only clears the toasts if it starts from the floor. The wave meter is centred along the
+        // bottom and 440 wide, so it does not reach this corner.
+        holder.right().bottom().padRight(12f).padBottom(18f);
+        holder.add(upgrades);
+        stage.addActor(holder);
+    }
 
     public void toggleCheats() {
         if (cheatHolder != null) {
@@ -396,6 +422,17 @@ public final class GameHud implements Disposable {
         }
         counters.add(sunLabel).width(64f).left();
 
+        // The scoring game's running total, beside the sun and on no other board.
+        //
+        // Meow Points are the only thing that run is judged on, and without this the player has no idea
+        // how they are doing until the level is over -- which makes every mid-run decision (spend the
+        // sun or hoard it, save the mower or let it go) a guess. Added here rather than as its own
+        // panel so the two numbers the mode is actually about sit together.
+        if (session.getMode() instanceof models.game.gamemodes.ScoringMode) {
+            counters.add(new Label("Meow", assets.skin())).padLeft(14f).padRight(6f);
+            counters.add(meowLabel).width(64f).left();
+        }
+
         root.add(counters).left().row();
         // Wall-nut Bowling's belt is NOT in this column: it runs vertically down the left edge and is
         // added to the stage on its own below, so the toolbar keeps its place under the counters
@@ -404,12 +441,19 @@ public final class GameHud implements Disposable {
             root.add(cardRow).left().padTop(6f).row();
         }
 
-        Table toolbar = new Table();
-        toolbar.add(shovelButton).padRight(6f);
-        toolbar.add(plantFoodButton).padRight(10f);
-        // Plant food is a count, not a tool state, so it reads as a number next to its own button.
-        toolbar.add(plantFoodLabel);
-        root.add(toolbar).left().padTop(6f);
+        // Neither tool means anything on a Beghouled board, and the shovel is actively harmful there:
+        // its plants are the match-3 board, and digging one out leaves a cell the mode's own
+        // markEatenPlantsAsCraters then turns into a permanent CRATER on the next tick -- a tile
+        // destroyed by a gesture that looks like tidying up. Offering a button whose only effect is to
+        // damage the board is the view promising something it should not.
+        if (UpgradePanel.modeOf(session) == null) {
+            Table toolbar = new Table();
+            toolbar.add(shovelButton).padRight(6f);
+            toolbar.add(plantFoodButton).padRight(10f);
+            // Plant food is a count, not a tool state, so it reads as a number beside its own button.
+            toolbar.add(plantFoodLabel);
+            root.add(toolbar).left().padTop(6f);
+        }
 
         stage.addActor(root);
         if (conveyor != null) {
@@ -439,6 +483,9 @@ public final class GameHud implements Disposable {
         refreshConveyor();
         sunLabel.setText(String.valueOf(session.getSunAmount()));
         plantFoodLabel.setText(String.valueOf(session.getPlantFoodCount()));
+        if (session.getMode() instanceof models.game.gamemodes.ScoringMode scoring) {
+            meowLabel.setText(String.valueOf(scoring.getMeowPoints().getTotal()));
+        }
 
         int sun = session.getSunAmount();
         for (SeedCardActor card : cards) {
@@ -452,10 +499,24 @@ public final class GameHud implements Disposable {
         plantFoodButton.setColor(
                 tools.tool() == ToolState.Tool.PLANT_FOOD ? TOOL_ARMED : Color.WHITE);
 
+        if (upgrades != null) {
+            upgrades.refresh();
+        }
         updateWave();
     }
 
     private void updateWave() {
+        // Beghouled counts MATCHES, not waves: its zombies arrive on a timer with no wave structure at
+        // all, so the meter along the bottom read "" and sat empty for the whole level -- with the one
+        // number that decides when the level ends printed once, in the opening banner, and never again.
+        // Same widget, because it is the same question: how far through am I?
+        models.game.gamemodes.BeghouledMode beghouled = UpgradePanel.modeOf(session);
+        if (beghouled != null && beghouled.getMatchTarget() > 0) {
+            int made = Math.min(beghouled.getMatchesMade(), beghouled.getMatchTarget());
+            waveLabel.setText("Matches " + made + " / " + beghouled.getMatchTarget());
+            waveBar.set(made / (float) beghouled.getMatchTarget(), beghouled.getMatchTarget());
+            return;
+        }
         int total = session.getLevel() == null ? 0 : session.getLevel().getWaveCount();
         int current = session.getCurrentWave();
         if (total <= 0) {

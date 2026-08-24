@@ -197,6 +197,81 @@ public final class DebugFlags {
     //   gradlew runGui -Dpvz.showcase=1 -Dpvz.skipIntro=1 -Dpvz.shakeCheck=1 -Dpvz.smokeFrames=120
     public static final boolean SHAKE_CHECK = flag("pvz.shakeCheck");
 
+    // Reports every audio file the game resolves, and every name it wanted and could not find.
+    //
+    // A missing file is already logged once on its own, but the SUCCESSFUL case is the one that cannot
+    // otherwise be checked: a screenshot run has no speakers, so "the log stayed quiet" is equally
+    // consistent with the audio working and with nothing ever having asked for it. This says which file
+    // won each fallback chain, which is the only way to confirm that e.g. Frostbite is playing
+    // lawn_frostbite rather than falling through to a generic lawn track.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devChapter=2 -Dpvz.audioCheck=1 -Dpvz.smokeFrames=40
+    public static final boolean AUDIO_CHECK = flag("pvz.audioCheck");
+
+    // Logs, for every zombie drawn, the lane the MODEL puts it in against the lane it is actually
+    // DRAWN at, plus the foot line each of those implies.
+    //
+    // "It is rendered a row off" is a report a screenshot cannot settle: a tall sprite legitimately
+    // covers the rows above its feet, so the eye cannot tell a misplaced zombie from a big one. These
+    // are the only two numbers that can disagree -- the model's lane, and the interpolated lane the
+    // renderer stands it on -- and if they agree the drawing is correct by construction.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.showcase=1 -Dpvz.skipIntro=1 -Dpvz.laneCheck=1
+    public static final boolean LANE_CHECK = flag("pvz.laneCheck");
+
+    // Puts named zombies on the lawn, one per lane, a moment after the board opens.
+    //
+    // Fills the last gap the other flags leave. Everything else here can reach a board, a screen or a
+    // widget, but there was no way at all to look at ONE named zombie standing on real ground: the
+    // sprite viewer draws an animation with no lane, no scale and no armour, the almanac draws
+    // undiscovered zombies as silhouettes, and which zombie a wave buys is the wave's choice, not
+    // yours. Adding a never-before-drawn entity is a view change, and this is the instrument for it --
+    // the Zombotany plant-heads were built against it.
+    //
+    // Comma-separated registry aliases, laid out from lane 0 down. Goes through the game's own
+    // `cheat spawn-zombie` command, so a name the registry does not know is refused with a message
+    // rather than silently drawing nothing.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.skipIntro=1 -Dpvz.view=760 \
+    //       -Dpvz.spawn=ZombieBotanyPeashooter,ZombieBotanyWallnut -Dpvz.smokeFrames=60
+    public static final String SPAWN = text("pvz.spawn");
+
+    // Which column -Dpvz.spawn drops them into. Middle of the lawn by default, which is where a zoomed
+    // camera is looking; the spawn edge at x=9.5 is off screen at anything but the full view.
+    public static final int SPAWN_COLUMN = number("pvz.spawnColumn");
+
+    // Runs in-game commands, semicolon-separated, a moment after the board opens.
+    //
+    // The general form of half the flags above, and the one to reach for before writing another. Every
+    // in-game verb is a typeable command and `GameEngine.routeAndExecute` is public, but in the GUI the
+    // prompt does not exist: the only way to a cheat is the cheat panel, whose buttons are clickable
+    // Tables rather than TextButtons, so -Dpvz.click cannot press one either. Anything expressible as a
+    // command therefore needed a bespoke flag until this.
+    //
+    // What it does NOT replace are the flags that drive GESTURES -- arming a seed and then clicking a
+    // tile is two interactions with no command spelling, which is why -Dpvz.vaseCheck, -Dpvz.bowlCheck,
+    // -Dpvz.summonCheck and -Dpvz.spawn still exist.
+    //
+    // Set up a board and then blow it up, which is how the scoring game's simultaneous-kill award was
+    // checked:
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devMinigame=scoring -Dpvz.skipIntro=1 \
+    //       "-Dpvz.spawn=ZombieDefault,ZombieDefault,ZombieDefault" -Dpvz.spawnColumn=4 \
+    //       "-Dpvz.run=plant plant -t Cherry Bomb -l (4, 1)" -Dpvz.smokeFrames=70
+    public static final String RUN = text("pvz.run");
+
+    // Makes N matches on a Beghouled board by trying neighbours, through the real click path.
+    //
+    // Everything on that board worth looking at happens only AFTER a successful swap -- a cascade
+    // settling, craters, enough sun to afford an upgrade, a match counter past zero -- and a swap is
+    // two clicks on lawn tiles, which -Dpvz.click cannot reach. -Dpvz.run could post the command
+    // string, but that skips the whole half of the gesture that is new: unproject, pick the tile,
+    // decide it is a neighbour, build the string. See MinigameHarness.runSwapCheck. -1 is off.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devMinigame=beghouled -Dpvz.skipIntro=1 \
+    //       -Dpvz.swapCheck=3 -Dpvz.smokeFrames=120
+    public static final int SWAP_CHECK = number("pvz.swapCheck");
+
     private DebugFlags() { }
 
     private static String text(String key) {

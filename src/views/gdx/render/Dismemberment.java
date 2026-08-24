@@ -79,6 +79,11 @@ public final class Dismemberment {
         float direction;
         boolean faceRight;
         String sprite;
+        // Which clip of `sprite` to draw, and at what size. Defaults to the shared `particles` pose at
+        // 1x, which is what every piece that comes off a zombie body is; a Zombotany plant head is a
+        // whole other animation at head size, which is what these two fields are for.
+        String clip;
+        float scale;
         // Rebuilt in place on every obtain, so a recycled Piece does not drag a fresh map along with it.
         final Map<String, Boolean> parts = new HashMap<>();
 
@@ -92,6 +97,8 @@ public final class Dismemberment {
             direction = 1f;
             faceRight = false;
             sprite = null;
+            clip = CLIP;
+            scale = 1f;
             parts.clear();
         }
     }
@@ -128,6 +135,67 @@ public final class Dismemberment {
         log(spriteName, armorPart, row);
     }
 
+    // Throws the head, on the instant a zombie is killed.
+    //
+    // This is what makes a death REGISTER. The `die` clips are slow topples with a long static lead-in
+    // -- a Gargantuar's is 2.6s and spends its first 0.8s essentially standing there -- and because the
+    // model deletes the zombie the moment it dies, the corpse appears already standing and nothing
+    // visibly changes for most of a second. That reads as the game lagging behind the shot that killed
+    // it. A head coming off on the exact frame of death gives the kill its moment, and the slump behind
+    // it then reads as follow-through rather than delay.
+    //
+    // Verified against the art before wiring: the `die` clips do NOT remove the head themselves, so
+    // this adds a beat rather than doubling one.
+    public void throwHead(EntitySprite sprite, String spriteName,
+                          float x, float footY, int row, boolean faceRight) {
+        Piece piece = spawn(sprite, spriteName, x, footY, row, faceRight);
+        if (piece == null) {
+            return;
+        }
+        piece.parts.put(PARTICLE_ARM, false);
+        log(spriteName, PARTICLE_HEAD, row);
+        if (audio != null) {
+            audio.play(views.gdx.core.AudioManager.forEntity(
+                    views.gdx.core.AudioManager.SFX_HEAD_POP, spriteName),
+                    views.gdx.core.AudioManager.SFX_HEAD_POP);
+        }
+    }
+
+    // Optional, and null in any harness with no game around it.
+    private views.gdx.core.AudioManager audio;
+
+    public void setAudio(views.gdx.core.AudioManager audio) {
+        this.audio = audio;
+    }
+
+    // Throws a WHOLE sprite rather than a part of the zombie's own body, on the same arc.
+    //
+    // Zombotany is what needs it: a plant-headed zombie whose death popped the shared body's green
+    // skull would be shedding a head it visibly did not have. Its head is the plant's own animation, so
+    // what comes off has to be that -- drawn at the size ZombotanyHead was wearing it at, or it doubles
+    // in size on the frame it comes loose.
+    //
+    // Everything else about the throw is unchanged: same arc, same spin, same fade, same lane.
+    public void throwWhole(String spriteName, String clip, float scale,
+                           float x, float footY, int row, boolean faceRight) {
+        EntitySprite sprite = spriteName == null ? null : sprites.get(spriteName);
+        if (sprite == null || !sprite.isReady() || !sprite.hasClip(clip)) {
+            return;
+        }
+        Piece piece = pool.obtain();
+        piece.sprite = spriteName;
+        piece.clip = clip;
+        piece.scale = scale;
+        piece.x = x;
+        piece.footY = footY;
+        piece.row = row;
+        piece.faceRight = faceRight;
+        piece.direction = faceRight ? -1f : 1f;
+        piece.lifetime = LIFETIME;
+        pieces.add(piece);
+        log(spriteName, clip, row);
+    }
+
     // Throws the arm the zombie has just lost. Only for animations that can actually show the loss --
     // otherwise an arm would fly off a zombie still visibly holding both.
     public void throwArm(EntitySprite sprite, String spriteName,
@@ -160,6 +228,8 @@ public final class Dismemberment {
         }
         Piece piece = pool.obtain();
         piece.sprite = spriteName;
+        piece.clip = CLIP;
+        piece.scale = 1f;
         piece.x = x;
         piece.footY = footY;
         piece.row = row;
@@ -216,9 +286,12 @@ public final class Dismemberment {
             transform.begin(batch,
                     SpritePlacer.toSpriteSpace(piece.x + dx),
                     SpritePlacer.toSpriteSpace(piece.footY + dy),
-                    1f, piece.direction * SPIN_DEGREES_PER_SECOND * t);
-            // stateTime 0: the clip is a single frame, so there is nothing to sample into.
-            sprite.draw(batch, CLIP, 0f, 0f, 0f, piece.faceRight, piece.parts);
+                    piece.scale, piece.direction * SPIN_DEGREES_PER_SECOND * t);
+            // stateTime 0: `particles` is a single frame, so there is nothing to sample into -- and a
+            // thrown whole sprite is held on its opening pose for the same reason a corpse is, because
+            // what is being watched is the arc rather than the animation.
+            sprite.draw(batch, piece.clip, 0f, 0f, 0f, piece.faceRight,
+                    piece.parts.isEmpty() ? null : piece.parts);
             transform.end(batch);
         }
         batch.setPackedColor(previous);

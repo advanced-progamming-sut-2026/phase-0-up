@@ -130,6 +130,24 @@ public final class ScreenManager implements Disposable {
         swapTo(screen, null);
     }
 
+    // Shows a screen the manager did not build, but RECORDS which menu it stands for.
+    //
+    // The difference matters and cost a while to find. `-Dpvz.screen=game` builds its own GameScreen
+    // around a DevBoot engine and then moves the session to IN_GAME so nothing swaps the lawn back out.
+    // Through showDetached(screen) that is exactly what it does NOT achieve: the screen is filed under
+    // null, so the very next sync() sees IN_GAME != null and builds a SECOND GameScreen from the
+    // registered factory -- which constructs a second GameEngine and runs init() again on the same
+    // session, then throws the DevBoot one away.
+    //
+    // It looked harmless because the session survives and the replacement works, so the board came up
+    // and every flag still fired. What did not survive was anything the FIRST screen had already done
+    // in its constructor -- and the mode's opening banner, replayed into the first screen's event
+    // fan-out and consumed there, is precisely that. Recording the type is what makes sync() leave the
+    // screen alone.
+    public void showAs(Screen screen, MenuType type) {
+        swapTo(screen, type);
+    }
+
     private void swapTo(Screen next, MenuType type) {
         Screen previous = current;
 

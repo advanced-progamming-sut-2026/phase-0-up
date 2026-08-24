@@ -350,7 +350,9 @@ public final class ProjectileRenderer {
     // Muzzle flashes waiting to be handed to ImpactEffects, which owns every one-shot effect on the
     // board. Queued rather than drawn here because this renderer runs per lane inside the entity pass,
     // and an effect drawn there would be covered by whatever is drawn after it.
-    public record Muzzle(float x, float y, String sprite) { }
+    // The shooter's name rides along so the sound can be its own -- see AudioManager.forEntity. Null
+    // for a shot with no plant behind it, which the audio side treats as "use the generic cue".
+    public record Muzzle(float x, float y, String sprite, String shooter) { }
 
     private final java.util.List<Muzzle> pendingMuzzles = new java.util.ArrayList<>();
 
@@ -367,7 +369,8 @@ public final class ProjectileRenderer {
         // The plant's mouth, which is where muzzleAdjusted pulls the first frame of the flight back to.
         float x = lawn.worldX((float) projectile.getX() - MUZZLE_OFFSET_CELLS);
         float y = lawn.worldY(projectile.getY()) + lawn.cellHeight() * MUZZLE_HEIGHT;
-        pendingMuzzles.add(new Muzzle(x, y, sprite));
+        models.entities.plants.Plant shooter = projectile.getShooter();
+        pendingMuzzles.add(new Muzzle(x, y, sprite, shooter == null ? null : shooter.getName()));
     }
 
     // Handed over once per frame and cleared. Never accumulates: a flash not collected this frame would
