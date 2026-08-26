@@ -364,6 +364,7 @@ public class PvZGame extends Game {
 
         // Catch up with any menu change a Command made since the last frame, before drawing.
         screens.sync();
+        syncVolume();
 
         ScreenUtils.clear(0.09f, 0.13f, 0.09f, 1f);
 
@@ -431,6 +432,30 @@ public class PvZGame extends Game {
 
     public Assets getAssets() {
         return assets;
+    }
+
+    // The signed-in player's saved volume, re-checked every frame.
+    //
+    // It used to be applied ONCE, in create(), and only when a user was already signed in -- which is
+    // true only for stay-logged-in. Every ordinary launch opens on the LoginScreen with no current
+    // user, so that branch was skipped and the mixer sat at DEFAULT_VOLUME for the whole session: a
+    // player could set the volume, have it saved to their Profile correctly, restart, and hear the
+    // default. From the outside that is "the volume slider does nothing", because nothing they set
+    // ever survived. Logging out and into another account had the same hole.
+    //
+    // Polled rather than pushed, for the same reason the HUD polls the sun: there is no change
+    // notification for a Profile field, four different things can move this one (the slider, a login, a
+    // logout, a save being loaded), and the check is an int compare against a value the AudioManager
+    // already keeps. Pushing would mean finding every one of those four and remembering the fifth.
+    private void syncVolume() {
+        models.user.User user = appSession.getCurrentUser();
+        if (user == null || user.getProfile() == null) {
+            return;
+        }
+        int wanted = user.getProfile().getVolume();
+        if (wanted != audio.getVolume()) {
+            audio.setVolume(wanted);
+        }
     }
 
     public AudioManager audio() {

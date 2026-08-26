@@ -75,7 +75,7 @@ public class ProfileRecord {
         r.passedMiniGames = new HashMap<>(p.getPassedMiniGames());
         r.dailyQuestsDone = p.getDailyQuestsDone();
         r.noneDailyQuestsDone = p.getNoneDailyQuestsDone();
-        r.hasBoughtDailyOfferToday = p.isHasBoughtDailyOfferToday();
+        r.hasBoughtDailyOfferToday = p.getRawHasBoughtDailyOfferToday();
         r.seenZombieAliases = new HashSet<>(p.getSeenZombieAliases());
         r.completedQuestIds = new HashSet<>(p.getCompletedQuestIds());
         r.winStreakAtMaxDifficulty = p.getWinStreakAtMaxDifficulty();

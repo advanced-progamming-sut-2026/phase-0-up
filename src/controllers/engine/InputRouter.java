@@ -453,12 +453,14 @@ public class InputRouter {
 
     private boolean handleShopMenuExecute(String input) {
         Shop shop = appSession.getShop();
+        models.user.User shopper = appSession.getCurrentUser();
+        models.user.Profile shopperProfile = shopper == null ? null : shopper.getProfile();
         if(ShopMenuRegex.SHOP_LIST.matches(input)){
-            new ShowShopCommand("list", shop, shopRenderer).execute();
+            new ShowShopCommand("list", shop, shopperProfile, shopRenderer).execute();
             return true;
         }
         else if(ShopMenuRegex.SHOP_DAILY.matches(input)){
-            new ShowShopCommand("daily", shop, shopRenderer).execute();
+            new ShowShopCommand("daily", shop, shopperProfile, shopRenderer).execute();
             return true;
         }
         else if(ShopMenuRegex.BUY.matches(input)){

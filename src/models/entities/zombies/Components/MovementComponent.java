@@ -50,6 +50,20 @@ public class MovementComponent {
         }
     }
 
+    // Which way this zombie is actually travelling, by exactly the arithmetic move() uses above.
+    //
+    // Two things flip a zombie: being hypnotised (the branch in move()) and having its SPEED negated,
+    // which is what the Prospector's dynamite does to send it back across the lawn. Asking
+    // isHypnotized() alone therefore answers the wrong question for a blasted Prospector -- it is
+    // walking right and is not charmed -- and the view was drawing it, and planting its feet, as though
+    // it were still heading for the house.
+    //
+    // Derived rather than stored so it can never disagree with move(); a stored flag would be a second
+    // opinion to keep in sync with the one line that actually moves the zombie.
+    public boolean isMovingRight() {
+        return state.isHypnotized() ? speed > 0 : speed < 0;
+    }
+
     private boolean canBeShoved() {
         return !state.isFrozen() && !state.isButtered()
                 && state.getCurrentAction() != ActionState.DYING;

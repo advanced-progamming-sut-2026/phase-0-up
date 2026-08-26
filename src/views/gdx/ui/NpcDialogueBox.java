@@ -125,6 +125,19 @@ public final class NpcDialogueBox {
     // Puts a line up. Replaces whatever was there rather than queueing: two of these can only collide
     // when two things happen at once, and the newer one is the one the player is looking at.
     public void say(Speaker speaker, String line) {
+        show(speaker, line, DWELL);
+    }
+
+    // The same, with no timeout -- it stays until something hides it.
+    //
+    // For the pre-level greeting, which arrives with the objective card on a PAUSED board. The dwell is
+    // wall-clock, not game time, so a nine-second one would run out while the player is still reading
+    // the card the line came in with. GameScreen clears this when the card is dismissed.
+    public void hold(Speaker speaker, String line) {
+        show(speaker, line, -1f);
+    }
+
+    private void show(Speaker speaker, String line, float dwell) {
         if (speaker == null || line == null || line.isBlank()) {
             return;
         }
@@ -141,10 +154,26 @@ public final class NpcDialogueBox {
         // In front of anything added to the Stage after it -- score popups, most obviously. Same reason
         // GameOverlays raises its panels.
         root.toFront();
-        root.addAction(Actions.sequence(
-                Actions.delay(DWELL),
-                Actions.fadeOut(FADE),
-                Actions.visible(false)));
+        if (dwell >= 0f) {
+            root.addAction(Actions.sequence(
+                    Actions.delay(dwell),
+                    Actions.fadeOut(FADE),
+                    Actions.visible(false)));
+        }
+    }
+
+    // Stops the clock on whatever is already up, without changing a word of it.
+    //
+    // For the moment the objective card opens over a line that arrived a fraction earlier -- a special
+    // mode's rules banner, delivered by the event fan-out during construction. Its dwell is wall-clock
+    // and the board is paused behind the card, so left alone it fades out while the player is still
+    // reading the card it came in with. Re-saying it would work and is worse: the caller would have to
+    // know the text, which only the model does.
+    public void holdCurrent() {
+        if (root.isVisible()) {
+            root.clearActions();
+            root.getColor().a = 1f;
+        }
     }
 
     public void hide() {

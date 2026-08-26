@@ -53,6 +53,31 @@ public class Projectile extends Entity {
 
     private Set<Terrain> hitTerrains;
 
+    // Where a LOBBED shot was aimed when it was fired at terrain rather than at a zombie, or -1 for
+    // every other shot.
+    //
+    // A lob arcs OVER terrain by design, which is what makes a Melon-pult worth planting behind a wall
+    // of graves. But a -pult in a lane with no zombies and a grave in it used to fire anyway and sail
+    // straight through: the shot registered nothing, took no damage off the headstone, played no flash,
+    // and then slid along the ground to the end of the lane. So the intent is recorded at the moment
+    // of firing -- ShootProjectileAbility sets this only when nothing targetable is ahead -- and the
+    // collision pass honours it. A zombie that wanders in front is still hit first, because
+    // handleZombieCollisions runs on every shot regardless.
+    private double terrainTargetX = -1.0;
+
+    public void setTerrainTarget(double x) {
+        this.terrainTargetX = x;
+    }
+
+    // Read by the view as well: ProjectileRenderer shapes the arc so the shot comes DOWN on this.
+    public double getTerrainTargetX() {
+        return terrainTargetX;
+    }
+
+    public boolean isTerrainSeeking() {
+        return terrainTargetX >= 0.0;
+    }
+
     private int remainingHits = 0;
     private int grapeTtlTicks = 0;
     private Zombie grapeTarget = null;
@@ -177,7 +202,8 @@ public class Projectile extends Entity {
         Cell currentCell = gameSession.getMap().getRow(this.y).cellAt(currentCellIndex);
         currentCell.interactWithProjectile(this);
 
-        if (this.trajectory == Trajectory.LOBBED) return;
+        // A lob passes over terrain unless it was fired AT some.
+        if (this.trajectory == Trajectory.LOBBED && !isTerrainSeeking()) return;
 
         Iterator<Terrain> iterator = currentCell.getTerrain().iterator();
         while (iterator.hasNext()) {

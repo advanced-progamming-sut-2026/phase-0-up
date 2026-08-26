@@ -61,13 +61,45 @@ public final class TerrainRenderer {
     private static final String WATER_TILE_CLIP = "Water";
     private static final String TIDE_LINE = "WATER_TIDE_LINE";
 
-    // Ground that is marked rather than occupied. Neither ships art of its own -- a low sand bank and a
-    // cursed patch are both simply GROUND that behaves differently -- so they are washes, the same way
-    // the placement highlight and the grid are.
-    private static final Color LOW_SAND = new Color(0.42f, 0.34f, 0.18f, 0.42f);
-    private static final Color NECROMANCY = new Color(0.45f, 0.16f, 0.62f, 0.34f);
-    private static final Color NECROMANCY_PULSE = new Color(0.72f, 0.35f, 0.95f, 0.22f);
+    // The two tiles that hide a zombie: Big Wave Beach's low sand and the Dark Ages' cursed ground.
+    //
+    // Both were washes and nothing else, on the reasoning that neither is an object -- they are simply
+    // GROUND that behaves differently. That reasoning was right and the result was still wrong, because
+    // a wash is only ever as visible as the contrast between it and the floor it is painted on: brown at
+    // 42% on Big Wave Beach's tan sand, and purple at 34% on Dark Ages' purple-blue flagstones, both
+    // came out as "that tile might be very slightly darker". The one tile in the level a zombie can
+    // climb out of looked exactly like the other forty-three.
+    //
+    // So each keeps a wash -- stronger, and in a colour that fights its own floor rather than agreeing
+    // with it -- and gains the mark the game itself uses for the idea:
+    //
+    //   WATER_ZOMBIE_RIPPLE          the ring on the surface over a submerged zombie
+    //   TOMBSTONE_DARK_SPAWN_EFFECT  the disc and beam a Dark Ages zombie is raised through
+    //
+    // Neither had been used anywhere. The wash stays underneath in both cases, so a dump missing the
+    // animation degrades to the old marker instead of to nothing.
+    // Dark WET sand, not water. A teal wash was tried first and had to go: it is the exact colour of the
+    // flooded columns two tiles to its right, so the one tile the tide has NOT taken read as the one
+    // tile it had. On this board teal means "under water" and nothing else is allowed to borrow it.
+    private static final Color LOW_SAND = new Color(0.30f, 0.19f, 0.08f, 0.55f);
+    private static final Color LOW_SAND_PULSE = new Color(0.62f, 0.46f, 0.24f, 0.3f);
+    private static final Color NECROMANCY = new Color(0.45f, 0.16f, 0.62f, 0.44f);
+    private static final Color NECROMANCY_PULSE = new Color(0.72f, 0.35f, 0.95f, 0.3f);
     private static final float PULSE_HZ = 0.4f;
+
+    private static final String NECROMANCY_MARK = "TOMBSTONE_DARK_SPAWN_EFFECT";
+    private static final String NECROMANCY_MARK_CLIP = "animation";
+    private static final float NECROMANCY_MARK_WIDTH_CELLS = 1.3f;
+    // Present, not shouting. These are permanent fixtures of the board rather than events, and at full
+    // strength a beam of light standing on two tiles for the whole level competes with the zombies.
+    private static final float NECROMANCY_MARK_ALPHA = 0.85f;
+
+    // `ripple` is the resting ring; `ripple_exit` is it breaking as something comes up through it, which
+    // is WeatherEffects' business rather than this class's.
+    private static final String LOW_SAND_MARK = "WATER_ZOMBIE_RIPPLE";
+    private static final String LOW_SAND_MARK_CLIP = "ripple";
+    private static final float LOW_SAND_MARK_WIDTH_CELLS = 1.2f;
+    private static final float LOW_SAND_MARK_ALPHA = 1f;
 
     // How much of a tile each piece covers. Note there is no ICE_WIDTH_CELLS: an ice block is not a tile
     // decal and is not scaled to one -- see drawIce.
@@ -106,6 +138,21 @@ public final class TerrainRenderer {
     }
     private final Assets assets;
 
+    // Per-tile animation keys, interned.
+    //
+    // AnimationClocks is an IdentityHashMap, so a freshly concatenated "SPRITE6,2" is a DIFFERENT key
+    // every frame: the clock is created, reads one frame of delta, and is swept again before the next
+    // one -- which pins every per-tile animation to frame 0 for the life of the level. The ice blocks
+    // and the gold tiles were both standing perfectly still because of it, and a still ice block reads
+    // as a decal rather than as something the player is meant to break.
+    //
+    // Handing back the same String instance for a given tile is all it takes.
+    private final java.util.Map<String, String> tileKeys = new java.util.HashMap<>();
+
+    private Object tileKey(String name, int col, int row) {
+        return tileKeys.computeIfAbsent(name + col + "," + row, key -> key);
+    }
+
     private float clock;
 
     public TerrainRenderer(Assets assets, SpriteRegistry sprites, LawnGeometry lawn,
@@ -141,7 +188,7 @@ public final class TerrainRenderer {
             }
             int col = (int) plant.getX();
             float stateTime = ClipMap.sample(sprite, clip,
-                    clocks.advance(GOLD_TILE + col + "," + row, clip, delta));
+                    clocks.advance(tileKey(GOLD_TILE, col, row), clip, delta));
             covering(batch, sprite, clip, stateTime, col, row);
         }
     }
@@ -187,12 +234,16 @@ public final class TerrainRenderer {
         } else if (terrain instanceof SlipTerrain slip) {
             drawSlider(batch, slip, col, row, delta);
         } else if (terrain instanceof FrozenTerrain ice) {
-            drawIce(batch, behindSpriteFor(ice), REAR_CLIPS, col, row, delta, 1f);
+            if (!drawnByItsOccupant(ice)) {
+                drawIce(batch, behindSpriteFor(ice), REAR_CLIPS, col, row, delta, 1f);
+            }
         } else if (terrain instanceof NecromancyTerrain) {
-            wash(batch, col, row, NECROMANCY);
-            wash(batch, col, row, pulsed(NECROMANCY_PULSE));
+            drawHiddenGround(batch, terrain, col, row, delta, NECROMANCY, NECROMANCY_PULSE,
+                    NECROMANCY_MARK, NECROMANCY_MARK_CLIP, NECROMANCY_MARK_WIDTH_CELLS,
+                    NECROMANCY_MARK_ALPHA);
         } else if (terrain instanceof LowSandTerrain) {
-            wash(batch, col, row, LOW_SAND);
+            drawHiddenGround(batch, terrain, col, row, delta, LOW_SAND, LOW_SAND_PULSE,
+                    LOW_SAND_MARK, LOW_SAND_MARK_CLIP, LOW_SAND_MARK_WIDTH_CELLS, LOW_SAND_MARK_ALPHA);
         } else if (terrain instanceof WaterTerrain) {
             drawWater(batch, col, row, delta);   // a marker on a cell the tide has not flagged
         }
@@ -206,10 +257,44 @@ public final class TerrainRenderer {
             return;
         }
         for (Terrain terrain : cell.getTerrain()) {
-            if (!terrain.isDestroyed() && terrain instanceof FrozenTerrain ice) {
+            if (terrain.isDestroyed() || !(terrain instanceof FrozenTerrain ice)) {
+                continue;
+            }
+            if (!drawnByItsOccupant(ice)) {
                 drawIce(batch, frontSpriteFor(ice), ICE_FRONT_CLIPS, col, row, delta, ICE_FRONT_ALPHA);
             }
+            // The flash runs whoever drew the block, which is why it is not inside the branch above.
+            //
+            // A block soaks 600 points and has no damage clips at all, so every shot into one used to
+            // register as nothing -- exactly the gap the headstones had before they were given a flash.
+            // The block's HP is the only pool the shot actually reduces, and only the terrain knows it,
+            // so the flash lives here even for a block whose art an entity draws. They coincide: the
+            // occupant of a block cannot move, so it is standing on this very tile.
+            flashIce(batch, ice, col, row, delta);
         }
+    }
+
+    // The block lighting up white, additively, over whatever is inside it.
+    private void flashIce(Batch batch, FrozenTerrain ice, int col, int row, float delta) {
+        float flash = flashes.intensity(ice, ice.getHp(), delta);
+        if (flash <= 0f) {
+            return;
+        }
+        EntitySprite sprite = sprites.get(frontSpriteFor(ice));
+        if (sprite == null || !sprite.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(sprite, ICE_FRONT_CLIPS);
+        float stateTime = ClipMap.sample(sprite, clip,
+                clocks.advance(tileKey(frontSpriteFor(ice), col, row), clip, 0f));
+
+        float previous = batch.getPackedColor();
+        SpritePlacer.beginAdditive(batch);
+        batch.setColor(flash, flash, flash, 1f);
+        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, lawn.centerX(col),
+                lawn.worldY(row) + lawn.cellHeight() * SpritePlacer.FOOT_INSET, true, null);
+        SpritePlacer.endAdditive(batch);
+        batch.setPackedColor(previous);
     }
 
     // ---- the pieces ------------------------------------------------------------------------------
@@ -278,8 +363,7 @@ public final class TerrainRenderer {
             return;
         }
         String clip = ClipMap.firstAvailable(sprite, preferredClips);
-        float stateTime = ClipMap.sample(sprite, clip, clocks.advance(spriteName + col + "," + row,
-                clip, delta));
+        float stateTime = ClipMap.sample(sprite, clip, clocks.advance(tileKey(spriteName, col, row), clip, delta));
 
         float previous = batch.getPackedColor();
         Color tint = batch.getColor();
@@ -369,6 +453,39 @@ public final class TerrainRenderer {
         batch.setTransformMatrix(previous);
     }
 
+    // A tile with a zombie under it: the wash, a slow pulse over it, then the game's own mark for what
+    // is hiding there.
+    //
+    // One method for both because they are the same idea drawn twice -- "this square is not what it
+    // looks like" -- and the only differences are which colour and which animation. Written separately
+    // first, and the second copy was the first one with two constants swapped.
+    //
+    // Clocked per TERRAIN rather than per tile name, like the graves are, so two marked tiles in the
+    // same level do not turn in lockstep -- which reads as one decal drawn twice rather than as two
+    // separate places something is waiting.
+    //
+    // The animation is decoration on top of a marker that already works: if it is missing, the wash has
+    // been drawn and the tile is still marked, so this returns rather than falling back.
+    private void drawHiddenGround(Batch batch, Terrain terrain, int col, int row, float delta,
+                                  Color face, Color pulse, String mark, String markClip,
+                                  float widthCells, float alpha) {
+        wash(batch, col, row, face);
+        wash(batch, col, row, pulsed(pulse));
+
+        EntitySprite sprite = sprites.get(mark);
+        if (sprite == null || !sprite.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(sprite, markClip);
+        float stateTime = ClipMap.sample(sprite, clip, clocks.advance(terrain, clip, delta));
+
+        float previous = batch.getPackedColor();
+        Color tint = batch.getColor();
+        batch.setColor(tint.r, tint.g, tint.b, tint.a * alpha);
+        fitted(batch, sprite, clip, stateTime, lawn.centerX(col), tileCentreY(row), widthCells);
+        batch.setPackedColor(previous);
+    }
+
     // A flat tint over one tile, for ground that is marked rather than occupied.
     private void wash(Batch batch, int col, int row, Color color) {
         float previous = batch.getPackedColor();
@@ -399,6 +516,33 @@ public final class TerrainRenderer {
         }
         return -1;
     }
+
+    // Whether the thing inside this block is going to draw it.
+    //
+    // A frozen plant or zombie now wraps ITSELF in the ice (PlantRenderer, ZombieRenderer), and it has
+    // to: the model freezes an entity two quite different ways and only one of them creates a
+    // FrozenTerrain. An authored '&' does; three chills or an Iceberg Lettuce do not -- they set a flag
+    // on the entity and add no terrain at all, which is why a plant frozen in play used to get a blue
+    // tint and no block. Drawing it from the entity covers both, and puts the block where the entity
+    // actually is rather than at the centre of the tile.
+    //
+    // So this class draws a block only when nobody else will: a plain obstacle with nothing inside, and
+    // -- the case worth spelling out -- one whose occupant has DIED in there. That block is still solid
+    // and still blocks planting, and skipping it on the strength of `getInnerType() != null` alone would
+    // leave an invisible wall on the lawn.
+    private static boolean drawnByItsOccupant(FrozenTerrain ice) {
+        models.entities.plants.Plant plant = ice.getInnerPlant();
+        if (plant != null) {
+            return !plant.isDead() && plant.isFrozen();
+        }
+        models.entities.zombies.Zombie zombie = ice.getInnerZombie();
+        if (zombie != null) {
+            return zombie.getHealth() != null && zombie.getHealth().getTotalHP() > 0
+                    && zombie.getState().isFrozen();
+        }
+        return false;
+    }
+
 
     // A plain authored '&' obstacle holds nothing and reports a null type; it gets the plant block,
     // which is the tile-sized one. The zombie block is taller, for something standing up inside it.

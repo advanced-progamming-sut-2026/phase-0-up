@@ -13,15 +13,15 @@ import java.util.List;
 public class MultiLaneTrigger implements TriggerStrategy {
     //threepeater: [-1, 0, 1]
     private int[] relativeRows;
-    private final boolean targetsGraves;
+    private final boolean targetsObstacles;
 
     public MultiLaneTrigger(int[] relativeRows) {
         this(relativeRows, false);
     }
 
-    public MultiLaneTrigger(int[] relativeRows, boolean targetsGraves) {
+    public MultiLaneTrigger(int[] relativeRows, boolean targetsObstacles) {
         this.relativeRows = relativeRows;
-        this.targetsGraves = targetsGraves;
+        this.targetsObstacles = targetsObstacles;
     }
 
     @Override
@@ -46,6 +46,6 @@ public class MultiLaneTrigger implements TriggerStrategy {
                 }
             }
         }
-        return targetsGraves && GraveSight.graveInLanes(owner, gameSession, relativeRows);
+        return targetsObstacles && ObstacleSight.obstacleInLanes(owner, gameSession, relativeRows);
     }
 }

@@ -66,6 +66,103 @@ final class InputCheck {
         return total;
     }
 
+    // -Dpvz.spawnerCheck=<alias>,<row>. Opens the debug spawner, sets its two SelectBoxes and presses
+    // its Spawn button, then counts the lane before and after -- the whole path from the control to
+    // the row's zombie list, which is the half -Dpvz.spawn cannot see.
+    void runSpawnerCheck(String argument) {
+        views.gdx.ui.ZombieSpawnerWindow window = hud.spawner();
+        if (window == null) {
+            Gdx.app.error("SpawnerCheck", "no spawner on this screen");
+            return;
+        }
+        String[] parts = argument.split(",");
+        String alias = parts[0].isBlank() ? window.selectedAlias() : parts[0].trim();
+        int row = 0;
+        if (parts.length > 1) {
+            try {
+                row = Integer.parseInt(parts[1].trim());
+            } catch (NumberFormatException ignored) {
+                row = 0;
+            }
+        }
+        hud.toggleSpawner();
+        window.select(alias, row);
+        int before = session.getMap().getRow(row).getZombies().size();
+        window.pressSpawn();
+        int after = session.getMap().getRow(row).getZombies().size();
+        Gdx.app.log("SpawnerCheck", "picked " + window.selectedAlias() + " into row " + row
+                + ": lane held " + before + " zombie(s), now holds " + after
+                + (after > before ? " -- spawned" : " -- NOTHING SPAWNED"));
+        // Last, and by a REAL click through the Stage, so a screenshot can show the dropdown's
+        // backing. The spawn itself is finished by now.
+        openDropdown(window);
+    }
+
+    private void openDropdown(views.gdx.ui.ZombieSpawnerWindow window) {
+        com.badlogic.gdx.math.Vector2 centre = window.zombieBoxCentre();
+        com.badlogic.gdx.math.Vector3 point =
+                new com.badlogic.gdx.math.Vector3(centre.x, centre.y, 0f);
+        hud.stage().getViewport().project(point);
+        int screenX = (int) point.x;
+        int screenY = toMouseY(point.y);
+        hud.stage().touchDown(screenX, screenY, 0, com.badlogic.gdx.Input.Buttons.LEFT);
+        hud.stage().touchUp(screenX, screenY, 0, com.badlogic.gdx.Input.Buttons.LEFT);
+    }
+
+    // Set by GameScreen so the pickup check can raise a flight without a kill.
+    private views.gdx.ui.PickupFlights pickups;
+
+    void setPickups(views.gdx.ui.PickupFlights pickups) {
+        this.pickups = pickups;
+    }
+
+    // -Dpvz.pickupCheck=1. Two halves, both in one frame: four carriers standing on the lawn so their
+    // auras can be compared side by side, and four flights in the air so the icon, the bounce and the
+    // floating text are all caught.
+    //
+    // Sets the carried drop on the model directly, which a view may not normally do -- this is a
+    // harness and the same licence Showcase takes to hypnotise a zombie or half-kill a Gargantuar.
+    // Nothing here runs in a real game.
+    void runPickupCheck() {
+        String[] aliases = {"ZombieDefault", "ZombieDefault", "ZombieDefault", "ZombieDefault"};
+        models.entities.collectibles.Collectibles[] carried = {
+            null,
+            models.entities.collectibles.Collectibles.COIN,
+            models.entities.collectibles.Collectibles.GEM,
+            models.entities.collectibles.Collectibles.POT,
+        };
+        for (int lane = 0; lane < aliases.length; lane++) {
+            engine.submitInGameCommand("cheat spawn-zombie -t " + aliases[lane] + " -l (6, " + lane + ")");
+            java.util.List<models.entities.zombies.Zombie> row =
+                    session.getMap().getRow(lane).getZombies();
+            if (row.isEmpty()) {
+                Gdx.app.error("PickupCheck", "no zombie landed in lane " + lane);
+                continue;
+            }
+            models.entities.zombies.Zombie zombie = row.get(row.size() - 1);
+            // Each lane shows exactly ONE kind. The glow is its own 5% roll at spawn, so a zombie
+            // meant to demonstrate the coin aura can arrive already glowing -- and plant food wins the
+            // colour, which is correct in the game and useless in a side-by-side.
+            zombie.setGlowing(lane == 0);
+            zombie.setCarriedDrop(lane == 0 ? null : carried[lane]);
+            Gdx.app.log("PickupCheck", "lane " + lane + ": "
+                    + (zombie.isGlowing() ? "PLANT_FOOD (glowing)" : String.valueOf(zombie.getCarriedDrop()))
+                    + " -- carriesSomething=" + zombie.carriesSomething());
+        }
+
+        if (pickups == null) {
+            Gdx.app.error("PickupCheck", "no PickupFlights wired");
+            return;
+        }
+        // The model's own sentences, word for word, so this exercises the same matching a real drop
+        // does rather than a private entry point that could pass while the real one is broken.
+        pickups.onEvent("The glowing zombie dropeed a plant food; you have 1 plant foods now.");
+        pickups.onEvent("A zombie dropeed a coin; you have 50 coins now.");
+        pickups.onEvent("A zombie dropeed a gem; you have 1 gems now.");
+        pickups.onEvent("A zombie dropeed a pot; you have 6 pots now.");
+        Gdx.app.log("PickupCheck", "raised four flights");
+    }
+
     void run() {
         com.badlogic.gdx.math.Vector3 point = new com.badlogic.gdx.math.Vector3();
         int mismatches = 0;

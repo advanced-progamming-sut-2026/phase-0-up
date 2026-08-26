@@ -37,12 +37,27 @@ public class StateComponent {
     public boolean isFreezeImmune() { return freezeImmune; }
     public void setFreezeImmune(boolean immune) { this.freezeImmune = immune; }
 
+    // A chill halves a zombie's pace. Refused for the same zombies a freeze is refused for.
+    //
+    // The flag used to gate only applyFreeze, which left Frostbite Caves half-implemented: its zombies
+    // shrugged off being frozen solid but were still slowed by every ice shot that hit them. The rule
+    // the world is built on is that ICE DOES NOT AFFECT THEM -- they live in it -- so both halves of
+    // what an ice attack does are refused here.
+    //
+    // Damage is untouched: a Snow Pea still hurts, it simply does not slow.
     public void applyChill(int durationInTicks) {
+        if (freezeImmune) {
+            return;
+        }
         this.chilledTimer = durationInTicks;
     }
 
-    // Snow Pea's CHILL_DURATION_EXT upgrade lengthens the chill already applied by the ice hit.
+    // Snow Pea's CHILL_DURATION_EXT upgrade lengthens the chill already applied by the ice hit. Gated
+    // too, or the upgrade would put a chill on an immune zombie that the hit itself could not.
     public void extendChill(int extraTicks) {
+        if (freezeImmune) {
+            return;
+        }
         this.chilledTimer += extraTicks;
     }
 

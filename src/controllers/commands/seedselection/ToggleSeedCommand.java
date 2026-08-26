@@ -8,9 +8,7 @@ import models.user.Profile;
 import utils.registry.PlantRegistry;
 import views.renderers.MenuRenderer.PlantMenuRenderer;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ToggleSeedCommand implements Command {
     private ToggleAction action;
@@ -38,21 +36,21 @@ public class ToggleSeedCommand implements Command {
     }
 
     // Separate from isAllowedInLevel(): "still locked" sent players to unlock what they owned.
+    //
+    // Asks the UNLOCKED list, not the seed-packet counts. Packets are the upgrade currency:
+    // CollectionSystem.upgradePlant spends five of them, so a plant sitting on exactly five became a
+    // plant with zero the moment it was upgraded -- and a count of zero read here as "never unlocked".
+    // Upgrading a plant made it unusable, which is the exact opposite of what upgrading is for, and it
+    // hit the plants a player invests in hardest. Ownership is the unlocked list; that is also what
+    // SeedSelectionScreen draws its grid from, so the screen and the command now agree.
     private boolean isUnlocked() {
         Profile profile = gameSession.getPlayer();
-        Map<String, Integer> map = profile.getOwnedSeedPackets();
-        Map<String, Integer> owned = null;
-
-        if (map != null) {
-            owned = new HashMap<>();
-            for (Map.Entry<String, Integer> entry : map.entrySet()) {
-                owned.put(entry.getKey(), entry.getValue());
-            }
+        List<String> owned = profile == null ? null : profile.getUnlockedPlants();
+        if (owned == null) {
+            return false;
         }
-
         // Profile keys are lower-cased while the level pool uses display names -> compare ignoring case.
-        return owned != null && owned.entrySet().stream()
-                .anyMatch(e -> e.getKey().equalsIgnoreCase(plantName) && e.getValue() > 0);
+        return owned.stream().anyMatch(name -> name != null && name.equalsIgnoreCase(plantName));
     }
     private boolean isAllowedInLevel() {
         // Read the pool off the Level, not its template: a level built without a template (the

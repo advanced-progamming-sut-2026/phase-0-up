@@ -26,7 +26,7 @@ import views.gdx.sprite.EntitySprite;
 import views.gdx.ui.ConfirmDialog;
 import views.gdx.ui.MenuStyles;
 import views.gdx.ui.PotTile;
-import views.gdx.ui.WalletBar;
+import views.gdx.ui.CurrencyHUD;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,7 +92,7 @@ public final class GreenhouseScreen extends MenuScreen {
     private final List<PotTile> tiles = new ArrayList<>();
 
     private Group slots;
-    private WalletBar wallet;
+    private CurrencyHUD wallet;
     private int potCheckFrame;
 
     public GreenhouseScreen(GdxContext context) {
@@ -110,6 +110,12 @@ public final class GreenhouseScreen extends MenuScreen {
     @Override
     protected String musicTrack() {
         return views.gdx.core.AudioManager.MUSIC_GREENHOUSE;
+    }
+
+    // Lays its own out, in the header beside the prices it explains.
+    @Override
+    protected boolean showsOwnCurrency() {
+        return true;
     }
 
     @Override
@@ -375,7 +381,7 @@ public final class GreenhouseScreen extends MenuScreen {
     }
 
     private Table header() {
-        wallet = new WalletBar(skin);
+        wallet = new CurrencyHUD(skin, debugCheat("coin"), debugCheat("gem"));
 
         Table bar = new Table();
         bar.setBackground(context.assets().solid(CHROME));

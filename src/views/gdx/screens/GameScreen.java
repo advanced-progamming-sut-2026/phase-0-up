@@ -70,6 +70,8 @@ public final class GameScreen extends ScreenAdapter {
 
     // The scoring game's floating awards. Silent on every other board.
     private final views.gdx.ui.ScorePopups scorePopups;
+    // Dropped rewards flying from the corpse to the counter that absorbed them.
+    private final views.gdx.ui.PickupFlights pickups;
 
     // Crazy Dave, Penny and Zomboss. Silent unless the model says something worth interrupting for.
     private final views.gdx.ui.NpcDialogueBox npc;
@@ -166,6 +168,21 @@ public final class GameScreen extends ScreenAdapter {
         this.npc = new views.gdx.ui.NpcDialogueBox(context.assets(), context.sprites(), hud.stage());
         this.inputCheck = new InputCheck(context, session, engine, lawn, viewport, lawnInput, tools,
                 hud, this::onModelEvent);
+        // EVERY consumer of onModelEvent is constructed before installHudPanels/replayOpeningEvents,
+        // and that ordering is load-bearing rather than tidy.
+        //
+        // replayOpeningEvents drains what the model said during GameEngine.init() -- above all a mode's
+        // opening banner -- and it pushes those sentences straight through onModelEvent. Anything the
+        // fan-out touches that has not been built yet is null AT THAT MOMENT, in the constructor, before
+        // the screen exists. That is exactly how the pickup flights crashed the game on every level with
+        // a mode that announces itself (Night Ops, Deadline, Save Our Seeds, Vasebreaker, Beghouled...)
+        // while every plain Egypt level, which narrates nothing at init, worked perfectly.
+        this.scorePopups = new views.gdx.ui.ScorePopups(hud.stage(), context.assets().skin(), viewport);
+        this.pickups = new views.gdx.ui.PickupFlights(hud.stage(), context.assets().skin(),
+                viewport, hud, lawn);
+        this.pickups.setDeaths(entities.deaths());
+        this.inputCheck.setPickups(pickups);
+
         installHudPanels();
         replayOpeningEvents();
         this.overlays = new views.gdx.ui.GameOverlays(context.assets(), hud.stage(),
@@ -173,7 +190,6 @@ public final class GameScreen extends ScreenAdapter {
                 this::leaveLevel);
         this.showcase = new Showcase(engine, session);
         this.harness = new MinigameHarness(session, engine, lawn, viewport, lawnInput, tools);
-        this.scorePopups = new views.gdx.ui.ScorePopups(hud.stage(), context.assets().skin(), viewport);
 
         // The board is built and armed but the player has not seen it yet, so it opens paused behind
         // the objective card. Nothing ticks until they say go -- a level that starts running while the
@@ -247,6 +263,10 @@ public final class GameScreen extends ScreenAdapter {
     private void installHudPanels() {
         // Cheat buttons synthesise the same command strings the prompt accepts, through the same door.
         hud.installCheats(engine::submitInGameCommand);
+        // Coins and gems have no in-game command, so the lawn reaches them the way the menus do.
+        hud.installCurrencyCheats(currencyCheat("coin"), currencyCheat("gem"));
+        // The zombie spawner, through the same sink for the same reason.
+        hud.installSpawner(engine::submitInGameCommand);
         // Beghouled's shop, through CommandBridge rather than the raw sink so the click gets its cue.
         hud.installUpgrades(commands::upgrade);
     }
@@ -392,12 +412,7 @@ public final class GameScreen extends ScreenAdapter {
         hud.update(loop.ticksRun());
         hud.render(delta);
 
-        // After the HUD has drawn, never before. Scene2D does not position anything until its first
-        // layout pass, so a check that runs on frame zero finds every widget at (0, 0) with no size and
-        // concludes -- wrongly -- that clicks miss them.
-        if (inputCheckFrames > 0 && --inputCheckFrames == 0) {
-            inputCheck.run();
-        }
+        runFrameChecks();
 
         harness.tick();
         runFastForward();
@@ -428,20 +443,50 @@ public final class GameScreen extends ScreenAdapter {
     // Every view effect that is driven by the model's own narration, in one place.
     //
     // There are three call sites that hand events to the view (the in-game renderer, the screen's own
-    // drain, and the input-check harness) and three consumers, and before this they were wired
+    // drain, and the input-check harness) and eight consumers, and before this they were wired
     // pairwise -- which is how the harness path ended up with explosions and no weather. Each consumer
     // ignores anything that is not its own sentence, so none of them needs to know about the others.
     private void onModelEvent(String message) {
-        entities.explosions().onEvent(message);
-        entities.weather().onEvent(message);
-        entities.zombieActions().onEvent(message);
-        entities.deaths().onEvent(message);
-        shake.onEvent(message);
-        cues.onEvent(message);
-        // The seventh consumer. Says nothing for the overwhelming majority of sentences -- see NpcLines.
-        views.gdx.ui.NpcDialogueBox.Speaker speaker = views.gdx.ui.NpcLines.speakerFor(message);
-        if (speaker != null) {
-            npc.say(speaker, message);
+        deliver("explosions", () -> entities.explosions().onEvent(message));
+        deliver("weather", () -> entities.weather().onEvent(message));
+        deliver("zombieActions", () -> entities.zombieActions().onEvent(message));
+        deliver("deaths", () -> entities.deaths().onEvent(message));
+        deliver("cameraShake", () -> shake.onEvent(message));
+        deliver("audioCues", () -> cues.onEvent(message));
+        // Flies a dropped reward from the corpse to the counter that just absorbed it -- every one of
+        // these is already credited by the model, so this only makes the giving visible.
+        deliver("pickupFlights", () -> pickups.onEvent(message));
+        // Says nothing for the overwhelming majority of sentences -- see NpcLines.
+        deliver("npcDialogue", () -> {
+            views.gdx.ui.NpcDialogueBox.Speaker speaker = views.gdx.ui.NpcLines.speakerFor(message);
+            if (speaker != null) {
+                npc.say(speaker, message);
+            }
+        });
+    }
+
+    // One consumer's turn at a sentence, isolated from the other seven.
+    //
+    // Every one of these is a FLOURISH -- a puff of sand, a camera nudge, a coin flying to a counter.
+    // Not one of them is load-bearing for the game being playable, and yet an exception in any of them
+    // was killing the whole application: the fan-out runs on the render thread, so a throw walks out
+    // through Lwjgl3Application.loop and the window closes with the player's level lost. That trade is
+    // upside down, and it is what a null pickups field did on every Frostbite level 3.
+    //
+    // So a failing consumer is reported ONCE, by name, and the frame carries on. Once rather than every
+    // frame because these fire dozens of times a second during a wave and an unthrottled stack trace is
+    // its own denial of service. Same call the sprite layer makes for a malformed PAM: a missing effect
+    // is a bug worth seeing in the log, a black window is not.
+    private final java.util.Set<String> failedConsumers = new java.util.HashSet<>();
+
+    private void deliver(String consumer, Runnable delivery) {
+        try {
+            delivery.run();
+        } catch (RuntimeException e) {
+            if (failedConsumers.add(consumer)) {
+                Gdx.app.error("GameScreen", "event consumer \"" + consumer
+                        + "\" failed and was muted for the rest of this level", e);
+            }
         }
     }
 
@@ -526,12 +571,12 @@ public final class GameScreen extends ScreenAdapter {
             // The cheat panel is a debug tool, so it is gated on the setting that says so. Without the
             // gate a stray C during a real match hands the player a "Nuke Everything" button.
             if (keycode == com.badlogic.gdx.Input.Keys.C) {
-                if (debugMode()) {
-                    hud.toggleCheats();
-                } else {
-                    context.toasts().info("Turn on Debug mode in Settings to use cheats.");
-                }
-                return true;
+                return debugPanel(hud::toggleCheats, "cheats");
+            }
+            // The zombie spawner, gated on the same setting and for the same reason: it can put a
+            // Gargantuar in front of the house.
+            if (keycode == com.badlogic.gdx.Input.Keys.Z) {
+                return debugPanel(hud::toggleSpawner, "the zombie spawner");
             }
             // Pausing stops the accumulator, so the model AND every animation clock freeze together --
             // a paused board that keeps waving its leaves does not read as paused.
@@ -546,6 +591,18 @@ public final class GameScreen extends ScreenAdapter {
                 return true;
             }
             return false;
+        }
+
+        // A debug panel is only reachable when the setting that calls it debug is on -- without the
+        // gate a stray key during a real match hands the player a "Nuke Everything" button, or a
+        // Gargantuar.
+        private boolean debugPanel(Runnable toggle, String what) {
+            if (debugMode()) {
+                toggle.run();
+            } else {
+                context.toasts().info("Turn on Debug mode in Settings to use " + what + ".");
+            }
+            return true;
         }
     }
 
@@ -619,7 +676,35 @@ public final class GameScreen extends ScreenAdapter {
     // screen pixel back into a lawn tile. Every tile's centre is projected to a screen position and fed
     // straight to the input processor, which must report that same tile. Anything else means clicks land
     // on the wrong square -- silently, since a wrong-but-valid tile still plants something somewhere.
+    // The countdown-triggered harness checks, fired AFTER the HUD has drawn and never before: Scene2D
+    // positions nothing until its first layout pass, so a check that runs on frame zero finds every
+    // widget at (0, 0) with no size and concludes -- wrongly -- that clicks miss them.
+    //
+    // Lifted out of render(), which hit Checkstyle's 50-line method ceiling the moment a third one was
+    // added. Each is off unless its flag is set, so a normal frame does three int compares.
+    private void runFrameChecks() {
+        if (inputCheckFrames > 0 && --inputCheckFrames == 0) {
+            inputCheck.run();
+        }
+        if (pickupCheckFrames > 0 && --pickupCheckFrames == 0) {
+            inputCheck.runPickupCheck();
+        }
+        if (spawnerCheckFrames > 0 && --spawnerCheckFrames == 0) {
+            inputCheck.runSpawnerCheck(views.gdx.core.DebugFlags.SPAWNER_CHECK);
+        }
+    }
+
     private int inputCheckFrames = views.gdx.core.DebugFlags.INPUT_CHECK ? 3 : 0;
+
+    // Frame 20, not 3: the spawner's Window has to have been laid out before its SelectBoxes hold
+    // anything selectable, and the screenshot wants the zombie to have taken a step.
+    // Frame 25: late enough for the HUD's counters to have been laid out (a flight aimed at a widget
+    // with no position yet lands at the stage's corner), early enough to leave the flights and the
+    // floating text still on screen when a 70-frame smoke run ends.
+    private int pickupCheckFrames = views.gdx.core.DebugFlags.PICKUP_CHECK ? 25 : 0;
+
+    private int spawnerCheckFrames =
+            views.gdx.core.DebugFlags.SPAWNER_CHECK.isEmpty() ? 0 : 20;
 
     // Built in the constructor, not here: field initialisers run before the constructor body, so
     // engine and session are still null at this point.
@@ -781,7 +866,56 @@ public final class GameScreen extends ScreenAdapter {
             return;
         }
         loop.setPaused(true);
-        overlays.showObjective(levelName(), objectiveText());
+        overlays.showObjective(levelName(), objectiveText(), openQuests(), session.getPlayer());
+        greetTheLevel();
+    }
+
+    // The quests still outstanding, most important first.
+    //
+    // Read the same way the Travel Log reads them, through QuestSystem, so the card and the log rank and
+    // flag them identically -- and built fresh rather than cached, because a quest finished last level
+    // must not still be on this level's card.
+    private java.util.List<models.quests.Quest> openQuests() {
+        models.user.Profile profile = session.getPlayer();
+        if (profile == null) {
+            return java.util.List.of();
+        }
+        java.util.List<models.quests.Quest> open = new java.util.ArrayList<>();
+        for (models.quests.Quest quest
+                : new controllers.systems.game.QuestSystem().getSortedQuestsForLog(profile)) {
+            if (!quest.isComplete()) {
+                open.add(quest);
+            }
+        }
+        return open;
+    }
+
+    // Somebody says hello, unless somebody is already talking.
+    //
+    // The guard is the whole of the wiring: replayOpeningEvents runs before this and delivers a special
+    // mode's opening banner, which Penny is already saying. say() REPLACES rather than queues, so
+    // without the check a Vasebreaker board would explain the weather instead of Vasebreaker.
+    //
+    // Held rather than timed out: the board is paused behind the objective card, so a nine-second dwell
+    // would expire while the player is still reading the card it came in with. dismissObjective clears
+    // it at the same moment the level starts.
+    private void greetTheLevel() {
+        if (npc.isVisible()) {
+            // A mode's rules banner got here first. Keep it, and stop its clock -- its dwell is
+            // wall-clock and the board is paused behind the card, so it would fade out unread.
+            npc.holdCurrent();
+            return;
+        }
+        if (session.getLevel() == null || session.getLevel().getTemplate() == null) {
+            return;
+        }
+        models.templates.LevelTemplate template = session.getLevel().getTemplate();
+        views.gdx.ui.NpcGreetings.Greeting greeting = views.gdx.ui.NpcGreetings.forLevel(
+                models.game.EnvironmentType.fromChapter(template.getChapter()),
+                template.getLevelNumber());
+        if (greeting != null) {
+            npc.hold(greeting.speaker(), greeting.line());
+        }
     }
 
     private String levelName() {
@@ -801,6 +935,9 @@ public final class GameScreen extends ScreenAdapter {
 
     private void dismissObjective() {
         overlays.hideObjective();
+        // The greeting came in with the card and goes out with it: it is a pre-level line, and leaving
+        // it standing over a live lawn turns it into something the player has to click away.
+        npc.hide();
         loop.setPaused(false);
     }
 
@@ -860,6 +997,23 @@ public final class GameScreen extends ScreenAdapter {
             return !"0".equals(override.trim());
         }
         return session.getPlayer() != null && session.getPlayer().isShowGrid();
+    }
+
+    // A debug currency top-up, or null when Debug Mode is off -- which is what makes the button not
+    // exist rather than exist and refuse. Constructs the Command directly for the same reason
+    // MenuScreen does: `menu cheat add` is a PLAY_MENU command and the session is IN_GAME here, so the
+    // router would refuse the string. The rule still lives in CheatAddCommand.
+    private java.util.function.IntConsumer currencyCheat(String currency) {
+        if (!debugMode()) {
+            return null;
+        }
+        return amount -> {
+            if (session.getPlayer() == null) {
+                return;
+            }
+            new controllers.commands.playmenu.CheatAddCommand(currency, amount, session.getPlayer(),
+                    context.renderers().playMenu()).execute();
+        };
     }
 
     private boolean debugMode() {

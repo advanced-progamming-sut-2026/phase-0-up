@@ -34,7 +34,7 @@ import views.gdx.ui.MenuStyles;
 import views.gdx.ui.PlantIcon;
 import views.gdx.ui.SeedCardActor;
 import views.gdx.ui.UiArt;
-import views.gdx.ui.WalletBar;
+import views.gdx.ui.CurrencyHUD;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,7 +93,7 @@ public final class SeedSelectionScreen extends MenuScreen {
     private Table available;
     private Table bar;
     private Label slotsLabel;
-    private WalletBar wallet;
+    private CurrencyHUD wallet;
 
     // The plant the two action buttons act on. Follows the pointer across the cards, because a screen
     // where you must first select a plant and then press Boost has two steps where the player expects
@@ -118,6 +118,12 @@ public final class SeedSelectionScreen extends MenuScreen {
     @Override
     protected String musicTrack() {
         return views.gdx.core.AudioManager.MUSIC_SEED_SELECT;
+    }
+
+    // Lays its own out, in the header beside the prices it explains.
+    @Override
+    protected boolean showsOwnCurrency() {
+        return true;
     }
 
     @Override
@@ -156,7 +162,7 @@ public final class SeedSelectionScreen extends MenuScreen {
         slotsLabel = MenuStyles.label(skin, "", MenuStyles.TEXT);
         slotsLabel.setAlignment(Align.left);
 
-        wallet = new WalletBar(skin);
+        wallet = new CurrencyHUD(skin, debugCheat("coin"), debugCheat("gem"));
 
         Table header = new Table();
         header.add(slotsLabel).left();

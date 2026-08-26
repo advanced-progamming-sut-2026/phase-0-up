@@ -111,6 +111,28 @@ public class Zombie extends Entity {
     public void setWavePointCost(int wavePointCost) { this.wavePointCost = wavePointCost; }
     public int getWavePointCost() { return wavePointCost; }
 
+    // The coin, gem or pot this zombie is carrying, or null for the great majority that carry nothing.
+    //
+    // Decided at SPAWN (ZombieFactory) rather than at death, which is where the roll used to live. The
+    // view has to be able to mark a carrier while it is still walking, and a die rolled in the death
+    // handler cannot be read by anything before that handler runs. Same reasoning, and the same place,
+    // as `glowing` -- which is the plant-food carrier and was already settled at birth.
+    //
+    // Never serialised: zombies live and die inside a level and no save holds one.
+    private models.entities.collectibles.Collectibles carriedDrop;
+
+    public models.entities.collectibles.Collectibles getCarriedDrop() { return carriedDrop; }
+
+    public void setCarriedDrop(models.entities.collectibles.Collectibles drop) {
+        this.carriedDrop = drop;
+    }
+
+    // Whether this zombie is worth marking on the board at all -- plant food or one of the three loot
+    // drops. The view asks this rather than testing two fields, so "special" means one thing.
+    public boolean carriesSomething() {
+        return glowing || carriedDrop != null;
+    }
+
     public void setGlowing(boolean glowing) { this.glowing = glowing; }
     public boolean isGlowing() { return glowing; }
 

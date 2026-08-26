@@ -414,7 +414,32 @@ public class Profile {
         return getZombieKillsByChapter().getOrDefault(chapter.toLowerCase().trim(), 0);
     }
 
-    public boolean isHasBoughtDailyOfferToday() { return hasBoughtDailyOfferToday; }
+    // --- Today's deal --------------------------------------------------------------------------
+    //
+    // Whether the daily offer has been taken is PLAYER state, not shop state, which is why it lives
+    // here: the Shop is built fresh with the AppSession and is never written to the save file, so a
+    // "purchased" flag kept there forgot the purchase the moment the game was closed -- and, because
+    // nothing checked it either, the same deal could be bought over and over inside one session.
+    //
+    // Read through ensureQuestDay, like every other daily counter on this Profile, so "today" means the
+    // calendar day rather than "since this object was constructed". Without that the flag only ever
+    // cleared as a side effect of somebody collecting sun or finishing a quest.
+    public boolean isHasBoughtDailyOfferToday() {
+        ensureQuestDay();
+        return hasBoughtDailyOfferToday;
+    }
+
+    // What the purchase calls. Rolls the day first, so a deal bought a minute after midnight is
+    // recorded against the new day and not immediately cleared by the next read.
+    public void markDailyOfferBoughtToday() {
+        ensureQuestDay();
+        hasBoughtDailyOfferToday = true;
+    }
+
+    // Raw, for the save record only -- same reason as getRawSunCollectedToday. ProfileRecord.toProfile
+    // restores the day stamp AFTER the values it stamps, so a restoring setter must not roll: it would
+    // clear the flag it is in the middle of restoring, or stamp yesterday's value as today's.
+    public boolean getRawHasBoughtDailyOfferToday() { return hasBoughtDailyOfferToday; }
 
     public void setHasBoughtDailyOfferToday(boolean bought) { this.hasBoughtDailyOfferToday = bought; }
 

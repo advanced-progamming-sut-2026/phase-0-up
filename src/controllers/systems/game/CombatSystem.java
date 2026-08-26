@@ -186,11 +186,26 @@ public class CombatSystem {
             }
 
             for (Zombie zombie : new ArrayList<>(row.getZombies())) {
-                // A hypnotized ally that fought its way clear walks off the far edge and is done; it is
-                // not a kill, so it leaves quietly rather than through reportZombieDeath.
-                if (zombie.getState().isHypnotized()
-                        && zombie.getMovement().getPositionX() > Constants.BOARD_COLS) {
+                // Anything that walks off the FAR edge is gone, whatever turned it round.
+                //
+                // This used to require isHypnotized(), which left one zombie able to leave the board and
+                // never leave the game: a Prospector blows itself back to column 0 and walks right for
+                // the rest of the level, and past the edge it simply kept going. It was still in the
+                // row, still alive, so checkWin's living-zombie count never reached zero and the level
+                // could not be finished -- and the wave gate, which waits on 75% of a wave's HP being
+                // gone, was holding a full-health zombie somewhere off in the desert.
+                //
+                // Past ZOMBIE_SPAWN_X rather than past BOARD_COLS, because zombies SPAWN at 9.5: a
+                // threshold at 9 would delete every zombie on the tick it walked on.
+                if (zombie.getMovement().getPositionX() > Constants.ZOMBIE_SPAWN_X) {
+                    // Zeroed, but NOT through reportZombieDeath. The player did not kill this one, so it
+                    // earns no kill tally, no loot, no quest credit and no Meow Points -- while the wave
+                    // accounting, which sums the HP of everything it spawned, still resolves.
+                    zombie.getHealth().applyDamage(zombie.getHealth().getTotalHP(),
+                            models.entities.projectiles.Element.NEUTRAL, null);
                     row.getZombies().remove(zombie);
+                    events.add(new Result(true, "The " + zombie.getAlias()
+                            + " wanders off the far end of the lawn and is gone."));
                     continue;
                 }
                 if (!zombie.getHealth().isDead()) {
@@ -224,7 +239,7 @@ public class CombatSystem {
         }
         dropPlantFood(session, zombie, events);
         dropStolenSun(session, zombie, events);
-        rollLootDrop(session, events);
+        awardCarriedDrop(session, zombie, events);
     }
 
     // A sun-stealing zombie (Ra and friends) spills part of its haul back onto the lawn when it dies --
@@ -283,30 +298,30 @@ public class CombatSystem {
                 + session.getPlantFoodCount() + " plant foods now."));
     }
 
-    // A dying zombie has a 10% chance to drop 50 coins, 1 gem, or a greenhouse pot, drawn evenly.
+    // Hands over whatever this zombie walked on carrying. The 10% roll itself lives in ZombieFactory
+    // now, beside the glow roll, because the board marks a carrier while it is still alive and a die
+    // rolled here could not be read by anything until the zombie was already gone. Odds and draw are
+    // unchanged; only the moment moved.
     //
-    // A pot only joins the draw while the greenhouse has room for one. The greenhouse holds 20 and
-    // starts with 5, so it fills for good after 15 pots -- keeping POT in the draw after that would
-    // quietly swallow a third of every drop and decay the player's promised 10% down to ~6.7%.
-    private void rollLootDrop(GameSession session, List<Result> events) {
-        if (random.nextDouble() >= Constants.ZOMBIE_DROP_PROBABILITY) {
+    // The one thing that can go stale between the two moments is the greenhouse filling up. A pot that
+    // no longer fits pays out as a coin rather than as nothing: the player was promised a drop, the
+    // zombie was visibly carrying one, and silently swallowing it is the exact decay the pool check
+    // exists to avoid.
+    private void awardCarriedDrop(GameSession session, Zombie zombie, List<Result> events) {
+        Collectibles carried = zombie.getCarriedDrop();
+        if (carried == null) {
             return;
         }
         Profile profile = session.getPlayer();
         if (profile == null) {
             return;
         }
-
         GreenHouse greenHouse = profile.getMyGreenHouse();
-
-        List<Collectibles> pool = new ArrayList<>();
-        pool.add(Collectibles.COIN);
-        pool.add(Collectibles.GEM);
-        if (greenHouse != null && !greenHouse.isFull()) {
-            pool.add(Collectibles.POT);
+        if (carried == Collectibles.POT && (greenHouse == null || greenHouse.isFull())) {
+            carried = Collectibles.COIN;
         }
 
-        switch (pool.get(random.nextInt(pool.size()))) {
+        switch (carried) {
             case COIN:
                 profile.addCoins(Constants.DROP_COIN_AMOUNT);
                 events.add(dropped("coin", profile.getCoins(), "coins"));
@@ -318,6 +333,8 @@ public class CombatSystem {
             case POT:
                 greenHouse.unlockNextPot();
                 events.add(dropped("pot", greenHouse.getUnlockedPots().size(), "pots"));
+                break;
+            default:
                 break;
         }
     }

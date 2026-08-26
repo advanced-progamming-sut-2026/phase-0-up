@@ -48,6 +48,29 @@ public final class Cycler extends Table {
         add(arrow(skin, MenuStyles.ARROW_RIGHT, 1)).size(30f).padLeft(4f);
     }
 
+    // The same control, sized to fit inside something fixed.
+    //
+    // The default is built for a form: 30px arrows around a value that is at least 140 wide and grows
+    // with its text. On a store card that is the whole card -- and "Cabbage-pult" is wider still, so the
+    // control would have pushed one card out of the grid and left the row ragged.
+    //
+    // The value cell is PINNED here rather than merely given a smaller minimum, and the label ellipsises
+    // instead of wrapping: a name too long for the space has to lose its tail, because a second line
+    // would take the height back out of the product image below it.
+    public Cycler compact(float valueWidth, float arrowSize, float fontScale) {
+        current.setFontScale(fontScale);
+        current.setEllipsis(true);
+        // Both halves, or the pin does not hold: the CELL is what the table measures, and the Container
+        // inside it sizes its label to the label's own preference unless told to fill. Pinning only the
+        // cell leaves a 140-wide label drawn centred inside a 90-wide box, overflowing both edges.
+        getCells().get(0).size(arrowSize);
+        getCells().get(1).width(valueWidth).fillX();
+        getCells().get(2).size(arrowSize);
+        valueBox.fill();
+        invalidateHierarchy();
+        return this;
+    }
+
     public Cycler onChange(java.util.function.IntConsumer listener) {
         this.onChange = listener;
         return this;

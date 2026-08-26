@@ -8,14 +8,14 @@ import java.util.List;
 // The rear-facing half of a Split Pea. Same rule as the forward trigger, mirrored: a straight-firing
 // backward barrel also fires at a grave that has appeared behind the plant.
 public class BackwardStandardTrigger implements TriggerStrategy {
-    private final boolean targetsGraves;
+    private final boolean targetsObstacles;
 
     public BackwardStandardTrigger() {
         this(false);
     }
 
-    public BackwardStandardTrigger(boolean targetsGraves) {
-        this.targetsGraves = targetsGraves;
+    public BackwardStandardTrigger(boolean targetsObstacles) {
+        this.targetsObstacles = targetsObstacles;
     }
 
     @Override
@@ -29,6 +29,6 @@ public class BackwardStandardTrigger implements TriggerStrategy {
                 }
             }
         }
-        return targetsGraves && GraveSight.graveBehind(owner, gameSession);
+        return targetsObstacles && ObstacleSight.obstacleBehind(owner, gameSession);
     }
 }

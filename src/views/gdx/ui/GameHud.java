@@ -1,6 +1,7 @@
 package views.gdx.ui;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Stack;
@@ -53,8 +54,41 @@ public final class GameHud implements Disposable {
     private final Table shovelButton;
     private final Table plantFoodButton;
     private final WaveBar waveBar;
+    // Coins and gems during a level. The spec asks for both to be visible "in all menus, even
+    // during gameplay", and until now the lawn was the one screen without them -- which also left
+    // a dropped coin with no counter to land on.
+    private final CurrencyHUD wallet;
+    // The four things a drop can fly to, kept so PickupFlights can ask where each one is and
+    // bounce it. Sun is here for symmetry even though nothing flies to it yet.
+    private final java.util.Map<PickupKind, Actor> counterTargets =
+            new java.util.EnumMap<>(PickupKind.class);
 
     private final List<SeedCardActor> cards = new ArrayList<>();
+
+    // Where a debug "+" posts. Assigned by installCheats, which is the first moment the engine exists;
+    // the buttons are laid out before that, so they read the field when CLICKED rather than capturing
+    // it when built. Null until then, and a click before the engine is wired simply does nothing.
+    private java.util.function.Predicate<String> cheatSink;
+    private java.util.function.IntConsumer coinCheat;
+    private java.util.function.IntConsumer gemCheat;
+
+    // The currency half of the debug controls. Null-safe: with Debug Mode off the buttons were never
+    // built, so nothing ever calls these.
+    public void installCurrencyCheats(java.util.function.IntConsumer addCoins,
+                                      java.util.function.IntConsumer addGems) {
+        this.coinCheat = addCoins;
+        this.gemCheat = addGems;
+    }
+
+    private boolean debugMode() {
+        return session.getPlayer() != null && session.getPlayer().isDebugMode();
+    }
+
+    private void cheat(String command) {
+        if (cheatSink != null) {
+            cheatSink.test(command);
+        }
+    }
 
     public GameHud(Assets assets, SpriteRegistry sprites, GameSession session, ToolState tools) {
         this.assets = assets;
@@ -69,6 +103,18 @@ public final class GameHud implements Disposable {
         this.meowLabel = new Label("0", assets.skin());
         this.cardRow = new Table();
         this.waveBar = new WaveBar(assets, this.art);
+        // Sun and plant food have in-game cheat commands; coins and gems do NOT -- the in-game grammar
+        // is only `cheat add -n N suns` and `cheat add-plant-food`, so a command string for currency
+        // would parse as nothing and the button would silently do nothing. Those two go out as a
+        // CheatAddCommand instead, handed in by GameScreen, which is the same route every menu uses.
+        //
+        // Delegated through a mutable field rather than captured, because the wallet is laid out in this
+        // constructor and the route only exists once the screen has finished building.
+        this.wallet = debugMode()
+                ? new CurrencyHUD(assets.skin(),
+                        n -> { if (coinCheat != null) { coinCheat.accept(n); } },
+                        n -> { if (gemCheat != null) { gemCheat.accept(n); } })
+                : new CurrencyHUD(assets.skin());
 
         buildSeedBank(sprites);
         buildConveyor();
@@ -93,6 +139,9 @@ public final class GameHud implements Disposable {
     private CheatPanel cheats;
 
     public void installCheats(java.util.function.Predicate<String> sink) {
+        // Kept whether or not the panel is rebuilt: the currency, sun and plant-food "+" buttons post
+        // through this too, and they are laid out long before this is called.
+        this.cheatSink = sink;
         if (cheats != null) {
             return;
         }
@@ -134,6 +183,35 @@ public final class GameHud implements Disposable {
     public void toggleCheats() {
         if (cheatHolder != null) {
             cheatHolder.setVisible(!cheatHolder.isVisible());
+        }
+    }
+
+    // The debug spawner. Added to the stage DIRECTLY rather than into a fillParent Table like the cheat
+    // panel: a Table re-places its children on every layout pass, which would drag the window straight
+    // back to its anchor the moment it was moved.
+    private ZombieSpawnerWindow spawner;
+
+    public void installSpawner(java.util.function.Predicate<String> sink) {
+        if (spawner != null) {
+            return;
+        }
+        spawner = new ZombieSpawnerWindow(assets, sink);
+        // Left of centre and high, clear of the seed bank along the top and of the cheat panel on the
+        // right -- the two things a tester has open at the same time as this.
+        spawner.setPosition(118f, PvZGame.VIRTUAL_HEIGHT - spawner.getHeight() - 150f);
+        spawner.setVisible(false);
+        stage.addActor(spawner);
+    }
+
+    public ZombieSpawnerWindow spawner() {
+        return spawner;
+    }
+
+    public void toggleSpawner() {
+        if (spawner != null) {
+            spawner.setVisible(!spawner.isVisible());
+            // In front of the seed bank and the cheat panel, both of which are added later than it is.
+            spawner.toFront();
         }
     }
 
@@ -406,6 +484,25 @@ public final class GameHud implements Disposable {
         return button;
     }
 
+    // Sun and plant food are the two things a tester runs out of, and both already have an in-game
+    // cheat command. Offered beside the number they change rather than only in the cheat panel, which
+    // covers the lawn and has to be opened with a key; a "+" next to a counter needs no explaining.
+    //
+    // Lifted out of layoutRoot, which hit Checkstyle's 50-line method ceiling the moment they went in.
+    private void addSunCheat(Table counters) {
+        if (debugMode()) {
+            counters.add(CurrencyHUD.plusButton(assets.skin(),
+                    () -> cheat("cheat add -n 500 suns"))).padLeft(4f);
+        }
+    }
+
+    private void addPlantFoodCheat(Table toolbar) {
+        if (debugMode()) {
+            toolbar.add(CurrencyHUD.plusButton(assets.skin(),
+                    () -> cheat("cheat add-plant-food"))).padLeft(6f);
+        }
+    }
+
     private void layoutRoot() {
         Table root = new Table();
         root.setFillParent(true);
@@ -421,6 +518,7 @@ public final class GameHud implements Disposable {
                     .padRight(6f);
         }
         counters.add(sunLabel).width(64f).left();
+        addSunCheat(counters);
 
         // The scoring game's running total, beside the sun and on no other board.
         //
@@ -432,6 +530,15 @@ public final class GameHud implements Disposable {
             counters.add(new Label("Meow", assets.skin())).padLeft(14f).padRight(6f);
             counters.add(meowLabel).width(64f).left();
         }
+
+        // Sun on the left of the row, wallet on the right of it: one panel, so the numbers a player
+        // checks mid-level are one glance rather than two corners.
+        counters.add(wallet).padLeft(18f);
+
+        counterTargets.put(PickupKind.PLANT_FOOD, plantFoodLabel);
+        counterTargets.put(PickupKind.COIN, wallet.coinIcon());
+        counterTargets.put(PickupKind.GEM, wallet.gemIcon());
+        counterTargets.put(PickupKind.POT, wallet.coinIcon());
 
         root.add(counters).left().row();
         // Wall-nut Bowling's belt is NOT in this column: it runs vertically down the left edge and is
@@ -452,6 +559,7 @@ public final class GameHud implements Disposable {
             toolbar.add(plantFoodButton).padRight(10f);
             // Plant food is a count, not a tool state, so it reads as a number beside its own button.
             toolbar.add(plantFoodLabel);
+            addPlantFoodCheat(toolbar);
             root.add(toolbar).left().padTop(6f);
         }
 
@@ -483,6 +591,7 @@ public final class GameHud implements Disposable {
         refreshConveyor();
         sunLabel.setText(String.valueOf(session.getSunAmount()));
         plantFoodLabel.setText(String.valueOf(session.getPlantFoodCount()));
+        wallet.refresh(session.getPlayer());
         if (session.getMode() instanceof models.game.gamemodes.ScoringMode scoring) {
             meowLabel.setText(String.valueOf(scoring.getMeowPoints().getTotal()));
         }
@@ -525,7 +634,23 @@ public final class GameHud implements Disposable {
             return;
         }
         waveLabel.setText("Wave " + Math.min(current, total) + " / " + total);
-        waveBar.set(Math.min(1f, current / (float) total), total);
+        waveBar.set(waveProgress(current, total), total);
+    }
+
+    // The arithmetic lives in WaveProgress, which is where its reasoning is written down; this only
+    // fetches the one number the model has to be asked for.
+    private float waveProgress(int current, int total) {
+        return WaveProgress.of(current, total, clearedFractionOf(current));
+    }
+
+    private float clearedFractionOf(int waveNumber) {
+        models.game.Level level = session.getLevel();
+        models.game.Wave[] waves = level == null ? null : level.getWaves();
+        int index = waveNumber - 1;
+        if (waves == null || index < 0 || index >= waves.length || waves[index] == null) {
+            return 1f;   // past the end of the roster: the level is over, so the bar is full
+        }
+        return (float) waves[index].hpLostFraction();
     }
 
     // Centre of the first seed card in stage coordinates. Only -Dpvz.inputCheck uses this, to confirm
@@ -553,4 +678,14 @@ public final class GameHud implements Disposable {
     public void dispose() {
         stage.dispose();
     }
+
+    // Where a flying pickup should land, in stage coordinates, and what to bounce when it gets there.
+    //
+    // The ACTOR rather than a position: a counter moves when the seed bank rebuilds or the wallet's
+    // digits widen, and a position cached at build time would send later drops to where the counter
+    // used to be.
+    public Actor counterTarget(PickupKind kind) {
+        return counterTargets.get(kind);
+    }
+
 }

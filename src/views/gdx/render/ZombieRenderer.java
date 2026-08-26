@@ -121,9 +121,11 @@ public final class ZombieRenderer {
         Color previous = batch.getColor().cpy();
         batch.setColor(tintFor(zombie));
 
-        // Zombies walk right-to-left, so they face LEFT -- except a hypnotised one, which has turned
-        // around and is walking back the other way for the player.
-        boolean faceRight = zombie.getState().isHypnotized();
+        // Zombies walk right-to-left, so they face LEFT -- unless they are travelling the other way.
+        // Two do: a hypnotised one, which has turned around for the player, and a Prospector that has
+        // blown itself back down the lane on its own dynamite. Asked as "which way is it going" rather
+        // than "is it charmed", because those are the same question only for one of the two.
+        boolean faceRight = zombie.getMovement().isMovingRight();
 
         // Falling apart. Both of these have to happen BEFORE the draw, because losing the arm changes
         // the very visibility map the zombie is about to be drawn with.
@@ -134,8 +136,27 @@ public final class ZombieRenderer {
         // and switching it off is a decision about WHICH zombie this is, not about what it is wearing.
         String alias = zombie.getAlias();
         parts = ZombotanyHead.hideSkull(alias, sprite, parts);
+
+        // Rear half of the ice block, so a frozen zombie is INSIDE it rather than behind a sticker.
+        // Drawn at white, then the batch colour is restored for the zombie's own tint.
+        drawIce(batch, zombie, ICE_BLOCK_BEHIND, x, footY, delta, 1f);
+        batch.setColor(tintFor(zombie));
         drawWhole(batch, alias, sprite, clip, stateTime, x, footY, faceRight, parts,
                 scaleFor(zombie));
+
+        // Carrier aura: the same frame again, additively, in the colour of whatever it is carrying.
+        //
+        // Drawn BEFORE the hit flash so a carrier being shot still reads as being shot -- the white
+        // flash is the louder signal and has to win the frame it fires on.
+        float aura = carrierPulse(zombie);
+        if (aura > 0f) {
+            Color colour = carrierColour(zombie);
+            SpritePlacer.beginAdditive(batch);
+            batch.setColor(colour.r * aura, colour.g * aura, colour.b * aura, 1f);
+            drawWhole(batch, alias, sprite, clip, stateTime, x, footY, faceRight, parts,
+                    scaleFor(zombie));
+            SpritePlacer.endAdditive(batch);
+        }
 
         // Hit flash: the same frame again, additively, so the zombie lights up white. Total HP, not the
         // body's -- a cone or a bucket absorbing a pea is still a hit, and the zombie should react.
@@ -149,15 +170,71 @@ public final class ZombieRenderer {
             SpritePlacer.endAdditive(batch);
         }
 
+        // Front half of the block, over everything: the flash of a shot landing on the ice belongs
+        // under it, not on top.
+        drawIce(batch, zombie, ICE_BLOCK_FRONT, x, footY, delta, ICE_FRONT_ALPHA);
+
         batch.setColor(previous);
     }
 
+
+    // ---- the ice block ---------------------------------------------------------------------------
+
+    // A frozen zombie is drawn inside the game's own ice block, in the same two passes TerrainRenderer
+    // uses for an authored '&': the rear half behind it, the front half over it at partial alpha.
+    //
+    // It used to get a blue tint and nothing else -- and the model has two quite different ways of
+    // freezing a zombie. A block AUTHORED into the level is a FrozenTerrain, which TerrainRenderer has
+    // always drawn; a zombie frozen in play (Iceberg Lettuce, an ice shot) sets a flag on the zombie and
+    // adds no terrain at all, so the second kind was a slightly bluer zombie standing still. Same
+    // state to the player, so the same art.
+    private static final String ICE_BLOCK_FRONT = "FROSTBITE_ICE_BLOCK_ZOMBIE";
+    private static final String ICE_BLOCK_BEHIND = "FROSTBITE_ICE_BLOCK_ZOMBIE_BEHIND";
+    private static final String[] ICE_BLOCK_CLIPS = {"idle"};
+
+    // How much of the zombie still reads through the front half. Matches TerrainRenderer's, and for the
+    // same reason: this world is near-white and so is the block.
+    private static final float ICE_FRONT_ALPHA = 0.45f;
+
+    private void drawIce(Batch batch, Zombie zombie, String spriteName, float x, float footY,
+                         float delta, float alpha) {
+        if (!zombie.getState().isFrozen()) {
+            return;
+        }
+        EntitySprite ice = sprites.get(spriteName);
+        if (ice == null || !ice.isReady()) {
+            return;   // the tint still says "frozen"
+        }
+        String clip = ClipMap.firstAvailable(ice, ICE_BLOCK_CLIPS);
+        // Its own clock key, not the zombie's: the zombie's clock is holding its body pose at a
+        // standstill (animationDelta is 0 while frozen), and the block should still shimmer.
+        float stateTime = ClipMap.sample(ice, clip, clocks.advance(iceKey(spriteName, zombie),
+                clip, delta));
+
+        float previous = batch.getPackedColor();
+        batch.setColor(1f, 1f, 1f, alpha);
+        SpritePlacer.drawStanding(batch, ice, clip, stateTime, x, footY, true, null);
+        batch.setPackedColor(previous);
+    }
+
+    // Interned per (art, zombie), because AnimationClocks is keyed by identity and a string built fresh
+    // each frame is a new clock each frame -- which pins the block to frame 0.
+    private final Map<Zombie, Map<String, String>> iceKeys = new java.util.IdentityHashMap<>();
+
+    private Object iceKey(String spriteName, Zombie zombie) {
+        return iceKeys.computeIfAbsent(zombie, z -> new java.util.HashMap<>())
+                .computeIfAbsent(spriteName, name -> name + "#"
+                        + Integer.toHexString(System.identityHashCode(zombie)));
+    }
     // Body, then whatever stands in for its head. One method because the hit flash redraws the SAME
     // frame additively, and a plant-headed zombie that lit up only from the neck down would read as the
     // head belonging to something else.
     private void drawWhole(Batch batch, String alias, EntitySprite sprite, String clip,
                            float stateTime, float x, float footY, boolean faceRight,
                            Map<String, Boolean> parts, float scale) {
+        // faceRight IS the mirror here: zombie art is authored walking left, so anything travelling
+        // the other way is drawn flipped. See SpritePlacer.drawStandingScaled for why this cannot go
+        // through the EntitySprite flag.
         SpritePlacer.drawStandingScaled(batch, sprite, clip, stateTime, x, footY, faceRight, parts,
                 scale);
         botany.draw(batch, alias, sprite, clip, stateTime, x, footY, faceRight);
@@ -203,12 +280,16 @@ public final class ZombieRenderer {
     // one-shot sequences. Advancing here rather than in clipFor is deliberate -- clipFor is called once
     // per zombie per frame, so ageing a sequence there would run it at several times its own speed.
     void sweepFlashes(float delta) {
+        auraClock += delta;
         flashes.sweep();
         actions.advance(delta);
         actions.sweep();
         damage.sweep();
         pieces.advance(delta);
         worn.keySet().removeIf(zombie -> zombie.getHealth() == null
+                || zombie.getHealth().getTotalHP() <= 0);
+        // Same rule for the ice-block clock keys: a zombie that is gone cannot be frozen.
+        iceKeys.keySet().removeIf(zombie -> zombie.getHealth() == null
                 || zombie.getHealth().getTotalHP() <= 0);
     }
 
@@ -279,8 +360,10 @@ public final class ZombieRenderer {
         double perTick = zombie.getMovement().getSpeed() * utils.Constants.ZOMBIE_SPEED_SCALE;
         float stride = (float) (perTick * utils.Constants.TICKS_PER_SECOND
                 * sprite.clipDuration(clip)) * lawn.cellWidth();
-        // Zombies walk right-to-left, so "ahead" is -x; a hypnotised one has turned round.
-        float direction = zombie.getState().isHypnotized() ? 1f : -1f;
+        // Zombies walk right-to-left, so "ahead" is -x; anything travelling the other way has turned
+        // round. Same question the facing asks, and it has to be the same answer -- a sprite mirrored
+        // one way with its feet planted the other slides backwards through its own stride.
+        float direction = zombie.getMovement().isMovingRight() ? 1f : -1f;
         float lead = walk.lead(stateTime);
         reportFootPlanting(zombie, sprite, clip, stateTime, lead, stride);
         return direction * stride * lead;
@@ -347,5 +430,68 @@ public final class ZombieRenderer {
             return CHILLED;
         }
         return Color.WHITE;
+    }
+
+    // ---- carrier aura ---------------------------------------------------------------------------
+    //
+    // A zombie carrying something is worth killing FIRST, and until now nothing on the board said so:
+    // a glowing zombie and a plain one were the same sprite, and the player found out what it was
+    // holding only after it was dead. So a carrier is lit from within, additively, on the same
+    // mechanism the hit flash uses -- one extra draw of the frame already computed, which costs
+    // nothing and cannot get out of step with the pose.
+    //
+    // Additive rather than a tint because a tint has to fight the status colours: a chilled zombie is
+    // already blue and a hypnotised one already purple, and multiplying a second colour over either
+    // produces a third that means neither. Light ADDS on top of whatever the zombie already is.
+
+    // Pulse rate, in cycles per second. Slow enough to read as breathing rather than as a strobe, and
+    // deliberately different from DangerGlow's 2 Hz so the two warnings are not mistaken for the same
+    // thing when a carrier walks into the danger zone.
+    private static final float PULSE_HZ = 1.35f;
+    // The sine never reaches zero: an aura that switches off completely reads as a flicker, and for
+    // half of every cycle the zombie would look ordinary.
+    private static final float PULSE_FLOOR = 0.34f;
+    private static final float PULSE_PEAK = 0.85f;
+
+    // Plant food is the game's own green; the three loot drops wear the colours their icons already
+    // have in the wallet and the shop, so the aura and the thing it promises match.
+    private static final Color AURA_PLANT_FOOD = new Color(0.35f, 1f, 0.30f, 1f);
+    private static final Color AURA_COIN = new Color(1f, 0.82f, 0.25f, 1f);
+    private static final Color AURA_GEM = new Color(0.45f, 0.75f, 1f, 1f);
+    private static final Color AURA_POT = new Color(1f, 0.55f, 0.25f, 1f);
+
+    // Clocked off the renderer's own accumulated time, not off Gdx's wall clock: a paused board must
+    // stop pulsing along with everything else, and the frame delta is already threaded here for the
+    // damage flash.
+    private float auraClock;
+
+    // Advanced once per frame, in sweepFlashes, never inside carrierPulse -- the lane pass runs five
+    // times a frame and would drive the pulse at five times its own speed.
+
+    private float carrierPulse(Zombie zombie) {
+        if (zombie == null || !zombie.carriesSomething()) {
+            return 0f;
+        }
+        float wave = (float) Math.sin(auraClock * PULSE_HZ * 2f * Math.PI) * 0.5f + 0.5f;
+        return PULSE_FLOOR + (PULSE_PEAK - PULSE_FLOOR) * wave;
+    }
+
+    // Plant food wins when a zombie carries both, because it is the one the player can spend right now.
+    private static Color carrierColour(Zombie zombie) {
+        if (zombie.isGlowing()) {
+            return AURA_PLANT_FOOD;
+        }
+        models.entities.collectibles.Collectibles carried = zombie.getCarriedDrop();
+        if (carried == null) {
+            return AURA_PLANT_FOOD;
+        }
+        switch (carried) {
+            case GEM:
+                return AURA_GEM;
+            case POT:
+                return AURA_POT;
+            default:
+                return AURA_COIN;
+        }
     }
 }

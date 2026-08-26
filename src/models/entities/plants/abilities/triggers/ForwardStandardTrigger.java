@@ -6,16 +6,16 @@ import models.game.GameSession;
 import java.util.List;
 
 // Fires when there is something worth shooting further down the plant's own lane: a targetable zombie,
-// or -- for straight-firing plants only -- a grave still standing in the way (see GraveSight).
+// or -- for straight-firing plants only -- a grave still standing in the way (see ObstacleSight).
 public class ForwardStandardTrigger implements TriggerStrategy {
-    private final boolean targetsGraves;
+    private final boolean targetsObstacles;
 
     public ForwardStandardTrigger() {
         this(false);
     }
 
-    public ForwardStandardTrigger(boolean targetsGraves) {
-        this.targetsGraves = targetsGraves;
+    public ForwardStandardTrigger(boolean targetsObstacles) {
+        this.targetsObstacles = targetsObstacles;
     }
 
     @Override
@@ -29,6 +29,6 @@ public class ForwardStandardTrigger implements TriggerStrategy {
                 }
             }
         }
-        return targetsGraves && GraveSight.graveAhead(owner, gameSession, 0.0);
+        return targetsObstacles && ObstacleSight.obstacleAhead(owner, gameSession, 0.0);
     }
 }

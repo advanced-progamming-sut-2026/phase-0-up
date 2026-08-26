@@ -1034,6 +1034,9 @@
   {
     "id": 52,
     "name": "Torchwood",
+    "extraAbilities": [
+      { "abilityType": "WARMTH", "actionInterval": 1.0, "abilityParams": { "rowRadius": 1, "colRadius": 1 } }
+    ],
     "abilityParams": { "element": "FIRE", "damageMultiplier": 2 },
     "category": "MODIFIER",
     "tags": ["FIRE"],

@@ -9,15 +9,15 @@ import java.util.List;
 // firing short-range plant also opens up on a grave once the grave is inside that same reach.
 public class ForwardShortRangeTrigger implements TriggerStrategy {
     private double range;
-    private final boolean targetsGraves;
+    private final boolean targetsObstacles;
 
     public ForwardShortRangeTrigger(double range) {
         this(range, false);
     }
 
-    public ForwardShortRangeTrigger(double range, boolean targetsGraves) {
+    public ForwardShortRangeTrigger(double range, boolean targetsObstacles) {
         this.range = range;
-        this.targetsGraves = targetsGraves;
+        this.targetsObstacles = targetsObstacles;
     }
 
     @Override
@@ -34,6 +34,6 @@ public class ForwardShortRangeTrigger implements TriggerStrategy {
                 }
             }
         }
-        return targetsGraves && GraveSight.graveAhead(owner, gameSession, range);
+        return targetsObstacles && ObstacleSight.obstacleAhead(owner, gameSession, range);
     }
 }

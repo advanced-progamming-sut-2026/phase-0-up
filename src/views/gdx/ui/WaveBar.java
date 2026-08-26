@@ -28,6 +28,15 @@ public final class WaveBar extends Actor {
     private final Assets assets;
     private final UiArt art;
 
+    // How fast the drawn value chases the real one. An exponential ease rather than a fixed speed, so a
+    // small correction settles at once and a big one still takes about a quarter of a second.
+    private static final float GLIDE_RATE = 5f;
+    // Below this the ease is over -- without a floor an exponential approach never actually arrives, and
+    // the head would sit a hair short of the last flag forever.
+    private static final float GLIDE_SNAP = 0.001f;
+
+    // What the model says, and what is currently drawn. They differ only while the bar is catching up.
+    private float target;
     private float progress;
     private int waves;
 
@@ -37,8 +46,26 @@ public final class WaveBar extends Actor {
     }
 
     public void set(float progress, int waves) {
-        this.progress = Math.max(0f, Math.min(1f, progress));
+        this.target = Math.max(0f, Math.min(1f, progress));
         this.waves = waves;
+    }
+
+    // The bar glides to its target instead of being written straight to it.
+    //
+    // The underlying number is already continuous -- GameHud folds in how much of the current wave has
+    // been killed -- but it still steps at one moment: a wave launches at 75% cleared, which hands the
+    // last quarter of that wave's share over in a single frame. Easing absorbs that, and it also gives
+    // the zombie head some momentum, which is most of what makes the meter read as a moving thing
+    // rather than as a number being reprinted.
+    @Override
+    public void act(float delta) {
+        super.act(delta);
+        float gap = target - progress;
+        if (Math.abs(gap) <= GLIDE_SNAP) {
+            progress = target;
+            return;
+        }
+        progress += gap * Math.min(1f, delta * GLIDE_RATE);
     }
 
     @Override

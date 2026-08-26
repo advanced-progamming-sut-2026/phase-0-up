@@ -198,6 +198,9 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
             projectile.setPoison(poisonDps, POISON_DURATION_TICKS);
         }
 
+        aimLobAtObstacle(owner, gameSession, projectile, trajectory,
+                direction == ShootDirection.BACKWARD);
+
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
     }
 

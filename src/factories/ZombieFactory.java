@@ -7,6 +7,10 @@ import models.entities.zombies.Zombie;
 import models.game.EnvironmentType;
 import models.game.GameSession;
 import models.templates.ZombieTemplate;
+import models.entities.collectibles.Collectibles;
+import models.greenhouse.GreenHouse;
+import models.user.Profile;
+import java.util.ArrayList;
 import utils.Constants;
 import utils.registry.ZombieRegistry;
 
@@ -52,6 +56,15 @@ public final class ZombieFactory {
         boolean glowing = template.isCanSpawnPlantFood()
                 && RANDOM.nextDouble() < Constants.GLOWING_ZOMBIE_PROBABILITY;
 
+        // The 10% coin/gem/pot drop, rolled HERE rather than in CombatSystem's death handler.
+        //
+        // Same odds and the same even draw as before; only the moment moved. It had to: a zombie the
+        // board marks as carrying something has to be markable while it is alive, and a die rolled
+        // inside the death handler is unknowable until the zombie is already gone. Sitting beside the
+        // glow roll also means an ability that spawns a zombie mid-level gets the same odds a wave
+        // does, which is the reason the glow roll is here in the first place.
+        Collectibles carried = rollCarriedDrop(gameSession);
+
         Zombie zombie = new Zombie(
                 ID_SEQUENCE.getAndIncrement(),
                 categoryOf(template.getObjclass()),
@@ -68,6 +81,8 @@ public final class ZombieFactory {
                 template.getWavePointCost(),
                 glowing,
                 gameSession);
+
+        zombie.setCarriedDrop(carried);
 
         // Frostbite Caves rule: every zombie here shrugs off the "frozen" effect from ice attacks.
         // Set once at birth so it covers wave spawns and any zombie an ability spawns mid-level.
@@ -126,5 +141,29 @@ public final class ZombieFactory {
             category = category.substring(0, category.length() - "PropertySheet".length());
         }
         return category.isEmpty() ? "Basic" : category;
+    }
+
+    // One in ten zombies walks on carrying something, drawn evenly from coin, gem and pot.
+    //
+    // A pot only joins the draw while the greenhouse has room, exactly as the death-time roll did --
+    // keeping POT in a full greenhouse's draw would swallow a third of every drop and quietly decay the
+    // promised 10% to about 6.7%. The greenhouse can still fill between this roll and the zombie's
+    // death; CombatSystem hands out a coin instead in that case rather than dropping the reward.
+    private static Collectibles rollCarriedDrop(GameSession gameSession) {
+        if (RANDOM.nextDouble() >= Constants.ZOMBIE_DROP_PROBABILITY) {
+            return null;
+        }
+        Profile profile = gameSession == null ? null : gameSession.getPlayer();
+        if (profile == null) {
+            return null;
+        }
+        GreenHouse greenHouse = profile.getMyGreenHouse();
+        List<Collectibles> pool = new ArrayList<>();
+        pool.add(Collectibles.COIN);
+        pool.add(Collectibles.GEM);
+        if (greenHouse != null && !greenHouse.isFull()) {
+            pool.add(Collectibles.POT);
+        }
+        return pool.get(RANDOM.nextInt(pool.size()));
     }
 }

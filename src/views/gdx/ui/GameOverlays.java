@@ -24,6 +24,11 @@ public final class GameOverlays {
     // buttons have to win against a lawn full of moving colour.
     private static final Color DIM = new Color(0f, 0f, 0f, 0.62f);
 
+    private static final float BUTTON_HEIGHT = 56f;
+
+    // Clear of the seed bank, which is drawn behind the dim layer at the top-left.
+    private static final float OBJECTIVE_TOP_PAD = 26f;
+
     private final Assets assets;
     private final Skin skin;
 
@@ -43,8 +48,18 @@ public final class GameOverlays {
 
         objectiveTitle = MenuStyles.label(skin, "", MenuStyles.TITLE);
         objectiveBody = body();
-        objective = panel(objectiveTitle, objectiveBody,
+        questList = new Table();
+        objective = panel(null, questList, objectiveTitle, objectiveBody,
                 button("Let's Rock!", MenuStyles.BUTTON_GREEN, onStart));
+        objectiveExtraCell = extraCell;
+        // The one panel that is not centred.
+        //
+        // It shares the screen with the NPC greeting, which lives at the bottom of the same Stage, and
+        // once the quest list was added to this card the two overlapped -- the speaker's box sat across
+        // "Let's Rock!". Anchoring the card to the top gives each of them its own half, and a title card
+        // above a speaker is the arrangement this moment wants anyway. The pause and result panels have
+        // nothing else on screen and stay in the middle.
+        objective.top().padTop(OBJECTIVE_TOP_PAD);
 
         pause = panel(MenuStyles.label(skin, "Paused", MenuStyles.TITLE),
                 body("P or Space resumes.  Esc drops the held tool."),
@@ -56,8 +71,13 @@ public final class GameOverlays {
         outcomeBody = body();
         outcomeArt = gameOverArt();
         scorecard = new Table();
+        // Built before the panel so the loop that lays the buttons out can recognise it and keep its
+        // cell -- a win collapses the row away, exactly as it collapses the brain and the scorecard.
+        retryButton = button("Try Again", MenuStyles.BUTTON_BROWN, onRestart);
         outcome = panel(outcomeArt, scorecard, outcomeTitle, outcomeBody,
+                retryButton,
                 button("Continue", MenuStyles.BUTTON_GREEN, onContinue));
+        scoreCell = extraCell;
 
         for (Table overlay : new Table[] {objective, pause, outcome}) {
             overlay.setVisible(false);
@@ -77,6 +97,24 @@ public final class GameOverlays {
 
     // The cell holding it, so a win can collapse it to nothing.
     private com.badlogic.gdx.scenes.scene2d.ui.Cell<?> artCell;
+
+    // Where panel() leaves the cell of whatever `extra` table it was given, for the caller to keep.
+    //
+    // A scratch field rather than a return value because panel() already returns the layer, and two of
+    // the three panels now pass an `extra`: the outcome's scorecard and the objective's quest list.
+    // Assigning straight to `scoreCell` inside panel() was fine while only one caller did, and would
+    // now have the objective panel quietly steal the outcome panel's cell.
+    private com.badlogic.gdx.scenes.scene2d.ui.Cell<?> extraCell;
+
+    // "Try Again" on the result panel, and its cell. Shown only on a loss: a win's next move is
+    // Continue, and offering to replay a level that was just beaten reads as though it was not.
+    private final TextButton retryButton;
+    private com.badlogic.gdx.scenes.scene2d.ui.Cell<?> retryCell;
+
+    // What the level is asking of the player beyond surviving: the quests still outstanding. Empty and
+    // collapsed on a profile that has finished them all.
+    private final Table questList;
+    private com.badlogic.gdx.scenes.scene2d.ui.Cell<?> objectiveExtraCell;
 
     // The scoring game's end-of-level breakdown, and the cell that collapses it away on every other
     // level. Built empty and filled by showOutcome, because what it says is only known when the run
@@ -137,12 +175,18 @@ public final class GameOverlays {
         // Its cell is kept for the same reason the art's is: a hidden actor still holds its cell, and a
         // collapsed one is what stops an ordinary win panel growing a band of empty frame. See
         // scene2d-nested-cell-trap -- this cell lives in the inner box, not in the returned layer.
+        extraCell = null;
         if (extra != null) {
-            scoreCell = box.add(extra).width(440f).height(0f);
+            extraCell = box.add(extra).width(440f).height(0f);
             box.row();
         }
         for (TextButton button : buttons) {
-            box.add(button).width(280f).height(56f).padBottom(8f).row();
+            com.badlogic.gdx.scenes.scene2d.ui.Cell<?> cell =
+                    box.add(button).width(280f).height(BUTTON_HEIGHT).padBottom(8f);
+            if (button == retryButton) {
+                retryCell = cell;
+            }
+            box.row();
         }
 
         layer.add(box);
@@ -198,15 +242,95 @@ public final class GameOverlays {
         return button;
     }
 
+    // How many outstanding quests the card lists before it stops and counts the rest.
+    //
+    // Three, because this panel is read in the two seconds before a level starts and a wall of them is
+    // read as decoration. The Travel Log is where the full list lives; this is a reminder of what is
+    // worth going for THIS match.
+    private static final int QUESTS_SHOWN = 3;
+
+    private static final Color QUEST_HEADING = new Color(1f, 0.86f, 0.32f, 1f);
+    private static final Color QUEST_DETAIL = new Color(0.80f, 0.78f, 0.74f, 1f);
+
     // What this level is asking of the player, before the first zombie arrives.
     public void showObjective(String levelName, String goal) {
+        showObjective(levelName, goal, java.util.List.of(), null);
+    }
+
+    // The same card, plus the quests still outstanding.
+    //
+    // Reads Quest and Profile directly, on the same footing as showOutcome reading MeowPointManager: a
+    // view may look at the model, and building the rows here rather than handing in pre-formatted
+    // strings keeps the panel's layout in the class that owns the panel.
+    public void showObjective(String levelName, String goal, java.util.List<models.quests.Quest> open,
+                              models.user.Profile profile) {
         objectiveTitle.setText(levelName);
         objectiveBody.setText(goal);
+        buildQuestList(open, profile);
+        if (objectiveExtraCell != null) {
+            boolean any = questList.getChildren().size > 0;
+            objectiveExtraCell.height(any ? questList.getPrefHeight() : 0f);
+            objectiveExtraCell.padBottom(any ? 16f : 0f);
+        }
+        objective.invalidateHierarchy();
         objective.setVisible(true);
         // In front of anything added to this Stage AFTER these three were built -- which is every score
         // popup, since they are created as they happen. Scene2D draws in child order, so without this a
         // Meow Point award floats up THROUGH the panel that is reporting it.
         objective.toFront();
+    }
+
+    // The outstanding quests, most important first -- the list arrives already ranked, so this only
+    // takes the top of it and counts what it left behind.
+    //
+    // A quest's own progress line comes from QuestProgress.describe(), the same source the Travel Log's
+    // bars and tick boxes read, so the two cannot tell the player different numbers.
+    private void buildQuestList(java.util.List<models.quests.Quest> open, models.user.Profile profile) {
+        questList.clearChildren();
+        if (open == null || open.isEmpty()) {
+            return;
+        }
+        Label heading = MenuStyles.label(skin, "Still to do", MenuStyles.HEADING);
+        heading.setFontScale(0.7f);
+        heading.setColor(QUEST_HEADING);
+        heading.setAlignment(Align.left);
+        questList.add(heading).left().growX().padBottom(4f).row();
+
+        int shown = Math.min(QUESTS_SHOWN, open.size());
+        for (int i = 0; i < shown; i++) {
+            questList.add(questRow(open.get(i), profile)).left().growX().row();
+        }
+        if (open.size() > shown) {
+            Label more = MenuStyles.label(skin,
+                    "+" + (open.size() - shown) + " more in the Travel Log.", MenuStyles.TEXT);
+            more.setFontScale(0.72f);
+            more.setColor(QUEST_DETAIL);
+            more.setAlignment(Align.left);
+            questList.add(more).left().growX().padTop(2f).row();
+        }
+    }
+
+    // One line: the quest's name, and how far along it is where that is a number worth printing. A
+    // single-level quest has no running total -- see TravelLogScreen.goalRow -- so it simply gets its
+    // name, which on this card is the whole of what the player needs.
+    private Table questRow(models.quests.Quest quest, models.user.Profile profile) {
+        Table row = new Table();
+        Label name = MenuStyles.label(skin, "- " + quest.getName(), MenuStyles.TEXT);
+        name.setFontScale(0.8f);
+        name.setAlignment(Align.left);
+        row.add(name).left().expandX();
+
+        models.quests.QuestProgress progress =
+                profile == null ? null : quest.getProgress(profile);
+        if (progress != null && progress.isMeasurable() && progress.crossLevel()) {
+            Label count = MenuStyles.label(skin,
+                    Math.min(progress.current(), progress.target()) + " / " + progress.target(),
+                    MenuStyles.TEXT);
+            count.setFontScale(0.8f);
+            count.setColor(QUEST_DETAIL);
+            row.add(count).right().padLeft(12f);
+        }
+        return row;
     }
 
     public boolean isObjectiveVisible() {
@@ -281,6 +405,13 @@ public final class GameOverlays {
     public void showOutcome(boolean won, String message) {
         outcomeTitle.setText(won ? "Level Complete!" : "The Zombies Ate Your Brains");
         outcomeBody.setText(message);
+        // Losing offers the level back. Same restart the pause menu runs -- a fresh session on the same
+        // level with the same loadout -- so a failed attempt costs a click rather than a trip out to the
+        // map and back through seed selection.
+        if (retryCell != null) {
+            retryButton.setVisible(!won);
+            retryCell.height(won ? 0f : BUTTON_HEIGHT).padBottom(won ? 0f : 8f);
+        }
         boolean scored = scorecard.getChildren().size > 0;
         if (scoreCell != null) {
             // Sized to whatever the card came out as -- the number of rows depends on how many rules

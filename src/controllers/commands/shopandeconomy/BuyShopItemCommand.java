@@ -45,21 +45,32 @@ public class BuyShopItemCommand implements Command {
         DatabaseManager.getInstance().saveAll();
     }
 
-    // The daily offer: 1600 coins for ten packets of a random already-unlocked plant.
+    // The daily offer: 1600 coins for ten packets of a random already-unlocked plant, once a day.
+    //
+    // "Once a day" was not enforced at all before. The flag it was recorded in lived on the Shop's
+    // DailyOffer, which is rebuilt with every AppSession and never saved -- so it forgot the purchase on
+    // exit -- and nothing consulted it on the way in either, so `shop buy -i 5` could be repeated until
+    // the coins ran out. Both halves are now the Profile's, which is persisted and rolls itself over on
+    // the date.
     private boolean buyDailyOffer() {
         DailyOffer found = shop.getDailyOffer();
-        if(profile.getCoins() < 1600){
+        if(profile.isHasBoughtDailyOfferToday()){
+            renderer.successOfBuyingAProduct(new Result(false,
+                    "You have already snapped up today's deal. Come back tomorrow!"));
+            return false;
+        }
+        if(profile.getCoins() < found.getDiscountPrice()){
             renderer.successOfBuyingAProduct(new Result(false,
                     "Not enough coins for that. Go farm a few more!"));
             return false;
         }
         Random rand = new Random();
-        found.setPurchased(true);
         int random = rand.nextInt(profile.getUnlockedPlants().size());
         String name = profile.getUnlockedPlants().get(random);
-        buyARandomSeedPackInDaily(name);
+        buyARandomSeedPackInDaily(name, found.getDiscountPrice(), found.getPackets());
+        profile.markDailyOfferBoughtToday();
         renderer.successOfBuyingAProduct(new Result(true,
-                String.format("10 seed packets for %s have been bought!", name)));
+                String.format("%d seed packets for %s have been bought!", found.getPackets(), name)));
         return true;
     }
 
@@ -103,7 +114,18 @@ public class BuyShopItemCommand implements Command {
                         "the capacity of your greenhouse is full!"));
                 return false;
             }
-            for(int i = 0 ; i < count; i++) buyAPot();
+            // Checked per pot, not once before the loop. isFull() answered for the greenhouse as it
+            // stood BEFORE any of them were bought, so "shop buy -i 0 -n 5" with two slots left charged
+            // for all five, opened two, and then threw an NPE out of buyAPot when unlockNextPot returned
+            // null on the third -- taking the save with it, since execute() never reached saveAll().
+            for(int i = 0 ; i < count; i++) {
+                if(profile.getMyGreenHouse().isFull()) {
+                    renderer.successOfBuyingAProduct(new Result(false,
+                            String.format("Only %d pot(s) would fit -- the greenhouse is full now.", i)));
+                    break;
+                }
+                buyAPot();
+            }
         } else if(itemId == 1){
             if(count + profile.getPlantFoodCount() > 3 ){
                 renderer.successOfBuyingAProduct(new Result(false,
@@ -136,9 +158,12 @@ public class BuyShopItemCommand implements Command {
         return true;
     }
 
-    private void buyARandomSeedPackInDaily(String name) {
-        profile.spendCoins(1600);
-        profile.addSeedPackets(name, 10);
+    // Price and count passed in rather than written out again: the 1600 here and the 1600 the
+    // affordability check used were two copies of the offer's own discountPrice, and the 10 was a third
+    // copy of a number the store screen also had to advertise. All three now come off the DailyOffer.
+    private void buyARandomSeedPackInDaily(String name, int price, int packets) {
+        profile.spendCoins(price);
+        profile.addSeedPackets(name, packets);
     }
 
     private boolean checkForContainingTheName() {

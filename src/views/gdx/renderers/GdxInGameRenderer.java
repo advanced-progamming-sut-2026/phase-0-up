@@ -68,6 +68,6 @@ public final class GdxInGameRenderer implements InGameRenderer {
             // it exists to carry.
             backlog.add(result.message());
         }
-        toasts.show(result);
+        toasts.showInGame(result);
     }
 }

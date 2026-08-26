@@ -78,10 +78,32 @@ public class FrozenTerrain extends Terrain{
         return isMelted;
     }
 
+    // What this block is holding, for a view that has to decide who draws it.
+    //
+    // The block is drawn by whatever is INSIDE it -- PlantRenderer and ZombieRenderer both wrap a frozen
+    // entity in one, because the model can freeze an entity without creating any terrain at all (three
+    // chills, an Iceberg Lettuce) and those cases have no FrozenTerrain to draw from. TerrainRenderer
+    // falls back to drawing the block itself when there is nobody left to do it: an empty authored
+    // obstacle, or one whose occupant has died inside it and would otherwise leave an invisible wall.
+    public Plant getInnerPlant() {
+        return innerPlant;
+    }
+
+    public Zombie getInnerZombie() {
+        return innerZombie;
+    }
+
     // What this block is holding: "zombie", "plant", or null for a plain authored obstacle. The
     // terminal only ever needed the symbol, but the game ships a DIFFERENT ice block for a caged plant
     // and a caged zombie -- they are different shapes -- so a view that draws the block has to ask.
     public String getInnerType() {
         return type;
+    }
+
+    // What is left of the block, for a view that flashes it when it is hit. A block takes thousands of
+    // points across a level and has no damage clips of its own, so without this a shot into one
+    // registers as nothing at all -- the same gap the graves had before T8.4.
+    public int getHp() {
+        return hp;
     }
 }

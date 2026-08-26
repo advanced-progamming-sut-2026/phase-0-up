@@ -29,8 +29,36 @@ public final class PlantRenderer {
     private static final float PLANT_FOOD_SECONDS = 2.0f;
     private static final float PLANT_FOOD_MAX_SECONDS = 3.5f;
 
-    // Frozen plants are encased in ice. Phase 1 tints rather than drawing an ice block; the block
-    // itself is Frostbite Caves work (T7.7). Three steps, matching Plant.getChillLevel()'s 1..3.
+    // Chill, in the three stages the model actually tracks -- and the game ships art for all three,
+    // none of which was being used.
+    //
+    //   chill 1   FROSTBITE_CHILL_PLANT / chill_stage1   frost creeping over the plant
+    //   chill 2   FROSTBITE_CHILL_PLANT / chill_stage2   more of it, and higher up
+    //   chill 3   FROSTBITE_ICE_BLOCK_PLANT              frozen solid, inside the two-part block
+    //
+    // The tint below stays underneath all three. It is what makes the PLANT look cold rather than the
+    // frost look stuck on, but it was never enough on its own: three stages expressed only as three
+    // shades of blue read as "that plant is slightly bluer than it was", which is the report this came
+    // from.
+    //
+    // Stage 3 borrows the same block TerrainRenderer draws for an authored '&' obstacle, in the same
+    // two passes -- the rear half behind the plant, the front half over it at partial alpha -- so a
+    // plant frozen by chill and a plant caged by the level look like the same thing, because they are.
+    // Nothing drew it before: Plant.freezePlant only sets a flag and adds no FrozenTerrain to the cell,
+    // so the block existed in the rules and nowhere on screen.
+    private static final String CHILL_SPRITE = "FROSTBITE_CHILL_PLANT";
+    private static final String[] CHILL_STAGE_CLIPS = {"chill_stage1", "chill_stage2"};
+    private static final String ICE_BLOCK_FRONT = "FROSTBITE_ICE_BLOCK_PLANT";
+    private static final String ICE_BLOCK_BEHIND = "FROSTBITE_ICE_BLOCK_PLANT_BEHIND";
+    private static final String[] ICE_BLOCK_FRONT_CLIPS = {"freeze_idle", "idle"};
+    private static final String[] ICE_BLOCK_REAR_CLIPS = {"idle"};
+
+    // How much of the plant still reads through the front half of the block. The same 0.45 the terrain
+    // blocks use, and for the same reason: Frostbite is painted in near-white ice and the block art is
+    // near-white too.
+    private static final float ICE_FRONT_ALPHA = 0.45f;
+
+    // The tint under all of it. Three steps, matching Plant.getChillLevel()'s 1..3.
     private static final Color[] CHILL_TINT = {
             Color.WHITE,
             new Color(0.80f, 0.92f, 1f, 1f),
@@ -127,6 +155,7 @@ public final class PlantRenderer {
                 idlePhase.remove(plant);
                 idleVariant.remove(plant);
                 lastStrike.remove(plant);
+                frostKeys.remove(plant);
             }
             return;
         }
@@ -159,6 +188,10 @@ public final class PlantRenderer {
         float cx = lawn.centerX(col);
         float fy = footY(row);
 
+        // Rear half of the ice block first, so a frozen plant sits INSIDE it. Drawn before the tint is
+        // applied to the plant, and at its own colour.
+        drawIceBehind(batch, plant, cx, fy, delta);
+
         batch.setColor(tint);
         // Plants face right, toward the oncoming horde. The visibility map is what actually cracks a
         // Wall-nut's shell -- the damage clips only change its face.
@@ -172,9 +205,118 @@ public final class PlantRenderer {
             drawOctopus(batch, plant, cx, fy, delta);
         }
 
+        // Frost over the top: stage 1 and 2 creeping over the plant, or the front half of the block.
+        drawFrostOver(batch, plant, cx, fy, delta);
+        flashIceBlock(batch, plant, cx, fy, delta);
+
         batch.setColor(previous);
     }
 
+
+    // ---- chill and ice --------------------------------------------------------------------------
+
+    // The plant's own ice block lighting up when it is shot.
+    //
+    // A separate HP pool from the terrain blocks TerrainRenderer flashes, and a separate flash instance
+    // from the plant's own: Projectile sends its damage into Plant.damageIceBlock while the plant
+    // underneath is untouched, so flashing the plant would credit the hit to the wrong thing -- the same
+    // split the octopus needed, for the same reason.
+    private void flashIceBlock(Batch batch, Plant plant, float cx, float fy, float delta) {
+        if (!drawnAsFrozen(plant) || plant.getIceBlockHp() <= 0) {
+            return;
+        }
+        float flash = iceFlashes.intensity(plant, plant.getIceBlockHp(), delta);
+        if (flash <= 0f) {
+            return;
+        }
+        EntitySprite sprite = sprites.get(ICE_BLOCK_FRONT);
+        if (sprite == null || !sprite.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(sprite, ICE_BLOCK_FRONT_CLIPS);
+        float stateTime = ClipMap.sample(sprite, clip,
+                clocks.advance(frostKey(ICE_BLOCK_FRONT, plant), clip, 0f));
+
+        float previous = batch.getPackedColor();
+        SpritePlacer.beginAdditive(batch);
+        batch.setColor(flash, flash, flash, 1f);
+        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, null);
+        SpritePlacer.endAdditive(batch);
+        batch.setPackedColor(previous);
+    }
+
+    private final DamageFlash iceFlashes = new DamageFlash();
+
+    // The chill stage to DRAW. Normally the plant's own, but -Dpvz.forceChill pins it so all three
+    // stages can be put on screen at once -- see DebugFlags.FORCE_CHILL for why that is needed.
+    private static int chillStageOf(Plant plant) {
+        int forced = views.gdx.core.DebugFlags.FORCE_CHILL;
+        return forced >= 0 ? forced : plant.getChillLevel();
+    }
+
+    private static boolean drawnAsFrozen(Plant plant) {
+        return chillStageOf(plant) >= 3;
+    }
+
+    // The rear half of the block, drawn BEFORE the plant so the plant is inside the ice rather than
+    // behind a sticker. Same two-pass trick TerrainRenderer uses for an authored '&'.
+    private void drawIceBehind(Batch batch, Plant plant, float cx, float fy, float delta) {
+        if (!drawnAsFrozen(plant)) {
+            return;
+        }
+        drawFrostAt(batch, plant, ICE_BLOCK_BEHIND, ICE_BLOCK_REAR_CLIPS, cx, fy, delta, 1f);
+    }
+
+    // Whatever goes OVER the plant: the frost of stages 1 and 2, or the front half of the block at 3.
+    private void drawFrostOver(Batch batch, Plant plant, float cx, float fy, float delta) {
+        if (drawnAsFrozen(plant)) {
+            drawFrostAt(batch, plant, ICE_BLOCK_FRONT, ICE_BLOCK_FRONT_CLIPS, cx, fy, delta,
+                    ICE_FRONT_ALPHA);
+            return;
+        }
+        int chill = chillStageOf(plant);
+        if (chill <= 0) {
+            return;
+        }
+        // Clamped rather than indexed blindly: getChillLevel returns 3 only when isFrozen, which is
+        // handled above, but a retune of the freeze threshold must not walk off the end of this array.
+        String clip = CHILL_STAGE_CLIPS[Math.min(chill, CHILL_STAGE_CLIPS.length) - 1];
+        drawFrostAt(batch, plant, CHILL_SPRITE, new String[] {clip}, cx, fy, delta, 1f);
+    }
+
+    // Both halves come through here. Drawn at the plant's own foot line and at the art's authored size,
+    // exactly as TerrainRenderer draws a terrain block, so a chill-frozen plant and a caged one line up.
+    //
+    // Clocked on a key of this renderer's own rather than on the plant: the plant's clock is already
+    // tracking its body clip, and AnimationClocks resets a clock whenever its clip changes, so sharing
+    // the key would restart the plant's animation every frame.
+    private void drawFrostAt(Batch batch, Plant plant, String spriteName, String[] preferredClips,
+                             float cx, float fy, float delta, float alpha) {
+        EntitySprite sprite = sprites.get(spriteName);
+        if (sprite == null || !sprite.isReady()) {
+            return;   // the tint has already been applied; the plant still reads as cold
+        }
+        String clip = ClipMap.firstAvailable(sprite, preferredClips);
+        float stateTime = ClipMap.sample(sprite, clip,
+                clocks.advance(frostKey(spriteName, plant), clip, delta));
+
+        float previous = batch.getPackedColor();
+        batch.setColor(1f, 1f, 1f, alpha);
+        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, null);
+        batch.setPackedColor(previous);
+    }
+
+    // One stable key per (art, plant) pair. Interned for the same reason TerrainRenderer interns its
+    // tile keys: AnimationClocks is keyed by identity, so a string built fresh each frame is a new
+    // clock each frame and the frost never animates.
+    private final java.util.Map<Plant, java.util.Map<String, String>> frostKeys =
+            new java.util.IdentityHashMap<>();
+
+    private Object frostKey(String spriteName, Plant plant) {
+        return frostKeys.computeIfAbsent(plant, p -> new java.util.HashMap<>())
+                .computeIfAbsent(spriteName, name -> name + "#"
+                        + Integer.toHexString(System.identityHashCode(plant)));
+    }
     // Hit flash: the same frame drawn again, additively, so the plant lights up white. Drawn after the
     // sprite rather than instead of it, so the art stays readable underneath.
     private void drawHitFlash(Batch batch, EntitySprite sprite, Plant plant, String clip,
@@ -253,6 +395,7 @@ public final class PlantRenderer {
     void sweepFlashes(float delta) {
         flashes.sweep();
         octopusFlashes.sweep();
+        iceFlashes.sweep();
         octopusClock += delta;
     }
 
@@ -571,7 +714,7 @@ public final class PlantRenderer {
     private static Color tintFor(Plant plant) {
         // No octopus case: the octopus itself is drawn on top now, and tinting the plant purple as well
         // would say the same thing twice in two different visual languages.
-        int chill = plant.getChillLevel();
+        int chill = chillStageOf(plant);
         if (chill > 0) {
             return CHILL_TINT[Math.min(chill, CHILL_TINT.length - 1)];
         }

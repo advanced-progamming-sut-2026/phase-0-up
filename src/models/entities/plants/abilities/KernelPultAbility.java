@@ -57,6 +57,8 @@ public class KernelPultAbility extends PlantAbility implements VariantAction {
                 elementToShoot,
                 Trajectory.LOBBED);
 
+        aimLobAtObstacle(owner, gameSession, projectile, Trajectory.LOBBED, false);
+
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
     }
 

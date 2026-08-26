@@ -17,12 +17,15 @@ public class Shop {
         permanentItems.add(pot); permanentItems.add(plantFood);
         permanentItems.add(randomSeedPacket); permanentItems.add(selectiveSeedPacket);
         permanentItems.add(exchange);
-        dailyOffer = new DailyOffer(5 , 0 , "random" , 2000 , 1600 , false);
+        dailyOffer = new DailyOffer(5 , 0 , "random" , 2000 , 1600 , 10);
     }
 
+    // Rotates the offer's CONTENT. Nothing calls it, and it is not what resets the deal each day --
+    // whether today's has been taken lives on the Profile, which rolls itself over on the date. See
+    // DailyOffer.
     public void updateDailyOOffer(){
         int i = dailyOffer.getDate();
-        dailyOffer = new DailyOffer(5 , i+1 , "random" , 2000 , 1600 , false);
+        dailyOffer = new DailyOffer(5 , i+1 , "random" , 2000 , 1600 , 10);
     }
     public String showPermanentItems(){
         StringBuilder sb = new StringBuilder();
@@ -35,14 +38,20 @@ public class Shop {
         }
         return sb.toString();
     }
-    public String showDailyOffer(){
+    // `boughtToday` comes from the Profile, because that is where it is kept and persisted -- the offer
+    // itself is the same for everyone, only whether it has been taken is per player.
+    public String showDailyOffer(boolean boughtToday){
         StringBuilder sb = new StringBuilder();
         sb.append("========= DAILY OFFER =========\n");
         DailyOffer s = dailyOffer;
             sb.append("ID : ").append(s.getId()).append("\n");
+            // What you actually get. The listing used to quote two prices and a boolean and never once
+            // say what was on offer.
+            sb.append("Offer : ").append(s.getPackets())
+                    .append(" seed packets for a plant you have already unlocked\n");
             sb.append("Base Price : ").append(s.getBasePrice()).append(" Coins\n");
             sb.append("Discount Price : ").append(s.getDiscountPrice()).append(" Coins\n");
-            sb.append("Is purchased : ").append(s.isPurchased()).append("\n");
+            sb.append("Is purchased : ").append(boughtToday).append("\n");
         return sb.toString();
     }
 

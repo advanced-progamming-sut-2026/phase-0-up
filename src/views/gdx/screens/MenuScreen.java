@@ -122,6 +122,7 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
         slider.addActor(root);
         layers.add(slider);
         stage.addActor(layers);
+        mountCurrency();
 
         scatterSparkles();
     }
@@ -275,6 +276,56 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
 
     // Fill the root table. Called once, on first show() rather than in the constructor, so a subclass
     // is fully initialised before it is asked to lay itself out.
+    // Coins and gems, top-right, on every menu.
+    //
+    // The spec wants both visible "in all menus, even during gameplay", and mounting it here is what
+    // makes that true by construction rather than by each new screen remembering. Added to the STAGE
+    // rather than into `layers`, so the entrance slide -- which moves `root` -- does not drag the
+    // readout across the screen with it.
+    //
+    // Three screens lay a CurrencyHUD out inside their own header instead, where it reads better beside
+    // the prices it explains; they say so and this stands down rather than drawing a second one.
+    private views.gdx.ui.CurrencyHUD currency;
+
+    private void mountCurrency() {
+        if (showsOwnCurrency()) {
+            return;
+        }
+        currency = new views.gdx.ui.CurrencyHUD(skin, debugCheat("coin"), debugCheat("gem"));
+        Table holder = new Table();
+        holder.setFillParent(true);
+        holder.top().right().pad(14f, 0f, 0f, 18f);
+        holder.add(currency);
+        stage.addActor(holder);
+    }
+
+    // Screens that place their own, next to the prices they explain.
+    protected boolean showsOwnCurrency() {
+        return false;
+    }
+
+    // The debug "+", or null when Debug Mode is off -- which is what makes the button not exist rather
+    // than exist and refuse.
+    //
+    // Constructs CheatAddCommand directly instead of posting "menu cheat add N coin". That string is a
+    // PLAY_MENU command and this readout is on every menu, so the router would refuse it from all but
+    // one of them. Same precedent as SeedSelectionScreen's Upgrade button: the rule still lives in the
+    // Command, only the route in is different.
+    protected java.util.function.IntConsumer debugCheat(String currency) {
+        models.user.User user = context.appSession().getCurrentUser();
+        if (user == null || user.getProfile() == null || !user.getProfile().isDebugMode()) {
+            return null;
+        }
+        return amount -> {
+            models.user.User now = context.appSession().getCurrentUser();
+            if (now == null || now.getProfile() == null) {
+                return;
+            }
+            new controllers.commands.playmenu.CheatAddCommand(currency, amount, now.getProfile(),
+                    context.renderers().playMenu()).execute();
+        };
+    }
+
     protected abstract void build(Table root);
 
     // The track this screen would like, if a file for it exists. Defaults to the shared menu one, so a
@@ -287,6 +338,16 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
     // Called every frame before drawing, for screens whose contents depend on live model state (a
     // badge count, a wallet balance). Most screens do not need it.
     protected void refresh() {
+    }
+
+    // Called by show()/render for the shared readout, so a screen that never overrides refresh() still
+    // shows a live balance.
+    private void refreshCurrency() {
+        if (currency == null) {
+            return;
+        }
+        models.user.User user = context.appSession().getCurrentUser();
+        currency.refresh(user == null ? null : user.getProfile());
     }
 
     // What "back" means here. The default runs the same "exit menu" the terminal does, which is what
@@ -331,6 +392,7 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
     @Override
     public void render(float delta) {
         refresh();
+        refreshCurrency();
         runHarness();
         stage.act(delta);
         stage.draw();
@@ -348,16 +410,33 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
     // inherit them, not where the last bug happened to be.
     private void runHarness() {
         frames++;
-        if (frames != HARNESS_FRAME) {
-            return;
-        }
-        if (views.gdx.core.DebugFlags.BACK_CHECK) {
+        if (frames == HARNESS_FRAME && views.gdx.core.DebugFlags.BACK_CHECK) {
             pressBack();
         }
-        String label = views.gdx.core.DebugFlags.CLICK_LABEL;
-        if (!label.isEmpty()) {
-            pressButton(label);
+        runClickChain();
+    }
+
+    // How long to leave between the presses of a chain. Long enough for the dialog a press opens to
+    // finish its entrance and start taking input.
+    private static final int CLICK_GAP = 12;
+
+    // -Dpvz.click=A>B>C: presses each label in turn, twelve frames apart.
+    //
+    // One press was not enough for anything that opens a dialog, which this flag's own comment names as
+    // the case it exists for -- the store's Buy raises a confirmation, and what the purchase then does
+    // to the card is invisible until somebody presses "Buy it" as well. A chain is the general form and
+    // costs one split.
+    private void runClickChain() {
+        String chain = views.gdx.core.DebugFlags.CLICK_LABEL;
+        if (chain.isEmpty()) {
+            return;
         }
+        String[] labels = chain.split("\\s*>\\s*");
+        int step = (frames - HARNESS_FRAME) / CLICK_GAP;
+        if ((frames - HARNESS_FRAME) % CLICK_GAP != 0 || step < 0 || step >= labels.length) {
+            return;
+        }
+        pressButton(labels[step]);
     }
 
     // -Dpvz.backCheck=1: presses Escape, and says where that left the session.

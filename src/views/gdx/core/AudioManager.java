@@ -118,6 +118,12 @@ public final class AudioManager implements Disposable {
         if (current != null) {
             current.setVolume(master * MUSIC_MIX);
         }
+        if (DebugFlags.AUDIO_CHECK) {
+            Gdx.app.log("AudioManager", "volume -> " + getVolume() + "% (music "
+                    + Math.round(master * MUSIC_MIX * 100f) + "%, sfx "
+                    + Math.round(master * SFX_MIX * 100f) + "%)"
+                    + (current == null ? " -- nothing playing" : " on " + currentName));
+        }
     }
 
     public int getVolume() {
@@ -208,6 +214,10 @@ public final class AudioManager implements Disposable {
             }
             Music music = music(name);
             if (music != null) {
+                if (DebugFlags.AUDIO_CHECK) {
+                    Gdx.app.log("AudioManager", "music " + (currentName == null ? "(silence)" : currentName)
+                            + " -> " + name);
+                }
                 stopMusic();
                 currentName = name;
                 current = music;
@@ -217,8 +227,14 @@ public final class AudioManager implements Disposable {
                 return;
             }
         }
-        // Nothing in the chain exists. Remembered as the last candidate so the whole chain is not
-        // re-probed on the next frame; music() caches the misses too.
+        // Nothing in the chain exists, so this screen has no track -- and whatever was playing before
+        // it belongs to a screen the player has left. Stopping is the honest answer: leaving it running
+        // means the menu theme carries on over a lawn, which is indistinguishable from the level having
+        // no music of its own. Today every world has a file, so this is the safety net rather than the
+        // common path; it is exactly the case a new world or a stripped-down assets/audio would hit.
+        stopMusic();
+        // Remembered as the last candidate so the whole chain is not re-probed on the next frame;
+        // music() caches the misses too.
         currentName = names[names.length - 1];
     }
 

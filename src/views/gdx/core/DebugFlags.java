@@ -46,9 +46,44 @@ public final class DebugFlags {
     // input path, which no unit test can reach because it needs a live viewport.
     public static final boolean INPUT_CHECK = flag("pvz.inputCheck");
 
+    // -Dpvz.spawnerCheck=<alias>,<row> -- opens the debug zombie spawner, picks that pair in its two
+    // SelectBoxes and fires its Spawn button, then reports the lane's zombie count before and after.
+    //
+    // The window is hidden until a key opens it and its Spawn is a TextButton inside a Window, so
+    // neither -Dpvz.click (which is a MenuScreen flag, and this is not a MenuScreen) nor -Dpvz.run
+    // (which posts commands, not gestures) can reach it. -Dpvz.spawn puts zombies on the lawn through
+    // the same command, but from the harness rather than from the control -- so it proves the command
+    // works and says nothing about whether the window is wired to it.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.skipIntro=1 -Dpvz.spawnerCheck=ZombieGargantuar,3
+    public static final String SPAWNER_CHECK = text("pvz.spawnerCheck");
+
+    // -Dpvz.pickupCheck=1 -- puts one carrier of each kind on the lawn so all four auras are on screen
+    // at once, then raises one flight of each so the icons, the counter bounce and the floating text
+    // are in the same frame.
+    //
+    // Needed because neither half is reachable in a run short enough to screenshot: a carrier is a 5%
+    // (plant food) or 10% (loot) roll, so a board with one of each is minutes of play away, and the
+    // flight only fires on the death of one. -Dpvz.spawn puts named zombies on the lawn but cannot say
+    // what they are carrying, which is the whole subject here.
+    public static final boolean PICKUP_CHECK = flag("pvz.pickupCheck");
+
     // Pins every plant to one damage stage (1..3), so a Wall-nut's cracked shells can be looked at
     // without waiting forty seconds for zombies to chew through 4000 HP. -1 leaves health in charge.
     public static final int FORCE_DAMAGE_STAGE = number("pvz.forceDamage");
+
+    // Pins every plant's DRAWN chill stage (1..3), so all three can be looked at at once. -1 is off.
+    //
+    // Same instrument as FORCE_DAMAGE_STAGE and for the same reason. Chill arrives from a freezing wind
+    // that picks one or two rows at random per wave and needs THREE hits on the same row to reach stage
+    // 3, so getting a plant to stage 1 and holding it there long enough to screenshot is a matter of
+    // luck across several minutes of play -- and stages 1 and 2 are the two that had no art at all.
+    //
+    // View-only: the plant is not actually chilled, it is only drawn as though it were, so this cannot
+    // affect the model or the save.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.devChapter=2 -Dpvz.forceChill=2 -Dpvz.skipIntro=1
+    public static final int FORCE_CHILL = number("pvz.forceChill");
 
     // Clicks a world card on the Adventure screen a second after it opens, and reports what every card
     // did. Same reason as HOVER_CHECK: a screenshot run has no mouse, and "picking a world animates"
@@ -76,7 +111,12 @@ public final class DebugFlags {
     // confirmation dialog, a filtered list, a detail page -- is invisible to a screenshot run
     // otherwise. Matched case-insensitively against the button's own text.
     //
+    // Several labels separated by ">" are pressed in turn, twelve frames apart, which is what it takes
+    // to get PAST a dialog rather than merely to it: the store's Buy raises a confirmation, and what the
+    // purchase does to the card behind it cannot be seen until "Buy it" is pressed as well.
+    //
     //   gradlew runGui -Dpvz.menu=shop -Dpvz.click=Buy -Dpvz.smokeFrames=45
+    //   gradlew runGui -Dpvz.menu=shop "-Dpvz.click=Buy Deal>Buy it" -Dpvz.smokeFrames=70
     public static final String CLICK_LABEL = text("pvz.click");
 
     // Logs the foot-planting curve for the first zombie drawn each frame: how far through its walk cycle

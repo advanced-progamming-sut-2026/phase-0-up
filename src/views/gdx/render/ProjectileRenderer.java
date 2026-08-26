@@ -237,7 +237,12 @@ public final class ProjectileRenderer {
         float x = lawn.worldX(muzzleAdjusted(projectile, carried));
 
         if (projectile.getTrajectory() == Trajectory.LOBBED) {
-            y += arcHeight(projectile, modelX);
+            // The INTERPOLATED x, not the model's. x was already being smoothed to 60 fps while the
+            // height was recomputed from a position that only changes ten times a second, so the shot
+            // slid horizontally and climbed in six visible steps -- the two halves of one parabola
+            // running at different rates. This is what made the arc look jerky; the arc itself was
+            // always the right shape.
+            y += arcHeight(projectile, interpolatedX);
         }
 
         Color previous = batch.getColor().cpy();
@@ -394,10 +399,22 @@ public final class ProjectileRenderer {
     }
 
     // A parabola in flight distance: rises, peaks, falls. 4t(1-t) peaks at exactly 1 when t = 0.5.
-    private float arcHeight(Projectile projectile, float modelX) {
-        float start = launchX.getOrDefault(projectile, modelX);
-        float travelled = Math.abs(modelX - start);
-        float t = Math.min(1f, travelled / arcSpan.getOrDefault(projectile, ARC_SPAN_CELLS));
+    //
+    // Takes the drawn x rather than the model's, so the height is sampled at the same 60 fps the
+    // horizontal travel is. Both callers pass the interpolated value.
+    private float arcHeight(Projectile projectile, float x) {
+        float start = launchX.getOrDefault(projectile, x);
+        float travelled = Math.abs(x - start);
+        float t = travelled / arcSpan.getOrDefault(projectile, ARC_SPAN_CELLS);
+        // Past its target the shot keeps falling instead of pinning to the ground. Clamping t at 1
+        // made the curve stop dead at zero height, so a shot that outlived its arc -- one whose target
+        // died, or a lob that flew further than measured -- changed from falling to sliding in a
+        // single frame. Squaring the overshoot lets it keep going down at the speed it was already
+        // going, which reads as a shot that landed rather than one that gave up.
+        if (t > 1f) {
+            float over = t - 1f;
+            return -4f * ARC_HEIGHT_CELLS * lawn.cellHeight() * over * (1f + over);
+        }
         return 4f * ARC_HEIGHT_CELLS * lawn.cellHeight() * t * (1f - t);
     }
 
@@ -415,6 +432,12 @@ public final class ProjectileRenderer {
             return;
         }
         float launch = (float) projectile.getX();
+        // A shot fired AT a grave carries its aim point, so there is nothing to guess: it has to come
+        // down on that tile or the flash goes off with the melon still in the air.
+        if (projectile.isTerrainSeeking()) {
+            arcSpan.put(projectile, Math.max(0.5f, (float) projectile.getTerrainTargetX() - launch));
+            return;
+        }
         float nearest = Float.MAX_VALUE;
         if (lane != null) {
             for (models.entities.zombies.Zombie zombie : lane) {
@@ -450,10 +473,11 @@ public final class ProjectileRenderer {
             return true;   // handled: off the lawn is a decision to draw nothing, not a failure
         }
         float y = laneY(projectile, alpha);
+        float interpolatedX = interpolator.x(projectile, modelX, alpha);
         if (projectile.getTrajectory() == Trajectory.LOBBED) {
-            y += arcHeight(projectile, modelX);
+            y += arcHeight(projectile, interpolatedX);   // see the still-region path
         }
-        float x = lawn.worldX(muzzleAdjusted(projectile, interpolator.x(projectile, modelX, alpha)));
+        float x = lawn.worldX(muzzleAdjusted(projectile, interpolatedX));
 
         // Sized against a WIDER target than the still peas. An animated shot's bounds cover the whole
         // effect -- the flame's trail and sparks, not just the pea at its head -- so fitting that box

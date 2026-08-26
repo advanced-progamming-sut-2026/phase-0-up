@@ -19,4 +19,11 @@ public interface ToastSink {
     void success(String message);
 
     void error(String message);
+
+    // The same Result, but filtered for a screen the model is narrating over. Defaulted so the menu
+    // sinks -- where every sentence is a direct answer to something the player clicked -- need not
+    // implement it.
+    default void showInGame(utils.Result result) {
+        show(result);
+    }
 }
