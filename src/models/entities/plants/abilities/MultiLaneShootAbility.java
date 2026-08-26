@@ -69,6 +69,13 @@ public class MultiLaneShootAbility extends PlantAbility implements Burstable {
         this.remainingShotsInBurst += shots;
     }
 
+    // The flag as well as the count: this same counter carries the ordinary multi-shot cadence, and a
+    // Threepeater firing its normal volley is not a plant under plant food.
+    @Override
+    public boolean isPlantFoodBusy() {
+        return plantFoodBurst && remainingShotsInBurst > 0;
+    }
+
     private void fireAllLanes(Plant owner, GameSession gameSession) {
         for (int offset : rowOffsets) {
             int targetY = owner.getY() + offset;

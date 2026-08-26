@@ -36,10 +36,27 @@ import java.util.regex.Pattern;
 //
 // The model does not record HOW a zombie died: `HealthComponent.applyDamage` takes an `Element` and
 // keeps only the attacker. Rather than widen the model for a purely cosmetic distinction, the view
-// answers it from something it already tracks -- `ExplosionEffects` knows where every live blast is,
-// and a detonation's event is queued BEFORE the deaths it causes (the ability fires during the plant
-// pass, `processDeaths` runs at the end of the same tick, and both arrive in one drain). See
-// ExplosionEffects.killedByBlast.
+// answers it from something it already tracks -- `ExplosionEffects` knows where every live blast is.
+// See ExplosionEffects.killedByBlast.
+//
+// **The question is asked a frame after the death, not on it.** That is not a detail; it is the whole
+// reason ash was never seen. A tick's narration reaches the view down TWO queues, and they arrive in
+// the order the queues are drained rather than the order the events happened:
+//
+//   * `CombatSystem.processTick` RETURNS its death lines, and `GameEngine.advanceOneTick` renders that
+//     list immediately.
+//   * `AreaExplosiveAbility.detonate` calls `gameSession.reportEvent`, which lands in the session's
+//     domain-event queue -- drained AFTERWARDS, at the end of the same tick.
+//
+// So for every zombie a blast kills outright, "the zombie is dead" arrives BEFORE "the bomb went off",
+// and asking on the spot always answered no. Every explosive kill in the game fell over as a corpse
+// instead of turning to ash, which is exactly the report this came from. (A blast that only WOUNDS a
+// zombie looked fine, because the finishing blow lands on a later tick, by which point the detonation
+// has long since been drained -- so the bug hid behind the cases that happened to work.)
+//
+// Holding the decision until `advance` runs -- once per frame, after the drain that carried both
+// sentences -- makes it independent of which queue won the race. Reordering the model's two queues
+// would be the other fix and is the wrong one: that order is the terminal build's printed output.
 //
 // ## The ash art is not what its name suggests
 //
@@ -178,33 +195,59 @@ public final class DeathEffects {
         int col = Math.max(0, Math.min(utils.Constants.BOARD_COLS - 1,
                 Integer.parseInt(matcher.group(2))));
 
-        boolean blasted = explosions != null && explosions.killedByBlast(col, row);
-        Remains dead = blasted ? asAsh(alias) : asCorpse(alias);
-        if (dead == null) {
+        // Queued rather than decided here -- see the note at the top of this class about the two
+        // queues. Settled at the start of the next advance(), by which point every detonation from the
+        // same tick has been drained and killedByBlast can actually answer.
+        pending.add(new PendingDeath(alias, col, row));
+
+        // These two are NOT deferred. A scoring rule fires inside the same drain as the death that
+        // triggered it and reads them straight away, so they have to be true the moment the sentence
+        // arrives, not a frame later.
+        lastDeathX = lawn.centerX(col);
+        lastDeathRow = row;
+    }
+
+    // A death that has arrived but has not yet been told apart from an explosive one.
+    private record PendingDeath(String alias, int col, int row) { }
+
+    private final List<PendingDeath> pending = new ArrayList<>();
+
+    // Turns each queued death into a corpse or a heap of ash. Called once per frame from advance(),
+    // which is the first point at which the whole of the tick's narration has been delivered.
+    private void settlePending() {
+        if (pending.isEmpty()) {
             return;
         }
-        // Placed on the tile the event names, exactly as ExplosionEffects places a blast from the same
-        // shape of sentence. The column is floored off a continuous x, so this is up to half a cell out;
-        // that is the price of the view never being handed the Zombie, and it is the approximation every
-        // other event-driven effect here already accepts.
-        dead.x = lawn.centerX(col);
-        dead.row = row;
-        lastDeathX = dead.x;
-        lastDeathRow = row;
-        remains.add(dead);
+        for (PendingDeath death : pending) {
+            boolean blasted = explosions != null && explosions.killedByBlast(death.col(), death.row());
+            Remains dead = blasted ? asAsh(death.alias()) : asCorpse(death.alias());
+            if (dead == null) {
+                continue;
+            }
+            // Placed on the tile the event names, exactly as ExplosionEffects places a blast from the
+            // same shape of sentence. The column is floored off a continuous x, so this is up to half a
+            // cell out; that is the price of the view never being handed the Zombie, and it is the
+            // approximation every other event-driven effect here already accepts.
+            dead.x = lawn.centerX(death.col());
+            dead.row = death.row();
+            remains.add(dead);
 
-        // The head comes off on the frame of death, not when the body finishes falling. See
-        // Dismemberment.throwHead for why this is what stops a kill feeling delayed.
-        if (!blasted && pieces != null) {
-            popHead(alias, dead.x,
-                    lawn.worldY(row) + lawn.cellHeight() * SpritePlacer.FOOT_INSET, row);
-        }
+            // The head comes off with the body, not when it finishes falling. See Dismemberment.
+            // throwHead for why this is what stops a kill feeling delayed. Ash has no head to throw.
+            if (!blasted && pieces != null) {
+                popHead(death.alias(), dead.x,
+                        lawn.worldY(death.row()) + lawn.cellHeight() * SpritePlacer.FOOT_INSET,
+                        death.row());
+            }
 
-        if (views.gdx.core.DebugFlags.BOARD_COUNTS) {
-            com.badlogic.gdx.Gdx.app.log("DeathEffects", alias + (blasted ? " is blasted to " : " dies as ")
-                    + dead.sprite + " [" + dead.clip + "] at (" + col + ", " + row + ") for "
-                    + dead.lifetime + "s");
+            if (views.gdx.core.DebugFlags.BOARD_COUNTS) {
+                com.badlogic.gdx.Gdx.app.log("DeathEffects",
+                        death.alias() + (blasted ? " is blasted to " : " dies as ")
+                                + dead.sprite + " [" + dead.clip + "] at (" + death.col() + ", "
+                                + death.row() + ") for " + dead.lifetime + "s");
+            }
         }
+        pending.clear();
     }
 
     // Which head comes off, which depends entirely on which head the player was just looking at.
@@ -272,6 +315,9 @@ public final class DeathEffects {
     // drawRow -- the lane pass visits this five times a frame, and ageing there would run every death at
     // five times its own speed. The same trap ZombieActions documents.
     public void advance(float delta) {
+        // First, because a death queued during the last frame's drain becomes a body here and should
+        // be drawn by the row pass that follows in this very frame.
+        settlePending();
         for (int i = remains.size() - 1; i >= 0; i--) {
             Remains dead = remains.get(i);
             dead.age += delta;

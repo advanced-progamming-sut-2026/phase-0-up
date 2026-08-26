@@ -117,6 +117,11 @@ public class BowlingBulbAbility extends PlantAbility {
         this.pendingPlantFoodBalls += count;
     }
 
+    @Override
+    public boolean isPlantFoodBusy() {
+        return pendingPlantFoodBalls > 0;
+    }
+
     private void updatePlantFoodBalls(Plant owner, GameSession gameSession) {
         if (pendingPlantFoodBalls <= 0) return;
 

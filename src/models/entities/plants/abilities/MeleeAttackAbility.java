@@ -102,6 +102,11 @@ public class MeleeAttackAbility extends PlantAbility implements Growable {
         this.flurryStrikeTimer = 0;
     }
 
+    @Override
+    public boolean isPlantFoodBusy() {
+        return flurryTicksRemaining > 0;
+    }
+
     private void updateFlurry(Plant owner, GameSession gameSession) {
         if (flurryTicksRemaining <= 0) return;
         flurryTicksRemaining--;

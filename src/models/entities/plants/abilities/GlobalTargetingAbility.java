@@ -104,6 +104,13 @@ public abstract class GlobalTargetingAbility extends PlantAbility implements Str
         this.pendingBurstShots += shots;
     }
 
+    // Only the queue, not the shots already in the air: an ordinary hit is in flight for a few ticks
+    // too, so counting those would keep a Cat-tail glowing between its normal volleys.
+    @Override
+    public boolean isPlantFoodBusy() {
+        return pendingBurstShots > 0;
+    }
+
     // Upgrade (PRIORITIZE_GARGANTUARS): when a Gargantuar is on the board, target it first
     // (Electric Blueberry).
     public void setPrioritizeGargantuars(boolean prioritize) {

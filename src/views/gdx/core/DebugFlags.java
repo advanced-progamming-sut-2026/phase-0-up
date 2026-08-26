@@ -298,6 +298,11 @@ public final class DebugFlags {
     //   gradlew runGui -Dpvz.screen=game -Dpvz.devMinigame=scoring -Dpvz.skipIntro=1 \
     //       "-Dpvz.spawn=ZombieDefault,ZombieDefault,ZombieDefault" -Dpvz.spawnColumn=4 \
     //       "-Dpvz.run=plant plant -t Cherry Bomb -l (4, 1)" -Dpvz.smokeFrames=70
+    //
+    // A command may carry an "@<frame>:" prefix to post it later than the rest, which is how a state
+    // with a BEFORE and an AFTER gets reached -- feeding a plant that is already boosted, say:
+    //
+    //   "-Dpvz.run=plant plant -t Wall-nut -l (2, 4);feed plant -l (2, 4);@300:feed plant -l (2, 4)"
     public static final String RUN = text("pvz.run");
 
     // Makes N matches on a Beghouled board by trying neighbours, through the real click path.
@@ -311,6 +316,23 @@ public final class DebugFlags {
     //   gradlew runGui -Dpvz.screen=game -Dpvz.devMinigame=beghouled -Dpvz.skipIntro=1 \
     //       -Dpvz.swapCheck=3 -Dpvz.smokeFrames=120
     public static final int SWAP_CHECK = number("pvz.swapCheck");
+
+    // Logs, for every plant fed, each stage of its plant-food animation and the moment the MODEL says
+    // the boost stopped -- then the two totals side by side when the animation ends.
+    //
+    // "The animation ends before the bullets do" is a report about two durations, and no screenshot
+    // holds two durations: a still frame shows a glowing plant or an unglowing one and says nothing
+    // about what the other half was doing at that instant. A video would show it and cannot be
+    // asserted on. These are the only two numbers in play -- how long the boost ran, and how long the
+    // plant was drawn boosted -- and printing them together is the only way to see them agree.
+    //
+    // Snow Pea is the one the gap was found on: 60 shots one tick apart is 6.0s of boost, which used
+    // to be drawn as 4.9s of animation.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.skipIntro=1 -Dpvz.feedCheck=1 \
+    //       "-Dpvz.run=cheat add-plant-food;plant plant -t Snow Pea -l (2, 2);feed plant -l (2, 2)" \
+    //       -Dpvz.smokeFrames=600
+    public static final boolean FEED_CHECK = flag("pvz.feedCheck");
 
     private DebugFlags() { }
 

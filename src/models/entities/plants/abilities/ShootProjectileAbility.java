@@ -92,7 +92,12 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
     // running for exactly as long as this does, so the glow stops when the burst does rather than after
     // a guessed number of seconds -- a Peashooter's burst outlasted a fixed two-second window.
     public boolean hasPendingBurst() {
-        return remainingShotsInBurst > 0 || pendingGiantShots > 0;
+        return (plantFoodBurst && remainingShotsInBurst > 0) || pendingGiantShots > 0;
+    }
+
+    @Override
+    public boolean isPlantFoodBusy() {
+        return hasPendingBurst();
     }
 
     // True while the plant is drawing back for a shot that has not been fired yet. The view reads this

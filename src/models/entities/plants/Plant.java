@@ -167,25 +167,60 @@ public class Plant extends Entity {
         return 0;
     }
 
-    // Whether plant food has been used on this plant. Set once and never cleared, so the view treats
-    // its RISING edge as "play the plant-food animation now".
+    // Whether plant food has EVER been used on this plant. Set once and never cleared.
     public boolean hasPlantFood() {
         return thisPlantHasFood;
     }
 
-    // True while a plant-food boost is still playing out -- a shooter with queued burst shots left to
-    // fire. The view uses it to hold the plant-food animation for exactly that long.
+    // How many times this plant has been fed. The view watches this number rather than the flag above,
+    // because a flag that is set once can only announce a first feed: a plant fed again mid-level --
+    // and Mega Gatling Pea's level-3 upgrade feeds itself over and over -- got the boost with no
+    // animation and no glow at all from the second time on.
+    public int getPlantFoodFeeds() {
+        return plantFoodFeeds;
+    }
+
+    private int plantFoodFeeds;
+
+    // True while a plant-food boost is still playing out. This is the ONLY answer the view has to
+    // "how long should the plant-food animation run", so it has to be right for every plant, not just
+    // for shooters.
+    //
+    // Two sources, because boosts come in two shapes:
+    //
+    //   * work still queued on an ability -- shots, a flurry, balls to roll (isPlantFoodBusy).
+    //   * a floor, plantFoodTicksRemaining, which every feed starts. It covers the boosts that land
+    //     instantly and leave nothing behind to ask -- a lane freeze, an armour grant, instant sun --
+    //     so those plants still get a whole animation instead of a single frame.
+    //
+    // It used to check ShootProjectileAbility alone, which meant Rotobaga, Threepeater, Cat-tail,
+    // Bowling Bulb and Bonk Choy all reported "boost over" the instant they were fed.
     public boolean isPlantFoodActive() {
+        if (plantFoodTicksRemaining > 0) {
+            return true;
+        }
         if (abilities == null) {
             return false;
         }
         for (PlantAbility ability : abilities) {
-            if (ability instanceof models.entities.plants.abilities.ShootProjectileAbility shooter
-                    && shooter.hasPendingBurst()) {
+            if (ability.isPlantFoodBusy()) {
                 return true;
             }
         }
         return false;
+    }
+
+    // The shortest a plant-food boost is ever considered to be running, in ticks. Long enough for the
+    // build-up, a couple of turns of the loop and the wind-down to read as one gesture; short enough
+    // that a plant granted armour is not still glowing about it seconds later.
+    private static final int PLANT_FOOD_FLOOR_TICKS = 2 * Constants.TICKS_PER_SECOND;
+
+    private int plantFoodTicksRemaining;
+
+    // Holds the boost window open for at least this many more ticks. For strategies whose effect has a
+    // duration the abilities do not carry themselves.
+    public void extendPlantFood(int ticks) {
+        this.plantFoodTicksRemaining = Math.max(this.plantFoodTicksRemaining, ticks);
     }
 
     public boolean isDead() {
@@ -224,6 +259,10 @@ public class Plant extends Entity {
 
     public void triggerPlantFood(GameSession gameSession) {
         this.thisPlantHasFood = true;
+        this.plantFoodFeeds++;
+        // Opened BEFORE the strategy runs, so a strategy is free to push it further out (see
+        // extendPlantFood) rather than having its own duration overwritten by the floor.
+        extendPlantFood(PLANT_FOOD_FLOOR_TICKS);
         if (plantFoodStrategy != null) {
             plantFoodStrategy.executeEffect(this, gameSession);
         }
@@ -239,6 +278,12 @@ public class Plant extends Entity {
     //updating health for over time damages(like poison)
         if (health != null) {
             health.update();
+        }
+
+    //the plant-food floor runs down on real ticks, above the disabled check: it stands for an effect
+    //that has already landed, and freezing the plant afterwards does not un-land it.
+        if (plantFoodTicksRemaining > 0) {
+            plantFoodTicksRemaining--;
         }
 
     //while frozen in ice, trapped by an octopus, or cursed into a cat the plant is incapacitated:

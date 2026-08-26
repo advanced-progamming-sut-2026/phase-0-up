@@ -147,16 +147,31 @@ final class MinigameHarness {
 
     private int runFrames;
 
+    // A command may be prefixed "@<frame>:" to post it that many frames in, instead of at RUN_FRAME.
+    //
+    // Everything else here fires the whole list on one frame, which cannot express a SECOND event --
+    // feeding a plant that is already boosted, planting into a tile something has since happened to.
+    // Those are one-frame states with a before and an after, and no other flag can reach the after.
     private void runCommands() {
-        if (DebugFlags.RUN.isEmpty() || runFrames > RUN_FRAME) {
+        if (DebugFlags.RUN.isEmpty()) {
             return;
         }
-        if (++runFrames != RUN_FRAME) {
-            return;
-        }
+        runFrames++;
         for (String command : DebugFlags.RUN.split(";")) {
             String trimmed = command.trim();
-            if (trimmed.isEmpty()) {
+            int at = RUN_FRAME;
+            if (trimmed.startsWith("@")) {
+                int colon = trimmed.indexOf(':');
+                if (colon > 1) {
+                    try {
+                        at = Integer.parseInt(trimmed.substring(1, colon).trim());
+                        trimmed = trimmed.substring(colon + 1).trim();
+                    } catch (NumberFormatException ignored) {
+                        at = RUN_FRAME;   // not a frame prefix after all; run it as written
+                    }
+                }
+            }
+            if (trimmed.isEmpty() || runFrames != at) {
                 continue;
             }
             // As with -Dpvz.spawn, the return value only says the string ROUTED. A command the engine

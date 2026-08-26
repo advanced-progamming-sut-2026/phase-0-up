@@ -95,4 +95,11 @@ public class MultiDirectionalShootAbility extends PlantAbility implements Bursta
         this.plantFoodBurst = true;
         this.remainingShotsInBurst += shots;
     }
+
+    // The flag as well as the count: this same counter carries the ordinary multi-shot cadence, and a
+    // Rotobaga firing its normal volley is not a plant under plant food.
+    @Override
+    public boolean isPlantFoodBusy() {
+        return plantFoodBurst && remainingShotsInBurst > 0;
+    }
 }
