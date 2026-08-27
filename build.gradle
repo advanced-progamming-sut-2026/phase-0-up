@@ -178,6 +178,54 @@ tasks.register('runGui', JavaExec) {
     }
 }
 
+// `gradlew runServer` starts the Phase 3 game server: the standalone process that owns the user
+// database and runs the authoritative simulation for a two-player "I, Zombie" match.
+//
+// It runs the SAME models, systems, Commands and GameEngine the two front ends do. That is possible
+// only because MvcBoundaryTest already fails the build if anything under models/ or controllers/
+// touches com.badlogic.gdx -- so the whole simulation is provably headless, and the server needs no
+// window, no GL context, and no forked copy of the game rules.
+//
+// No standardInput, for the same reason runGui has none: nothing on this path may read stdin. The
+// server is not a REPL, and a blocking read would wedge it with no error.
+//
+// -Dpvz.port overrides the default 7777 (see net.Protocol).
+tasks.register('runServer', JavaExec) {
+    group = 'application'
+    description = 'Runs the Phase 3 game server (accounts + authoritative multiplayer matches).'
+    mainClass = 'server.ServerMain'
+    classpath = sourceSets.main.runtimeClasspath
+
+    // The server reads data/*.json (plant and zombie templates -- it builds real entities) and writes
+    // server_users.json, all through relative paths, so the process has to start in the project root.
+    workingDir = rootDir
+
+    jvmArgs '-Dfile.encoding=UTF-8'
+
+    // Same forwarding trick runGui uses: Gradle sets -D on ITS OWN process, not on the application it
+    // launches, so without this `gradlew runServer -Dpvz.port=7788` is silently ignored.
+    System.properties.each { key, value ->
+        if (key.toString().startsWith('pvz.')) {
+            systemProperty(key.toString(), value)
+        }
+    }
+}
+
+// A runnable server jar, so it can be started on a machine that has no Gradle and no sources:
+// `java -jar build/libs/PvZ2-AP-Project-1.0-SNAPSHOT-server.jar` FROM THE PROJECT ROOT (the relative
+// data paths still apply -- the jar cannot carry data/, and the user database is written at runtime).
+tasks.register('serverJar', Jar) {
+    archiveClassifier = 'server'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'server.ServerMain'
+    }
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 // `gradlew browse` opens pizpizi's pvz-asset-browser against THIS project's asset folder.
 //
 // The browser is a separate desktop app (github.com/pizpizi/pvz-asset-browser) that reads the same

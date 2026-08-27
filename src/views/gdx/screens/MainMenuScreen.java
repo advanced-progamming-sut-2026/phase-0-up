@@ -61,6 +61,12 @@ public final class MainMenuScreen extends MenuScreen {
         panel.add(menuButton("Profile", MenuStyles.BUTTON_BROWN,
                 () -> commands.enter(MenuType.PROFILE_MENU.getMenuName()))).width(300f).height(60f)
                 .padBottom(8f).row();
+        // The way into the lobby. The menu graph already allowed MAIN_MENU -> ONLINE_MENU and
+        // ExitMenuCommand already routed back out -- the edge was there from an earlier phase with
+        // nothing on the other end of it.
+        panel.add(menuButton("Multiplayer", MenuStyles.BUTTON_BROWN,
+                () -> commands.enter(MenuType.ONLINE_MENU.getMenuName()))).width(300f).height(60f)
+                .padBottom(8f).row();
         panel.add(menuButton("Settings", MenuStyles.BUTTON_BROWN,
                 () -> commands.enter(MenuType.SETTINGS_MENU.getMenuName()))).width(300f).height(60f)
                 .padBottom(8f).row();

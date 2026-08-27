@@ -37,8 +37,21 @@ public final class ConfirmDialog extends WidgetGroup {
     // past the frame's rounded corners. Same reason and same figure as MenuPanel's.
     private static final float FILL_INSET = 18f;
 
+    // What the second button says and does. Null means there is no second button.
+    //
+    // Existing callers pass a plain Cancel that only closes the dialog, which is right when the
+    // decision is the player's alone. A challenge invite is not that: declining has to TELL the person
+    // waiting, so the second button needs an action of its own and a word other than "Cancel".
+    private record Alternative(String text, Runnable action) { }
+
     private ConfirmDialog(Assets assets, Skin skin, String title, String body,
                           String confirmText, Runnable onConfirm, boolean cancellable) {
+        this(assets, skin, title, body, confirmText, onConfirm,
+                cancellable ? new Alternative("Cancel", null) : null);
+    }
+
+    private ConfirmDialog(Assets assets, Skin skin, String title, String body,
+                          String confirmText, Runnable onConfirm, Alternative alternative) {
         setFillParent(true);
 
         Table scrim = new Table();
@@ -56,12 +69,12 @@ public final class ConfirmDialog extends WidgetGroup {
 
         Table layer = new Table();
         layer.setFillParent(true);
-        layer.add(panel(skin, title, body, confirmText, onConfirm, cancellable));
+        layer.add(panel(skin, title, body, confirmText, onConfirm, alternative));
         addActor(layer);
     }
 
     private Table panel(Skin skin, String title, String body, String confirmText,
-                        Runnable onConfirm, boolean cancellable) {
+                        Runnable onConfirm, Alternative alternative) {
         Table panel = new Table();
         Drawable border = MenuStyles.drawable(skin, MenuStyles.PANEL_BORDER);
         Drawable fill = MenuStyles.panelFill(skin);
@@ -82,9 +95,9 @@ public final class ConfirmDialog extends WidgetGroup {
 
         Table buttons = new Table();
         buttons.add(button(skin, confirmText, MenuStyles.BUTTON_GREEN, onConfirm))
-                .width(230f).height(56f).padRight(cancellable ? 12f : 0f);
-        if (cancellable) {
-            buttons.add(button(skin, "Cancel", MenuStyles.BUTTON_BROWN, null))
+                .width(230f).height(56f).padRight(alternative != null ? 12f : 0f);
+        if (alternative != null) {
+            buttons.add(button(skin, alternative.text(), MenuStyles.BUTTON_BROWN, alternative.action()))
                     .width(170f).height(56f);
         }
         panel.add(buttons).row();
@@ -121,6 +134,18 @@ public final class ConfirmDialog extends WidgetGroup {
     public static void show(Stage stage, Assets assets, Skin skin, String title, String body,
                             String confirmText, Runnable onConfirm) {
         stage.addActor(new ConfirmDialog(assets, skin, title, body, confirmText, onConfirm, true));
+    }
+
+    // Two real choices, both of which DO something.
+    //
+    // Distinct from show() because there the second button is a way out -- it closes the dialog and
+    // nothing else happened. A challenge invite has no such button: accepting starts a match and
+    // declining tells the person waiting, so leaving it alone is not one of the options.
+    public static void decide(Stage stage, Assets assets, Skin skin, String title, String body,
+                              String acceptText, Runnable onAccept,
+                              String declineText, Runnable onDecline) {
+        stage.addActor(new ConfirmDialog(assets, skin, title, body, acceptText, onAccept,
+                new Alternative(declineText, onDecline)));
     }
 
     // The same panel with nothing to decide: it reports something that has ALREADY happened, so there

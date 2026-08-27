@@ -44,4 +44,25 @@ public class UserRecord {
     public String getUsername() {
         return username;
     }
+
+    // Both ride along on a profile sync, because ProfileCommands edits them by mutating the User and
+    // then calling saveAll(). Neither is a credential, so carrying them costs nothing -- and without
+    // them, changing your nickname on the networked build would look like it worked and be lost.
+    public String getNickname() {
+        return nickname;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    // The progress half of the record, without the identity half.
+    //
+    // Exists for the server's profile-sync path, which must apply a client's coins/gems/progress and
+    // must NOT let the same packet touch a username, a password hash or a security answer -- those
+    // have their own flows, with their own rules. toUser() would hand over all of it at once, which
+    // makes "sync my progress" and "change my credentials" the same operation.
+    public ProfileRecord getProfile() {
+        return profile;
+    }
 }

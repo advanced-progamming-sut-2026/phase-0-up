@@ -9,6 +9,7 @@ import models.user.User;
 import utils.gameinitializers.GameInitializer;
 import utils.gameinitializers.LevelInitializer;
 import utils.storage.DatabaseManager;
+import utils.storage.LocalFileBackend;
 
 // Root of the graphical build -- the LibGDX counterpart to Main.
 //
@@ -44,6 +45,19 @@ public class PvZGame extends Game {
     private views.Renderers renderers;
     private controllers.engine.InputRouter router;
 
+    // Null when this session is offline -- either because no server answered, or because -Dpvz.offline
+    // asked for local accounts. Everything else in the game works the same either way.
+    private final views.net.PushRouter pushRouter = new views.net.PushRouter();
+    // NOT a field initializer: a Scene2D Stage allocates GL buffers, and field initializers run in the
+    // constructor -- which LibGDX calls before it has created a GL context. Built in create() instead,
+    // where Gdx.gl20 actually exists.
+    private ModalLayer modals;
+    private views.net.NetClient netClient;
+    private views.net.RemoteBackend remoteBackend;
+    // Why the server could not be reached, kept so the first screen can say it out loud instead of the
+    // player finding out when multiplayer silently is not there.
+    private String serverError;
+
     @Override
     public void create() {
         smoke = SmokeHarness.fromSystemProperties();
@@ -59,6 +73,7 @@ public class PvZGame extends Game {
 
         assets = new Assets();
         toasts = new Toasts(assets);
+        modals = new ModalLayer();
         audio = new AudioManager();
         views.gdx.sprite.SpriteRegistry sprites =
                 new views.gdx.sprite.SpriteRegistry(assets.pam(), assets.bank(), assets.root());
@@ -91,7 +106,14 @@ public class PvZGame extends Game {
 
         screens = new ScreenManager(context);
         registerScreens();
+        listenForChallenges();
         openEntryScreen();
+
+        // Said once the toast layer exists, which is after bootstrapModel discovered it. The player
+        // gets one sentence about what they have lost rather than finding out at the lobby.
+        if (serverError != null) {
+            toasts.error("No server: playing offline. Progress stays on this machine.");
+        }
     }
 
     // The two asset probes. Both are off unless their system property is set, and both exist because
@@ -276,6 +298,31 @@ public class PvZGame extends Game {
         appSession.setCurrentMenu(menu);
     }
 
+    // Goes through the real authenticate() -- the same call the login screen makes -- so this is a
+    // route in, not a permission: a wrong password is refused here exactly as it would be there.
+    private boolean signInWithDevCredentials() {
+        String raw = System.getProperty("pvz.devLogin", "").trim();
+        int colon = raw.indexOf(':');
+        if (colon <= 0) {
+            return false;
+        }
+        String username = raw.substring(0, colon);
+        String password = raw.substring(colon + 1);
+        utils.storage.AuthResult auth = DatabaseManager.getInstance()
+                .authenticate(username, utils.storage.PasswordHasher.hash(password), false);
+        if (!auth.success()) {
+            Gdx.app.error("PvZGame", "-Dpvz.devLogin: " + auth.message());
+            return false;
+        }
+        appSession.setCurrentUser(auth.user());
+        // The same two repairs LoginCommand runs on a profile that did not come through its
+        // constructor -- skipping them leaves every seed reading "locked" and NPEs on level choice.
+        auth.user().getProfile().ensureStartingPlants();
+        LevelInitializer.attachCampaign(auth.user().getProfile());
+        Gdx.app.log("PvZGame", "-Dpvz.devLogin: signed in as " + auth.user().getUsername());
+        return true;
+    }
+
     private static int intProperty(String key, int fallback) {
         try {
             return Integer.parseInt(System.getProperty(key, String.valueOf(fallback)).trim());
@@ -285,9 +332,18 @@ public class PvZGame extends Game {
     }
 
     private void signInFirstSavedUser() {
+        // -Dpvz.devLogin=name:password signs in for real, which is the ONLY route that works against a
+        // server: the borrow-the-first-account trick below reads getAllUsers(), and a remote backend
+        // honestly answers that with the signed-in account and nothing else -- so on an online session
+        // there is no roster to borrow from and every -Dpvz.menu shortcut past the sign-in wall would
+        // open signed out.
+        if (signInWithDevCredentials()) {
+            return;
+        }
         java.util.Collection<User> users = DatabaseManager.getInstance().getAllUsers();
         if (users == null || users.isEmpty()) {
-            Gdx.app.log("PvZGame", "-Dpvz.menu: no saved accounts, staying signed out");
+            Gdx.app.log("PvZGame", "-Dpvz.menu: no saved accounts to borrow. Against a server, use "
+                    + "-Dpvz.devLogin=<username>:<password>");
             return;
         }
         User user = users.iterator().next();
@@ -315,6 +371,7 @@ public class PvZGame extends Game {
         screens.register(MenuType.SHOP_MENU, views.gdx.screens.StoreScreen::new);
         screens.register(MenuType.GREENHOUSE_MENU, views.gdx.screens.GreenhouseScreen::new);
         screens.register(MenuType.TRAVEL_LOG_MENU, views.gdx.screens.TravelLogScreen::new);
+        screens.register(MenuType.ONLINE_MENU, views.gdx.screens.OnlineScreen::new);
     }
 
     // Mirrors Main.main's startup, minus the console wiring.
@@ -325,6 +382,8 @@ public class PvZGame extends Game {
     // later as every seed reading "locked", or an NPE the first time a level is picked.
     private void bootstrapModel() {
         new GameInitializer().loadAllData();
+
+        installAccountStore();
 
         DatabaseManager db = DatabaseManager.getInstance();
         appSession = new AppSession();
@@ -344,6 +403,108 @@ public class PvZGame extends Game {
 
         // Profile.setCurrencyObserver is wired in create(), not here: it needs the View, and the View
         // needs Assets, which this method runs before.
+    }
+
+    // Point the game's accounts at the server -- BEFORE the first DatabaseManager.getInstance().
+    //
+    // Order is load-bearing and the failure is silent: getInstance() builds a default LocalFileBackend
+    // if nobody has said otherwise, and this build would then quietly go on using a local save file
+    // while appearing to be networked. Everything downstream is unaffected either way, which is the
+    // point -- all 23 saveAll() call sites, every auth Command and both auth screens are identical.
+    //
+    // -Dpvz.offline=1 keeps the local file on purpose, so the graphical build can still be opened and
+    // screenshotted without a server running. Every -Dpvz.menu and -Dpvz.screen shortcut depends on
+    // being able to sign in, and none of those are about the network.
+    private void installAccountStore() {
+        if (Boolean.getBoolean("pvz.offline")) {
+            Gdx.app.log("PvZGame", "offline mode: accounts stay in " + LocalFileBackend.DEFAULT_FILE);
+            DatabaseManager.setBackend(new LocalFileBackend());
+            return;
+        }
+
+        netClient = new views.net.NetClient();
+        netClient.configureFromSystemProperties();
+        boolean connected = netClient.connect();
+
+        if (!connected) {
+            // Falls back to local storage rather than refusing to start.
+            //
+            // The alternative -- a window that opens and immediately says "no server" -- makes the game
+            // unopenable whenever the server is down, including for the single-player campaign, which
+            // needs nothing from it. The player is told plainly, once; what they lose is multiplayer
+            // and cross-device progress, and the message says so rather than letting them discover it
+            // when a match fails to start.
+            serverError = netClient.lastError();
+            Gdx.app.error("PvZGame", "no server at " + netClient.host() + ":" + netClient.port()
+                    + " -- " + serverError + "; falling back to local accounts");
+            netClient.close();
+            netClient = null;
+            DatabaseManager.setBackend(new LocalFileBackend());
+            return;
+        }
+
+        remoteBackend = new views.net.RemoteBackend(netClient, new views.net.StayLoggedInStore());
+        DatabaseManager.setBackend(remoteBackend);
+        // One router for every unsolicited packet, claimed by type. A single push listener would mean
+        // the last screen to install one silently stole every packet from the previous -- see
+        // PushRouter for why that failure mode is worth a class.
+        netClient.setPushListener(pushRouter::accept);
+        Gdx.app.log("PvZGame", "accounts served by " + netClient.host() + ":" + netClient.port());
+    }
+
+    // The challenge pop-up, claimed HERE rather than by the lobby.
+    //
+    // A challenge arrives because somebody else clicked something, so it can land while the player is
+    // in the shop, the almanac or the travel log. Claiming it on the lobby screen would mean it only
+    // worked when they happened to be looking at the lobby -- and the spec asks for a pop-up on the
+    // target's screen, not on one particular screen.
+    private void listenForChallenges() {
+        if (netClient == null) {
+            return;
+        }
+        pushRouter.on(net.PacketType.CHALLENGE_INVITE, envelope -> {
+            net.packets.ChallengeInvite invite = envelope.as(net.packets.ChallengeInvite.class);
+            String theirSide = invite.theirFaction() == net.dto.Faction.PLANTS ? "plants" : "zombies";
+            String yourSide = invite.theirFaction() == net.dto.Faction.PLANTS ? "zombies" : "plants";
+            views.gdx.ui.ConfirmDialog.decide(modals.stage(), assets, assets.skin(),
+                    "A Challenger!",
+                    invite.fromUsername() + " wants to play I, Zombie. They're taking the "
+                            + theirSide + ", so you're on the " + yourSide + ".",
+                    "Let's Go", () -> answerChallenge(invite.challengeId(), true),
+                    "No Thanks", () -> answerChallenge(invite.challengeId(), false));
+        });
+    }
+
+    // Answered off the render thread: this is a blocking round trip, and it is running inside a
+    // button's click listener, which LibGDX calls on the thread that draws every frame.
+    private void answerChallenge(String challengeId, boolean accepted) {
+        Thread answer = new Thread(() -> netClient.request(
+                new net.packets.ChallengeAnswer(challengeId, accepted),
+                net.packets.AckResponse.class), "challenge-answer");
+        answer.setDaemon(true);
+        answer.start();
+    }
+
+    public views.net.PushRouter pushRouter() {
+        return pushRouter;
+    }
+
+    public ModalLayer modals() {
+        return modals;
+    }
+
+    public views.net.NetClient netClient() {
+        return netClient;
+    }
+
+    public views.net.RemoteBackend remoteBackend() {
+        return remoteBackend;
+    }
+
+    // Whether this session is actually talking to a server. Screens that offer multiplayer check this
+    // rather than assuming -- an offline session must not hand the player a lobby that cannot work.
+    public boolean isOnline() {
+        return netClient != null && netClient.isConnected();
     }
 
     // The screen stack is installed in T0.5; until then this just proves the window and the render loop
@@ -378,6 +539,11 @@ public class PvZGame extends Game {
         // which renders through a different camera.
         toasts.render(Gdx.graphics.getDeltaTime());
 
+        // Above the toasts: a challenge invite has to be readable and clickable over anything.
+        if (modals != null) {
+            modals.render(Gdx.graphics.getDeltaTime());
+        }
+
         smoke.afterFrame();
     }
 
@@ -401,6 +567,9 @@ public class PvZGame extends Game {
     public void resize(int width, int height) {
         super.resize(width, height);   // forwards to the active Screen
         toasts.resize(width, height);
+        if (modals != null) {
+            modals.resize(width, height);
+        }
     }
 
     @Override
@@ -412,6 +581,12 @@ public class PvZGame extends Game {
         }
         if (toasts != null) {
             toasts.dispose();
+        }
+        if (modals != null) {
+            modals.dispose();
+        }
+        if (netClient != null) {
+            netClient.close();
         }
         if (audio != null) {
             audio.dispose();

@@ -14,7 +14,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Align;
-import controllers.systems.LeaderboardSystem;
 import models.leaderboard.LbColumn;
 import models.leaderboard.LeaderboardEntry;
 import models.user.User;
@@ -26,11 +25,15 @@ import java.util.List;
 
 // Where everybody stands.
 //
-// The board is READ, not commanded: LeaderboardSystem.sortBy snapshots the user roster into plain rows
-// and sorts a fresh copy, so there is nothing to mutate and nothing to keep in step. The terminal's
-// "leaderboard sort -c score -o desc" exists because a prompt has no column to click; this screen has
-// the columns, so it calls the same system method directly rather than round-tripping a string through
-// the router and back out through a renderer that would only have to hand it here anyway.
+// The board is READ, not commanded: it asks the storage layer for plain rows, so there is nothing to
+// mutate and nothing to keep in step. The terminal's "leaderboard sort -c score -o desc" exists because
+// a prompt has no column to click; this screen has the columns, so it asks directly rather than
+// round-tripping a string through the router and back out through a renderer that would only have to
+// hand it here anyway.
+//
+// Since Phase 3 those rows come from the SERVER -- DatabaseManager's backend is the remote one on this
+// build -- which is what the spec means by the leaderboard being retrieved from the users' data stored
+// there. Nothing on this screen changed to make that true, which is the whole point of the seam.
 //
 // Clicking a header sorts by it. Clicking the header that is already active flips the direction, which
 // is the behaviour every table in every application has and the one thing a player will try first.
@@ -77,7 +80,6 @@ public final class LeaderboardScreen extends MenuScreen {
     private static final String SORT_DESCENDING = "image_ui_almanac_sort_descending_up";
     private static final float SORT_MARK = 20f;
 
-    private final LeaderboardSystem leaderboard = LeaderboardSystem.getInstance();
 
     private Table header;
     private Table rows;
@@ -209,8 +211,10 @@ public final class LeaderboardScreen extends MenuScreen {
 
     private void buildRows() {
         rows.clearChildren();
-        List<LeaderboardEntry> entries =
-                leaderboard.sortBy(column, ascending, DatabaseManager.getInstance());
+        // From the storage layer, which on this build means the server. Sorting is still done once, by
+        // LbColumn's comparator, wherever the rows are actually held -- so the board this screen draws
+        // is ordered identically to the terminal build's.
+        List<LeaderboardEntry> entries = DatabaseManager.getInstance().leaderboard(column, ascending);
         caption.setText(captionFor(entries.size()));
 
         if (entries.isEmpty()) {
@@ -313,7 +317,8 @@ public final class LeaderboardScreen extends MenuScreen {
             case MINIGAMES -> String.valueOf(entry.getMinigamesCompleted());
             case DAILY_QUESTS -> String.valueOf(entry.getDailyQuests());
             case NONDAILY_QUESTS -> String.valueOf(entry.getNonDailyQuests());
-            case MEOW_POINT -> String.valueOf(entry.getBestMeowPoint());
+            // Not String.valueOf: that renders a never-played score as the literal "null".
+            case MEOW_POINT -> entry.getMeowPointLabel();
         };
     }
 

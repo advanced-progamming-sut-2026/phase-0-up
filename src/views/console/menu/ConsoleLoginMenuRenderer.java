@@ -17,9 +17,9 @@ public class ConsoleLoginMenuRenderer implements LoginMenuRenderer {
     }
 
     @Override
-    public void showSecurityQuestion(User user) {
+    public void showSecurityQuestion(String question) {
         OutputHandler.showMessage("Prove it's really you -- answer your security question:");
-        OutputHandler.showMessage(stripNumbering(user.getSecurityQuestion()));
+        OutputHandler.showMessage(stripNumbering(question));
         OutputHandler.showMessage("Reply with: answer -a <your answer>");
     }
 

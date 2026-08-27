@@ -184,11 +184,21 @@ public class GameEngine {
         if (profile == null) {
             return;
         }
-        int best = profile.getBestNumberOfMeowPoints();
-        if (score > best) {
-            profile.setBestNumberOfMeowPoints(score);
-            inGameRenderer.render(new Result(true, "A new personal best! " + score
-                    + " Meow Points (previous best: " + best + "). The leaderboard has been notified."));
+        // Boxed, and null means this is their FIRST run -- not a previous best of zero. Unboxing it
+        // into an int here would throw on every player's first scoring game, which is every player at
+        // least once.
+        Integer best = profile.getBestNumberOfMeowPoints();
+        if (profile.recordScoringGameRun(score)) {
+            if (best == null) {
+                // No "previous best: 0" for somebody who has never played -- that is the fake score
+                // the whole boxed field exists to stop showing.
+                inGameRenderer.render(new Result(true, "Your first score on the board: " + score
+                        + " Meow Points. The leaderboard has been notified."));
+            } else {
+                inGameRenderer.render(new Result(true, "A new personal best! " + score
+                        + " Meow Points (previous best: " + best
+                        + "). The leaderboard has been notified."));
+            }
         } else {
             inGameRenderer.render(new Result(true, "You scored " + score
                     + " Meow Points. Your best is still " + best + " -- go again!"));

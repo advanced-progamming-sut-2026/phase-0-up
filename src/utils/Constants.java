@@ -188,7 +188,14 @@ public class Constants {
     // Difficulty runs 1..5 (ChangeDifficultyCommand's accepted range); 5 is "maximum difficulty",
     // the bar the Win After Win quest measures a winning streak against.
     public static final int MAX_DIFFICULTY_LEVEL = 5;
-    public static final int DEFAULT_BEST_MEOW_POINTS = 0;
+    // Null, not 0, and BOXED -- "has never played the scoring game", which is a different fact from
+    // "scored nothing". The spec is explicit that a player who has not played the networked scoring
+    // game must not show a previous or fake score in the leaderboard's "My Point" column, and 0 cannot
+    // carry that meaning because 0 is a score somebody can actually finish a run with.
+    //
+    // Exactly the problem DEFAULT_VOLUME solved for the same reason; see Profile.volume for the full
+    // argument about Gson deserialising straight past the constructor.
+    public static final Integer DEFAULT_BEST_MEOW_POINTS = null;
     public static final int DEFAULT_LAST_CHAPTER = 1;
     public static final int DEFAULT_LAST_LEVEL = 1;
     // The campaign is 4 chapters of 4 levels each; lastChapter/lastLevel are pointers to the next

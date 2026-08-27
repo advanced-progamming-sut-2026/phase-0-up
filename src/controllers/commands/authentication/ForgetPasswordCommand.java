@@ -7,6 +7,7 @@ import utils.Result;
 import utils.regex.LoginMenuRegex;
 import utils.storage.DatabaseManager;
 import utils.storage.PasswordHasher;
+import utils.storage.RecoveryStart;
 import utils.storage.SecurityAnswer;
 import utils.validation.PasswordValidator;
 import views.InputHandler;
@@ -60,60 +61,51 @@ public class ForgetPasswordCommand implements Command {
 
     @Override
     public void execute() {
+        // The account, the email check and the security question all come back in one step, and
+        // deliberately WITHOUT the account itself.
+        //
+        // This used to fetch the whole User to read one field off it and then compare the security
+        // answer locally. That is a credential leak once the roster is on a server: recovering a
+        // password would require the server to hand the caller the very hashes they are trying to get
+        // past, for any username they cared to type. Every comparison below now happens where the
+        // secret lives; the local backend does exactly what this command used to, so the terminal
+        // build behaves identically.
         DatabaseManager databaseManager = DatabaseManager.getInstance();
-        User user = databaseManager.findUser(username);
-
-        if (user == null) {
-            loginMenuRenderer.forgetPasswordRender(new Result(false, "User not found!"));
-            return;
-        }
-        if (!user.getEmail().equalsIgnoreCase(email)) {
-            loginMenuRenderer.forgetPasswordRender(new Result(false, "That email doesn't match this gardener."));
+        RecoveryStart start = databaseManager.beginRecovery(username, email);
+        if (!start.ok()) {
+            loginMenuRenderer.forgetPasswordRender(new Result(false, start.message()));
             return;
         }
 
-        if (!processSecurityAnswer(user)) {
-            return;
-        }
-
-        processPasswordReset(user);
-        databaseManager.saveAll();
-    }
-
-    private boolean processSecurityAnswer(User user) {
-        String answer = obtainSecurityAnswer(user);
+        String answer = obtainSecurityAnswer(start);
         if (answer == null) {   // EOF, malformed, or cancelled -- already reported where it happened
-            return false;
+            return;
         }
-
         if (SecurityAnswer.isBlank(answer)) {
             loginMenuRenderer.forgetPasswordRender(new Result(false, "An empty answer won't fool anyone."));
-            return false;
+            return;
         }
 
-        if (!SecurityAnswer.matches(answer, user.getSecurityAnswerHash())) {
-            loginMenuRenderer.forgetPasswordRender(new Result(false, "Invalid answer!"));
-            return false;
+        // Verified BEFORE the new password is asked for, so a wrong answer is reported straight away
+        // rather than after the player has typed a password that was never going to be accepted.
+        String answerHash = SecurityAnswer.hash(answer);
+        Result verified = databaseManager.verifyRecoveryAnswer(username, answerHash);
+        if (!verified.success()) {
+            loginMenuRenderer.forgetPasswordRender(verified);
+            return;
         }
 
-        // The account was registered before answers were normalized, so its digest is of the raw
-        // answer. Re-store it in canonical form now that we've seen a correct answer -- the old digest
-        // would keep working only for a byte-identical retype.
-        if (SecurityAnswer.wasLegacyMatch(answer, user.getSecurityAnswerHash())) {
-            user.setSecurityAnswerHash(SecurityAnswer.hash(answer));
-            DatabaseManager.getInstance().saveAll();
-        }
-        return true;
+        processPasswordReset(answerHash);
     }
 
     // The answer itself, however this front end gets one. Returns null when there is no answer to
     // check, having already said why.
-    private String obtainSecurityAnswer(User user) {
+    private String obtainSecurityAnswer(RecoveryStart start) {
         if (!interactive) {
             return suppliedSecurityAnswer;   // the screen showed the question and collected the answer
         }
 
-        loginMenuRenderer.showSecurityQuestion(user);
+        loginMenuRenderer.showSecurityQuestion(start.question());
         String input = InputHandler.readLine();
         if (input == null) {   // EOF: abort the reset
             return null;
@@ -127,22 +119,28 @@ public class ForgetPasswordCommand implements Command {
         return LoginMenuRegex.ANSWER_SECURITY.getGroup(input, "answer");
     }
 
-    private void processPasswordReset(User user) {
+    private void processPasswordReset(String answerHash) {
         String newPassword = obtainNewPassword();
         if (newPassword == null) {   // EOF: abort the reset
             return;
         }
 
+        // Strength is checked HERE, on the plaintext, and it is the only place it can be: the backend
+        // is handed a hash, and a hash cannot be graded. A remote backend therefore trusts its client
+        // about strength -- see AccountService for why that trade is the right way round.
         Result validationResult = new PasswordValidator().validate(newPassword);
         if (!validationResult.success()) {
             loginMenuRenderer.forgetPasswordRender(validationResult);
             return;
         }
 
-        user.changePassword(PasswordHasher.hash(newPassword));
-        DatabaseManager.getInstance().saveAll();
-
-        loginMenuRenderer.forgetPasswordRender(new Result(true, "Password changed successfully!"));
+        // The answer travels again with the reset. The verify above is for the CONVERSATION -- so a
+        // wrong answer is reported before a password is asked for -- and this is the check that
+        // actually guards the change, which is why the backend re-checks rather than trusting that the
+        // caller already did.
+        Result reset = DatabaseManager.getInstance()
+                .completeRecovery(username, answerHash, PasswordHasher.hash(newPassword));
+        loginMenuRenderer.forgetPasswordRender(reset);
     }
 
     private String obtainNewPassword() {

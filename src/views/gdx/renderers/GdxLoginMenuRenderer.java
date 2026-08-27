@@ -25,10 +25,10 @@ public final class GdxLoginMenuRenderer implements LoginMenuRenderer {
     }
 
     @Override
-    public void showSecurityQuestion(User user) {
+    public void showSecurityQuestion(String question) {
         // No "reply with: answer -a ..." instruction: on this build the question is a labelled field on
         // ForgotPasswordScreen (T4.1), and the answer is submitted with the form.
-        toasts.info(stripNumbering(user.getSecurityQuestion()));
+        toasts.info(stripNumbering(question));
     }
 
     // Drops the "1. " that the stored question text carries.

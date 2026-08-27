@@ -28,7 +28,8 @@ class MvcBoundaryTest {
     static void importClasses() {
         productionClasses = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages("models", "controllers", "views", "utils", "factories");
+                .importPackages("models", "controllers", "views", "utils", "factories", "net",
+                        "server");
     }
 
     // Guards the guards. Every rule below is phrased as "no class may ...", which passes trivially if
@@ -118,6 +119,87 @@ class MvcBoundaryTest {
                 .should().dependOnClassesThat().haveFullyQualifiedName("views.InputHandler")
                 .because("a blocking read on the render thread deadlocks the window; use the "
                         + "non-interactive Command constructors instead");
+        rule.check(productionClasses);
+    }
+
+    @Test
+    @DisplayName("the packet layer stays a pure data vocabulary")
+    void netIsFreeOfViewsAndGdx() {
+        // net/ is the one package BOTH the client and the standalone server hold, so whatever it
+        // depends on, both are forced to drag in. Keeping it to plain data is what lets the server run
+        // with no window and no GL context at all.
+        //
+        // views is included in the ban list alongside LibGDX on purpose: a packet that reached for a
+        // Toast or a renderer would compile perfectly well here and then fail on the server, where no
+        // such thing exists -- and it would fail at RUNTIME, mid-match, rather than in this build.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("net..")
+                .should().dependOnClassesThat().resideInAnyPackage("com.badlogic.gdx..", "views..",
+                        "server..", "controllers..")
+                .because("a packet is plain data: it is held by the client AND the headless server, "
+                        + "so it may name models/records and nothing else");
+        rule.check(productionClasses);
+    }
+
+    @Test
+    @DisplayName("the server runs headless")
+    void serverIsFreeOfLibGdxAndTheFrontEnds() {
+        // The whole Phase 3 architecture rests on this one rule. The server runs the REAL GameEngine
+        // -- same systems, same order, same win/loss evaluation as both front ends -- and it can only
+        // do that because the simulation has no window in it. The moment anything under server/ names
+        // a Texture, a Screen or a console renderer, `gradlew runServer` needs a display, and the
+        // authoritative-simulation design is over.
+        //
+        // views.renderers is NOT banned, deliberately: the server implements views.Renderers to relay
+        // the model's narration to both players. Those are interfaces the Commands are already written
+        // against, which is exactly the seam being reused -- what is banned is the two concrete front
+        // ends behind them.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("server..")
+                .should().dependOnClassesThat().resideInAnyPackage("com.badlogic.gdx..",
+                        "views.gdx..", "views.console..", "pvz.libpvz..")
+                .because("the server has no display: it may use the renderer INTERFACES, never a "
+                        + "front end that draws");
+        rule.check(productionClasses);
+    }
+
+    @Test
+    @DisplayName("the server never reads stdin")
+    void serverDoesNotBlockOnInput() {
+        // Same failure as the graphical build's, with a different shape. `gradlew runServer` sets no
+        // standardInput, so views.InputHandler.readLine() would see EOF immediately and the server
+        // would exit the instant it finished starting up -- looking exactly like a crash on launch.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("server..")
+                .should().dependOnClassesThat().haveFullyQualifiedName("views.InputHandler")
+                .because("the server is not a REPL; it parks on a latch and is stopped by a signal");
+        rule.check(productionClasses);
+    }
+
+    @Test
+    @DisplayName("the client front end never reaches into the server")
+    void viewsDoNotDependOnTheServer() {
+        // The client talks to the server through packets and nothing else. A direct call would compile
+        // and work perfectly in a single-JVM test, and then not exist at all in the shipped client --
+        // which is the worst way to find out, because the local run would look fine.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("views..")
+                .should().dependOnClassesThat().resideInAPackage("server..")
+                .because("client and server share the net/ vocabulary, never each other's code");
+        rule.check(productionClasses);
+    }
+
+    @Test
+    @DisplayName("the model layer never learns about the network")
+    void modelsAreFreeOfTheNetwork() {
+        // Same direction of dependency the view already obeys. The model publishes and something else
+        // subscribes -- if a Plant or a GameSession could name a packet, the simulation would stop
+        // being runnable offline, and `gradlew run` is the regression harness for all of it.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("models..")
+                .should().dependOnClassesThat().resideInAnyPackage("net..", "server..", "java.net..")
+                .because("the model must stay playable with no server attached -- the network reads "
+                        + "the model, never the other way round");
         rule.check(productionClasses);
     }
 

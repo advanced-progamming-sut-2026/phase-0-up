@@ -14,10 +14,11 @@ public class LeaderboardEntry {
     private final int minigamesCompleted;
     private final int dailyQuests;
     private final int nonDailyQuests;
-    private final int bestMeowPoint;
+    // Null when this player has never finished a scoring-game run -- rendered as "-", never as 0.
+    private final Integer bestMeowPoint;
 
     public LeaderboardEntry(String username, int lastChapter, int lastLevel, int minigamesCompleted,
-                            int dailyQuests, int nonDailyQuests, int bestMeowPoint) {
+                            int dailyQuests, int nonDailyQuests, Integer bestMeowPoint) {
         this.username = username;
         this.lastChapter = lastChapter;
         this.lastLevel = lastLevel;
@@ -72,8 +73,16 @@ public class LeaderboardEntry {
         return nonDailyQuests;
     }
 
-    public int getBestMeowPoint() {
+    // Null means "has never played the scoring game". Renderers show that as "-", the same way
+    // getStageLabel() below already shows "-" for a profile that has cleared nothing.
+    public Integer getBestMeowPoint() {
         return bestMeowPoint;
+    }
+
+    // The one place the "-" is spelled, so the console table and the graphical table cannot disagree
+    // about what "never played" looks like.
+    public String getMeowPointLabel() {
+        return bestMeowPoint == null ? "-" : String.valueOf(bestMeowPoint);
     }
 
     // Number of campaign levels the player has actually finished. lastChapter/lastLevel point at the

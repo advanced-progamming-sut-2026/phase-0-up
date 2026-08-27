@@ -376,7 +376,17 @@ public abstract class MenuScreen extends ScreenAdapter implements views.gdx.core
             root.validate();
             playEntrance();
         }
-        Gdx.input.setInputProcessor(stage);
+        // The modal layer goes FIRST, so a challenge invite that arrives while the player is in any
+        // menu is clickable. It is empty almost always, and an empty Scene2D stage hits nothing and
+        // returns false from touchDown -- so on every ordinary frame this multiplexer behaves exactly
+        // as setInputProcessor(stage) did, and every existing screen is unaffected.
+        //
+        // Not the Toasts stage, which also draws above everything: that one is never empty for long,
+        // and putting live toasts under every click in the game would eventually swallow one.
+        com.badlogic.gdx.InputMultiplexer input = new com.badlogic.gdx.InputMultiplexer();
+        input.addProcessor(context.game().modals().stage());
+        input.addProcessor(stage);
+        Gdx.input.setInputProcessor(input);
         stage.addListener(new InputListener() {
             @Override
             public boolean keyDown(InputEvent event, int keycode) {

@@ -21,7 +21,9 @@ public class ProfileRecord {
     private int gems;
     private int plantFoodCount;
     private int difficultyLevel;
-    private int bestNumberOfMeowPoints;
+    // Boxed: null means the player has never finished a scoring-game run, which is not the same fact
+    // as scoring zero. See Profile.bestNumberOfMeowPoints.
+    private Integer bestNumberOfMeowPoints;
     private List<News> newsList;
     private List<String> unlockedPlants;
     private List<String> lockedPlants;
@@ -38,6 +40,8 @@ public class ProfileRecord {
     private Set<String> seenZombieAliases;
     private Set<String> completedQuestIds;   // plain ids of finished quests -> survive a save/reload
     private int winStreakAtMaxDifficulty;    // Win After Win: running streak, persisted across levels
+    private int versusWins;                  // two-player "I, Zombie" record (Phase 3)
+    private int versusLosses;
     private Map<String, Integer> zombieKillsByChapter;   // Chapter Hunter: kills tallied per chapter
     // Daily quest state, saved with its own day stamp so the same day resumes and an older one rolls over.
     private Set<String> completedDailyQuestIds;
@@ -79,6 +83,8 @@ public class ProfileRecord {
         r.seenZombieAliases = new HashSet<>(p.getSeenZombieAliases());
         r.completedQuestIds = new HashSet<>(p.getCompletedQuestIds());
         r.winStreakAtMaxDifficulty = p.getWinStreakAtMaxDifficulty();
+        r.versusWins = p.getVersusWins();
+        r.versusLosses = p.getVersusLosses();
         r.zombieKillsByChapter = new HashMap<>(p.getZombieKillsByChapter());
         r.completedDailyQuestIds = new HashSet<>(p.getCompletedDailyQuestIds());
         r.questDayStamp = p.getQuestDayStamp();
@@ -100,7 +106,20 @@ public class ProfileRecord {
         p.setGems(gems);
         p.setPlantFoodCount(plantFoodCount);
         p.setDifficultyLevel(difficultyLevel);
-        p.setBestNumberOfMeowPoints(bestNumberOfMeowPoints);
+        // A save written before the field was boxed stores a literal 0 for every player who never
+        // touched the scoring game -- the old default, which nobody earned. Loading that as a real
+        // score would put a fake 0 in the leaderboard's "My Point" column for every legacy account,
+        // which is precisely what the spec forbids, so a stored 0 is read as "never played".
+        //
+        // The cost, stated rather than hidden: a player who genuinely finished a run scoring exactly 0
+        // is treated as never having played. That is a run with no kills and no leftover sun, and the
+        // two are indistinguishable to the player anyway -- both display as "-", and any later score
+        // beats both.
+        p.setBestNumberOfMeowPoints(
+                bestNumberOfMeowPoints == null || bestNumberOfMeowPoints == 0
+                        ? null : bestNumberOfMeowPoints);
+        p.setVersusWins(versusWins);
+        p.setVersusLosses(versusLosses);
         p.setLastChapter(lastChapter);
         p.setLastLevel(lastLevel);
         p.setDailyQuestsDone(dailyQuestsDone);

@@ -5,12 +5,14 @@ import models.user.Profile;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import utils.Result;
+import utils.storage.AccountBackend;
+import utils.storage.DatabaseManager;
+import utils.storage.LocalFileBackend;
 import utils.storage.records.ProfileRecord;
 import views.renderers.ShopRenderer;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 
@@ -36,22 +38,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DailyOfferResetTest {
 
     private static final int DEAL_PRICE = 1600;
-    private static final Path DATABASE = Path.of("users_database.json");
 
-    // A successful purchase saves, and DatabaseManager writes users_database.json relative to the
-    // working directory -- which the test task pins to the project root, so this would otherwise scribble
-    // on the player's real save. Taken before the first getInstance() and put back afterwards.
-    private static byte[] savedDatabase;
+    // A successful purchase saves, and saveAll() writes relative to the working directory -- which the
+    // test task pins to the project root, so this used to scribble on the player's real save file and
+    // needed a backup-and-restore dance around every run.
+    //
+    // It does not any more. Phase 3 put an AccountBackend behind DatabaseManager so account storage
+    // could move to the server, and the same seam lets a test point the whole thing at a temp file.
+    // The purchase still goes through the real save path -- which is the point of the test -- it just
+    // no longer goes through the player's real save.
+    //
+    // The previous backend is put back afterwards because DatabaseManager is a process-wide singleton:
+    // leaving it aimed at a deleted temp directory would surface as a failure in some unrelated test
+    // that happens to run next.
+    @TempDir
+    static Path directory;
+
+    private static AccountBackend previousBackend;
 
     @BeforeAll
-    static void backUpTheSaveFile() throws IOException {
-        savedDatabase = Files.exists(DATABASE) ? Files.readAllBytes(DATABASE) : null;
+    static void redirectStorageToATempFile() {
+        previousBackend = DatabaseManager.getInstance().backend();
+        DatabaseManager.setBackend(new LocalFileBackend(directory.resolve("users.json").toString()));
     }
 
     @AfterAll
-    static void restoreTheSaveFile() throws IOException {
-        if (savedDatabase != null) {
-            Files.write(DATABASE, savedDatabase);
+    static void restoreStorage() {
+        if (previousBackend != null) {
+            DatabaseManager.setBackend(previousBackend);
         }
     }
 

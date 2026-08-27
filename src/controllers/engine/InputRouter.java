@@ -17,7 +17,6 @@ import controllers.commands.news.ShowNewsCommand;
 import controllers.commands.leaderboard.ShowLeaderboardCommand;
 import controllers.commands.playmenu.*;
 import controllers.commands.profileandsettings.*;
-import controllers.systems.LeaderboardSystem;
 import models.leaderboard.LbColumn;
 import utils.storage.DatabaseManager;
 import controllers.commands.menu.ShowCurrentMenuCommand;
@@ -65,7 +64,6 @@ public class InputRouter {
     private final ShopRenderer shopRenderer;
     private final TravelLogRenderer travelLogRenderer;
     private final controllers.systems.game.QuestSystem questSystem = new controllers.systems.game.QuestSystem();
-    private final LeaderboardSystem leaderboardSystem = LeaderboardSystem.getInstance();
 
     // The leaderboard opens sorted by highest score first; this is also the ordering restored whenever
     // the player runs "leaderboard show".
@@ -277,7 +275,7 @@ public class InputRouter {
     // Fetch + sort + render the board for the given column/direction. Reads the live user roster
     // straight from the database singleton so the board always reflects the latest saved progress.
     private void showLeaderboard(LbColumn column, boolean ascending){
-        new ShowLeaderboardCommand(leaderboardSystem, DatabaseManager.getInstance(),
+        new ShowLeaderboardCommand(DatabaseManager.getInstance(),
                 column, ascending, leaderboardRenderer).execute();
     }
 

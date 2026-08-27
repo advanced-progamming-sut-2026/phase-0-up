@@ -25,7 +25,14 @@ public class Profile {
     private int gems;
     private int plantFoodCount;
     private int difficultyLevel;
-    private int bestNumberOfMeowPoints;
+    // The scoring game's personal best, and the leaderboard's "My Point" column.
+    //
+    // Boxed, and null means NEVER PLAYED -- not "scored zero". Those are different facts and the spec
+    // needs them told apart: a player who has not played the networked scoring game must show no score
+    // at all, and 0 is a score a real run can end on. Same reasoning as volume below, and the same
+    // mechanism: Gson allocates a Profile without running this constructor, so an int here would make
+    // every pre-existing save indistinguishable from a player who had genuinely scored nothing.
+    private Integer bestNumberOfMeowPoints;
     private List<News> newsList;
     private List<String> unlockedPlants;
     private List<String> lockedPlants;
@@ -54,6 +61,11 @@ public class Profile {
     private Set<String> seenZombieAliases;
     private int winStreakAtMaxDifficulty;
     private Map<String, Integer> zombieKillsByChapter;
+    // The two-player "I, Zombie" record. Plain ints, unlike the score above: zero wins and "never
+    // played a match" need no telling apart -- neither is displayed as anything but 0, and a match
+    // always produces exactly one of the two.
+    private int versusWins;
+    private int versusLosses;
 
     // Player preferences. They live on the Profile rather than in the view because they are per-account
     // and have to survive a restart, which means going through ProfileRecord like everything else.
@@ -216,9 +228,45 @@ public class Profile {
 
     public void setDifficultyLevel(int difficultyLevel) { this.difficultyLevel = difficultyLevel; }
 
-    public int getBestNumberOfMeowPoints() { return bestNumberOfMeowPoints; }
+    // Null when this player has never finished a scoring-game run. Callers must handle that -- it is
+    // the whole point of the field being boxed, and unboxing it blindly is how the distinction gets
+    // quietly thrown away again.
+    public Integer getBestNumberOfMeowPoints() { return bestNumberOfMeowPoints; }
 
-    public void setBestNumberOfMeowPoints(int best) { this.bestNumberOfMeowPoints = best; }
+    public boolean hasScoringGameRecord() { return bestNumberOfMeowPoints != null; }
+
+    public void setBestNumberOfMeowPoints(Integer best) { this.bestNumberOfMeowPoints = best; }
+
+    // Records a finished run, keeping it only if it beat the previous best. Returns whether it did.
+    //
+    // Here rather than at the call site because there are now two callers -- the client settling a
+    // local run and the server settling the authoritative one -- and "is this a new record" is exactly
+    // the kind of two-line rule that drifts when it is written twice.
+    public boolean recordScoringGameRun(int score) {
+        if (bestNumberOfMeowPoints != null && score <= bestNumberOfMeowPoints) {
+            return false;
+        }
+        bestNumberOfMeowPoints = score;
+        return true;
+    }
+
+    // --- Multiplayer record (Phase 3) ------------------------------------------------------------
+
+    public int getVersusWins() { return versusWins; }
+
+    public void setVersusWins(int versusWins) { this.versusWins = versusWins; }
+
+    public int getVersusLosses() { return versusLosses; }
+
+    public void setVersusLosses(int versusLosses) { this.versusLosses = versusLosses; }
+
+    public void recordVersusResult(boolean won) {
+        if (won) {
+            versusWins++;
+        } else {
+            versusLosses++;
+        }
+    }
 
     public List<News> getNewsList() { return newsList; }
 

@@ -56,8 +56,26 @@ public enum LbColumn {
             case MINIGAMES -> Comparator.comparingInt(LeaderboardEntry::getMinigamesCompleted);
             case DAILY_QUESTS -> Comparator.comparingInt(LeaderboardEntry::getDailyQuests);
             case NONDAILY_QUESTS -> Comparator.comparingInt(LeaderboardEntry::getNonDailyQuests);
-            case MEOW_POINT -> Comparator.comparingInt(LeaderboardEntry::getBestMeowPoint);
+            // Null is "never played", and it sorts BELOW every real score -- including below zero,
+            // because not having played is not an achievement. nullsFirst on the ASCENDING comparator
+            // is what puts them at the bottom of the default (descending) board, and it also keeps
+            // the reversal in sortBy meaningful in both directions.
+            //
+            // comparingInt here would unbox and throw the moment any player has never played, which
+            // on a fresh server is every single row.
+            case MEOW_POINT -> Comparator.comparing(LeaderboardEntry::getBestMeowPoint,
+                    Comparator.nullsFirst(Comparator.naturalOrder()));
         };
         return byColumn.thenComparing(LeaderboardEntry::getUsername, String.CASE_INSENSITIVE_ORDER);
+    }
+
+    // The ordering in whichever direction was asked for. Descending simply reverses the ascending
+    // comparator, which keeps the username tie-break sensible both ways round.
+    //
+    // Here rather than at each caller because there are now three of them -- LeaderboardSystem, the
+    // local storage backend, and the server's handler -- and "how a leaderboard is ordered" is exactly
+    // the two-line rule that drifts when it is written three times.
+    public Comparator<LeaderboardEntry> comparator(boolean ascending) {
+        return ascending ? ascendingComparator() : ascendingComparator().reversed();
     }
 }

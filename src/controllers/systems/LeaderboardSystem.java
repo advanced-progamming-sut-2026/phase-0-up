@@ -28,11 +28,21 @@ public class LeaderboardSystem {
     // the database is already loaded in memory), and each row is a cheap scalar snapshot of the
     // player's Profile.
     public List<LeaderboardEntry> buildEntries(DatabaseManager databaseManager) {
+        return buildEntries(databaseManager == null ? null : databaseManager.getAllUsers());
+    }
+
+    // The roster-taking form, which is the one that actually does the work.
+    //
+    // Added for Phase 3, where two callers hold a roster but no DatabaseManager to hand over:
+    // LocalFileBackend owns its user map directly, and the server builds the board from its own. Both
+    // route through here rather than each sorting for itself, so the ordering rules -- including the
+    // username tie-break and where a never-played score ranks -- stay written exactly once.
+    public List<LeaderboardEntry> buildEntries(java.util.Collection<User> users) {
         List<LeaderboardEntry> entries = new ArrayList<>();
-        if (databaseManager == null) {
+        if (users == null) {
             return entries;
         }
-        for (User user : databaseManager.getAllUsers()) {
+        for (User user : users) {
             if (user != null && user.getUsername() != null) {
                 entries.add(LeaderboardEntry.from(user));
             }
@@ -43,15 +53,23 @@ public class LeaderboardSystem {
     // The leaderboard ordered by one column. isAscending flips the whole ordering (the "click a column
     // to sort ascending or descending" behaviour): descending simply reverses the column's ascending
     // comparator, keeping the username tie-break sensible in both directions.
-    public List<LeaderboardEntry> sortBy(LbColumn column, boolean isAscending, DatabaseManager databaseManager) {
-        List<LeaderboardEntry> entries = buildEntries(databaseManager);
+    public List<LeaderboardEntry> sortBy(LbColumn column, boolean isAscending,
+                                         DatabaseManager databaseManager) {
+        return sort(column, isAscending, buildEntries(databaseManager));
+    }
+
+    public List<LeaderboardEntry> sortBy(LbColumn column, boolean isAscending,
+                                         java.util.Collection<User> users) {
+        return sort(column, isAscending, buildEntries(users));
+    }
+
+    private List<LeaderboardEntry> sort(LbColumn column, boolean isAscending,
+                                        List<LeaderboardEntry> entries) {
         if (column == null) {
             return entries;
         }
-        Comparator<LeaderboardEntry> comparator = isAscending
-                ? column.ascendingComparator()
-                : column.ascendingComparator().reversed();
-        entries.sort(comparator);
+        // The ordering itself is LbColumn's, so this and the storage backend cannot disagree about it.
+        entries.sort(column.comparator(isAscending));
         return entries;
     }
 }

@@ -9,6 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import controllers.commands.authentication.ForgetPasswordCommand;
 import models.user.User;
 import utils.storage.DatabaseManager;
+import utils.storage.RecoveryStart;
 import views.gdx.core.GdxContext;
 import views.gdx.ui.MenuStyles;
 
@@ -94,14 +95,20 @@ public final class ForgotPasswordScreen extends MenuScreen {
             return;
         }
 
-        User user = DatabaseManager.getInstance().findUser(name);
-        if (user == null || user.getEmail() == null || !user.getEmail().equalsIgnoreCase(mail)) {
+        // Asks the backend to look the account up and hand back only the question.
+        //
+        // This used to fetch the whole User and compare the email here, which quietly required the
+        // storage layer to give an unauthenticated caller a complete account -- password hash and
+        // security-answer hash included -- for any username typed into the box. beginRecovery does the
+        // same two checks where the account actually lives and returns a question and nothing else.
+        RecoveryStart start = DatabaseManager.getInstance().beginRecovery(name, mail);
+        if (!start.ok()) {
             context.toasts().error("No account matches that username and email.");
             step2.setVisible(false);
             return;
         }
 
-        questionLabel.setText(stripNumbering(user.getSecurityQuestion()));
+        questionLabel.setText(stripNumbering(start.question()));
         step2.setVisible(true);
         findButton.setText("Not you? Search again");
     }

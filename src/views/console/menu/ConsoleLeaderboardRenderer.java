@@ -41,7 +41,8 @@ public class ConsoleLeaderboardRenderer implements LeaderboardRenderer {
             rows[i][3] = String.valueOf(e.getMinigamesCompleted());
             rows[i][4] = String.valueOf(e.getDailyQuests());
             rows[i][5] = String.valueOf(e.getNonDailyQuests());
-            rows[i][6] = String.valueOf(e.getBestMeowPoint());
+            // Not String.valueOf: that renders a never-played score as the literal "null".
+            rows[i][6] = e.getMeowPointLabel();
         }
         return rows;
     }

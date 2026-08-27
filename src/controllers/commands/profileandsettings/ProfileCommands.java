@@ -103,17 +103,20 @@ public class ProfileCommands implements Command {
             renderer.changePassword(false, validation.message());
             return;
         }
-        if (!PasswordHasher.matches(oldPassword, user.getHashPassword())) {
-            renderer.changePassword(false, "Your old password isn't correct");
+        // Strength is checked above, on the plaintext, because only this side has it.
+        //
+        // Everything after it goes through the storage backend. Comparing the old password here would
+        // mean comparing against a hash the client is already holding -- which proves nothing once the
+        // account lives on a server, and which is why the two refusals below moved next to the stored
+        // hash. It also fixes a quieter bug: this used to mutate the User and rely on the saveAll()
+        // below, and a networked save carries only the profile, so a password change would appear to
+        // work and be gone at the next login.
+        Result changed = DatabaseManager.getInstance().changePassword(user.getUsername(),
+                PasswordHasher.hash(oldPassword), PasswordHasher.hash(newValue));
+        if (!changed.success()) {
+            renderer.changePassword(false, changed.message());
             return;
         }
-        if (PasswordHasher.matches(newValue, user.getHashPassword())) {
-            renderer.changePassword(false, "New password is the one you already have!");
-            return;
-        }
-
-        String hashedPassword = PasswordHasher.hash(newValue);
-        user.changePassword(hashedPassword);
         renderer.changePassword(true, null);
     }
 }
