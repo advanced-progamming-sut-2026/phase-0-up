@@ -1,7 +1,7 @@
 package server.match;
 
 import net.Packet;
-import net.dto.Faction;
+import models.game.Faction;
 import net.dto.MatchEndReason;
 import net.packets.MatchOver;
 import server.ClientSession;
@@ -31,6 +31,10 @@ public final class Match {
 
     private final AtomicBoolean ended = new AtomicBoolean();
 
+    // The authoritative simulation, or null for a match that has been paired but whose board has not
+    // been built yet. Volatile because the lobby thread sets it and the tick thread reads it.
+    private volatile MatchRunner runner;
+
     Match(String id, ClientSession plants, ClientSession zombies) {
         this.id = id;
         this.plants = plants;
@@ -51,6 +55,14 @@ public final class Match {
 
     public boolean isOver() {
         return ended.get();
+    }
+
+    public MatchRunner runner() {
+        return runner;
+    }
+
+    void setRunner(MatchRunner runner) {
+        this.runner = runner;
     }
 
     public long startedAtMillis() {

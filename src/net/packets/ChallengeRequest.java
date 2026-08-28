@@ -1,7 +1,7 @@
 package net.packets;
 
 import net.Packet;
-import net.dto.Faction;
+import models.game.Faction;
 
 // "I want to play THIS person." The spec's direct-challenge route.
 //

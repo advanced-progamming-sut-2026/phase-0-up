@@ -2,7 +2,7 @@ package server.match;
 
 import net.PacketType;
 import net.dto.ChallengeRejectReason;
-import net.dto.Faction;
+import models.game.Faction;
 import net.dto.MatchEndReason;
 import net.packets.AckResponse;
 import net.packets.ChallengeAnswer;

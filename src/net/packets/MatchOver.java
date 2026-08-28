@@ -1,7 +1,7 @@
 package net.packets;
 
 import net.Packet;
-import net.dto.Faction;
+import models.game.Faction;
 import net.dto.MatchEndReason;
 
 // How the match ended, said once, to both players.

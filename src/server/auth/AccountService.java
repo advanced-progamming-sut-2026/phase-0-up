@@ -4,6 +4,7 @@ import controllers.systems.LeaderboardSystem;
 import models.leaderboard.LbColumn;
 import models.leaderboard.LeaderboardEntry;
 import models.user.Gender;
+import models.user.Profile;
 import models.user.User;
 import net.Envelope;
 import net.PacketType;
@@ -12,7 +13,6 @@ import net.packets.LoginRequest;
 import net.packets.LoginResponse;
 import net.packets.LeaderboardRequest;
 import net.packets.LeaderboardResponse;
-import net.packets.LogoutRequest;
 import net.packets.PasswordChangeRequest;
 import net.packets.ProfileSyncRequest;
 import net.packets.ProfileSyncResponse;
@@ -23,6 +23,8 @@ import net.packets.RegisterRequest;
 import net.packets.RegisterResponse;
 import net.packets.RenameRequest;
 import net.packets.RenameResponse;
+import net.packets.ScoreSubmitRequest;
+import net.packets.ScoreSubmitResponse;
 import net.packets.UsernameCheckRequest;
 import net.packets.UsernameCheckResponse;
 import server.AuthLevel;
@@ -92,6 +94,7 @@ public final class AccountService {
         register(PacketType.RENAME_REQ, AuthLevel.AUTHENTICATED, this::onRename);
         register(PacketType.PASSWORD_CHANGE_REQ, AuthLevel.AUTHENTICATED, this::onPasswordChange);
         register(PacketType.LEADERBOARD_REQ, AuthLevel.AUTHENTICATED, this::onLeaderboard);
+        register(PacketType.SCORE_SUBMIT_REQ, AuthLevel.AUTHENTICATED, this::onScoreSubmit);
     }
 
     // The account changed is the one this CONNECTION signed in as -- the packet carries no username,
@@ -107,6 +110,52 @@ public final class AccountService {
         Result result = database().changePassword(session.username(),
                 request.currentPasswordHash(), request.newPasswordHash());
         session.reply(envelope, new AckResponse(result.success(), result.message()));
+    }
+
+    // A finished scoring-game run.
+    //
+    // The server is authoritative about the BEST, not about the run: it cannot recompute a Meow Point
+    // total it did not simulate, so a submitted score is taken at face value. What it does own is the
+    // record -- the value only ever moves upward, and only ever for the account that is signed in on
+    // this socket, so a client cannot lower somebody's best or write to a name that is not theirs.
+    //
+    // A negative score is refused outright. Nothing in the rulebook can produce one, so it is either a
+    // bug or somebody probing, and either way it must not become a "best".
+    private void onScoreSubmit(ClientSession session, Envelope envelope) {
+        ScoreSubmitRequest request = envelope.as(ScoreSubmitRequest.class);
+        Profile profile = session.user() == null ? null : session.user().getProfile();
+        if (profile == null || request.meowPoints() < 0) {
+            session.reply(envelope, new ScoreSubmitResponse(false, 0, null));
+            return;
+        }
+        // Read BEFORE the update, and boxed: null means this is their first run ever, which is the one
+        // thing the leaderboard's "My Point" column has to be able to tell apart from a score of zero.
+        Integer previous = profile.getBestNumberOfMeowPoints();
+        boolean accepted = profile.recordScoringGameRun(request.meowPoints());
+        if (accepted) {
+            database().saveAll();   // a best that is only in memory is a best lost to the next restart
+        }
+        session.reply(envelope, new ScoreSubmitResponse(accepted,
+                profile.getBestNumberOfMeowPoints(), previous));
+    }
+
+    // The one field a profile sync may not lower.
+    //
+    // Sync replaces the profile wholesale, which is right for everything a player owns -- coins, gems,
+    // unlocked plants, settings. It is wrong for a RECORD: a leaderboard column that any client can
+    // write any value into is not a leaderboard, and two devices signed into one account would
+    // otherwise race, with whichever synced last deciding the best score.
+    //
+    // So the stored record wins unless the incoming one beats it, and a real improvement still goes
+    // through ScoreSubmitRequest, which answers with what the server actually kept.
+    private static void keepMeowPointRecord(User user, Integer bestSoFar) {
+        if (bestSoFar == null || user.getProfile() == null) {
+            return;
+        }
+        Integer incoming = user.getProfile().getBestNumberOfMeowPoints();
+        if (incoming == null || incoming < bestSoFar) {
+            user.getProfile().setBestNumberOfMeowPoints(bestSoFar);
+        }
     }
 
     // The whole board, from the server's own roster.
@@ -337,7 +386,10 @@ public final class AccountService {
         // The username in the packet is IGNORED, not trusted and not even compared as a filter: the
         // account written to is whichever one this connection signed in as. A client cannot name
         // somebody else's account here, because it never gets to name an account at all.
+        Integer bestSoFar = user.getProfile() == null
+                ? null : user.getProfile().getBestNumberOfMeowPoints();
         user.setProfile(incoming.toProfile());
+        keepMeowPointRecord(user, bestSoFar);
 
         // Nickname and email ride along, because ProfileCommands edits them by mutating the User and
         // then calling saveAll() -- so without this, changing your nickname on the graphical build

@@ -2,7 +2,6 @@ package controllers.commands.authentication;
 
 import controllers.commands.Command;
 import models.user.AppSession;
-import models.user.User;
 import utils.Result;
 import utils.regex.LoginMenuRegex;
 import utils.storage.DatabaseManager;

@@ -4,7 +4,9 @@ import net.Envelope;
 import net.PacketType;
 import net.Protocol;
 import net.dto.ChallengeRejectReason;
-import net.dto.Faction;
+import models.game.Faction;
+import models.game.gamemodes.VersusIZombieMode;
+import models.social.Reaction;
 import net.dto.MatchEndReason;
 import net.packets.AckResponse;
 import net.packets.ChallengeAnswer;
@@ -12,14 +14,14 @@ import net.packets.ChallengeDeclined;
 import net.packets.ChallengeInvite;
 import net.packets.ChallengeRejected;
 import net.packets.ChallengeRequest;
-import net.packets.MatchLeaveRequest;
-import net.packets.MatchStart;
-import net.packets.OnlineUsersRequest;
+import net.packets.CommandRejected;
+import net.packets.GameCommand;
 import net.packets.OnlineUsersResponse;
 import net.packets.OpponentDisconnected;
 import net.packets.QueueJoinRequest;
-import net.packets.QueueLeaveRequest;
 import net.packets.QueueStatus;
+import net.packets.ReactionRelay;
+import net.packets.ReactionSend;
 import server.AuthLevel;
 import server.ClientSession;
 import server.GameServer;
@@ -80,8 +82,32 @@ public final class MatchService {
                 return thread;
             });
 
+    // Where matches tick.
+    //
+    // A pool rather than a thread per match, but a SMALL one: each match schedules itself at a fixed
+    // rate, and scheduleAtFixedRate never runs two executions of the same task concurrently, so a
+    // match's board is still only ever touched by one thread at a time even though that thread may be
+    // a different pool member from tick to tick. Four is enough for a classroom's worth of matches at
+    // a hundred milliseconds each; a match that overruns its tick delays only itself.
+    private final ScheduledExecutorService ticks = Executors.newScheduledThreadPool(4, runnable -> {
+        Thread thread = new Thread(runnable, "match-tick");
+        thread.setDaemon(true);
+        return thread;
+    });
+
+    // How long a match runs, in game ticks. Server-side, because both clients are TOLD the length in
+    // MatchStart and neither gets to choose it. `-Dpvz.matchTicks=600` shortens it to a minute, which
+    // is what makes an end-to-end test of "the clock ran out" finish in under a second instead of in
+    // three minutes.
+    private volatile int matchDurationTicks =
+            Integer.getInteger("pvz.matchTicks", VersusIZombieMode.DEFAULT_DURATION_TICKS);
+
     public MatchService(GameServer server) {
         this.server = server;
+    }
+
+    public void setMatchDurationTicks(int ticks) {
+        this.matchDurationTicks = Math.max(1, ticks);
     }
 
     public void registerHandlers() {
@@ -91,6 +117,8 @@ public final class MatchService {
         register(PacketType.QUEUE_JOIN_REQ, this::onQueueJoin);
         register(PacketType.QUEUE_LEAVE_REQ, this::onQueueLeave);
         register(PacketType.MATCH_LEAVE_REQ, this::onMatchLeave);
+        register(PacketType.GAME_COMMAND, this::onGameCommand);
+        register(PacketType.REACTION_SEND, this::onReaction);
 
         // A dropped socket has to undo everything this player was part of, or the lobby fills up with
         // ghosts: challenges nobody can answer, queue entries that never match, and matches whose
@@ -101,7 +129,22 @@ public final class MatchService {
     }
 
     public void shutdown() {
+        // Every live match is told why it stopped before the threads go away. A client left holding a
+        // board that simply stops updating has no way to tell a crashed server from a stalled network.
+        for (Match match : matches.values()) {
+            finish(match, Faction.PLANTS, MatchEndReason.SERVER_SHUTDOWN);
+        }
         sweeper.shutdownNow();
+        ticks.shutdownNow();
+        // And WAIT for the tick in progress. shutdownNow only interrupts, and a tick is not
+        // interruptible: it is arithmetic over the board followed by a profile write. Returning while
+        // one is still running means the server can be torn down -- or a test's temp directory
+        // deleted -- underneath a thread that is halfway through saving the roster.
+        try {
+            ticks.awaitTermination(2, TimeUnit.SECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void register(PacketType type, PacketHandler handler) {
@@ -333,6 +376,12 @@ public final class MatchService {
         ClientSession zombies = chosen == Faction.PLANTS ? other : chooser;
 
         Match match = new Match(UUID.randomUUID().toString(), plants, zombies);
+        // The board is BUILT here and STARTED in announce(). Splitting the two is what keeps the
+        // packet order right: MatchStart has to reach both clients before the first snapshot and
+        // before the mode's opening banner, or a client is told about a lawn it has not been told
+        // exists. Building it is cheap and touches no socket, so it is safe under the lock.
+        match.setRunner(new MatchRunner(match, matchDurationTicks, ticks, this::onMatchEnded,
+                this::log));
         matches.put(match.id(), match);
         plants.setMatch(match);
         zombies.setMatch(match);
@@ -348,16 +397,56 @@ public final class MatchService {
     // Each player gets a DIFFERENT MatchStart -- its own faction and its opponent's name are in it --
     // which is why this is two sends rather than a broadcast.
     //
-    // The rosters and the board setup are left empty here. T3.6 builds VersusIZombieMode, and T3.7
-    // fills these in from it; sending invented numbers now would be something to forget to replace.
+    // Then, and only then, the simulation starts ticking. Both packets are already queued on their
+    // connections at that point, and a Connection writes in order, so no snapshot can overtake them.
     private void announce(Match match) {
-        match.plants().send(startFor(match, Faction.PLANTS, match.zombies().username()));
-        match.zombies().send(startFor(match, Faction.ZOMBIES, match.plants().username()));
+        MatchRunner runner = match.runner();
+        match.plants().send(runner.startFor(Faction.PLANTS, match.zombies().username()));
+        match.zombies().send(runner.startFor(Faction.ZOMBIES, match.plants().username()));
+        runner.start();
     }
 
-    private MatchStart startFor(Match match, Faction faction, String opponent) {
-        return new MatchStart(match.id(), faction, opponent, 0,
-                java.util.List.of(), java.util.List.of(), 0, 0, 0, 0, 0);
+    // A player action. Handed straight to the runner, which parks it on a queue and applies it on its
+    // own thread -- this is a connection reader thread, and it may not go anywhere near the model.
+    private void onGameCommand(ClientSession session, Envelope envelope) {
+        Match match = session.match();
+        if (match == null || match.runner() == null) {
+            session.send(new CommandRejected(envelope.as(GameCommand.class).text(),
+                    "You're not in a match."));
+            return;
+        }
+        match.runner().submit(session, envelope.as(GameCommand.class));
+    }
+
+    // ---- reactions ------------------------------------------------------------------------------
+
+    // How often one player may make the other's screen do something. Three quarters of a second is
+    // slower than a person can meaningfully click and fast enough that a real exchange never feels
+    // throttled -- and it is the only place spam can actually be stopped, because a client that has
+    // been modified is not going to rate-limit itself.
+    private static final long REACTION_INTERVAL_MS = 750;
+
+    private final Map<Long, Long> lastReactionAt = new ConcurrentHashMap<>();
+
+    private void onReaction(ClientSession session, Envelope envelope) {
+        ReactionSend sent = envelope.as(ReactionSend.class);
+        Match match = session.match();
+        ClientSession opponent = match == null ? null : match.opponentOf(session);
+        if (opponent == null) {
+            return;   // not in a match; nothing to say and nobody to say it to
+        }
+        // Validated against the catalogue rather than passed through. The pair came off a socket, and
+        // an index nobody has art for would reach the other client as a reaction it cannot draw.
+        if (Reaction.of(sent.kind(), sent.index()) == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Long last = lastReactionAt.get(session.id());
+        if (last != null && now - last < REACTION_INTERVAL_MS) {
+            return;   // silently dropped: telling a spammer they are being throttled invites more
+        }
+        lastReactionAt.put(session.id(), now);
+        opponent.send(new ReactionRelay(session.username(), sent.kind(), sent.index()));
     }
 
     private void onMatchLeave(ClientSession session, Envelope envelope) {
@@ -375,6 +464,7 @@ public final class MatchService {
     // ---- disconnects ----------------------------------------------------------------------------
 
     private void onSessionClosed(ClientSession session) {
+        lastReactionAt.remove(session.id());   // or the map grows by one entry per lifetime connection
         Match match;
         synchronized (lock) {
             removeFromQueue(session);
@@ -404,10 +494,27 @@ public final class MatchService {
         finish(match, match.factionOf(session).opposite(), MatchEndReason.OPPONENT_LEFT);
     }
 
+    // Ending a match from OUTSIDE the tick -- a forfeit, a dropped socket, a shutdown. Routed through
+    // the runner where there is one, so the MatchOver carries the real score instead of three zeroes,
+    // and so the tick thread is stopped before the board it is ticking is thrown away.
     private void finish(Match match, Faction winner, MatchEndReason reason) {
+        MatchRunner runner = match.runner();
+        if (runner != null) {
+            runner.stop();
+            runner.conclude(winner, reason);   // onMatchEnded takes it out of the registry
+            return;
+        }
         if (match.end(winner, reason, 0, 0, 0)) {
             matches.remove(match.id());
         }
+    }
+
+    private void onMatchEnded(Match match) {
+        matches.remove(match.id());
+    }
+
+    private void log(String message) {
+        server.log(message);
     }
 
     // ---- inspection -----------------------------------------------------------------------------

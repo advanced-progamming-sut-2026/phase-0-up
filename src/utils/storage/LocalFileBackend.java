@@ -292,6 +292,17 @@ public class LocalFileBackend implements AccountBackend {
         return rows;
     }
 
+    // Offline there is nobody to submit to, and nothing to arbitrate: the profile has already recorded
+    // the run through Profile.recordScoringGameRun, which applies the same "only if it beats the
+    // record" rule the server does. So this reports what the profile holds rather than doing the work
+    // twice -- and returns null when there is no signed-in player, which is the only honest answer.
+    @Override
+    public Integer submitScore(int meowPoints) {
+        User user = getLoggedInUser();
+        return user == null || user.getProfile() == null
+                ? null : user.getProfile().getBestNumberOfMeowPoints();
+    }
+
     // ---- persistence ----------------------------------------------------------------------------
 
     // The save file only ever holds plain-data UserRecords, never live domain objects. This is what

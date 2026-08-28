@@ -8,6 +8,7 @@ import models.game.gamemodes.IZombieMode;
 import models.game.gamemodes.StandardMode;
 import models.game.gamemodes.ScoringMode;
 import models.game.gamemodes.VaseBreakerMode;
+import models.game.gamemodes.VersusIZombieMode;
 import models.templates.PlantTemplate;
 import utils.Constants;
 import utils.registry.PlantRegistry;
@@ -73,6 +74,25 @@ public final class MinigameFactory {
         IZombieMode mode = new IZombieMode(Math.max(1, difficulty));
         // The mode itself sets the 150-sun starting bank in onStart.
         return new Level(new Wave[0], null, mode, 0, new ArrayList<>(), 0, 0, null);
+    }
+
+    // The two-player match. Both the server and each client build the level this way and must agree
+    // exactly, which is why it takes no difficulty and no seed: everything about this board -- the
+    // rosters, the timer, the sun the two sides start with -- is a constant inside the mode.
+    //
+    // The starting sun is 0 here on purpose. VersusIZombieMode.onStart sets both banks, and a non-zero
+    // value would be handed to the plant player and then immediately overwritten, which is the sort of
+    // thing that looks like a balance decision to whoever reads it next.
+    public static Level createVersusIZombie() {
+        return createVersusIZombie(VersusIZombieMode.DEFAULT_DURATION_TICKS);
+    }
+
+    // The match length is a parameter only so the server can shorten it -- a three-minute clock makes
+    // an end-to-end test of "the timer runs out" a three-minute test. It is not a per-player setting:
+    // both clients are told the length in MatchStart and neither chooses it.
+    public static Level createVersusIZombie(int durationTicks) {
+        return new Level(new Wave[0], null, new VersusIZombieMode(durationTicks), 0,
+                new ArrayList<>(), 0, Constants.DEFAULT_SEED_SLOTS, null);
     }
 
     public static Level createBeghouled(int difficulty) {

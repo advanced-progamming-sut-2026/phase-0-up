@@ -21,6 +21,18 @@ public class Sun extends Collectible {
         this.fallSpeed = 0.05;
     }
 
+    // Places the sun outright. Same reason as Projectile.placeAt: on a networked client the board is
+    // mirrored from the server's snapshot, so a falling sun's height is told to it rather than
+    // computed -- and currentY, not y, is what the view draws it at while it is still in the air.
+    public void placeAt(double x, double currentY, boolean falling) {
+        this.x = x;
+        this.currentY = currentY;
+        this.falling = falling;
+        if (!falling) {
+            this.y = (int) Math.round(currentY);
+        }
+    }
+
     public void onReachGround() {
         this.falling = false;
         this.y = (int) currentY;

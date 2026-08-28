@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import models.game.GameSession;
-import models.game.gamemodes.IZombieMode;
+import models.game.gamemodes.BrainLawn;
 import views.gdx.core.Assets;
 import views.gdx.map.LawnGeometry;
 
@@ -51,7 +51,7 @@ public final class IZombieRenderer {
     }
 
     public void drawRow(Batch batch, GameSession session, int row) {
-        IZombieMode mode = modeOf(session);
+        BrainLawn mode = modeOf(session);
         if (mode == null || row >= mode.brainsTotal()) {
             return;
         }
@@ -88,9 +88,12 @@ public final class IZombieRenderer {
         return brain;
     }
 
-    public static IZombieMode modeOf(GameSession session) {
-        if (session != null && session.getMode() instanceof IZombieMode izombie) {
-            return izombie;
+    // The one funnel every view uses to ask "is this a brain lawn, and which one". Answers for BOTH
+    // I, Zombie and a versus match -- they draw identically, and the six call sites that used to test
+    // `instanceof IZombieMode` would each have drawn nothing at all in a versus match.
+    public static BrainLawn modeOf(GameSession session) {
+        if (session != null && session.getMode() instanceof BrainLawn lawn) {
+            return lawn;
         }
         return null;
     }

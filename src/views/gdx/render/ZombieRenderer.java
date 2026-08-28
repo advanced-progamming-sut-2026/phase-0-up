@@ -271,7 +271,7 @@ public final class ZombieRenderer {
     // designated as makers -- they are otherwise ordinary bucketheads and indistinguishable from any
     // other one the player might have summoned.
     private boolean isSunProducer(Zombie zombie) {
-        models.game.gamemodes.IZombieMode mode =
+        models.game.gamemodes.BrainLawn mode =
                 IZombieRenderer.modeOf(zombie.getGameSession());
         return mode != null && mode.isSunProducer(zombie);
     }

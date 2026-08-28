@@ -1,7 +1,7 @@
 package net.packets;
 
 import net.Packet;
-import net.dto.ReactionKind;
+import models.social.ReactionKind;
 
 // "Send this reaction to my opponent."
 //

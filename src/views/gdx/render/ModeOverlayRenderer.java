@@ -9,7 +9,7 @@ import com.badlogic.gdx.utils.Disposable;
 import models.game.GameSession;
 import models.game.gamemodes.DeadLineMode;
 import models.game.gamemodes.GameMode;
-import models.game.gamemodes.IZombieMode;
+import models.game.gamemodes.BrainLawn;
 import models.game.gamemodes.WallnutBowlingMode;
 import utils.Constants;
 import views.gdx.map.LawnGeometry;
@@ -65,7 +65,7 @@ public final class ModeOverlayRenderer implements Disposable {
             // Not the same rule -- this one is the line you may not plant past -- but it is the same
             // "do not cross" and reads better as the same mark than as a second vocabulary.
             boundary(projection, lawn, bowling.getRedLineColumn());
-        } else if (mode instanceof IZombieMode izombie) {
+        } else if (mode instanceof BrainLawn izombie) {
             boundary(projection, lawn, izombie.getRedLineColumn());
         }
 

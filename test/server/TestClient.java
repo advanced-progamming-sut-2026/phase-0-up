@@ -114,6 +114,16 @@ public final class TestClient implements AutoCloseable {
         return pushes.poll(millis, TimeUnit.MILLISECONDS) == null;
     }
 
+    // The next unsolicited packet WHATEVER it is, or null if none arrives in time.
+    //
+    // awaitPush throws away everything it is not looking for, which is right when one packet is the
+    // subject and the rest are noise. It is exactly wrong when the absence of a packet is the subject:
+    // during a match the stream is ten snapshots a second, so "did a rejection ever reach this player"
+    // cannot be answered by waiting for one -- every frame in between has to be looked at.
+    public Envelope pollPush(long millis) throws InterruptedException {
+        return pushes.poll(millis, TimeUnit.MILLISECONDS);
+    }
+
     public boolean awaitClosed(long timeoutMs) throws InterruptedException {
         return closed.await(timeoutMs, TimeUnit.MILLISECONDS);
     }

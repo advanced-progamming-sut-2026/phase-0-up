@@ -122,6 +122,18 @@ public class Projectile extends Entity {
         this.trajectory = trajectory;
     }
 
+    // Places the shot outright, instead of letting move() advance it.
+    //
+    // For a board that is POSITIONED rather than simulated: the networked client mirrors the server's
+    // snapshot, and a shot re-simulated locally would arrive somewhere slightly different every tick.
+    // exactY and y are set together on purpose -- y is the row the projectile is FILED under and
+    // exactY is where it actually is, and a diagonal only reads as a diagonal while the two disagree.
+    public void placeAt(double x, double exactY) {
+        this.x = x;
+        this.exactY = exactY;
+        this.y = (int) Math.round(exactY);
+    }
+
     public void setSplashProperties(int splashDamage, double splashRadiusX, int splashRowRadius) {
         this.splashDamage = splashDamage;
         this.splashRadiusX = splashRadiusX;

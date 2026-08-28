@@ -19,7 +19,7 @@ import java.util.Random;
 // I, Zombie mini-game -- the game played from the zombies' side. The plants are AI-controlled and
 // pre-placed on the left; the player spends sun to summon zombies to the RIGHT of a red line and march
 // them left to eat the brain in each row. Sun: one destructible maker per lane, plus plant bonuses.
-public class IZombieMode extends StandardMode {
+public class IZombieMode extends StandardMode implements BrainLawn {
 
     // Zombies may only be summoned from this column rightward (the "red line").
     private static final int RED_LINE_COLUMN = 5;
@@ -131,6 +131,7 @@ public class IZombieMode extends StandardMode {
 
     // --- Player action: summon a zombie ----------------------------------------------------------
 
+    @Override
     public Result summonZombie(GameSession session, String type, int x, int y) {
         String alias = matchRoster(type);
         if (alias == null) {
@@ -297,18 +298,22 @@ public class IZombieMode extends StandardMode {
 
     // --- Inspection (map view / verification harness) --------------------------------------------
 
+    @Override
     public Map<String, Integer> getRoster() {
         return new LinkedHashMap<>(roster);
     }
 
+    @Override
     public int getRedLineColumn() {
         return RED_LINE_COLUMN;
     }
 
+    @Override
     public int brainsTotal() {
         return brainEaten == null ? 0 : brainEaten.length;
     }
 
+    @Override
     public int brainsEaten() {
         if (brainEaten == null) {
             return 0;
@@ -322,6 +327,7 @@ public class IZombieMode extends StandardMode {
         return n;
     }
 
+    @Override
     public boolean isBrainEaten(int lane) {
         return brainEaten != null && lane >= 0 && lane < brainEaten.length && brainEaten[lane];
     }
@@ -329,6 +335,7 @@ public class IZombieMode extends StandardMode {
     // Which zombies are this level's sun makers. The view draws them as the game's disco mech rather
     // than as the plain buckethead the model spawns: a zombie that stands still and makes sun is doing
     // something no ordinary buckethead does, and it has to look like it.
+    @Override
     public boolean isSunProducer(Zombie zombie) {
         for (Zombie producer : sunProducers) {
             if (producer == zombie) {
@@ -338,6 +345,7 @@ public class IZombieMode extends StandardMode {
         return false;
     }
 
+    @Override
     public boolean isSummonable(String alias) {
         return matchRoster(alias) != null;
     }

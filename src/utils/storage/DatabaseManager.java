@@ -108,6 +108,12 @@ public class DatabaseManager {
         return backend.leaderboard(column, ascending);
     }
 
+    // A finished scoring-game run, offered to whoever keeps the record. Returns the best afterwards,
+    // or null if that could not be established -- see AccountBackend.submitScore.
+    public Integer submitScore(int meowPoints) {
+        return backend.submitScore(meowPoints);
+    }
+
     // ---- the roster -----------------------------------------------------------------------------
 
     public User findUser(String username) {

@@ -39,6 +39,15 @@ public interface GameMode {
     default boolean isPlantRemovable(int x, int y) {
         return true;
     }
+
+    // Why this tile may not be planted on, or null if it may. The sibling of isPlantRemovable, and a
+    // String rather than a boolean because the answer is shown to the player: "you can't plant there"
+    // with no reason is the kind of refusal that reads as a bug. Versus I, Zombie is the only user --
+    // it keeps the plant player left of the red line, so the zombie player always has somewhere legal
+    // to summon.
+    default String plantingRefusal(int x, int y) {
+        return null;
+    }
     // Whether the sky may drop suns on this level. Night Ops / Plant What You Get turn it off, and a
     // level rule wins over the chapter's EnvironmentType default. SunSystem asks the mode rather than
     // testing instanceof, so the levels.json flag actually drives the behaviour.

@@ -105,4 +105,16 @@ public interface AccountBackend {
     // scalar progress: a username and six numbers, no credentials anywhere near it.
     java.util.List<models.leaderboard.LeaderboardEntry> leaderboard(
             models.leaderboard.LbColumn column, boolean ascending);
+
+    // A finished scoring-game run, offered to whoever keeps the record.
+    //
+    // Its own method rather than riding along on flush(), because a best score is the one thing on a
+    // profile that is not simply the player's to write: the leaderboard everyone else reads is built
+    // from it, so the SERVER decides whether a submission beats what it already holds, and answers
+    // with what it kept. Offline that question has only one possible answer, and LocalFileBackend
+    // gives it without a round trip.
+    //
+    // Returns the authoritative best afterwards, or null if it could not be established -- which the
+    // caller must not confuse with "no best", the meaning null carries everywhere else on this field.
+    Integer submitScore(int meowPoints);
 }

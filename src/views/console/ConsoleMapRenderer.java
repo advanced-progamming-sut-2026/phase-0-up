@@ -8,7 +8,7 @@ import models.entities.plants.bowling.BowlingKind;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
 import models.game.gamemodes.BeghouledMode;
-import models.game.gamemodes.IZombieMode;
+import models.game.gamemodes.BrainLawn;
 import models.game.gamemodes.VaseBreakerMode;
 import models.game.gamemodes.WallnutBowlingMode;
 import models.map.Cell;
@@ -223,12 +223,12 @@ public class ConsoleMapRenderer implements MapRenderer {
         } else if (session.getMode() instanceof BeghouledMode beghouled) {
             OutputHandler.showMessage("Matches: " + beghouled.getMatchesMade() + "/"
                     + beghouled.getMatchTarget() + "  |  spend sun with: upgrade -t <plant>");
-        } else if (session.getMode() instanceof IZombieMode iZombie) {
+        } else if (session.getMode() instanceof BrainLawn iZombie) {
             renderIZombieStatus(session, iZombie);
         }
     }
     // I, Zombie: the roster and its costs, the sun to spend, and which brains are already eaten.
-    private void renderIZombieStatus(GameSession session, IZombieMode mode) {
+    private void renderIZombieStatus(GameSession session, BrainLawn mode) {
         StringBuilder roster = new StringBuilder();
         for (Map.Entry<String, Integer> entry : mode.getRoster().entrySet()) {
             if (roster.length() > 0) {

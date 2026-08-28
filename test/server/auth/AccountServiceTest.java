@@ -480,7 +480,106 @@ class AccountServiceTest {
         assertNotEquals(PasswordHasher.hash("N3w!password"), originalHash);
     }
 
+    // ---- the scoring game's record ---------------------------------------------------------------
+
+    @Test
+    @DisplayName("a first score is kept, and the server says it was a first")
+    void firstScoreIsKept() throws Exception {
+        TestClient client = playing("amir");
+
+        net.packets.ScoreSubmitResponse response = client.request(
+                new net.packets.ScoreSubmitRequest(740), net.packets.ScoreSubmitResponse.class);
+
+        assertTrue(response.accepted());
+        assertEquals(740, response.newBest());
+        // Null, not zero. The spec is explicit that somebody who has never played must not show a
+        // score, and zero is a score a player can actually get.
+        assertNull(response.previousBest(), "a first run has no previous best");
+        assertEquals(740, DatabaseManager.getInstance().findUser("amir")
+                .getProfile().getBestNumberOfMeowPoints());
+    }
+
+    @Test
+    @DisplayName("a record only ever moves upward")
+    void onlyBetterScoresAreKept() throws Exception {
+        TestClient client = playing("amir");
+        client.request(new net.packets.ScoreSubmitRequest(740),
+                net.packets.ScoreSubmitResponse.class);
+
+        net.packets.ScoreSubmitResponse worse = client.request(
+                new net.packets.ScoreSubmitRequest(200), net.packets.ScoreSubmitResponse.class);
+        assertFalse(worse.accepted());
+        assertEquals(740, worse.newBest(), "the record stands");
+        assertEquals(740, worse.previousBest());
+
+        net.packets.ScoreSubmitResponse better = client.request(
+                new net.packets.ScoreSubmitRequest(900), net.packets.ScoreSubmitResponse.class);
+        assertTrue(better.accepted());
+        assertEquals(900, better.newBest());
+        assertEquals(740, better.previousBest());
+    }
+
+    @Test
+    @DisplayName("a profile sync cannot lower somebody's score")
+    void profileSyncCannotLowerTheRecord() throws Exception {
+        TestClient client = playing("amir");
+        client.request(new net.packets.ScoreSubmitRequest(740),
+                net.packets.ScoreSubmitResponse.class);
+
+        // Sync replaces the profile wholesale, which is right for coins and settings and wrong for a
+        // record: the leaderboard everybody else reads is built from this field, so a client that
+        // could write any value into it would be writing the leaderboard.
+        //
+        // The tampered value is put into a SNAPSHOT and the live object is put back, because client
+        // and server share one JVM here and findUser hands out the server's own User -- mutating it
+        // and leaving it mutated would change what the server believes and test nothing at all.
+        User user = DatabaseManager.getInstance().findUser("amir");
+        user.getProfile().setBestNumberOfMeowPoints(5);
+        UserRecord tampered = UserRecord.from(user);
+        user.getProfile().setBestNumberOfMeowPoints(740);
+
+        ProfileSyncResponse synced = client.request(new ProfileSyncRequest(tampered),
+                ProfileSyncResponse.class);
+
+        assertTrue(synced.ok());
+        assertEquals(740, synced.user().getProfile().toProfile().getBestNumberOfMeowPoints(),
+                "the server keeps its record and echoes what it kept");
+        assertEquals(740, DatabaseManager.getInstance().findUser("amir")
+                .getProfile().getBestNumberOfMeowPoints());
+    }
+
+    @Test
+    @DisplayName("a negative score is refused rather than becoming a record")
+    void negativeScoresAreRefused() throws Exception {
+        TestClient client = playing("amir");
+        net.packets.ScoreSubmitResponse response = client.request(
+                new net.packets.ScoreSubmitRequest(-5), net.packets.ScoreSubmitResponse.class);
+
+        assertFalse(response.accepted());
+        // Nothing in the rulebook can produce a negative total, so this is a bug or a probe -- and
+        // either way it must not end up on the board.
+        assertNull(DatabaseManager.getInstance().findUser("amir")
+                .getProfile().getBestNumberOfMeowPoints());
+    }
+
+    @Test
+    @DisplayName("a stranger cannot submit a score")
+    void submittingNeedsAuthentication() throws Exception {
+        TestClient stranger = connect();
+        var reply = stranger.requestRaw(new net.packets.ScoreSubmitRequest(9999));
+        assertEquals(PacketType.ACK, reply.type());
+        assertFalse(reply.as(AckResponse.class).ok());
+    }
+
     // ---- helpers --------------------------------------------------------------------------------
+
+    // Registered and signed in, which is what every scoring submission needs behind it.
+    private TestClient playing(String username) throws Exception {
+        TestClient client = connect();
+        assertTrue(client.request(registration(username), RegisterResponse.class).ok());
+        assertTrue(client.request(login(username, GOOD_PASSWORD, false), LoginResponse.class).ok());
+        return client;
+    }
 
     private TestClient connect() throws IOException, InterruptedException {
         TestClient client = TestClient.connected(server.port());

@@ -151,6 +151,27 @@ public final class RemoteBackend implements AccountBackend {
         return response.rows();
     }
 
+    // Offers the run to the server and adopts whatever it kept.
+    //
+    // The local profile has already recorded the score optimistically -- the player sees their result
+    // instantly, which is what a scoreboard should feel like. This is the correction: the server's
+    // answer is the record everybody else's leaderboard is built from, so if the two disagree the
+    // server wins and the local number is rewritten to match.
+    @Override
+    public Integer submitScore(int meowPoints) {
+        net.packets.ScoreSubmitResponse response = net.request(
+                new net.packets.ScoreSubmitRequest(meowPoints),
+                net.packets.ScoreSubmitResponse.class);
+        if (response == null) {
+            return null;   // no answer: not "no best", which is what null means on the field itself
+        }
+        User user = currentUser;
+        if (user != null && user.getProfile() != null) {
+            user.getProfile().setBestNumberOfMeowPoints(response.newBest());
+        }
+        return response.newBest();
+    }
+
     // ---- the roster -----------------------------------------------------------------------------
 
     // Only ever the signed-in account. See the class comment: anything else would be a credential

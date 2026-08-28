@@ -75,4 +75,16 @@ public class MovementComponent {
     public void setPositionX(double x) {
         this.x = x;
     }
+
+    // Puts the zombie in a lane outright, with no hop and no CombatSystem re-filing behind it.
+    //
+    // For a board that is POSITIONED rather than simulated: the networked client mirrors the server's
+    // snapshot, so a lane change has already happened somewhere else and re-running it here would be a
+    // second opinion. The caller is responsible for moving the zombie between the two Rows' lists as
+    // well -- the lane lives in both places, and only these two together are the zombie's position.
+    public void setPositionY(int y) {
+        this.y = y;
+        this.targetY = y;
+        this.isSwitchingLane = false;
+    }
 }

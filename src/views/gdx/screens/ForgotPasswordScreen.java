@@ -7,7 +7,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import controllers.commands.authentication.ForgetPasswordCommand;
-import models.user.User;
 import utils.storage.DatabaseManager;
 import utils.storage.RecoveryStart;
 import views.gdx.core.GdxContext;

@@ -6,9 +6,9 @@ import net.dto.ChallengeRejectReason;
 import net.dto.EntityFlags;
 import net.dto.EntityKind;
 import net.dto.EntityState;
-import net.dto.Faction;
+import models.game.Faction;
 import net.dto.MatchEndReason;
-import net.dto.ReactionKind;
+import models.social.ReactionKind;
 import net.packets.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,16 @@ class PacketCodecTest {
     // check below is then a simple key-set comparison, and it CANNOT be satisfied by accident.
     private static Map<PacketType, Packet> samples() {
         Map<PacketType, Packet> samples = new EnumMap<>(PacketType.class);
+        accountSamples(samples);
+        lobbySamples(samples);
+        matchSamples(samples);
+        return samples;
+    }
 
+    // Split three ways only because one method listing every packet in the protocol outgrows the
+    // length limit. The groups are the protocol's own: proving who you are, finding an opponent, and
+    // playing the match.
+    private static void accountSamples(Map<PacketType, Packet> samples) {
         samples.put(PacketType.HELLO_REQ, new HelloRequest(Protocol.VERSION, "test"));
         samples.put(PacketType.HELLO_RES, new HelloResponse(true, Protocol.VERSION, null));
 
@@ -70,6 +79,9 @@ class PacketCodecTest {
         samples.put(PacketType.RENAME_REQ, new RenameRequest("Parsa"));
         samples.put(PacketType.RENAME_RES, new RenameResponse(true, "Renamed.", null));
 
+    }
+
+    private static void lobbySamples(Map<PacketType, Packet> samples) {
         samples.put(PacketType.ONLINE_USERS_REQ, new OnlineUsersRequest());
         samples.put(PacketType.ONLINE_USERS_RES, new OnlineUsersResponse(List.of("amir", "parsa")));
         samples.put(PacketType.CHALLENGE_REQ, new ChallengeRequest("parsa", Faction.ZOMBIES));
@@ -83,6 +95,9 @@ class PacketCodecTest {
         samples.put(PacketType.QUEUE_LEAVE_REQ, new QueueLeaveRequest());
         samples.put(PacketType.QUEUE_STATUS, new QueueStatus(true, 1, 3));
 
+    }
+
+    private static void matchSamples(Map<PacketType, Packet> samples) {
         samples.put(PacketType.MATCH_START, new MatchStart(
                 "m-1", Faction.PLANTS, "parsa", 1200,
                 List.of(new CardOffer("ZombieDefault", 50), new CardOffer("ZombieImp", 25)),
@@ -118,8 +133,6 @@ class PacketCodecTest {
                 List.of(new LeaderboardEntry("amir", 2, 3, 4, 5, 6, 7)), 1));
         samples.put(PacketType.SCORE_SUBMIT_REQ, new ScoreSubmitRequest(1234));
         samples.put(PacketType.SCORE_SUBMIT_RES, new ScoreSubmitResponse(true, 1234, null));
-
-        return samples;
     }
 
     @Test

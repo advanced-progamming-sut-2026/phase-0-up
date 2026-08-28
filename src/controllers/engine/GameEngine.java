@@ -188,7 +188,13 @@ public class GameEngine {
         // into an int here would throw on every player's first scoring game, which is every player at
         // least once.
         Integer best = profile.getBestNumberOfMeowPoints();
-        if (profile.recordScoringGameRun(score)) {
+        boolean beatIt = profile.recordScoringGameRun(score);
+        // Offered to whoever keeps the record, which offline is nobody and online is the server. The
+        // local profile has ALREADY been updated, deliberately: the player sees their result on the
+        // frame the run ends rather than after a round trip, and the answer here is the correction if
+        // the server disagrees. See AccountBackend.submitScore.
+        submitScore(score);
+        if (beatIt) {
             if (best == null) {
                 // No "previous best: 0" for somebody who has never played -- that is the fake score
                 // the whole boxed field exists to stop showing.
@@ -203,6 +209,29 @@ public class GameEngine {
             inGameRenderer.render(new Result(true, "You scored " + score
                     + " Meow Points. Your best is still " + best + " -- go again!"));
         }
+    }
+
+    // Sends the run to the server, if there is one, and says so when the two disagree.
+    //
+    // A disagreement is rare and worth a sentence rather than a silent rewrite: it means this account
+    // scored higher on another machine, and a player watching their new best quietly turn into a
+    // bigger number with no explanation would reasonably think the game had lost their run.
+    private void submitScore(int score) {
+        Integer kept;
+        try {
+            kept = utils.storage.DatabaseManager.getInstance().submitScore(score);
+        } catch (RuntimeException unreachable) {
+            inGameRenderer.render(new Result(false,
+                    "Your score is saved here, but the leaderboard did not hear about it."));
+            return;
+        }
+        models.user.Profile profile = gameSession.getPlayer();
+        if (kept == null || profile == null || kept.equals(profile.getBestNumberOfMeowPoints())) {
+            return;
+        }
+        profile.setBestNumberOfMeowPoints(kept);
+        inGameRenderer.render(new Result(true, "The leaderboard already had " + kept
+                + " Meow Points for you from another lawn. That one still stands."));
     }
 
     // Abandons the match in progress. Quitting is a forfeit, so the session is put into LOST through

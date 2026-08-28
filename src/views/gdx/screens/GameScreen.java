@@ -48,7 +48,38 @@ public final class GameScreen extends ScreenAdapter {
     private final views.gdx.render.GameRenderer entities;
     private final views.gdx.bridge.EntityInterpolator interpolator =
             new views.gdx.bridge.EntityInterpolator();
-    private final views.gdx.bridge.GameLoopDriver loop;
+    // Whether this screen is running a game or watching one -- GameLoopDriver ticks the real engine,
+    // NetLoopDriver applies the server's snapshots. Everything downstream (the animation gate, the
+    // interpolation alpha, the pause panel) goes through LoopDriver and does not care which it got.
+    //
+    // Both are handed THIS screen's interpolator, the same instance GameRenderer draws through: a
+    // driver built around a second one would smooth a board nobody is looking at, while the renderer
+    // read an empty set of tracks and drew every entity at its raw 10 Hz position.
+    private final views.gdx.bridge.LoopDriver loop;
+    // Non-null only in a two-player match. Everything about this screen that behaves differently in
+    // one is a branch on this field, and there are seven of them: which driver ticks the board, where
+    // commands go, which HUD panel is built, whether an objective card appears, what "leave" means,
+    // and which of the two end-of-match banners is shown.
+    private final MatchBoot match;
+    // Two players on one device. `couchPlay` is known at construction because the HUD has to be built
+    // knowing it -- both panels, both banks -- while `couch` itself is assembled in openBoard, which
+    // is the first moment the CommandBridge it drives exists.
+    private final boolean couchPlay;
+    private CouchPlay couch;
+    // The match's driver, held under its own type so the snapshot and match-over hooks are reachable.
+    // `loop` above is the same object seen through LoopDriver. Null outside a match.
+    private final views.gdx.bridge.NetLoopDriver netLoop;
+    // Where the model's narration lands.
+    //
+    // Command output goes to toasts rather than to a console nobody is looking at, and every view
+    // effect taps the SAME stream through onModelEvent: explosions ignore anything that is not a
+    // detonation, the weather ignores anything that is not a tornado, and neither has to know about
+    // the other. They read it here rather than from session.drainEvents() because GameEngine drains
+    // the model itself during its tick, so the screen's own drain would see nothing.
+    //
+    // A field rather than a local, because in a match this is fed from the NETWORK as well as from
+    // the engine -- the server relays the same sentences the model wrote. See MatchPlay.
+    private final views.gdx.renderers.GdxInGameRenderer narration;
     private final views.gdx.render.CameraShake shake = new views.gdx.render.CameraShake();
     // Where the camera rests. A shake is applied as an offset FROM this rather than added to the live
     // position, which would accumulate and walk the board off screen over a level's worth of blasts.
@@ -59,6 +90,9 @@ public final class GameScreen extends ScreenAdapter {
     // Interaction (phase 2). ToolState is what the cursor holds between two clicks; CommandBridge turns
     // the second click into the same command string the terminal would have been typed.
     private final views.gdx.input.ToolState tools = new views.gdx.input.ToolState();
+    // The payoff for CommandBridge, and the whole reason this project could be networked at all: a
+    // click has ALWAYS produced a command string and posted it somewhere. In a match that somewhere is
+    // a socket instead of the local engine. Not one line of CommandBridge changes.
     private final views.gdx.bridge.CommandBridge commands;
     private final views.gdx.input.LawnInputProcessor lawnInput;
     private final views.gdx.ui.GameHud hud;
@@ -95,7 +129,14 @@ public final class GameScreen extends ScreenAdapter {
     // still be obvious after the cursor has moved off it looking for a neighbour.
     private static final com.badlogic.gdx.graphics.Color SWAP_TINT =
             new com.badlogic.gdx.graphics.Color(1f, 0.9f, 0.35f, 0.42f);
+    // The keyboard player's cursor in couch play. Sickly green, so at a glance it is obviously the
+    // ZOMBIE player's mark and not the other one's white hover wash.
+    private static final com.badlogic.gdx.graphics.Color COUCH_TINT =
+            new com.badlogic.gdx.graphics.Color(0.45f, 0.85f, 0.3f, 0.38f);
 
+    // The player's own setting, with -Dpvz.grid still able to force it either way for calibration
+    // work. The grid was on by default through Phase 1 because it WAS the calibration instrument; now
+    // that Settings owns it, the default is whatever the profile says. See gridSetting.
     private boolean showGrid;
 
     // The real way in: the level is already chosen and its seeds already picked, so the session is
@@ -117,13 +158,36 @@ public final class GameScreen extends ScreenAdapter {
     }
 
     public GameScreen(GdxContext context, DevBoot boot) {
-        this(context, boot.session(), boot.engine());
+        this(context, boot.session(), boot.engine(), null, false);
+    }
+
+    // A two-player match. The board arrives from the server rather than being simulated here -- see
+    // MatchBoot, which owns that distinction so this constructor does not have to.
+    public GameScreen(GdxContext context, MatchBoot match) {
+        this(context, match.session(), match.engine(), match, false);
+    }
+
+    // Two players on this device, no server. Same mode and same rules as a networked match -- see
+    // CouchBoot, which is deliberately the shortest class in this package.
+    //
+    // A factory rather than a public constructor taking a CouchBoot, so that CouchBoot itself can stay
+    // package-private: it is an assembly detail of this screen and nothing outside needs to name it.
+    public static GameScreen couch(GdxContext context, views.Renderers renderers) {
+        CouchBoot boot = CouchBoot.start(renderers);
+        return new GameScreen(context, boot.session(), boot.engine(), null, true);
     }
 
     private GameScreen(GdxContext context, GameSession session, GameEngine engine) {
+        this(context, session, engine, null, false);
+    }
+
+    private GameScreen(GdxContext context, GameSession session, GameEngine engine, MatchBoot match,
+                       boolean couchPlay) {
         this.context = context;
         this.session = session;
         this.engine = engine;
+        this.match = match;
+        this.couchPlay = couchPlay;
         this.environment = resolveEnvironment(session);
 
         this.background = new BackgroundRenderer(context.assets());
@@ -132,56 +196,46 @@ public final class GameScreen extends ScreenAdapter {
         this.lawn = LawnGeometry.forEnvironment(environment);
         this.viewport = new FitViewport(viewWidth(), LawnGeometry.WORLD_HEIGHT, camera);
 
-        // The player's own setting, with -Dpvz.grid still able to force it either way for calibration
-        // work. The grid was on by default through Phase 1 because it WAS the calibration instrument;
-        // now that Settings owns it, the default is whatever the profile says.
         this.showGrid = gridSetting(session);
 
         this.entities = new views.gdx.render.GameRenderer(
                 context.assets(), context.sprites(), lawn, interpolator, environment);
-        this.loop = new views.gdx.bridge.GameLoopDriver(engine, session, interpolator);
+        this.netLoop = match == null ? null : new views.gdx.bridge.NetLoopDriver(session, interpolator);
+        this.loop = netLoop != null ? netLoop
+                : new views.gdx.bridge.GameLoopDriver(engine, session, interpolator);
         this.loop.setGameSpeed(session.getPlayer() == null ? 1 : session.getPlayer().getGameSpeed());
         this.loop.setPaused(views.gdx.core.DebugFlags.START_PAUSED);
 
-        // Command output goes to toasts from here on -- otherwise every "not enough sun" would be
-        // printed to a console nobody is looking at.
-        // The explosion effect taps this stream rather than session.drainEvents(): GameEngine drains
-        // the model's events itself during the tick, so the screen's own drain sees nothing.
-        // Two consumers off one stream. Explosions ignore anything that is not a detonation and the
-        // weather ignores anything that is not a tornado or a gust, so neither has to know about the
-        // other -- and the wave events they both need arrive HERE rather than through the screen's own
-        // drain, because GameEngine drains the model during its tick.
-        engine.setInGameRenderer(new views.gdx.renderers.GdxInGameRenderer(context.toasts(),
-                this::onModelEvent));
+        this.narration = new views.gdx.renderers.GdxInGameRenderer(context.toasts(),
+                this::onModelEvent);
+        engine.setInGameRenderer(narration);
 
         this.cues = new views.gdx.core.AudioCues(context.audio());
-        this.entities.setAudio(context.audio());
-        this.commands = new views.gdx.bridge.CommandBridge(engine::submitInGameCommand);
-        this.commands.setAudio(context.audio());
+        this.commands = new views.gdx.bridge.CommandBridge(
+                match != null ? this::sendMatchCommand : engine::submitInGameCommand);
+        attachAudio();
         this.lawnMusic = musicChain(session, environment, false);
         this.finalWaveMusic = musicChain(session, environment, true);
         this.lawnInput = new views.gdx.input.LawnInputProcessor(
                 viewport, lawn, session, commands, tools, entities.collectibles());
-        this.hud = new views.gdx.ui.GameHud(context.assets(), context.sprites(), session, tools);
+        this.hud = new views.gdx.ui.GameHud(context.assets(), context.sprites(), session, tools,
+                match == null ? null : match.faction(), couchPlay);
         this.cursor = new views.gdx.render.CursorRenderer(context.sprites(),
                 new views.gdx.ui.UiArt(context.assets()), lawn);
         this.npc = new views.gdx.ui.NpcDialogueBox(context.assets(), context.sprites(), hud.stage());
         this.inputCheck = new InputCheck(context, session, engine, lawn, viewport, lawnInput, tools,
                 hud, this::onModelEvent);
         // EVERY consumer of onModelEvent is constructed before installHudPanels/replayOpeningEvents,
-        // and that ordering is load-bearing rather than tidy.
-        //
-        // replayOpeningEvents drains what the model said during GameEngine.init() -- above all a mode's
-        // opening banner -- and it pushes those sentences straight through onModelEvent. Anything the
-        // fan-out touches that has not been built yet is null AT THAT MOMENT, in the constructor, before
-        // the screen exists. That is exactly how the pickup flights crashed the game on every level with
-        // a mode that announces itself (Night Ops, Deadline, Save Our Seeds, Vasebreaker, Beghouled...)
-        // while every plain Egypt level, which narrates nothing at init, worked perfectly.
+        // and that ordering is load-bearing rather than tidy: replayOpeningEvents drains what the
+        // model said during GameEngine.init() -- above all a mode's opening banner -- straight through
+        // onModelEvent, so anything the fan-out touches that has not been built yet is null AT THAT
+        // MOMENT, inside this constructor, before the screen exists. That is exactly how the pickup
+        // flights crashed every level with a mode that announces itself (Night Ops, Deadline, Save Our
+        // Seeds, Vasebreaker...) while every plain Egypt level, narrating nothing at init, worked.
         this.scorePopups = new views.gdx.ui.ScorePopups(hud.stage(), context.assets().skin(), viewport);
         this.pickups = new views.gdx.ui.PickupFlights(hud.stage(), context.assets().skin(),
                 viewport, hud, lawn);
-        this.pickups.setDeaths(entities.deaths());
-        this.inputCheck.setPickups(pickups);
+        connectPickups();
 
         installHudPanels();
         replayOpeningEvents();
@@ -191,11 +245,45 @@ public final class GameScreen extends ScreenAdapter {
         this.showcase = new Showcase(engine, session);
         this.harness = new MinigameHarness(session, engine, lawn, viewport, lawnInput, tools);
 
-        // The board is built and armed but the player has not seen it yet, so it opens paused behind
-        // the objective card. Nothing ticks until they say go -- a level that starts running while the
-        // player is still reading what it wants is a level they have already partly lost.
-        openObjective();
+        openBoard();
+    }
 
+    // The two places a click has to be able to make a noise: the entity renderer plays impact and
+    // death sounds, the command bridge plays the cue for the click itself.
+    private void attachAudio() {
+        entities.setAudio(context.audio());
+        commands.setAudio(context.audio());
+    }
+
+    // A dropped reward has to know where it died (DeathEffects) and the input harness has to be able
+    // to watch one fly. Both are back-references that can only be set once both ends exist.
+    private void connectPickups() {
+        pickups.setDeaths(entities.deaths());
+        inputCheck.setPickups(pickups);
+    }
+
+    // The last thing the constructor does, and the only part of it that differs between a level and a
+    // match.
+    //
+    // A level opens PAUSED behind its objective card: it is built and armed but the player has not
+    // seen it yet, and a level that starts running while they are still reading what it wants is a
+    // level they have already partly lost.
+    //
+    // A match cannot do that. The server is already ticking and the other player is already playing,
+    // so a card that paused only this screen would hand them a free head start for as long as it
+    // stayed up. What a match gets instead is its conversation -- see MatchPlay.
+    private void openBoard() {
+        if (match != null) {
+            matchPlay = new MatchPlay(context, match, netLoop, narration, hud.stage());
+            lawnInput.setFaction(match.faction());
+        } else if (couchPlay) {
+            // The mouse is the plant player's, so it is gated to their half exactly as it is over a
+            // network. The keyboard is the other player's and is installed in show().
+            couch = new CouchPlay(session, commands);
+            lawnInput.setFaction(models.game.Faction.PLANTS);
+        } else {
+            openObjective();
+        }
         centreOnLawn();
         Gdx.app.log("GameScreen", "world " + (int) background.totalWidth() + "x"
                 + (int) background.height() + " | lawn " + lawn.describe());
@@ -388,6 +476,12 @@ public final class GameScreen extends ScreenAdapter {
         if (picked != null && picked.isValid()) {
             grid.highlight(camera.combined, lawn, picked.col(), picked.row(), SWAP_TINT);
         }
+        // The keyboard player's cursor. The plant player has a mouse pointer to look at; without this
+        // the other person is pressing WASD at a board that gives them no sign of where they are.
+        if (couch != null) {
+            views.gdx.map.GridPos at = couch.cursor();
+            grid.highlight(camera.combined, lawn, at.col(), at.row(), COUCH_TINT);
+        }
 
         // Drawn after the sprites so the lines sit over the board, not under it.
         if (showGrid) {
@@ -405,9 +499,9 @@ public final class GameScreen extends ScreenAdapter {
         // then -- this only reports it.
         overlays.setPauseVisible(loop.isPaused() && !overlays.isObjectiveVisible()
                 && !overlays.isOutcomeVisible());
-        if (!loop.isPlaying() && !overlays.isOutcomeVisible()) {
-            // The one frame the level stops being PLAYING, so the panel and its sting arrive once.
-            raiseOutcome(session.getState() == models.game.GameState.WON);
+        reportEnding();
+        if (matchPlay != null) {
+            matchPlay.update(delta);
         }
         hud.update(loop.ticksRun());
         hud.render(delta);
@@ -538,7 +632,11 @@ public final class GameScreen extends ScreenAdapter {
     @Override
     public void show() {
         com.badlogic.gdx.InputMultiplexer input = new com.badlogic.gdx.InputMultiplexer();
-        input.addProcessor(new KeyboardTools());
+        // In couch play the keyboard belongs to the ZOMBIE player and the mouse to the plant player,
+        // so the single-player shortcuts step aside entirely: S, F and the digits are the shovel,
+        // plant food and seed slots, and every one of them collides with WASD and 1-5. Two players
+        // sharing one keyboard cannot also share its bindings.
+        input.addProcessor(couch != null ? couch.input() : new KeyboardTools());
         // The HUD gets the event before the lawn does. Without this, clicking a seed card would arm the
         // seed AND immediately plant it on whatever tile happens to lie behind the card.
         input.addProcessor(hud.stage());
@@ -767,6 +865,41 @@ public final class GameScreen extends ScreenAdapter {
     // -Dpvz.showOutcome. The harness has always claimed to make "the same call the real end makes", and
     // when the sting was added to the real path alone that stopped being true: the flag raised a silent
     // panel and there was no way to tell from it whether a real win would have been silent too.
+    // ---- the networked match ---------------------------------------------------------------------
+
+    // The conversation half of a match -- the six packets it speaks in, the reaction bar and popup,
+    // and who won. Null on a single-player lawn. See MatchPlay, which was lifted out of this class
+    // for the reason InputCheck was: a 500-statement ceiling, and a versus match pushing it over.
+    private MatchPlay matchPlay;
+
+    // The CommandBridge sink in a match. Indirect through the field rather than bound to MatchPlay
+    // directly, because the bridge is constructed before MatchPlay is -- and a click cannot arrive in
+    // between, since both happen inside this constructor with no frame drawn between them.
+    private boolean sendMatchCommand(String command) {
+        return matchPlay != null && matchPlay.sendCommand(command);
+    }
+
+    // Raises the result panel on the one frame the board stops being live, so it and its sting arrive
+    // exactly once.
+    //
+    // In a match the source of truth is MatchOver, not the session: this client's board is never
+    // simulated, so its GameState sits at PLAYING for the whole match and would report a loss to both
+    // players.
+    private void reportEnding() {
+        if (loop.isPlaying() || overlays.isOutcomeVisible()) {
+            return;
+        }
+        boolean won = session.getState() == models.game.GameState.WON;
+        if (matchPlay != null) {
+            matchPlay.raiseOutcome(overlays);
+        } else if (couch != null) {
+            // Neither person at this keyboard is "you", so the panel names the winning SIDE.
+            couch.raiseOutcome(overlays, won);
+        } else {
+            raiseOutcome(won);
+        }
+    }
+
     private void raiseOutcome(boolean won) {
         context.audio().play(won ? views.gdx.core.AudioManager.SFX_WIN
                 : views.gdx.core.AudioManager.SFX_LOSE);
@@ -950,6 +1083,19 @@ public final class GameScreen extends ScreenAdapter {
     // be rewound -- plants are gone, mowers are spent and the wave system has advanced. The seed names
     // are carried across so the player does not re-pick eight cards to retry.
     private void restart() {
+        if (match != null) {
+            // There is nothing here to replay. The board belongs to the server and the opponent has
+            // gone back to the lobby; a rematch is arranged there, by asking them again.
+            context.toasts().error("Ask them for a rematch from the lobby.");
+            return;
+        }
+        if (couchPlay) {
+            // Not a limitation worth working around: restart() reuses the LEVEL, and therefore the
+            // same mode object, whose onStart is guarded against running twice -- a replayed versus
+            // board would come up with no brains and no sun makers. Start a fresh one instead.
+            context.toasts().error("Start a new couch match from the Multiplayer menu.");
+            return;
+        }
         models.game.Level level = session.getLevel();
         models.user.Profile profile = session.getPlayer();
         if (level == null || profile == null) {
@@ -979,14 +1125,28 @@ public final class GameScreen extends ScreenAdapter {
     // Quitting mid-level is a forfeit, and the engine treats it as one: quests settle, a scoring run is
     // scored, the profile is saved. Doing less than that would let a losing level be escaped for free.
     private void saveAndExit() {
+        if (matchPlay != null) {
+            // Leaving a match is a forfeit and the SERVER decides that, not this client -- calling
+            // abandonLevel here would end a board this machine does not own and quietly leave the
+            // opponent playing against nobody. See MatchPlay.leave.
+            matchPlay.leave();
+            leaveLevel();
+            return;
+        }
         engine.abandonLevel();
         leaveLevel();
     }
 
-    // Back to the level map, with the finished session let go.
+    // Back to the level map, with the finished session let go. A match goes back to the lobby instead:
+    // the adventure map is not where it came from and not where a rematch is arranged.
     private void leaveLevel() {
+        if (matchPlay != null) {
+            matchPlay.release();
+        }
         context.appSession().setCurrentGameSession(null);
-        context.appSession().setCurrentMenu(controllers.engine.MenuType.PLAY_MENU);
+        context.appSession().setCurrentMenu(match != null || couchPlay
+                ? controllers.engine.MenuType.ONLINE_MENU
+                : controllers.engine.MenuType.PLAY_MENU);
     }
 
     // -Dpvz.grid=1/0 overrides the profile in both directions, so calibration work does not require
@@ -1026,6 +1186,9 @@ public final class GameScreen extends ScreenAdapter {
 
     @Override
     public void dispose() {
+        if (matchPlay != null) {
+            matchPlay.release();
+        }
         batch.dispose();
         grid.dispose();
         danger.dispose();

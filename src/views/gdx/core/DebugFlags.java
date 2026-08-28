@@ -334,6 +334,28 @@ public final class DebugFlags {
     //       -Dpvz.smokeFrames=600
     public static final boolean FEED_CHECK = flag("pvz.feedCheck");
 
+    // Joins the random-match queue the moment the lobby opens, so a two-player match can be started
+    // without a human clicking on two machines.
+    //
+    // There is no other way to test the versus mode end to end: it needs TWO clients, both signed in
+    // as different accounts, both reaching the lobby, and one of them arriving second. Two windows
+    // launched with this and -Dpvz.devLogin do exactly that and then play the match out.
+    //
+    //   gradlew runServer
+    //   gradlew runGui -Dpvz.devLogin=amir:Str0ng!pass -Dpvz.menu=online -Dpvz.autoQueue=1
+    //   gradlew runGui -Dpvz.devLogin=parsa:Str0ng!pass -Dpvz.menu=online -Dpvz.autoQueue=1
+    public static final boolean AUTO_QUEUE = flag("pvz.autoQueue");
+
+    // Sends reaction N (0..8, in Reaction's own order) a second into a match, and leaves the reaction
+    // bar open so a screenshot catches both halves of the feature at once.
+    //
+    // Needed for the same reason SUMMON_CHECK is: the thing being checked is what the OTHER player
+    // sees, and there is no way to reach it from one window. Run two clients, give one this flag, and
+    // screenshot the other.
+    //
+    //   gradlew runGui -Dpvz.devLogin=amir:... -Dpvz.menu=online -Dpvz.autoQueue=1 -Dpvz.reactionCheck=0
+    public static final int REACTION_CHECK = number("pvz.reactionCheck");
+
     private DebugFlags() { }
 
     private static String text(String key) {

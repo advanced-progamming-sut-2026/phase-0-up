@@ -1,6 +1,5 @@
 package views.console.menu;
 
-import models.user.User;
 import utils.Result;
 import views.OutputHandler;
 import views.renderers.MenuRenderer.LoginMenuRenderer;

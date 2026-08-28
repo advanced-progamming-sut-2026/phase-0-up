@@ -2,7 +2,7 @@ package net.packets;
 
 import net.Packet;
 import net.dto.CardOffer;
-import net.dto.Faction;
+import models.game.Faction;
 
 import java.util.List;
 

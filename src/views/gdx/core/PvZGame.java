@@ -216,6 +216,7 @@ public class PvZGame extends Game {
     //
     // The two overrides are development routes:
     //   -Dpvz.screen=game     straight onto a pre-built lawn via DevBoot, skipping level choice
+    //   -Dpvz.screen=couch    straight onto a two-player couch match, no sign-in and no server
     //   -Dpvz.screen=sprites  the Phase 0 asset harness
     private void openEntryScreen() {
         String entry = System.getProperty("pvz.screen", "").trim();
@@ -227,6 +228,11 @@ public class PvZGame extends Game {
             // returns early on a null target and leaves the harness alone.
             appSession.setCurrentMenu(null);
             screens.showDetached(new views.gdx.screens.SpriteSmokeScreen(context));
+        } else if ("couch".equalsIgnoreCase(entry)) {
+            // Straight onto a two-player board. Couch play needs no sign-in and no server -- it plays
+            // on a neutral profile -- so unlike every other entry point it can be reached from a cold
+            // start, which is exactly what makes it checkable with one window.
+            openCouchMatch();
         } else if ("game".equalsIgnoreCase(entry)) {
             // The session's menu has to move too, not just the screen. showDetached leaves
             // ScreenManager with nothing displayed, so the next sync() sees the session still sitting
@@ -464,8 +470,8 @@ public class PvZGame extends Game {
         }
         pushRouter.on(net.PacketType.CHALLENGE_INVITE, envelope -> {
             net.packets.ChallengeInvite invite = envelope.as(net.packets.ChallengeInvite.class);
-            String theirSide = invite.theirFaction() == net.dto.Faction.PLANTS ? "plants" : "zombies";
-            String yourSide = invite.theirFaction() == net.dto.Faction.PLANTS ? "zombies" : "plants";
+            String theirSide = invite.theirFaction() == models.game.Faction.PLANTS ? "plants" : "zombies";
+            String yourSide = invite.theirFaction() == models.game.Faction.PLANTS ? "zombies" : "plants";
             views.gdx.ui.ConfirmDialog.decide(modals.stage(), assets, assets.skin(),
                     "A Challenger!",
                     invite.fromUsername() + " wants to play I, Zombie. They're taking the "
@@ -473,6 +479,36 @@ public class PvZGame extends Game {
                     "Let's Go", () -> answerChallenge(invite.challengeId(), true),
                     "No Thanks", () -> answerChallenge(invite.challengeId(), false));
         });
+        // MATCH_START is claimed here for the same reason the invite is: a match can begin from the
+        // lobby's challenge button, from the random queue, or from the pop-up above -- three different
+        // screens -- and in every case the answer is the same, so it is answered in one place.
+        pushRouter.on(net.PacketType.MATCH_START, envelope ->
+                openMatch(envelope.as(net.packets.MatchStart.class)));
+    }
+
+    // Swaps the lawn in.
+    //
+    // Already on the render thread: PushRouter posts every handler there precisely so that building a
+    // SpriteBatch, a Stage and a few textures -- all of which need the GL context -- is legal here.
+    // Two players on this machine. Opened the same way a networked match is -- filed under IN_GAME so
+    // the next sync() leaves it alone -- because from the screen manager's point of view it IS the
+    // same thing: a lawn, on this window, that the menus must not swap back out.
+    public void openCouchMatch() {
+        appSession.setCurrentMenu(MenuType.IN_GAME);
+        screens.showAs(views.gdx.screens.GameScreen.couch(context, renderers), MenuType.IN_GAME);
+        Gdx.app.log("PvZGame", "couch match: mouse plants, WASD summons");
+    }
+
+    private void openMatch(net.packets.MatchStart start) {
+        views.gdx.screens.MatchBoot boot = views.gdx.screens.MatchBoot.from(start, renderers);
+        // The session's menu moves too, not just the screen. showAs files the lawn under IN_GAME, so
+        // the next sync() sees the menu it is already showing and leaves it alone -- where
+        // showDetached would let sync() swap a second, ordinary GameScreen straight over it.
+        appSession.setCurrentGameSession(boot.session());
+        appSession.setCurrentMenu(MenuType.IN_GAME);
+        screens.showAs(new views.gdx.screens.GameScreen(context, boot), MenuType.IN_GAME);
+        Gdx.app.log("PvZGame", "match " + start.matchId() + " as " + start.yourFaction()
+                + " against " + start.opponentUsername());
     }
 
     // Answered off the render thread: this is a blocking round trip, and it is running inside a

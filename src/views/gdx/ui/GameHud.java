@@ -90,11 +90,38 @@ public final class GameHud implements Disposable {
         }
     }
 
+    // Which side this HUD belongs to, or null on a single-player board where the question does not
+    // arise. It decides which of the two panels is built at all -- see buildSeedBank and buildRoster.
+    // A versus match must never show a player their opponent's controls: half of them would be refused
+    // by the server, and the other half would be a way to spend the other person's sun.
+    private final models.game.Faction faction;
+
+    // Couch play: both players are at this keyboard, so this HUD serves BOTH sides at once and neither
+    // panel may be hidden. Distinct from faction == null, which means "not a versus board at all".
+    private final boolean couch;
+
+    // Roster cards kept apart from seed cards, because in couch play they are priced against a
+    // DIFFERENT bank -- the zombie player's, which lives on the mode and not on the session. One list
+    // refreshed against one number would dim every zombie the plant player could not afford.
+    private final List<SeedCardActor> rosterCards = new ArrayList<>();
+
     public GameHud(Assets assets, SpriteRegistry sprites, GameSession session, ToolState tools) {
+        this(assets, sprites, session, tools, null, false);
+    }
+
+    public GameHud(Assets assets, SpriteRegistry sprites, GameSession session, ToolState tools,
+                   models.game.Faction faction) {
+        this(assets, sprites, session, tools, faction, false);
+    }
+
+    public GameHud(Assets assets, SpriteRegistry sprites, GameSession session, ToolState tools,
+                   models.game.Faction faction, boolean couch) {
         this.assets = assets;
         this.art = new UiArt(assets);
         this.session = session;
         this.tools = tools;
+        this.faction = faction;
+        this.couch = couch;
         this.stage = new Stage(new FitViewport(PvZGame.VIRTUAL_WIDTH, PvZGame.VIRTUAL_HEIGHT));
 
         this.sunLabel = new Label("0", assets.skin());
@@ -228,8 +255,7 @@ public final class GameHud implements Disposable {
     private void buildSeedBank(SpriteRegistry sprites) {
         this.sprites = sprites;
         List<SeedPacket> packets = session.getSelectedSeeds();
-        if (packets == null || session.getMode() == null
-                || !session.getMode().requiresSeedSelection(session)) {
+        if (packets == null || session.getMode() == null || !wantsSeedBank()) {
             return;
         }
         for (SeedPacket packet : packets) {
@@ -249,6 +275,28 @@ public final class GameHud implements Disposable {
             cards.add(card);
             cardRow.add(card).size(SeedCardActor.CARD_WIDTH, SeedCardActor.CARD_HEIGHT).padRight(6f);
         }
+    }
+
+    // Whether this player gets a seed bank.
+    //
+    // Off a faction, the question is requiresSeedSelection() -- the same one the seed-selection screen
+    // is gated on, so a bank can never appear for a level nobody picked seeds for. In a versus match
+    // that answer is NO for both players (neither picks: the loadouts are fixed so nobody waits in a
+    // menu), and the real question becomes which side you are on.
+    private boolean wantsSeedBank() {
+        if (couch) {
+            return true;   // both players are here; both need their controls
+        }
+        if (faction != null) {
+            return faction == models.game.Faction.PLANTS;
+        }
+        return session.getMode().requiresSeedSelection(session);
+    }
+
+    // And the mirror image. A brain lawn always has a roster; in a versus match only one of the two
+    // players may buy from it.
+    private boolean wantsRoster() {
+        return couch || faction == null || faction == models.game.Faction.ZOMBIES;
     }
 
     // Kept so the hand can be rebuilt after the constructor has run.
@@ -355,8 +403,8 @@ public final class GameHud implements Disposable {
     // never changes afterwards. What DOES change is what you can afford, and that is already
     // SeedCardActor.refresh's job -- the same dim it puts on a plant you have no sun for.
     private void buildRoster() {
-        models.game.gamemodes.IZombieMode mode = views.gdx.render.IZombieRenderer.modeOf(session);
-        if (mode == null) {
+        models.game.gamemodes.BrainLawn mode = views.gdx.render.IZombieRenderer.modeOf(session);
+        if (mode == null || !wantsRoster()) {
             return;
         }
         for (java.util.Map.Entry<String, Integer> entry : mode.getRoster().entrySet()) {
@@ -382,6 +430,7 @@ public final class GameHud implements Disposable {
             }
         });
         cards.add(card);
+        rosterCards.add(card);
         return card;
     }
 
@@ -553,7 +602,11 @@ public final class GameHud implements Disposable {
         // markEatenPlantsAsCraters then turns into a permanent CRATER on the next tick -- a tile
         // destroyed by a gesture that looks like tidying up. Offering a button whose only effect is to
         // damage the board is the view promising something it should not.
-        if (UpgradePanel.modeOf(session) == null) {
+        // The zombie player has no plants to dig up and no plant food to spend, so they get no toolbar
+        // at all: both buttons would arm a tool whose every click the server refuses. Tested against
+        // ZOMBIES specifically rather than against wantsSeedBank(), which is false on several
+        // single-player boards -- Vasebreaker among them -- that very much do need a shovel.
+        if (UpgradePanel.modeOf(session) == null && faction != models.game.Faction.ZOMBIES) {
             Table toolbar = new Table();
             toolbar.add(shovelButton).padRight(6f);
             toolbar.add(plantFoodButton).padRight(10f);
@@ -589,18 +642,22 @@ public final class GameHud implements Disposable {
     public void update(long currentTick) {
         refreshHand();
         refreshConveyor();
-        sunLabel.setText(String.valueOf(session.getSunAmount()));
+        int sun = spendableSun();
+        // Couch play shows both banks side by side, because both players are reading this one line and
+        // each is only interested in half of it. The zombie half is the mode's, not the session's.
+        sunLabel.setText(couch ? sun + " / " + zombieSun() : String.valueOf(sun));
         plantFoodLabel.setText(String.valueOf(session.getPlantFoodCount()));
         wallet.refresh(session.getPlayer());
         if (session.getMode() instanceof models.game.gamemodes.ScoringMode scoring) {
             meowLabel.setText(String.valueOf(scoring.getMeowPoints().getTotal()));
         }
 
-        int sun = session.getSunAmount();
         for (SeedCardActor card : cards) {
-            card.refresh(currentTick, sun);
-            card.setSelected(tools.tool() == ToolState.Tool.SEED
-                    && card.plantType().equalsIgnoreCase(tools.seedName()));
+            // A roster card is priced against the ZOMBIE bank, always -- in couch play the two banks
+            // genuinely differ, and in a versus match spendableSun() has already answered for the one
+            // side this HUD belongs to.
+            card.refresh(currentTick, rosterCards.contains(card) ? zombieSun() : sun);
+            card.setSelected(isArmed(card));
         }
 
         // Armed tools light up rather than swapping background art, so the panel stays consistent.
@@ -614,7 +671,53 @@ public final class GameHud implements Disposable {
         updateWave();
     }
 
+    // Whose sun this counter is showing.
+    //
+    // GameSession has ONE sunAmount field and a versus match has two economies, so the plant player's
+    // bank stays on the session -- which is what makes every existing plant-cost check work untouched
+    // -- and the zombie player's lives on the mode. Reading the session's number for the zombie player
+    // would show them their opponent's bank, dim every card they could actually afford, and light up
+    // ones they could not.
+    private int spendableSun() {
+        if (faction == models.game.Faction.ZOMBIES) {
+            return zombieSun();
+        }
+        return session.getSunAmount();
+    }
+
+    // The zombie player's bank. On any board that is not a versus one there is only the session's, and
+    // single-player I, Zombie spends exactly that -- so this answers with it rather than with zero.
+    private int zombieSun() {
+        return session.getMode() instanceof models.game.gamemodes.VersusIZombieMode versus
+                ? versus.getZombieSun() : session.getSunAmount();
+    }
+
+    // Whether this card is the one currently armed. A seed and a zombie are armed through different
+    // tools, and a roster card compared against the SEED name would never light up.
+    private boolean isArmed(SeedCardActor card) {
+        if (rosterCards.contains(card)) {
+            return tools.tool() == ToolState.Tool.ZOMBIE
+                    && card.plantType().equalsIgnoreCase(tools.zombieAlias());
+        }
+        return tools.tool() == ToolState.Tool.SEED
+                && card.plantType().equalsIgnoreCase(tools.seedName());
+    }
+
     private void updateWave() {
+        // A versus match has no waves at all -- it has a clock, and the clock IS the win condition for
+        // one of the two players. Same widget, same question: how far through am I? Without it the
+        // three minutes the plant player is trying to survive are invisible, and "hold out" is not a
+        // goal anyone can play towards blind.
+        if (session.getMode() instanceof models.game.gamemodes.VersusIZombieMode versus) {
+            int remaining = versus.ticksRemaining(session);
+            int total = Math.max(1, versus.matchDurationTicks());
+            int seconds = remaining / utils.Constants.TICKS_PER_SECOND;
+            waveLabel.setText(String.format(java.util.Locale.ROOT, "%d:%02d  |  brains %d / %d",
+                    seconds / 60, seconds % 60,
+                    versus.brainsTotal() - versus.brainsEaten(), versus.brainsTotal()));
+            waveBar.set(1f - remaining / (float) total, total);
+            return;
+        }
         // Beghouled counts MATCHES, not waves: its zombies arrive on a timer with no wave structure at
         // all, so the meter along the bottom read "" and sat empty for the whole level -- with the one
         // number that decides when the level ends printed once, in the opening banner, and never again.

@@ -81,6 +81,13 @@ public final class GameServer implements AutoCloseable {
         }
     }
 
+    // For the feature services, so a match or an account handler reports through the same sink the
+    // server itself does instead of printing straight to stdout -- which is what makes the log
+    // redirectable in a test.
+    public void log(String message) {
+        log.accept(message);
+    }
+
     // ---- wiring ---------------------------------------------------------------------------------
 
     // Refuses a second handler for the same type rather than silently replacing the first, which would
@@ -177,9 +184,35 @@ public final class GameServer implements AutoCloseable {
         for (ClientSession session : new ArrayList<>(sessions)) {
             session.close();
         }
+        // Then WAIT for the disconnect handlers.
+        //
+        // A dropped socket runs its listeners on that connection's reader thread, and those listeners
+        // do real work: forfeiting a match, writing both players' records to disk. Returning from
+        // close() while one is halfway through means the process can exit -- or a test's temp
+        // directory be deleted -- underneath a half-written roster file.
+        awaitSessionsDrained();
         sessions.clear();
         online.clear();
         log.accept("stopped");
+    }
+
+    // Every socket has either been listed and not yet dropped, or is being dropped right now. Bounded,
+    // because a listener that hangs must not stop the server from shutting down at all -- a two-second
+    // wait is generous for a file write and short enough that nobody sits watching a stuck process.
+    private void awaitSessionsDrained() {
+        long deadline = System.currentTimeMillis() + 2_000;
+        while (System.currentTimeMillis() < deadline) {
+            if (sessions.isEmpty() && dropsInFlight.get() == 0) {
+                return;
+            }
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+        errorLog.accept("gave up waiting for " + sessions.size() + " session(s) to finish closing");
     }
 
     // ---- dispatch -------------------------------------------------------------------------------
@@ -284,7 +317,22 @@ public final class GameServer implements AutoCloseable {
         }
     }
 
+    // How many disconnects are being processed right now. Incremented BEFORE the session leaves the
+    // set, which is what makes close()'s wait airtight: a session is either still listed or still
+    // counted here, never neither, from the moment its socket drops until its listeners have finished.
+    private final java.util.concurrent.atomic.AtomicInteger dropsInFlight =
+            new java.util.concurrent.atomic.AtomicInteger();
+
     private void dropSession(ClientSession session) {
+        dropsInFlight.incrementAndGet();
+        try {
+            runDrop(session);
+        } finally {
+            dropsInFlight.decrementAndGet();
+        }
+    }
+
+    private void runDrop(ClientSession session) {
         sessions.remove(session);
         // BEFORE detaching: the listeners identify the player by their account, and a session that has
         // already been made anonymous cannot be matched to the queue entry or match it belongs to.

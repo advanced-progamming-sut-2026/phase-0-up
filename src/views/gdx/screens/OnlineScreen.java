@@ -9,7 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import net.PacketType;
 import net.dto.ChallengeRejectReason;
-import net.dto.Faction;
+import models.game.Faction;
 import net.packets.AckResponse;
 import net.packets.ChallengeDeclined;
 import net.packets.ChallengeRejected;
@@ -70,20 +70,12 @@ public final class OnlineScreen extends MenuScreen {
         Table panel = MenuPanel.build(skin, "Multiplayer");
 
         if (!context.game().isOnline()) {
-            // Said plainly and early. Offering a lobby that cannot work would let the player type a
-            // name, press a button and get nothing, with no idea why.
-            panel.add(MenuStyles.label(skin,
-                    "No server. Multiplayer needs one -- the rest of the game plays fine without it.",
-                    MenuStyles.TEXT)).width(LIST_WIDTH).padBottom(18f).row();
-            panel.add(backButton()).width(200f).height(56f).row();
-            root.setFillParent(true);
-            root.add(panel);
+            buildOfflineNotice(root, panel);
             return;
         }
 
         status = MenuStyles.label(skin, "Pick a fight.", MenuStyles.TEXT);
         panel.add(status).width(LIST_WIDTH).padBottom(12f).row();
-
         panel.add(MenuStyles.label(skin, "Who's around", MenuStyles.HEADING)).padBottom(6f).row();
         playerList = new Table();
         playerList.top();
@@ -105,24 +97,13 @@ public final class OnlineScreen extends MenuScreen {
         });
         panel.add(sideButton).width(LIST_WIDTH).height(50f).padBottom(10f).row();
 
-        TextButton challenge = MenuStyles.button(skin, "Challenge", MenuStyles.BUTTON_GREEN);
-        challenge.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                sendChallenge(opponent.getText());
-            }
-        });
-        panel.add(challenge).width(LIST_WIDTH).height(58f).padBottom(10f).row();
+        panel.add(action("Challenge", () -> sendChallenge(opponent.getText())))
+                .width(LIST_WIDTH).height(58f).padBottom(10f).row();
 
-        queueButton = MenuStyles.button(skin, "Random Match", MenuStyles.BUTTON_GREEN);
-        queueButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                toggleQueue();
-            }
-        });
-        panel.add(queueButton).width(LIST_WIDTH).height(58f).padBottom(14f).row();
+        queueButton = action("Random Match", this::toggleQueue);
+        panel.add(queueButton).width(LIST_WIDTH).height(58f).padBottom(10f).row();
 
+        panel.add(couchButton()).width(LIST_WIDTH).height(58f).padBottom(14f).row();
         panel.add(backButton()).width(200f).height(56f).row();
 
         root.setFillParent(true);
@@ -130,6 +111,55 @@ public final class OnlineScreen extends MenuScreen {
 
         listenForRefusals();
         refreshPlayers();
+
+        // Two windows, one queue, no hands. See DebugFlags.AUTO_QUEUE -- the versus mode cannot be
+        // exercised end to end any other way.
+        if (views.gdx.core.DebugFlags.AUTO_QUEUE) {
+            toggleQueue();
+        }
+    }
+
+    // Said plainly and early. Offering a lobby that cannot work would let the player type a name,
+    // press a button and get nothing, with no idea why.
+    private void buildOfflineNotice(Table root, Table panel) {
+        panel.add(MenuStyles.label(skin,
+                "No server. Multiplayer needs one -- but the sofa doesn't.",
+                MenuStyles.TEXT)).width(LIST_WIDTH).padBottom(18f).row();
+        // Offered here as well, and this is the branch it matters most on: couch play is the whole of
+        // multiplayer for somebody with no server, so a lobby that only said "no" would be hiding the
+        // one thing that still works.
+        panel.add(couchButton()).width(LIST_WIDTH).height(58f).padBottom(14f).row();
+        panel.add(backButton()).width(200f).height(56f).row();
+        root.setFillParent(true);
+        root.add(panel);
+    }
+
+    // Two players, one keyboard, no server at all. The mouse plants and WASD summons -- see
+    // KeyboardZombieController, and CouchBoot for how little the rest of the game has to know.
+    private TextButton couchButton() {
+        TextButton button = MenuStyles.button(skin, "Couch Play (2 on this PC)",
+                MenuStyles.BUTTON_BROWN);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                leaveLobby();
+                context.game().openCouchMatch();
+            }
+        });
+        return button;
+    }
+
+    // The two green buttons that do something to the server. Both are a label and a Runnable, and
+    // spelling out an anonymous ChangeListener for each was four lines of ceremony saying so twice.
+    private TextButton action(String label, Runnable onPress) {
+        TextButton button = MenuStyles.button(skin, label, MenuStyles.BUTTON_GREEN);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                onPress.run();
+            }
+        });
+        return button;
     }
 
     private TextButton backButton() {
@@ -185,41 +215,74 @@ public final class OnlineScreen extends MenuScreen {
         };
     }
 
+    // Every request on this screen goes through here, and none of them may be made any other way.
+    //
+    // NetClient.request BLOCKS until the answer comes back or the timeout expires, and every caller
+    // below is either a Scene2D click listener or the render() method -- all of which run on the one
+    // thread that draws the window. A blocking call there freezes the game for the whole round trip,
+    // and that is not a theoretical cost: joining the queue when somebody is already waiting gets a
+    // MatchStart PUSH instead of a reply, so the request waits out its FULL timeout while the packets
+    // that would have opened the lawn queue up behind the frozen render thread. The match started on
+    // the server and the client sat in the lobby.
+    //
+    // So the round trip happens on its own thread and the answer is handed back through
+    // postRunnable -- the same shape PvZGame.answerChallenge uses, for the same reason. `reply` is
+    // null when nothing came back, and every callback below has to say so rather than assume.
+    private <T extends net.Packet> void ask(net.Packet request, Class<T> expected,
+                                            java.util.function.Consumer<T> then) {
+        Thread worker = new Thread(() -> {
+            T reply = context.game().netClient().request(request, expected);
+            com.badlogic.gdx.Gdx.app.postRunnable(() -> {
+                if (!closed) {
+                    then.accept(reply);
+                }
+            });
+        }, "lobby-request");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    // Whether this screen has gone away. An answer that arrives after it has would otherwise set text
+    // on a Label belonging to a disposed stage.
+    private boolean closed;
+
     private void sendChallenge(String rawName) {
         String name = rawName == null ? "" : rawName.trim();
         if (!MenuForms.require(context, name, "Type a username to challenge.")) {
             return;
         }
-        AckResponse ack = context.game().netClient()
-                .request(new ChallengeRequest(name, preferred), AckResponse.class);
-        if (ack == null) {
-            // A refused challenge comes back as CHALLENGE_REJECTED, which the push handler above
-            // reports. A null here means the request itself did not get an answer at all.
-            say("The server isn't answering.");
-            return;
-        }
-        say(ack.ok() ? "Waiting for " + name + " to answer..." : ack.message());
+        say("Asking " + name + "...");
+        ask(new ChallengeRequest(name, preferred), AckResponse.class, ack -> {
+            if (ack == null) {
+                // A refused challenge comes back as CHALLENGE_REJECTED, which the push handler above
+                // reports. A null here means the request itself did not get an answer at all.
+                say("The server isn't answering.");
+                return;
+            }
+            say(ack.ok() ? "Waiting for " + name + " to answer..." : ack.message());
+        });
     }
 
     private void toggleQueue() {
         if (queued) {
-            context.game().netClient().request(new QueueLeaveRequest(), QueueStatus.class);
             setQueued(false);
             say("Left the queue.");
+            context.game().netClient().send(new QueueLeaveRequest());
             return;
         }
-        QueueStatus joined = context.game().netClient()
-                .request(new QueueJoinRequest(preferred), QueueStatus.class);
-        if (joined == null) {
-            // Not necessarily a failure: if somebody was already waiting the server starts the match
-            // immediately and answers with a MatchStart PUSH rather than a queue status, so there is
-            // nothing to report here and the match screen takes over.
-            return;
-        }
-        setQueued(joined.waiting());
-        say(joined.waiting()
-                ? "In the queue. Waiting for another gardener..."
-                : "Match found!");
+        say("Looking for an opponent...");
+        ask(new QueueJoinRequest(preferred), QueueStatus.class, joined -> {
+            if (joined == null) {
+                // Not necessarily a failure: if somebody was already waiting the server starts the
+                // match immediately and answers with a MatchStart PUSH rather than a queue status, so
+                // there is nothing to report here and the match screen has already taken over.
+                return;
+            }
+            setQueued(joined.waiting());
+            say(joined.waiting()
+                    ? "In the queue. Waiting for another gardener..."
+                    : "Match found!");
+        });
     }
 
     private void setQueued(boolean queued) {
@@ -230,12 +293,11 @@ public final class OnlineScreen extends MenuScreen {
     }
 
     private void refreshPlayers() {
-        OnlineUsersResponse response = context.game().netClient()
-                .request(new OnlineUsersRequest(), OnlineUsersResponse.class);
-        if (response == null || playerList == null) {
-            return;
-        }
-        renderPlayers(response.usernames());
+        ask(new OnlineUsersRequest(), OnlineUsersResponse.class, response -> {
+            if (response != null && playerList != null) {
+                renderPlayers(response.usernames());
+            }
+        });
     }
 
     private void renderPlayers(List<String> names) {
@@ -301,6 +363,7 @@ public final class OnlineScreen extends MenuScreen {
     // a player who walks away from this screen is not waiting for a match any more, and pairing them
     // with somebody who IS waiting would drop a match on a menu that cannot show it.
     private void leaveLobby() {
+        closed = true;
         if (playerList == null) {
             return;
         }

@@ -15,7 +15,7 @@ import utils.Constants;
 //
 // GameEngine.advanceOneTick() is used verbatim -- same systems, same order, same win/loss evaluation
 // as the terminal build. Nothing about the simulation is re-implemented here.
-public final class GameLoopDriver {
+public final class GameLoopDriver implements LoopDriver {
 
     private static final float TICK_SECONDS = 1f / Constants.TICKS_PER_SECOND;
 
@@ -40,6 +40,7 @@ public final class GameLoopDriver {
         interpolator.prime(session);
     }
 
+    @Override
     public void update(float deltaSeconds) {
         if (paused || !isPlaying()) {
             // Deliberately does not touch the accumulator: on resume the game continues from exactly
@@ -67,36 +68,44 @@ public final class GameLoopDriver {
     }
 
     // How far through the current tick we are, 0..1. Renderers blend positions with this.
+    @Override
     public float alpha() {
         return Math.min(1f, accumulator / TICK_SECONDS);
     }
 
+    @Override
     public boolean isPlaying() {
         return session.getState() == GameState.PLAYING;
     }
 
+    @Override
     public boolean isPaused() {
         return paused;
     }
 
+    @Override
     public void setPaused(boolean paused) {
         this.paused = paused;
     }
 
+    @Override
     public void togglePause() {
         paused = !paused;
     }
 
     // 1..3, per the phase-2 Settings menu. Clamped rather than rejected: a bad persisted value should
     // not make the game unplayable.
+    @Override
     public void setGameSpeed(int gameSpeed) {
         this.gameSpeed = Math.max(1, Math.min(3, gameSpeed));
     }
 
+    @Override
     public int gameSpeed() {
         return gameSpeed;
     }
 
+    @Override
     public long ticksRun() {
         return ticksRun;
     }

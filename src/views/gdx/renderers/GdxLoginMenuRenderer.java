@@ -1,6 +1,5 @@
 package views.gdx.renderers;
 
-import models.user.User;
 import utils.Result;
 import views.gdx.core.ToastSink;
 import views.renderers.MenuRenderer.LoginMenuRenderer;

@@ -83,8 +83,9 @@ public class GameSession {
         }
     }
     public Result plant(int x, int y, String plantType) {
-        if (!map.isValidCoordinate(x, y)) {
-            return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
+        Result offLimits = plantingRefusal(x, y);
+        if (offLimits != null) {
+            return offLimits;
         }
         if (mode != null && mode.managesPlantInventory()) {
             return plantFromModeInventory(x, y, plantType);
@@ -134,6 +135,20 @@ public class GameSession {
         return new Result(true, "\"" + plantType + "\" is in the ground at (" + x + ", " + y
                 + "). Hold the line!");
     };
+
+    // Why nothing may be planted on this tile, or null if something may.
+    //
+    // Two reasons, and they are asked as one because a caller does not care which: the tile is not on
+    // the board at all, or the MODE has closed it. Versus I, Zombie is the only mode that closes any
+    // -- it keeps the plant player left of the red line so the zombie player always has somewhere
+    // legal to summon.
+    private Result plantingRefusal(int x, int y) {
+        if (!map.isValidCoordinate(x, y)) {
+            return new Result(false, "There's no tile at (" + x + ", " + y + ") -- that's off the lawn.");
+        }
+        String refusal = mode == null ? null : mode.plantingRefusal(x, y);
+        return refusal == null ? null : new Result(false, refusal);
+    }
 
     private Result plantFromModeInventory(int x, int y, String plantType) {
         if (!mode.hasPlantAvailable(plantType)) {
@@ -206,9 +221,12 @@ public class GameSession {
         return new Result(false, "Save the bowling for Wall-nut Bowling!");
     }
 
+    // Dispatched on BrainLawn, not on IZombieMode: single-player I, Zombie and a versus match are both
+    // played from the zombie side and both answer this command, but they are deliberately unrelated
+    // classes (see BrainLawn).
     public Result summonZombie(String type, int x, int y) {
-        if (mode instanceof models.game.gamemodes.IZombieMode) {
-            return ((models.game.gamemodes.IZombieMode) mode).summonZombie(this, type, x, y);
+        if (mode instanceof models.game.gamemodes.BrainLawn lawn) {
+            return lawn.summonZombie(this, type, x, y);
         }
         return new Result(false, "You're on the plant side here -- summoning is an I, Zombie trick.");
     }

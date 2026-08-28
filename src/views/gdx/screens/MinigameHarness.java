@@ -327,7 +327,7 @@ final class MinigameHarness {
         }
         summonCheckFrames++;
         if (summonCheckFrames == SUMMON_ADVANCE_FRAME) {
-            models.game.gamemodes.IZombieMode mode = views.gdx.render.IZombieRenderer.modeOf(session);
+            models.game.gamemodes.BrainLawn mode = views.gdx.render.IZombieRenderer.modeOf(session);
             if (mode == null) {
                 return;   // nothing to fast-forward TO; leave whatever board this is alone
             }
@@ -339,7 +339,7 @@ final class MinigameHarness {
         if (summonCheckFrames != SUMMON_FRAME) {
             return;
         }
-        models.game.gamemodes.IZombieMode mode = views.gdx.render.IZombieRenderer.modeOf(session);
+        models.game.gamemodes.BrainLawn mode = views.gdx.render.IZombieRenderer.modeOf(session);
         if (mode == null) {
             Gdx.app.error("SummonCheck", "not an I, Zombie board");
             return;

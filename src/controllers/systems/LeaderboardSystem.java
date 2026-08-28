@@ -6,7 +6,6 @@ import models.user.User;
 import utils.storage.DatabaseManager;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 // Builds and sorts the whole-game leaderboard from the registered-user roster. Stateless singleton:

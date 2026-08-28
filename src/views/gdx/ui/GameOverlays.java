@@ -402,6 +402,21 @@ public final class GameOverlays {
 
     // The result. The two sentences are the model's own, taken from the events GameEngine already
     // emits, so the overlay and the toast that preceded it cannot disagree about what happened.
+    // The end of a two-player match.
+    //
+    // Its own entry point because both of the single-player titles are wrong here. "Level Complete!"
+    // describes a level, and there is no level -- there is an opponent, who is reading the opposite
+    // panel at the same moment. And Retry is not offered: the board belonged to the server, the other
+    // player has already gone back to the lobby, and a rematch is something you ask a person for.
+    public void showMatchOutcome(boolean won, String title, String message) {
+        showOutcome(won, message);
+        outcomeTitle.setText(title);
+        if (retryCell != null) {
+            retryButton.setVisible(false);
+            retryCell.height(0f).padBottom(0f);
+        }
+    }
+
     public void showOutcome(boolean won, String message) {
         outcomeTitle.setText(won ? "Level Complete!" : "The Zombies Ate Your Brains");
         outcomeBody.setText(message);

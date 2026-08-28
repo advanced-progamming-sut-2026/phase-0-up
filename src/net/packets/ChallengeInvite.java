@@ -1,7 +1,7 @@
 package net.packets;
 
 import net.Packet;
-import net.dto.Faction;
+import models.game.Faction;
 
 // The pop-up on the target's screen. Pushed, not requested -- it can arrive while they are sitting in
 // any menu at all, which is why the client shows it on the Toasts overlay stage rather than on the
