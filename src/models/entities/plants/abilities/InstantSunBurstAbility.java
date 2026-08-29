@@ -31,24 +31,31 @@ public class InstantSunBurstAbility extends PlantAbility{
         this.sunAmount += amount;
     }
 
+    // Jitter stays inside the plant's OWN column. A plant sits at `column + 0.5`, and the spread used
+    // to be +/-0.75 around that -- so a burst from column 0 could land at x = -0.25, and `collect sun`
+    // floors x to name a tile, which made that tile column -1. CollectSunCommand refuses a negative
+    // coordinate outright, so the sun sat on the lawn, visible, worth 375, and impossible to pick up.
+    //
+    // ProduceSunAbility hit this exact bug and fixed it for itself; this is the same fix, and Sun's
+    // constructor now clamps as well so the next sun spawner cannot reintroduce it a third time.
+    private static final double COLUMN_JITTER = 0.8;   // +/-0.4 around the plant, inside its tile
+    private static final double DROP_JITTER = 0.8;
+
     @Override
     public void execute(Plant owner, GameSession gameSession) {
         for (int i = 0; i < spawnCount; i++) {
-            double offsetX = (random.nextDouble() - 0.5) * 1.5;
-            double targetX = owner.getX() + offsetX;
+            double targetX = owner.getX() + (random.nextDouble() - 0.5) * COLUMN_JITTER;
+            double targetY = owner.getY() + random.nextDouble() * DROP_JITTER;
 
-            double offsetY = random.nextDouble() * 0.8;
-            double targetY = owner.getY() + offsetY;
+            gameSession.addSun(new Sun(targetX, owner.getY(), targetY, SunType.NORMAL,
+                    sunAmount, true, 100));
+        }
 
-            Sun sun = new Sun(targetX, owner.getY(), targetY, SunType.NORMAL, sunAmount, true, 100);
-
-            gameSession.addSun(sun);
-
-            this.hasExecuted = true;
-
-            if (owner.getHealth() != null) {
-                owner.getHealth().takeDamage(owner.getHealth().getMaxHp());
-            }
+        // Outside the loop. Gold Bloom spawns one sun so it never showed, but marking the ability spent
+        // and killing the plant once per sun is a statement about the PLANT, not about each sun.
+        this.hasExecuted = true;
+        if (owner.getHealth() != null) {
+            owner.getHealth().takeDamage(owner.getHealth().getMaxHp());
         }
     }
 }

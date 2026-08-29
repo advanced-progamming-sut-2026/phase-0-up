@@ -3,13 +3,17 @@ package server.match;
 import factories.MinigameFactory;
 import factories.PlantFactory;
 import factories.ZombieFactory;
+import models.entities.collectibles.Sun;
+import models.entities.collectibles.SunType;
 import models.entities.plants.Plant;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
+import models.game.SeedPacket;
 import models.game.gamemodes.VersusIZombieMode;
 import models.map.Cell;
 import models.map.Row;
 import models.user.Profile;
+import controllers.systems.game.SunSystem;
 import net.PacketCodec;
 import net.packets.MatchSnapshot;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,6 +60,9 @@ class SnapshotRoundTripTest {
     void buildBoards() {
         serverSession = new GameSession(new Profile(), MinigameFactory.createVersusIZombie());
         serverSession.startMode();
+        // Past the opening grace. The mode refuses every summon for the first twenty seconds so the
+        // plant player can get sunflowers down, and most of what is checked below is a summoned zombie.
+        serverSession.advanceTime(((VersusIZombieMode) serverSession.getMode()).graceTicks());
 
         // The client builds the same level and never starts the mode: everything onStart would do has
         // already been done on the server, and doing it again locally is a second opinion about a
@@ -203,6 +210,155 @@ class SnapshotRoundTripTest {
 
         assertEquals(onServer.getHealth().getTotalHP(), mirrored.getHealth().getTotalHP());
         assertTrue(mirrored.getHealth().getTotalHP() < before);
+    }
+
+    // ---- suns, which are collected by NAMING A TILE --------------------------------------------------
+    //
+    // These two are about one bug with two halves. A sun is picked up by sending the tile the model
+    // files it under -- floor(targetY) while it is in the air, the landed row once it is down -- so a
+    // mirror that disagrees with the server about either number produces a sun the plant player can see,
+    // can click, and cannot collect, for as long as it is on the board.
+
+    @Test
+    @DisplayName("a sun in mid-air is mirrored with the tile it is falling TOWARDS")
+    void fallingSunKeepsItsRestingTile() throws Exception {
+        // 2.6: deliberately in the lower half of lane 2, which is where this went wrong.
+        Sun falling = new Sun(3.5, -1.0, 2.6, SunType.NORMAL, 25, true, 100);
+        serverSession.addSun(falling);
+        sync();
+
+        Sun mirrored = mirror.getActiveSuns().get(0);
+        assertTrue(mirrored.isFalling());
+        assertEquals(25, mirrored.getAmount(), "hp carries the worth");
+        assertEquals(falling.getX(), mirrored.getX(), 0.001);
+        assertEquals(-1.0, mirrored.getCurrentY(), 0.001, "drawn where it actually is");
+        // The one that mattered: built from its current height instead, this read -1 and every click
+        // during the fall addressed a lane the server did not have the sun in.
+        assertEquals(2.6, mirrored.getTargetY(), 0.02, "and collected by the lane it is heading for");
+    }
+
+    @Test
+    @DisplayName("a landed sun is filed in the lane the server files it in")
+    void landedSunSharesItsLane() throws Exception {
+        Sun landed = new Sun(3.5, 2.62, 2.6, SunType.NORMAL, 25, false, 100);
+        serverSession.addSun(landed);
+        sync();
+
+        // The mirror used to ROUND this and the server floors it, so a sun resting anywhere in the
+        // lower half of its lane -- a bit under half of them -- was filed one lane down on the client
+        // and could not be collected at all.
+        assertEquals(2, landed.getY(), "the server floors");
+        assertEquals(landed.getY(), mirror.getActiveSuns().get(0).getY(), "so the mirror must too");
+    }
+
+    // The whole click, end to end, which is the only assertion that could not be satisfied by two
+    // wrong-but-agreeing halves.
+    //
+    // The plant player clicks a sun they can see on their MIRROR; the view asks that mirrored sun which
+    // tile to name; the command crosses the wire as a pair of ints; the SERVER looks in that tile on its
+    // own board. Every earlier assertion here compares a mirrored field to a server field, and this one
+    // does the thing the player does.
+    @Test
+    @DisplayName("the tile the client names for a sun is the tile the server finds it in")
+    void aClickOnAMirroredSunCollectsTheServersSun() throws Exception {
+        SunSystem suns = new SunSystem();
+        // Two sky suns with awkward resting heights: 2.6 is in the lower half of its lane, which is
+        // what the mirror used to round the wrong way, and one is caught in the air on its way down.
+        Sun inTheAir = new Sun(3.5, -1.4, 2.6, SunType.NORMAL, 25, true, 100);
+        Sun onTheGround = new Sun(6.5, 4.55, 4.5, SunType.NORMAL, 25, false, 100);
+        serverSession.addSun(inTheAir);
+        serverSession.addSun(onTheGround);
+        sync();
+
+        assertEquals(2, mirror.getActiveSuns().size());
+        int collected = 0;
+        for (Sun mirrored : mirror.getActiveSuns()) {
+            // Exactly what LawnInputProcessor.tileOf sends, asked of the sun the CLIENT holds.
+            if (suns.collectSun(serverSession, mirrored.tileColumn(), mirrored.tileRow())) {
+                collected++;
+            }
+        }
+        assertEquals(2, collected, "a sun the plant player can see and click has to be collectable: "
+                + "both halves of this agreed for a while and were both wrong");
+        assertTrue(serverSession.getActiveSuns().isEmpty(), "and it leaves the server's board");
+    }
+
+    // ---- ability state the mirror cannot work out for itself -----------------------------------------
+
+    @Test
+    @DisplayName("a plant drawing back to shoot is announced, since a mirrored plant never runs one")
+    void windUpMirrors() throws Exception {
+        Plant peashooter = PlantFactory.createPlant("Peashooter", 1, 1, 1);
+        serverSession.getMap().getCell(1, 1).addPlant(peashooter);
+        sync();
+
+        Plant mirrored = mirror.getMap().getCell(1, 1).getCurrentPlant();
+        assertNotNull(mirrored);
+        assertFalse(mirrored.isWindingUp());
+
+        // The ability committing. Forced rather than provoked with a zombie and an engine: what is
+        // under test is that the answer TRAVELS, not the shot timer that produces it.
+        peashooter.mirrorWindingUp(true);
+        sync();
+        assertTrue(mirrored.isWindingUp(), "no ability ticks on a mirror, so without this the whole "
+                + "lawn stands still while peas leave it ten times a second");
+
+        peashooter.mirrorWindingUp(false);
+        sync();
+        assertFalse(mirrored.isWindingUp(), "and it has to fall again, or the clip never restarts");
+    }
+
+    @Test
+    @DisplayName("a fed plant glows on both screens, and a second feed re-triggers")
+    void plantFoodMirrors() throws Exception {
+        Plant peashooter = PlantFactory.createPlant("Peashooter", 1, 1, 1);
+        serverSession.getMap().getCell(1, 1).addPlant(peashooter);
+        sync();
+
+        Plant mirrored = mirror.getMap().getCell(1, 1).getCurrentPlant();
+        assertEquals(0, mirrored.getPlantFoodFeeds());
+
+        peashooter.mirrorPlantFood(true);
+        sync();
+        assertTrue(mirrored.isPlantFoodActive(), "the aura and the plantfood clip both key off this");
+        assertEquals(1, mirrored.getPlantFoodFeeds());
+
+        // A second feed. The view counts feeds rather than watching a flag, because a flag that is set
+        // once can only ever announce the first one -- so the mirror has to count the rising edges.
+        peashooter.mirrorPlantFood(false);
+        sync();
+        peashooter.mirrorPlantFood(true);
+        sync();
+        assertEquals(2, mirrored.getPlantFoodFeeds());
+    }
+
+    // ---- the seed bar --------------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("planting darkens the card on the mirror, and it clears again when the packet is ready")
+    void seedRechargeMirrors() throws Exception {
+        SeedPacket onServer = serverSession.getSelectedSeed("Sunflower");
+        SeedPacket onMirror = mirror.getSelectedSeed("Sunflower");
+        assertNotNull(onMirror, "the plant player's HUD builds its cards from these");
+        assertTrue(onMirror.isReady(0), "nothing has been planted yet");
+
+        assertTrue(serverSession.plant(0, 0, "Sunflower").success());
+        sync();
+
+        // The recharge wipe is drawn from getRemainingCooldownSeconds, and the whole of that answer is
+        // derived from lastPlantedTick -- which only GameSession.plant() writes, and which therefore
+        // never moves on a board that is mirrored rather than played. Untold, every card reported
+        // itself ready for the entire match and the darkness simply never appeared.
+        assertFalse(onMirror.isReady(0), "the card has to go dark on the other side too");
+        assertEquals(onServer.getRemainingCooldownSeconds(serverSession.getTimeTicks()),
+                onMirror.getRemainingCooldownSeconds(0), 0.2,
+                "and by the same amount, or the wipe drains at the wrong speed");
+
+        // Run the packet out. The mirror is told a remaining time every tick, including zero -- a
+        // packet only told while it is cooling would never hear that it had finished.
+        serverSession.advanceTime(onServer.getCooldownDuration() * Constants.TICKS_PER_SECOND);
+        sync();
+        assertTrue(onMirror.isReady(0), "and clear again when the server says it is ready");
     }
 
     // ---- the numbers above the board ---------------------------------------------------------------

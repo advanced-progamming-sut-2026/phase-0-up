@@ -703,19 +703,37 @@ public final class GameHud implements Disposable {
                 && card.plantType().equalsIgnoreCase(tools.seedName());
     }
 
+    // The match clock, and -- while it is running -- the opening grace.
+    //
+    // The grace is the stretch where nothing can be summoned so the plant player can get sunflowers
+    // down. Both players need to see it: without it the zombie player reads an empty lawn as a broken
+    // roster and clicks until a toast tells them otherwise, and the plant player does not know how long
+    // the quiet lasts. Answerable on a mirrored board too -- it is derived from the clock, which arrives
+    // in every snapshot.
+    private void updateVersusClock(models.game.gamemodes.VersusIZombieMode versus) {
+        int remaining = versus.ticksRemaining(session);
+        int total = Math.max(1, versus.matchDurationTicks());
+        int seconds = remaining / utils.Constants.TICKS_PER_SECOND;
+        String clock = String.format(java.util.Locale.ROOT, "%d:%02d  |  brains %d / %d",
+                seconds / 60, seconds % 60,
+                versus.brainsTotal() - versus.brainsEaten(), versus.brainsTotal());
+        if (versus.summoningLocked(session)) {
+            int left = versus.graceTicks() - (total - remaining);
+            int digging = Math.max(1, (left + utils.Constants.TICKS_PER_SECOND - 1)
+                    / utils.Constants.TICKS_PER_SECOND);
+            clock = "Diggin' time " + digging + "s  |  " + clock;
+        }
+        waveLabel.setText(clock);
+        waveBar.set(1f - remaining / (float) total, total);
+    }
+
     private void updateWave() {
         // A versus match has no waves at all -- it has a clock, and the clock IS the win condition for
         // one of the two players. Same widget, same question: how far through am I? Without it the
         // three minutes the plant player is trying to survive are invisible, and "hold out" is not a
         // goal anyone can play towards blind.
         if (session.getMode() instanceof models.game.gamemodes.VersusIZombieMode versus) {
-            int remaining = versus.ticksRemaining(session);
-            int total = Math.max(1, versus.matchDurationTicks());
-            int seconds = remaining / utils.Constants.TICKS_PER_SECOND;
-            waveLabel.setText(String.format(java.util.Locale.ROOT, "%d:%02d  |  brains %d / %d",
-                    seconds / 60, seconds % 60,
-                    versus.brainsTotal() - versus.brainsEaten(), versus.brainsTotal()));
-            waveBar.set(1f - remaining / (float) total, total);
+            updateVersusClock(versus);
             return;
         }
         // Beghouled counts MATCHES, not waves: its zombies arrive on a timer with no wave structure at

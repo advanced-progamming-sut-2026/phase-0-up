@@ -81,6 +81,9 @@ public class Plant extends Entity {
     // action animation through the wind-up so the effect lands on the animation's release frame rather
     // than before it has begun.
     public boolean isWindingUp() {
+        if (mirroredWindingUp != null) {
+            return mirroredWindingUp;
+        }
         if (abilities == null) {
             return false;
         }
@@ -90,6 +93,41 @@ public class Plant extends Entity {
             }
         }
         return false;
+    }
+
+    // Told, rather than asked, on a networked client's mirrored board.
+    //
+    // A mirror holds real Plants with real abilities but never ticks them, so every ability sits at its
+    // constructed value and the answer above is permanently false -- a lawn of shooters that never plays
+    // its attack animation while peas leave it ten times a second. The server sends the answer instead
+    // (EntityFlags.ACTING) and this writes it in.
+    //
+    // Null means "nobody has told me", which is the same "never set" distinction Profile.volume draws
+    // and for the same reason: false is a legitimate answer, so it cannot double as "unset". An
+    // authoritative board never calls this, so its plants keep asking their abilities as they always
+    // have.
+    private Boolean mirroredWindingUp;
+
+    public void mirrorWindingUp(boolean windingUp) {
+        this.mirroredWindingUp = windingUp;
+    }
+
+    // The same arrangement for plant food, and the same reason: no boost timer runs on a mirror and no
+    // ability is left holding queued work, so isPlantFoodActive() answers false for the whole of a boost
+    // the other player paid for and neither of them sees the glow or the animation.
+    //
+    // The rising edge counts as the feed. The view watches getPlantFoodFeeds() rather than a flag
+    // precisely so a SECOND feed re-triggers, and a mirror has no other way to know one happened -- the
+    // boost turning on is the only evidence that reaches it.
+    private Boolean mirroredPlantFoodActive;
+
+    public void mirrorPlantFood(boolean active) {
+        boolean was = Boolean.TRUE.equals(mirroredPlantFoodActive);
+        this.mirroredPlantFoodActive = active;
+        if (active && !was) {
+            this.thisPlantHasFood = true;
+            this.plantFoodFeeds++;
+        }
     }
 
     // False only while a mine is still burying itself. Every other plant is "armed" from the moment it
@@ -196,6 +234,9 @@ public class Plant extends Entity {
     // It used to check ShootProjectileAbility alone, which meant Rotobaga, Threepeater, Cat-tail,
     // Bowling Bulb and Bonk Choy all reported "boost over" the instant they were fed.
     public boolean isPlantFoodActive() {
+        if (mirroredPlantFoodActive != null) {
+            return mirroredPlantFoodActive;
+        }
         if (plantFoodTicksRemaining > 0) {
             return true;
         }

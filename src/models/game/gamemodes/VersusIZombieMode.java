@@ -70,23 +70,80 @@ public class VersusIZombieMode extends StandardMode implements BrainLawn {
     // a stalemate ends rather than being abandoned.
     public static final int DEFAULT_DURATION_TICKS = 180 * Constants.TICKS_PER_SECOND;
 
-    private static final int STARTING_PLANT_SUN = 175;
-    private static final int STARTING_ZOMBIE_SUN = 250;
+    // ## The opening, which is where this match was decided
+    //
+    // The first build put the plant player on bare dirt with 175 sun against a bank of 250 and no
+    // delay. 250 buys ten Imps; the plant player's cheapest shooter is 100 and their income plant is
+    // 50, so on the very first tick the zombie player could put a zombie in all five lanes and the
+    // plant player could answer in one of them. It was not a close match that needed tuning, it was a
+    // race one side could not enter -- and the numbers below are all about the first thirty seconds.
+    //
+    //   plant bank   175 -> 300   four Sunflowers, or three and a Peashooter
+    //   zombie bank  250 -> 150   three basics, and NOT most of a Gargantuar
+    //   grace              25s    nothing summons while the first sunflowers go in
+    //   plant food          2     one emergency button, since nothing on this lawn drops any
+    //
+    // After that the plant economy is genuinely the stronger one -- a Sunflower makes 50 sun every 12
+    // seconds, so three of them out-earn all five sun-makers -- which is the right shape: the plant
+    // player builds an engine and defends it, the zombie player spends a fixed income against it. The
+    // plant player's larger income is doing real work, not sitting idle: they hold five lanes with
+    // thirty tiles minus whatever the sunflowers occupy, and every plant they buy can be eaten, while
+    // a summoned zombie is spent either way. Losing a 100-sun Peashooter to a 50-sun basic is a losing
+    // trade, and they have to make it over and over.
+    private static final int STARTING_PLANT_SUN = 200;
+    private static final int STARTING_ZOMBIE_SUN = 200;
 
-    // The zombie side's income, unchanged from IZombieMode: one destructible maker per lane, 25 sun
-    // every twenty seconds each, plus a bonus every time the horde breaks a plant.
+    // Nothing on this lawn drops plant food -- no glowing zombies, no script -- so without a handout
+    // the plant player's food bar is decoration and the plant-food art never plays in a versus match
+    // at all. Two: enough to save a lane twice, not enough to be a strategy.
+    private static final int STARTING_PLANT_FOOD = 2;
+
+    // How long the plant player gets before anything can be summoned.
+    //
+    // This is the wave-one delay every level in the campaign already has, and a versus lawn needs it
+    // more, not less: a campaign level at least starts with seed packets recharged and a script that
+    // opens slowly. Long enough for three Sunflowers (5s recharge each) and a first shooter; short
+    // enough that the zombie player is watching rather than waiting.
+    //
+    // Capped at a quarter of the match, because the match length is not always three minutes -- the
+    // server can shorten it and the tests and the screenshot harness do. Twenty seconds of grace on a
+    // ten-second match is a match where nothing happens at all.
+    private static final int SUMMON_GRACE_TICKS = 20 * Constants.TICKS_PER_SECOND;
+    private static final int MAX_GRACE_FRACTION = 4;
+
+    // The zombie side's income: one maker per lane, paying on a staggered cycle, plus a bounty every
+    // time the horde breaks a plant.
+    //
+    //   per drop        25 -> 20
+    //   interval       20s -> 30s      together: 6.25 sun/sec -> 3.33
+    //   plant bounty    50 -> 25
+    //   the maker    Armor2 -> Armor1  1290hp -> 560hp, and THIS is the important one
+    //
+    // The rate was free money -- no board to build, no risk, forever -- against a plant player who has
+    // to spend 150 and wait twelve seconds before earning anything at all. The bounty was worse: a full
+    // refund plus tempo for eating a 50-sun Sunflower meant the zombie player was PAID for winning, so
+    // a match that tipped their way could not tip back.
+    //
+    // But the real problem was that the income could not be ATTACKED. A buckethead maker is 190 health
+    // under an 1100-health bucket, and one Peashooter does 13 damage a second: ninety-seven seconds of
+    // uninterrupted fire, in a lane zombies are walking down, out of a hundred-and-eighty second match.
+    // The plant player's counterplay existed on paper and was unreachable in practice, which left them
+    // nothing to do but build a wall and wait. A conehead is 560, so a lane the plant player commits to
+    // pays back: the maker dies and a fifth of the enemy economy is gone for the rest of the match.
+    //
+    // Swapping the alias costs nothing visually. A maker is drawn as the disco mech and its armour map
+    // is skipped entirely (ZombieRenderer.spriteNameFor, and `parts = null` for a producer), so the
+    // alias here is a health budget and nothing else.
     private static final String SUN_PRODUCER = "ZombieArmor2";
     private static final int SUN_DROP_INTERVAL_TICKS = 20 * Constants.TICKS_PER_SECOND;
     private static final int SUN_DROP_AMOUNT = 25;
     private static final int PLANT_DESTROYED_SUN_REWARD = 50;
 
-    // Fixed for both players, and identical every match -- no Random anywhere in this mode. Two clients
-    // and a server all describe the same board, and a roster drawn at random would have to be sent over
-    // the wire and trusted rather than simply agreed on.
+
     private static final String[] ZOMBIE_ROSTER = {
             "ZombieImp", "ZombieDefault", "ZombieRa", "ZombieExplorer", "ZombieGargantuar"
     };
-    private static final int[] ZOMBIE_PRICES = {25, 50, 100, 125, 300};
+    private static final int[] ZOMBIE_PRICES = {75, 50, 100, 150, 750};
 
     // What the plant player brings. Cheap, unambiguous and all placeable on a dry lawn: an income
     // plant, a wall, a mine, and three shooters. Handed over rather than chosen, because seed selection
@@ -95,6 +152,7 @@ public class VersusIZombieMode extends StandardMode implements BrainLawn {
             "Sunflower", "Potato Mine", "Wall-nut", "Peashooter", "Repeater", "Snow Pea");
 
     private final int durationTicks;
+    private final int graceTicks;
     private final Map<String, Integer> roster = new LinkedHashMap<>();
     private final List<Zombie> sunProducers = new ArrayList<>();
 
@@ -103,6 +161,7 @@ public class VersusIZombieMode extends StandardMode implements BrainLawn {
     private long sunTick;
     private long startTick;
     private boolean started;
+    private boolean hordeReleased;
     private Faction winner;
     private Ending ending;
 
@@ -112,6 +171,7 @@ public class VersusIZombieMode extends StandardMode implements BrainLawn {
 
     public VersusIZombieMode(int durationTicks) {
         this.durationTicks = Math.max(1, durationTicks);
+        this.graceTicks = graceTicksFor(this.durationTicks);
         // Built here rather than in onStart, unlike IZombieMode's. The server has to put both rosters
         // into MatchStart -- which is sent BEFORE the first tick, so that the clients have a board to
         // draw when the first snapshot lands -- and a roster that only exists after onStart would be
@@ -170,6 +230,8 @@ public class VersusIZombieMode extends StandardMode implements BrainLawn {
         }
 
         session.increaseSunAmount(STARTING_PLANT_SUN - session.getSunAmount());
+        session.increasePlantFoodCount(
+                Math.max(0, STARTING_PLANT_FOOD - session.getPlantFoodCount()));
         zombieSun = STARTING_ZOMBIE_SUN;
         placeSunProducers(session);
 
@@ -177,17 +239,29 @@ public class VersusIZombieMode extends StandardMode implements BrainLawn {
                 + " and defend five brains; zombies buy from " + String.join(", ", roster.keySet())
                 + " and summon right of column " + RED_LINE_COLUMN + ". "
                 + (durationTicks / Constants.TICKS_PER_SECOND) + " seconds on the clock -- if a brain "
-                + "is still standing when it runs out, the plants have held.");
+                + "is still standing when it runs out, the plants have held. Diggin' time: the horde "
+                + "waits " + (graceTicks / Constants.TICKS_PER_SECOND) + " seconds.");
     }
 
     @Override
     public void onTick(GameSession session) {
+        announceHordeReleased(session);
         produceSun();
         eatBrains(session);
         removeZombiesPastHouse(session);
         if (winner == null) {
             decideWinner(session);
         }
+    }
+
+    // Both players are told the moment the lock comes off, once. The plant player needs it as much as
+    // the zombie player does: it is the end of the only stretch of the match where nothing is coming.
+    private void announceHordeReleased(GameSession session) {
+        if (hordeReleased || summoningLocked(session)) {
+            return;
+        }
+        hordeReleased = true;
+        session.reportEvent("Diggin' time is over -- the horde is loose!");
     }
 
     @Override
@@ -229,6 +303,33 @@ public class VersusIZombieMode extends StandardMode implements BrainLawn {
 
     public int startingZombieSun() {
         return STARTING_ZOMBIE_SUN;
+    }
+
+    // Whether the zombie player's belt is still locked.
+    //
+    // Derived from ticksRemaining rather than from the session's clock, so it is answerable on a
+    // MIRRORED board too -- where startTick was never set and nothing ticks, but the remaining time
+    // arrives in every snapshot. The client HUD can grey the roster out with it; the server is still
+    // the rule, in summonZombie.
+    public boolean summoningLocked(GameSession session) {
+        return durationTicks - ticksRemaining(session) < graceTicks;
+    }
+
+    public int graceTicks() {
+        return graceTicks;
+    }
+
+    // The same answer without a mode to ask, for a caller that only has the match length -- the server's
+    // tests drive three-second matches and have to know when the belt opens. Static so there is exactly
+    // one place the cap is written down.
+    public static int graceTicksFor(int durationTicks) {
+        return Math.min(SUMMON_GRACE_TICKS, Math.max(1, durationTicks) / MAX_GRACE_FRACTION);
+    }
+
+    private String secondsUntilRelease(GameSession session) {
+        int left = graceTicks - (durationTicks - ticksRemaining(session));
+        int seconds = Math.max(1, (left + Constants.TICKS_PER_SECOND - 1) / Constants.TICKS_PER_SECOND);
+        return seconds + (seconds == 1 ? " second" : " seconds");
     }
 
     public int ticksRemaining(GameSession session) {
@@ -313,6 +414,13 @@ public class VersusIZombieMode extends StandardMode implements BrainLawn {
     // plant player had shot every one of them down -- by which point the zombie player has no income
     // either and the match is decided anyway, just several silent minutes later.
     private boolean hordeSpent(GameSession session) {
+        // Not while the belt is locked. An empty lawn and a bank below the cheapest zombie is exactly
+        // what the grace period looks like from here, and a mode that ended the match on tick one
+        // because the player it had just stopped from summoning had not summoned would be a hard bug to
+        // read from the outside.
+        if (summoningLocked(session)) {
+            return false;
+        }
         for (Row row : session.getMap().getRows()) {
             for (Zombie zombie : row.getZombies()) {
                 if (!zombie.getHealth().isDead() && !isSunProducer(zombie)) {
@@ -327,6 +435,11 @@ public class VersusIZombieMode extends StandardMode implements BrainLawn {
 
     @Override
     public Result summonZombie(GameSession session, String type, int x, int y) {
+        if (summoningLocked(session)) {
+            return new Result(false, "Diggin' time -- the plants get "
+                    + (graceTicks / Constants.TICKS_PER_SECOND) + " seconds to put roots down. "
+                    + secondsUntilRelease(session) + " to go. Bank your sun.");
+        }
         String alias = matchRoster(type);
         if (alias == null) {
             return new Result(false, "\"" + type + "\" is not on your belt this match. "

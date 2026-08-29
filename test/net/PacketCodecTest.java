@@ -110,6 +110,7 @@ class PacketCodecTest {
         samples.put(PacketType.MATCH_SNAPSHOT, new MatchSnapshot(
                 42L, 1158, 175, 300, 2,
                 new boolean[] {false, false, true, false, false},
+                Map.of("Sunflower", 34, "Peashooter", 7),
                 List.of(
                         new EntityState(1, EntityKind.PLANT, "Peashooter", 1.5f, 2f, 300, 300,
                                 EntityFlags.NONE),
@@ -265,7 +266,7 @@ class PacketCodecTest {
         // vertically. If either were rounded on the wire there would be nothing between the lanes for
         // EntityInterpolator to interpolate, and the diagonals would cross the board sideways -- the
         // exact bug EntityInterpolator documents against getY().
-        MatchSnapshot snapshot = new MatchSnapshot(1L, 10, 0, 0, 0, new boolean[] {false},
+        MatchSnapshot snapshot = new MatchSnapshot(1L, 10, 0, 0, 0, new boolean[] {false}, Map.of(),
                 List.of(new EntityState(9, EntityKind.PROJECTILE, "PEA", 3.75f, 2.5f, 0, 0, 0)));
         MatchSnapshot back = (MatchSnapshot) codec.decode(codec.encode(snapshot)).payload();
         assertEquals(3.75f, back.entities().get(0).x());

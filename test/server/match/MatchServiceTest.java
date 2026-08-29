@@ -160,6 +160,46 @@ class MatchServiceTest {
                         ChallengeRejected.class).reason());
     }
 
+    // The contract the client has to satisfy, stated as types rather than as content.
+    //
+    // Two of these requests are answered in TWO different shapes, both on the reply channel, and a
+    // client that names a single expected type silently discards the other. That is not hypothetical:
+    // OnlineScreen asked for AckResponse alone, so challenging an offline player produced null and was
+    // reported as "the server isn't answering" -- the one thing that had not happened. Every other test
+    // here asks for the type it already knows is coming, so none of them could see it.
+    //
+    // If a third shape is ever added to one of these, this test fails and somebody has to go and teach
+    // the client to read it.
+    @Test
+    @DisplayName("a lobby request can be answered in more than one shape, and both are replies")
+    void refusalsComeBackAsRepliesNotPushes() throws Exception {
+        TestClient amir = signedIn("Amir");
+        TestClient parsa = signedIn("Parsa");
+        register(amir, "Sleeper");
+
+        assertEquals(PacketType.CHALLENGE_REJECTED,
+                amir.requestRaw(new ChallengeRequest("Sleeper", Faction.PLANTS)).type(),
+                "an offline target refuses on the REPLY channel, not as a push");
+        assertEquals(PacketType.ACK,
+                amir.requestRaw(new ChallengeRequest("Parsa", Faction.ZOMBIES)).type(),
+                "and a delivered challenge acknowledges on the same channel");
+
+        assertEquals(PacketType.QUEUE_STATUS,
+                amir.requestRaw(new QueueLeaveRequest()).type());
+
+        // Accepts the challenge already outstanding from the assertion above rather than issuing a
+        // fresh one -- a second challenge withdraws the first, and the invite the target then answers
+        // is one the server has already forgotten.
+        ChallengeInvite invite = parsa.awaitPush(ChallengeInvite.class);
+        parsa.request(new ChallengeAnswer(invite.challengeId(), true), AckResponse.class);
+        amir.awaitPush(MatchStart.class);
+        parsa.awaitPush(MatchStart.class);
+
+        assertEquals(PacketType.ACK,
+                amir.requestRaw(new QueueJoinRequest(Faction.PLANTS)).type(),
+                "queueing while in a match refuses with an Ack, not a QueueStatus");
+    }
+
     @Test
     @DisplayName("you cannot challenge yourself")
     void selfChallengeIsRefused() throws Exception {

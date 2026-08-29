@@ -4,6 +4,7 @@ import net.Packet;
 import net.dto.EntityState;
 
 import java.util.List;
+import java.util.Map;
 
 // The authoritative board, once per simulation tick.
 //
@@ -22,6 +23,12 @@ import java.util.List;
 // protocol, and a client that misses one is corrected 100 ms later instead of drifting. The obvious
 // refinement once this works -- plants do not move, so send them only when they change -- is a size
 // optimisation, not a correctness one.
+// SEED COOLDOWNS travel too, keyed by plant name, and only the packets actually recharging are listed
+// -- so the map is empty most ticks and never longer than the seed bank. This is the one piece of the
+// plant player's HUD that is neither an entity nor a bank: a packet's remaining time is derived from
+// GameSession.plant(), which only ever runs on the server, so a mirror measuring it for itself reports
+// every card ready for the whole match. Keyed by name rather than sent as an array in seed-bank order,
+// because an ordering agreed in two files is an ordering that eventually disagrees.
 public record MatchSnapshot(
         long tick,
         int ticksRemaining,
@@ -29,5 +36,12 @@ public record MatchSnapshot(
         int sunZombies,
         int plantFood,
         boolean[] brainEaten,
+        Map<String, Integer> seedCooldowns,
         List<EntityState> entities) implements Packet {
+
+    // Gson leaves an absent field null, and a snapshot from a build that predates this one has no such
+    // field at all. Every reader goes through here so none of them has to remember that.
+    public Map<String, Integer> cooldowns() {
+        return seedCooldowns == null ? Map.of() : seedCooldowns;
+    }
 }

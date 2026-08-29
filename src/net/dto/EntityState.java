@@ -23,4 +23,27 @@ public record EntityState(
     public boolean is(int flag) {
         return EntityFlags.has(flags, flag);
     }
+
+    // ---- suns, which use hp and maxHp for something else entirely ----------------------------------
+    //
+    // A collectible has no health, so those two ints are free, and a sun needs exactly two numbers that
+    // nothing else on this record carries: what it is WORTH (hp) and the height it comes to rest at
+    // (maxHp, in hundredths of a row).
+    //
+    // The rest height is not cosmetic. `collect sun` names the TILE the model files a sun under, and
+    // for one still in the air that is the tile it is falling towards -- so a client that does not know
+    // it addresses the wrong row and the sun cannot be picked up at all. The view wants the fraction
+    // too, to sit a landed sun at the height it actually landed at rather than on the lane line.
+    //
+    // Hundredths rather than a second float on this record: it is the hottest field in the protocol,
+    // and 0.01 of a row is a third of a pixel.
+    private static final float REST_HEIGHT_SCALE = 100f;
+
+    public static int packRestHeight(double targetY) {
+        return Math.round((float) targetY * REST_HEIGHT_SCALE);
+    }
+
+    public float restHeight() {
+        return maxHp / REST_HEIGHT_SCALE;
+    }
 }

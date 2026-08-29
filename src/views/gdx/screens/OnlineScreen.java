@@ -179,14 +179,17 @@ public final class OnlineScreen extends MenuScreen {
 
     // ---- talking to the server ------------------------------------------------------------------
 
-    // The two pushes that belong to THIS screen: a challenge that could not be delivered, and one that
-    // was turned down. Both are answers to something the player did here, so they are reported here.
+    // The pushes that belong to THIS screen: a challenge somebody turned down, and the queue moving
+    // under us. Both happen because of something the player did here, so they are reported here.
+    //
+    // CHALLENGE_REJECTED is deliberately NOT among them. The server only ever sends it as a REPLY to
+    // the challenge request -- it is that request's answer -- so sendChallenge reads it there. A push
+    // claim for it would sit registered and never fire, which is exactly the sort of dead wiring that
+    // makes the next person assume the message is being handled.
     //
     // The invite itself is claimed by PvZGame, not by this screen, because it has to work when this
     // screen is not open.
     private void listenForRefusals() {
-        pushRouter().on(PacketType.CHALLENGE_REJECTED, envelope ->
-                say(refusalText(envelope.as(ChallengeRejected.class))));
         pushRouter().on(PacketType.CHALLENGE_DECLINED, envelope -> {
             ChallengeDeclined declined = envelope.as(ChallengeDeclined.class);
             say(declined.timedOut()
@@ -230,8 +233,20 @@ public final class OnlineScreen extends MenuScreen {
     // null when nothing came back, and every callback below has to say so rather than assume.
     private <T extends net.Packet> void ask(net.Packet request, Class<T> expected,
                                             java.util.function.Consumer<T> then) {
+        askRaw(request, reply -> then.accept(
+                reply != null && expected.isInstance(reply.payload())
+                        ? expected.cast(reply.payload()) : null));
+    }
+
+    // The same, handing back the whole envelope.
+    //
+    // Two of the three requests on this screen can be answered in more than one SHAPE -- a challenge
+    // comes back as an AckResponse when it was sent and a ChallengeRejected when it was not; a queue
+    // join comes back as a QueueStatus or an AckResponse refusing it -- and all of them are replies,
+    // not pushes. Naming one expected type discards the other and reports it as silence.
+    private void askRaw(net.Packet request, java.util.function.Consumer<net.Envelope> then) {
         Thread worker = new Thread(() -> {
-            T reply = context.game().netClient().request(request, expected);
+            net.Envelope reply = context.game().netClient().requestRaw(request);
             com.badlogic.gdx.Gdx.app.postRunnable(() -> {
                 if (!closed) {
                     then.accept(reply);
@@ -252,14 +267,19 @@ public final class OnlineScreen extends MenuScreen {
             return;
         }
         say("Asking " + name + "...");
-        ask(new ChallengeRequest(name, preferred), AckResponse.class, ack -> {
-            if (ack == null) {
-                // A refused challenge comes back as CHALLENGE_REJECTED, which the push handler above
-                // reports. A null here means the request itself did not get an answer at all.
+        askRaw(new ChallengeRequest(name, preferred), reply -> {
+            if (reply == null) {
                 say("The server isn't answering.");
-                return;
+            } else if (reply.payload() instanceof ChallengeRejected rejected) {
+                // The refusal arrives HERE, on the reply channel, not as a push -- it is the answer to
+                // this request. Asking for AckResponse alone discarded it and reported the one thing
+                // that had not happened, which is how "they're offline" read as "the server is down".
+                say(refusalText(rejected));
+            } else if (reply.payload() instanceof AckResponse ack) {
+                say(ack.ok() ? "Waiting for " + name + " to answer..." : ack.message());
+            } else {
+                say("The server said something unexpected: " + reply.type().tag());
             }
-            say(ack.ok() ? "Waiting for " + name + " to answer..." : ack.message());
         });
     }
 
@@ -271,17 +291,23 @@ public final class OnlineScreen extends MenuScreen {
             return;
         }
         say("Looking for an opponent...");
-        ask(new QueueJoinRequest(preferred), QueueStatus.class, joined -> {
-            if (joined == null) {
+        askRaw(new QueueJoinRequest(preferred), reply -> {
+            if (reply == null) {
                 // Not necessarily a failure: if somebody was already waiting the server starts the
-                // match immediately and answers with a MatchStart PUSH rather than a queue status, so
-                // there is nothing to report here and the match screen has already taken over.
+                // match immediately and answers with a MatchStart PUSH rather than a reply, so there
+                // is nothing to report here and the match screen has already taken over.
                 return;
             }
-            setQueued(joined.waiting());
-            say(joined.waiting()
-                    ? "In the queue. Waiting for another gardener..."
-                    : "Match found!");
+            if (reply.payload() instanceof QueueStatus joined) {
+                setQueued(joined.waiting());
+                say(joined.waiting()
+                        ? "In the queue. Waiting for another gardener..."
+                        : "Match found!");
+            } else if (reply.payload() instanceof AckResponse refused) {
+                // "You're already in a match." Same shape of miss as the challenge refusal: the server
+                // answers a queue join in two types, and the one that says no was being dropped.
+                say(refused.message());
+            }
         });
     }
 
@@ -367,8 +393,7 @@ public final class OnlineScreen extends MenuScreen {
         if (playerList == null) {
             return;
         }
-        pushRouter().off(PacketType.CHALLENGE_REJECTED, PacketType.CHALLENGE_DECLINED,
-                PacketType.QUEUE_STATUS);
+        pushRouter().off(PacketType.CHALLENGE_DECLINED, PacketType.QUEUE_STATUS);
         if (queued && context.game().isOnline()) {
             context.game().netClient().send(new QueueLeaveRequest());
             queued = false;

@@ -200,7 +200,7 @@ class MatchRunnerTest {
         TestClient plantPlayer = signedIn("Parsa");
         MatchStart start = startMatch(zombiePlayer, plantPlayer)[0];
 
-        MatchSnapshot before = zombiePlayer.awaitPush(MatchSnapshot.class);
+        MatchSnapshot before = afterTheOpeningGrace(zombiePlayer);
         int lane = 3;
         zombiePlayer.send(new GameCommand("summon -t ZombieImp -l (" + (Constants.BOARD_COLS - 1)
                 + ", " + lane + ")", before.tick()));
@@ -279,7 +279,10 @@ class MatchRunnerTest {
         startMatch(zombiePlayer, plantPlayer);
 
         // A Gargantuar costs more than the opening bank holds, so this is the MODEL's refusal -- the
-        // sentence a single-player game would put in a toast -- not the faction whitelist's.
+        // sentence a single-player game would put in a toast -- not the faction whitelist's. Waited
+        // past the grace first, or the refusal would be "the plants are still digging" instead, which
+        // is a different sentence from a different guard.
+        afterTheOpeningGrace(zombiePlayer);
         zombiePlayer.send(new GameCommand("summon -t ZombieGargantuar -l (8, 0)", 0));
         assertNotNull(zombiePlayer.awaitPush(CommandRejected.class).reason());
 
@@ -408,6 +411,14 @@ class MatchRunnerTest {
 
     private MatchSnapshot awaitTickAfter(TestClient client, long tick) throws Exception {
         return awaitSnapshotWhere(client, snapshot -> snapshot.tick() > tick);
+    }
+
+    // The mode refuses every summon while the plant player gets their first sunflowers down, so a test
+    // about summoning has to wait the belt open first. Asked of the mode rather than counted here: the
+    // grace is capped at a quarter of the match, and these matches are three seconds long.
+    private MatchSnapshot afterTheOpeningGrace(TestClient client) throws Exception {
+        return awaitTickAfter(client,
+                models.game.gamemodes.VersusIZombieMode.graceTicksFor(SHORT_MATCH_TICKS));
     }
 
     // Snapshots arrive ten a second and a command takes at least a tick to show up in one, so every

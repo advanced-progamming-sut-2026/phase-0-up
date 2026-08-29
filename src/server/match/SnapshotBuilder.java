@@ -8,6 +8,7 @@ import models.entities.zombies.Components.ArmorType;
 import models.entities.zombies.Components.HealthLayer;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
+import models.game.SeedPacket;
 import models.game.gamemodes.BrainLawn;
 import models.game.gamemodes.VersusIZombieMode;
 import models.map.Cell;
@@ -18,8 +19,12 @@ import net.dto.EntityKind;
 import net.dto.EntityState;
 import net.packets.MatchSnapshot;
 
+import utils.Constants;
+
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 // Turns the authoritative board into the packet the two clients draw from.
@@ -80,7 +85,24 @@ final class SnapshotBuilder {
                 versus == null ? 0 : versus.getZombieSun(),
                 session.getPlantFoodCount(),
                 versus == null ? new boolean[0] : versus.brainState(),
+                seedCooldowns(session),
                 entities);
+    }
+
+    // Only the packets still recharging. A ready packet is the common case and the absence of a key
+    // says so, which keeps this empty for most of a match.
+    private Map<String, Integer> seedCooldowns(GameSession session) {
+        Map<String, Integer> cooling = new LinkedHashMap<>();
+        long now = session.getTimeTicks();
+        for (SeedPacket packet : session.getSelectedSeeds()) {
+            if (packet.isReady(now)) {
+                continue;
+            }
+            int ticks = (int) Math.ceil(packet.getRemainingCooldownSeconds(now)
+                    * Constants.TICKS_PER_SECOND);
+            cooling.put(packet.getPlantType(), Math.max(1, ticks));
+        }
+        return cooling;
     }
 
     int trackedEntities() {
@@ -119,6 +141,11 @@ final class SnapshotBuilder {
         flags = EntityFlags.with(flags, EntityFlags.FROZEN, plant.isFrozen());
         flags = EntityFlags.with(flags, EntityFlags.BOOSTED, plant.isPlantFoodActive());
         flags = EntityFlags.with(flags, EntityFlags.DYING, plant.isDead());
+        // The one piece of ability state that has to travel. A shooter's attack animation is played on
+        // the rising edge of isWindingUp(), and on a mirrored board no ability ever runs -- so without
+        // this every plant in a versus match stands there swaying while peas appear out of nowhere.
+        // Four ticks of wind-up is four snapshots, so the edge cannot be missed between two of them.
+        flags = EntityFlags.with(flags, EntityFlags.ACTING, plant.isWindingUp());
         return new StateFields(EntityKind.PLANT, plant.getName(),
                 (float) plant.getX(), plant.getY(),
                 plant.getHealth().getCurrentHp(), plant.getHealth().getMaxHp(), flags);
@@ -175,13 +202,12 @@ final class SnapshotBuilder {
                 (float) mower.getPositionX(), row.getIndex(), 0, 0, EntityFlags.NONE);
     }
 
-    // A sun's `hp` is what it is WORTH. The field is otherwise unused for a collectible, and the
-    // client's HUD wants to show the number; inventing a second int on EntityState for it would cost
-    // every entity in every snapshot four bytes to carry a value only suns have.
+    // A sun's `hp` is what it is WORTH and its `maxHp` is the height it comes to rest at. Neither field
+    // means anything else for a collectible; see EntityState for why the rest height has to travel.
     private StateFields sunState(Sun sun) {
         int flags = EntityFlags.with(EntityFlags.NONE, EntityFlags.FALLING, sun.isFalling());
         return new StateFields(EntityKind.SUN, sun.getType().name(),
                 (float) sun.getX(), (float) sun.getCurrentY(),
-                sun.getAmount(), sun.getAmount(), flags);
+                sun.getAmount(), EntityState.packRestHeight(sun.getTargetY()), flags);
     }
 }

@@ -1,0 +1,2036 @@
+{
+  "test": {
+    "username": "test",
+    "nickname": "test",
+    "email": "test@gmail.com",
+    "gender": "MALE",
+    "hashPassword": "fae4ee5710378f2aa14e4cf2f6597794cc59263b8546e550e35ec0a845239108",
+    "securityQuestionIndex": 0,
+    "securityAnswerHash": "3227fe6bde46249b0aae4b69ef6efd806422a46788e281d050d32d0d9fbde723",
+    "stayLoggedIn": false,
+    "profile": {
+      "gameNumbers": 0,
+      "coins": 17950,
+      "gems": 950,
+      "plantFoodCount": 0,
+      "difficultyLevel": 3,
+      "bestNumberOfMeowPoints": 525,
+      "newsList": [
+        {
+          "id": 1,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieLostCityJane and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 2,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDefault and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 3,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor1 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 4,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDarkArmor3 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 5,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieRa and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 6,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor2 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 7,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieImp and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 8,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDarkImpDragon and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 9,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieCrystalSkull and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 10,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBeachSnorkel and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 11,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBeachFisherman and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 12,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieExplorer and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 13,
+          "title": "New Mini-Game Unlocked",
+          "description": "Beghouled level 1 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": false,
+          "type": "MINIGAME_UNLOCK"
+        }
+      ],
+      "unlockedPlants": [
+        "sunflower",
+        "peashooter",
+        "wall-nut",
+        "potato mine",
+        "snow pea",
+        "twin sunflower",
+        "sun-shroom",
+        "primal sunflower",
+        "gold bloom",
+        "repeater",
+        "threepeater",
+        "rotobaga",
+        "pea pod",
+        "split pea",
+        "citron",
+        "caulipower",
+        "electric blueberry",
+        "bowling bulb",
+        "cactus",
+        "fire peashooter",
+        "starfruit",
+        "goo peashooter",
+        "mega gatling pea",
+        "sea-shroom",
+        "puff-shroom",
+        "fume-shroom",
+        "cabbage-pult",
+        "kernel-pult",
+        "melon-pult",
+        "winter melon",
+        "pepper-pult",
+        "primal potato mine",
+        "cherry bomb",
+        "squash",
+        "grapeshot",
+        "jalapeno",
+        "doom-shroom",
+        "tangle kelp",
+        "iceberg lettuce",
+        "bonk choy",
+        "phat beet",
+        "chomper",
+        "wasabi whip",
+        "kiwibeast",
+        "tall-nut",
+        "endurian",
+        "garlic",
+        "sweet potato",
+        "explode-o-nut",
+        "pumpkin",
+        "sun bean",
+        "torchwood",
+        "magnet-shroom",
+        "hypno-shroom",
+        "cat-tail",
+        "imitater",
+        "ice-shroom",
+        "lily pad",
+        "hot potato",
+        "grave buster",
+        "enlighten-mint",
+        "appease-mint",
+        "arma-mint",
+        "bombard-mint",
+        "enforce-mint",
+        "reinforce-mint",
+        "enchant-mint",
+        "pierce-mint",
+        "cattail-mint"
+      ],
+      "lockedPlants": [],
+      "ownedSeedPackets": {
+        "winter melon": 1,
+        "sweet potato": 1,
+        "sun bean": 1,
+        "split pea": 1,
+        "rotobaga": 1,
+        "hypno-shroom": 1,
+        "doom-shroom": 1,
+        "phat beet": 1,
+        "pepper-pult": 1,
+        "endurian": 1,
+        "primal sunflower": 1,
+        "squash": 1,
+        "kiwibeast": 1,
+        "cat-tail": 1,
+        "hot potato": 1,
+        "gold bloom": 1,
+        "sea-shroom": 1,
+        "tangle kelp": 1,
+        "caulipower": 1,
+        "ice-shroom": 1,
+        "appease-mint": 1,
+        "wasabi whip": 1,
+        "torchwood": 1,
+        "peashooter": 96,
+        "grapeshot": 1,
+        "magnet-shroom": 1,
+        "jalapeno": 1,
+        "citron": 1,
+        "wall-nut": 1,
+        "grave buster": 1,
+        "cherry bomb": 1,
+        "explode-o-nut": 1,
+        "fire peashooter": 1,
+        "enchant-mint": 1,
+        "potato mine": 1,
+        "bowling bulb": 1,
+        "arma-mint": 1,
+        "pierce-mint": 1,
+        "iceberg lettuce": 1,
+        "puff-shroom": 1,
+        "kernel-pult": 1,
+        "reinforce-mint": 1,
+        "threepeater": 1,
+        "pea pod": 1,
+        "lily pad": 1,
+        "cactus": 1,
+        "fume-shroom": 11,
+        "starfruit": 1,
+        "melon-pult": 1,
+        "cabbage-pult": 1,
+        "garlic": 1,
+        "goo peashooter": 1,
+        "chomper": 1,
+        "sunflower": 1,
+        "twin sunflower": 1,
+        "bonk choy": 1,
+        "imitater": 1,
+        "electric blueberry": 1,
+        "bombard-mint": 1,
+        "enforce-mint": 1,
+        "snow pea": 1,
+        "mega gatling pea": 1,
+        "cattail-mint": 1,
+        "tall-nut": 1,
+        "primal potato mine": 1,
+        "sun-shroom": 1,
+        "pumpkin": 1,
+        "repeater": 1,
+        "enlighten-mint": 1
+      },
+      "plantsLevels": {
+        "winter melon": 1,
+        "sweet potato": 1,
+        "sun bean": 1,
+        "split pea": 1,
+        "rotobaga": 1,
+        "hypno-shroom": 1,
+        "doom-shroom": 1,
+        "phat beet": 1,
+        "pepper-pult": 1,
+        "endurian": 1,
+        "primal sunflower": 1,
+        "squash": 1,
+        "kiwibeast": 1,
+        "cat-tail": 1,
+        "hot potato": 1,
+        "gold bloom": 1,
+        "sea-shroom": 1,
+        "tangle kelp": 1,
+        "caulipower": 1,
+        "ice-shroom": 1,
+        "appease-mint": 1,
+        "wasabi whip": 1,
+        "torchwood": 1,
+        "peashooter": 2,
+        "grapeshot": 1,
+        "magnet-shroom": 1,
+        "jalapeno": 1,
+        "citron": 1,
+        "wall-nut": 1,
+        "grave buster": 1,
+        "cherry bomb": 1,
+        "explode-o-nut": 1,
+        "fire peashooter": 1,
+        "enchant-mint": 1,
+        "potato mine": 1,
+        "bowling bulb": 1,
+        "arma-mint": 1,
+        "pierce-mint": 1,
+        "iceberg lettuce": 1,
+        "puff-shroom": 1,
+        "kernel-pult": 1,
+        "reinforce-mint": 1,
+        "threepeater": 1,
+        "pea pod": 1,
+        "lily pad": 1,
+        "cactus": 1,
+        "fume-shroom": 1,
+        "starfruit": 1,
+        "melon-pult": 1,
+        "cabbage-pult": 1,
+        "garlic": 1,
+        "goo peashooter": 1,
+        "chomper": 1,
+        "sunflower": 1,
+        "twin sunflower": 1,
+        "bonk choy": 1,
+        "imitater": 1,
+        "electric blueberry": 1,
+        "bombard-mint": 1,
+        "enforce-mint": 1,
+        "snow pea": 1,
+        "mega gatling pea": 1,
+        "cattail-mint": 1,
+        "tall-nut": 1,
+        "primal potato mine": 1,
+        "sun-shroom": 1,
+        "pumpkin": 1,
+        "repeater": 1,
+        "enlighten-mint": 1
+      },
+      "boostedSeeds": [],
+      "myGreenHouse": {
+        "pots": [
+          [
+            {
+              "x": 0,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "state": "GROWING",
+              "readyAtTimestamp": 1785554680163,
+              "onPot": {
+                "name": "peashooter",
+                "isMarigold": false,
+                "growthDuration": 28800000
+              }
+            },
+            {
+              "x": 2,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 1,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ]
+        ],
+        "rows": 4,
+        "cols": 5
+      },
+      "lastChapter": 4,
+      "lastLevel": 4,
+      "passedMiniGames": {
+        "Beghouled": 1
+      },
+      "dailyQuestsDone": 0,
+      "noneDailyQuestsDone": 0,
+      "hasBoughtDailyOfferToday": false,
+      "seenZombieAliases": [
+        "ZombieDarkImpDragon",
+        "ZombieDefault",
+        "ZombieArmor1",
+        "ZombieArmor2",
+        "ZombieLostCityJane",
+        "ZombieRa",
+        "ZombieBeachFisherman",
+        "ZombieBeachSnorkel",
+        "ZombieImp",
+        "ZombieExplorer",
+        "ZombieDarkArmor3",
+        "ZombieCrystalSkull"
+      ],
+      "completedQuestIds": [],
+      "winStreakAtMaxDifficulty": 0,
+      "versusWins": 0,
+      "versusLosses": 0,
+      "zombieKillsByChapter": {
+        "ancient_egypt": 9
+      },
+      "completedDailyQuestIds": [],
+      "questDayStamp": "2026-08-13",
+      "sunCollectedToday": 0,
+      "mowerlessFirstColumnKillsToday": 0,
+      "killsByPlantToday": {},
+      "lawnmowerKillsTotal": 6,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": false,
+      "volume": 80
+    }
+  },
+  "parsa": {
+    "username": "parsa",
+    "nickname": "parsa",
+    "email": "parsa_ay@yahoo.com",
+    "gender": "MALE",
+    "hashPassword": "cadabbeda0c6e310082c8e006d528d665891be080880495e67438c244617afaa",
+    "securityQuestionIndex": 1,
+    "securityAnswerHash": "cc06146070ec57abdbc03a0dc60ce6f201f4a687c6273d210b3084faaf178951",
+    "stayLoggedIn": false,
+    "profile": {
+      "gameNumbers": 0,
+      "coins": 13610,
+      "gems": 391,
+      "plantFoodCount": 3,
+      "difficultyLevel": 3,
+      "bestNumberOfMeowPoints": 793,
+      "newsList": [
+        {
+          "id": 1,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor1 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-23",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 2,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDefault and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-23",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 3,
+          "title": "A New Sprout Joins the Fight",
+          "description": "cherry bomb has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 4,
+          "title": "A New Sprout Joins the Fight",
+          "description": "starfruit has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 5,
+          "title": "A New Sprout Joins the Fight",
+          "description": "gold bloom has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 6,
+          "title": "A New Sprout Joins the Fight",
+          "description": "explode-o-nut has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 7,
+          "title": "A New Sprout Joins the Fight",
+          "description": "electric blueberry has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 8,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDarkJuggler and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 9,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBeachFisherman and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 10,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor4 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 11,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieNewspaper and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 12,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieExplorer and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 13,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieIceAgeTroglobite and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 14,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieProspector and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 15,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieLostCityJane and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-24",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 16,
+          "title": "New Mini-Game Unlocked",
+          "description": "I, Zombie level 1 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-07-28",
+          "read": true,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 17,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor2 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-29",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 18,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieImp and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-29",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 19,
+          "title": "New Mini-Game Unlocked",
+          "description": "I, Zombie level 2 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-07-29",
+          "read": true,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 20,
+          "title": "New Mini-Game Unlocked",
+          "description": "Beghouled level 1 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-07-30",
+          "read": true,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 21,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBotanyJalapeno and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-30",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 22,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBotanySquash and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-30",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 23,
+          "title": "A New Sprout Joins the Fight",
+          "description": "twin sunflower has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-30",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 24,
+          "title": "A New Sprout Joins the Fight",
+          "description": "repeater has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-30",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 25,
+          "title": "A New Sprout Joins the Fight",
+          "description": "cactus has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-30",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 26,
+          "title": "A New Sprout Joins the Fight",
+          "description": "iceberg lettuce has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-30",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 27,
+          "title": "A New Sprout Joins the Fight",
+          "description": "sun-shroom has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 28,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieGargantuar and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 29,
+          "title": "New Mini-Game Unlocked",
+          "description": "Vasebreaker level 1 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 30,
+          "title": "New Mini-Game Unlocked",
+          "description": "Wall-nut Bowling level 1 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 31,
+          "title": "A New Sprout Joins the Fight",
+          "description": "primal potato mine has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 32,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieRa and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 33,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieTombRaiser and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 34,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieIceAgeHunter and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 35,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieIceAgeDodo and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 36,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDarkArmor3 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 37,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieWizard and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 38,
+          "title": "A New Sprout Joins the Fight",
+          "description": "cabbage-pult has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 39,
+          "title": "A New Sprout Joins the Fight",
+          "description": "lily pad has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 40,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombiePiano and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 41,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBeachOctopus and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-31",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 42,
+          "title": "A New Sprout Joins the Fight",
+          "description": "Magnet-shroom has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-08-15",
+          "read": false,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 43,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDarkImpDragon and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 44,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDarkKing and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 45,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieCrystalSkull and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 46,
+          "title": "New Mini-Game Unlocked",
+          "description": "Vasebreaker level 2 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 47,
+          "title": "New Mini-Game Unlocked",
+          "description": "I, Zombie level 3 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 48,
+          "title": "New Mini-Game Unlocked",
+          "description": "Beghouled level 2 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 49,
+          "title": "New Mini-Game Unlocked",
+          "description": "Beghouled level 3 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 50,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBotanyPeashooter and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 51,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieModernAllStar and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 52,
+          "title": "A New Sprout Joins the Fight",
+          "description": "Bonk Choy has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 53,
+          "title": "A New Sprout Joins the Fight",
+          "description": "kernel-pult has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 54,
+          "title": "A New Sprout Joins the Fight",
+          "description": "torchwood has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-08-24",
+          "read": false,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 55,
+          "title": "A New Sprout Joins the Fight",
+          "description": "melon-pult has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-08-25",
+          "read": false,
+          "type": "PLANT_UNLOCK"
+        }
+      ],
+      "unlockedPlants": [
+        "sunflower",
+        "peashooter",
+        "wall-nut",
+        "potato mine",
+        "snow pea",
+        "cherry bomb",
+        "starfruit",
+        "gold bloom",
+        "explode-o-nut",
+        "electric blueberry",
+        "twin sunflower",
+        "repeater",
+        "cactus",
+        "iceberg lettuce",
+        "sun-shroom",
+        "primal potato mine",
+        "cabbage-pult",
+        "lily pad",
+        "magnet-shroom",
+        "bonk choy",
+        "kernel-pult",
+        "torchwood",
+        "melon-pult"
+      ],
+      "lockedPlants": [],
+      "ownedSeedPackets": {
+        "potato mine": 6,
+        "torchwood": 1,
+        "iceberg lettuce": 2,
+        "kernel-pult": 1,
+        "peashooter": 0,
+        "magnet-shroom": 1,
+        "lily pad": 2,
+        "sunflower": 7,
+        "twin sunflower": 2,
+        "bonk choy": 6,
+        "wall-nut": 3,
+        "electric blueberry": 2,
+        "snow pea": 2,
+        "cherry bomb": 2,
+        "explode-o-nut": 11,
+        "primal potato mine": 3,
+        "cactus": 2,
+        "gold bloom": 1,
+        "sun-shroom": 2,
+        "starfruit": 3,
+        "melon-pult": 1,
+        "repeater": 2,
+        "cabbage-pult": 1
+      },
+      "plantsLevels": {
+        "potato mine": 1,
+        "torchwood": 1,
+        "iceberg lettuce": 1,
+        "kernel-pult": 1,
+        "peashooter": 2,
+        "magnet-shroom": 1,
+        "lily pad": 1,
+        "sunflower": 1,
+        "twin sunflower": 1,
+        "bonk choy": 1,
+        "wall-nut": 1,
+        "electric blueberry": 1,
+        "snow pea": 1,
+        "cherry bomb": 1,
+        "explode-o-nut": 1,
+        "primal potato mine": 1,
+        "cactus": 1,
+        "gold bloom": 1,
+        "sun-shroom": 1,
+        "starfruit": 1,
+        "melon-pult": 1,
+        "repeater": 1,
+        "cabbage-pult": 1
+      },
+      "boostedSeeds": [
+        "iceberg lettuce",
+        "starfruit",
+        "cabbage-pult"
+      ],
+      "myGreenHouse": {
+        "pots": [
+          [
+            {
+              "x": 0,
+              "y": 0,
+              "state": "GROWING",
+              "readyAtTimestamp": 1787698551659,
+              "onPot": {
+                "name": "Marigold",
+                "isMarigold": true,
+                "growthDuration": 7200000
+              }
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "state": "GROWING",
+              "readyAtTimestamp": 1787720152891,
+              "onPot": {
+                "name": "peashooter",
+                "isMarigold": false,
+                "growthDuration": 28800000
+              }
+            },
+            {
+              "x": 2,
+              "y": 0,
+              "state": "GROWING",
+              "readyAtTimestamp": 1787720153659,
+              "onPot": {
+                "name": "electric blueberry",
+                "isMarigold": false,
+                "growthDuration": 28800000
+              }
+            },
+            {
+              "x": 3,
+              "y": 0,
+              "state": "GROWING",
+              "readyAtTimestamp": 1787698554625,
+              "onPot": {
+                "name": "Marigold",
+                "isMarigold": true,
+                "growthDuration": 7200000
+              }
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 1,
+              "state": "GROWING",
+              "readyAtTimestamp": 1787698556109,
+              "onPot": {
+                "name": "Marigold",
+                "isMarigold": true,
+                "growthDuration": 7200000
+              }
+            },
+            {
+              "x": 1,
+              "y": 1,
+              "state": "GROWING",
+              "readyAtTimestamp": 1787720156726,
+              "onPot": {
+                "name": "sun-shroom",
+                "isMarigold": false,
+                "growthDuration": 28800000
+              }
+            },
+            {
+              "x": 2,
+              "y": 1,
+              "state": "GROWING",
+              "readyAtTimestamp": 1787720157542,
+              "onPot": {
+                "name": "electric blueberry",
+                "isMarigold": false,
+                "growthDuration": 28800000
+              }
+            },
+            {
+              "x": 3,
+              "y": 1,
+              "state": "GROWING",
+              "readyAtTimestamp": 1787698558427,
+              "onPot": {
+                "name": "Marigold",
+                "isMarigold": true,
+                "growthDuration": 7200000
+              }
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 2,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 2,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 2,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 2,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            }
+          ]
+        ],
+        "rows": 4,
+        "cols": 5
+      },
+      "lastChapter": 4,
+      "lastLevel": 4,
+      "passedMiniGames": {
+        "I, Zombie": 3,
+        "Beghouled": 3,
+        "Vasebreaker": 2,
+        "Wall-nut Bowling": 1
+      },
+      "dailyQuestsDone": 20,
+      "noneDailyQuestsDone": 4,
+      "hasBoughtDailyOfferToday": false,
+      "seenZombieAliases": [
+        "ZombieRa",
+        "ZombieDarkJuggler",
+        "ZombieTombRaiser",
+        "ZombieImp",
+        "ZombieGargantuar",
+        "ZombieBotanySquash",
+        "ZombieIceAgeDodo",
+        "ZombieDarkImpDragon",
+        "ZombieArmor4",
+        "ZombieArmor1",
+        "ZombieDefault",
+        "ZombieArmor2",
+        "ZombieLostCityJane",
+        "ZombiePiano",
+        "ZombieBotanyPeashooter",
+        "ZombieNewspaper",
+        "ZombieExplorer",
+        "ZombieIceAgeTroglobite",
+        "ZombieProspector",
+        "ZombieDarkKing",
+        "ZombieBotanyJalapeno",
+        "ZombieModernAllStar",
+        "ZombieIceAgeHunter",
+        "ZombieWizard",
+        "ZombieBeachOctopus",
+        "ZombieBeachFisherman",
+        "ZombieDarkArmor3",
+        "ZombieCrystalSkull"
+      ],
+      "completedQuestIds": [
+        "economical_herbivore",
+        "chapter_hunter",
+        "defense_master",
+        "mowing_time"
+      ],
+      "winStreakAtMaxDifficulty": 0,
+      "versusWins": 1,
+      "versusLosses": 6,
+      "zombieKillsByChapter": {
+        "ancient_egypt": 67,
+        "frostbite_caves": 42,
+        "dark_ages": 73
+      },
+      "completedDailyQuestIds": [
+        "daily_sun_catcher",
+        "ocd"
+      ],
+      "questDayStamp": "2026-08-28",
+      "sunCollectedToday": 3525,
+      "mowerlessFirstColumnKillsToday": 0,
+      "killsByPlantToday": {
+        "electric blueberry": 4,
+        "cherry bomb": 2,
+        "repeater": 16,
+        "bonk choy": 1
+      },
+      "lawnmowerKillsTotal": 63,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": true,
+      "volume": 0
+    }
+  },
+  "Amir": {
+    "username": "Amir",
+    "nickname": "Ariaaaaa",
+    "email": "amirlari@gmail.com",
+    "gender": "MALE",
+    "hashPassword": "043849449ad614ee29edd20f226bfa82bccee8cf4138551b79b7957a4d986270",
+    "securityQuestionIndex": 0,
+    "securityAnswerHash": "05f514fae7ca5710f9e9289a20a5c9b372af781bfc94dd23d9cb8a044122460f",
+    "stayLoggedIn": false,
+    "profile": {
+      "gameNumbers": 0,
+      "coins": 2000,
+      "gems": 100,
+      "plantFoodCount": 0,
+      "difficultyLevel": 3,
+      "newsList": [],
+      "unlockedPlants": [
+        "sunflower",
+        "peashooter",
+        "wall-nut",
+        "potato mine",
+        "snow pea"
+      ],
+      "lockedPlants": [],
+      "ownedSeedPackets": {
+        "peashooter": 1,
+        "wall-nut": 1,
+        "potato mine": 1,
+        "snow pea": 1,
+        "sunflower": 1
+      },
+      "plantsLevels": {
+        "peashooter": 1,
+        "wall-nut": 1,
+        "potato mine": 1,
+        "snow pea": 1,
+        "sunflower": 1
+      },
+      "boostedSeeds": [],
+      "myGreenHouse": {
+        "pots": [
+          [
+            {
+              "x": 0,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ]
+        ],
+        "rows": 4,
+        "cols": 5
+      },
+      "lastChapter": 1,
+      "lastLevel": 1,
+      "passedMiniGames": {},
+      "dailyQuestsDone": 0,
+      "noneDailyQuestsDone": 0,
+      "hasBoughtDailyOfferToday": false,
+      "seenZombieAliases": [],
+      "completedQuestIds": [],
+      "winStreakAtMaxDifficulty": 0,
+      "versusWins": 0,
+      "versusLosses": 0,
+      "zombieKillsByChapter": {},
+      "completedDailyQuestIds": [],
+      "sunCollectedToday": 0,
+      "mowerlessFirstColumnKillsToday": 0,
+      "killsByPlantToday": {},
+      "lawnmowerKillsTotal": 0,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": false,
+      "volume": 80
+    }
+  },
+  "Paniz": {
+    "username": "Paniz",
+    "nickname": "Pani",
+    "email": "panizhosseini1386@gmail.com",
+    "gender": "FEMALE",
+    "hashPassword": "4341d84c562f7f55a30894e5425e43b43f6972acf8be4f8117ab25d77387c034",
+    "securityQuestionIndex": 1,
+    "securityAnswerHash": "495336f5c97c5a76d587427512bdfe262a32f17fbef7fdc1da4d3c55843b5a19",
+    "stayLoggedIn": false,
+    "profile": {
+      "gameNumbers": 0,
+      "coins": 9998430,
+      "gems": 59,
+      "plantFoodCount": 0,
+      "difficultyLevel": 3,
+      "bestNumberOfMeowPoints": 953,
+      "newsList": [
+        {
+          "id": 1,
+          "title": "A New Sprout Joins the Fight",
+          "description": "twin sunflower has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "PLANT_UNLOCK"
+        },
+        {
+          "id": 2,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor1 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 3,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDefault and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 4,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieExplorer and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 5,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor2 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 6,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieRa and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 7,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieImp and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 8,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieGargantuar and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 9,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieTombRaiser and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-07-22",
+          "read": true,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 10,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieIceAgeHunter and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-28",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 11,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieProspector and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-28",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 12,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieLostCityJane and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-28",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 13,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieCrystalSkull and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-28",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 14,
+          "title": "A New Sprout Joins the Fight",
+          "description": "Enforce-mint has been added to your almanac. Give it a lawn to defend!",
+          "author": "System",
+          "date": "2026-08-28",
+          "read": false,
+          "type": "PLANT_UNLOCK"
+        }
+      ],
+      "unlockedPlants": [
+        "sunflower",
+        "peashooter",
+        "wall-nut",
+        "potato mine",
+        "snow pea",
+        "cherry bomb",
+        "garlic",
+        "twin sunflower",
+        "enforce-mint"
+      ],
+      "lockedPlants": [],
+      "ownedSeedPackets": {
+        "wall-nut": 11,
+        "potato mine": 11,
+        "garlic": 1,
+        "enforce-mint": 1,
+        "snow pea": 21,
+        "cherry bomb": 15,
+        "peashooter": 26,
+        "sunflower": 11,
+        "twin sunflower": 1
+      },
+      "plantsLevels": {
+        "wall-nut": 1,
+        "potato mine": 1,
+        "garlic": 1,
+        "enforce-mint": 1,
+        "snow pea": 1,
+        "cherry bomb": 2,
+        "peashooter": 2,
+        "sunflower": 1,
+        "twin sunflower": 1
+      },
+      "boostedSeeds": [],
+      "myGreenHouse": {
+        "pots": [
+          [
+            {
+              "x": 0,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "state": "GROWING",
+              "readyAtTimestamp": 1784564840681,
+              "onPot": {
+                "name": "Marigold",
+                "isMarigold": true,
+                "growthDuration": 7200000
+              }
+            },
+            {
+              "x": 2,
+              "y": 0,
+              "state": "GROWING",
+              "readyAtTimestamp": 1784564858675,
+              "onPot": {
+                "name": "Marigold",
+                "isMarigold": true,
+                "growthDuration": 7200000
+              }
+            },
+            {
+              "x": 3,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 1,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 1,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ]
+        ],
+        "rows": 4,
+        "cols": 5
+      },
+      "lastChapter": 1,
+      "lastLevel": 2,
+      "passedMiniGames": {},
+      "dailyQuestsDone": 3,
+      "noneDailyQuestsDone": 0,
+      "hasBoughtDailyOfferToday": false,
+      "seenZombieAliases": [
+        "ZombieArmor1",
+        "ZombieDefault",
+        "ZombieArmor2",
+        "ZombieLostCityJane",
+        "ZombieRa",
+        "ZombieProspector",
+        "ZombieTombRaiser",
+        "ZombieExplorer",
+        "ZombieImp",
+        "ZombieGargantuar",
+        "ZombieIceAgeHunter",
+        "ZombieCrystalSkull"
+      ],
+      "completedQuestIds": [],
+      "winStreakAtMaxDifficulty": 0,
+      "versusWins": 5,
+      "versusLosses": 1,
+      "zombieKillsByChapter": {},
+      "completedDailyQuestIds": [
+        "daily_sun_catcher",
+        "pro_plant_player",
+        "ocd"
+      ],
+      "questDayStamp": "2026-08-28",
+      "sunCollectedToday": 4775,
+      "mowerlessFirstColumnKillsToday": 0,
+      "killsByPlantToday": {
+        "snow pea": 5,
+        "peashooter": 15,
+        "cherry bomb": 3
+      },
+      "lawnmowerKillsTotal": 0,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": false,
+      "volume": 0
+    }
+  },
+  "test1": {
+    "username": "test1",
+    "nickname": "test1",
+    "email": "test1@gamil.com",
+    "gender": "MALE",
+    "hashPassword": "048c8e6aa263b54aebde3f078df3e96c92f09f3aea39bdb11e0ce071d36dcaf0",
+    "securityQuestionIndex": 0,
+    "securityAnswerHash": "3227fe6bde46249b0aae4b69ef6efd806422a46788e281d050d32d0d9fbde723",
+    "stayLoggedIn": false,
+    "profile": {
+      "gameNumbers": 0,
+      "coins": 2000,
+      "gems": 100,
+      "plantFoodCount": 0,
+      "difficultyLevel": 3,
+      "newsList": [],
+      "unlockedPlants": [
+        "sunflower",
+        "peashooter",
+        "wall-nut",
+        "potato mine",
+        "snow pea"
+      ],
+      "lockedPlants": [],
+      "ownedSeedPackets": {
+        "peashooter": 1,
+        "wall-nut": 1,
+        "potato mine": 1,
+        "snow pea": 1,
+        "sunflower": 1
+      },
+      "plantsLevels": {
+        "peashooter": 1,
+        "wall-nut": 1,
+        "potato mine": 1,
+        "snow pea": 1,
+        "sunflower": 1
+      },
+      "boostedSeeds": [],
+      "myGreenHouse": {
+        "pots": [
+          [
+            {
+              "x": 0,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 0,
+              "state": "EMPTY",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 1,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 2,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ],
+          [
+            {
+              "x": 0,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 1,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 2,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 3,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            },
+            {
+              "x": 4,
+              "y": 3,
+              "state": "LOCKED",
+              "readyAtTimestamp": 0
+            }
+          ]
+        ],
+        "rows": 4,
+        "cols": 5
+      },
+      "lastChapter": 1,
+      "lastLevel": 1,
+      "passedMiniGames": {},
+      "dailyQuestsDone": 0,
+      "noneDailyQuestsDone": 0,
+      "hasBoughtDailyOfferToday": false,
+      "seenZombieAliases": [],
+      "completedQuestIds": [],
+      "winStreakAtMaxDifficulty": 0,
+      "versusWins": 0,
+      "versusLosses": 0,
+      "zombieKillsByChapter": {},
+      "completedDailyQuestIds": [],
+      "questDayStamp": "2026-07-31",
+      "sunCollectedToday": 0,
+      "mowerlessFirstColumnKillsToday": 0,
+      "killsByPlantToday": {},
+      "lawnmowerKillsTotal": 0,
+      "gameSpeed": 1,
+      "showGrid": false,
+      "debugMode": false,
+      "volume": 80
+    }
+  }
+}

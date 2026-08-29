@@ -12,6 +12,7 @@ import models.entities.projectiles.Trajectory;
 import models.entities.zombies.Components.ActionState;
 import models.entities.zombies.Zombie;
 import models.game.GameSession;
+import models.game.SeedPacket;
 import models.game.gamemodes.VersusIZombieMode;
 import models.map.Cell;
 import models.map.Row;
@@ -75,6 +76,7 @@ public final class SnapshotReconciler {
         lastTick = snapshot.tick();
 
         applyBanks(snapshot);
+        applySeedCooldowns(snapshot);
         removeMissing(collectIds(snapshot));
         for (EntityState state : snapshot.entities()) {
             applyEntity(state);
@@ -104,6 +106,26 @@ public final class SnapshotReconciler {
         if (session.getMode() instanceof VersusIZombieMode versus) {
             versus.mirror(snapshot.ticksRemaining(), snapshot.sunZombies(), snapshot.brainEaten());
         }
+    }
+
+    // Every packet is written every tick, not just the ones in the map: a packet that has finished
+    // recharging simply stops being listed, and one that was never told zero would stay dark forever.
+    private void applySeedCooldowns(MatchSnapshot snapshot) {
+        Map<String, Integer> cooling = snapshot.cooldowns();
+        for (SeedPacket packet : session.getSelectedSeeds()) {
+            packet.mirrorRemainingTicks(remainingFor(cooling, packet.getPlantType()));
+        }
+    }
+
+    // Ignoring case, which is the house rule for plant names everywhere else in this project -- a
+    // "Wall-nut" that arrives as "wall-nut" would silently never recharge rather than fail loudly.
+    private static int remainingFor(Map<String, Integer> cooling, String plantType) {
+        for (Map.Entry<String, Integer> entry : cooling.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(plantType)) {
+                return entry.getValue() == null ? 0 : entry.getValue();
+            }
+        }
+        return 0;
     }
 
     // ---- membership ------------------------------------------------------------------------------
@@ -264,6 +286,8 @@ public final class SnapshotReconciler {
             return;
         }
         plant.setFrozen(state.is(EntityFlags.FROZEN));
+        plant.mirrorWindingUp(state.is(EntityFlags.ACTING));
+        plant.mirrorPlantFood(state.is(EntityFlags.BOOSTED));
         int current = plant.getHealth().getCurrentHp();
         if (current > state.hp()) {
             plant.getHealth().takeDamage(current - state.hp());
@@ -302,13 +326,19 @@ public final class SnapshotReconciler {
         projectile.placeAt(state.x(), state.y());
     }
 
+    // hp carries the sun's WORTH and maxHp the height it comes to rest at -- see EntityState. The rest
+    // height must come from the snapshot rather than from wherever the sun happens to be right now: a
+    // sun caught mid-fall is collected by naming the tile it is falling TOWARDS, and one built with
+    // targetY = its current height addresses a row the server does not have it in, so clicking it does
+    // nothing for the whole of the fall.
+    //
+    // The expiry is a large number rather than the server's: a mirrored sun is removed when it stops
+    // appearing in snapshots, and letting it expire locally would make it vanish while the server still
+    // has it.
     private Sun createSun(EntityState state) {
         SunType type = sunType(state.type());
         boolean falling = state.is(EntityFlags.FALLING);
-        // hp carries the sun's WORTH -- see SnapshotBuilder.sunState. The expiry is a large number
-        // rather than the server's: a mirrored sun is removed when it stops appearing in snapshots,
-        // and letting it expire locally would make it vanish while the server still has it.
-        Sun sun = new Sun(state.x(), state.y(), state.y(), type, state.hp(), falling,
+        Sun sun = new Sun(state.x(), state.y(), state.restHeight(), type, state.hp(), falling,
                 Integer.MAX_VALUE);
         session.addSun(sun);
         byNetId.put(state.netId(), sun);
@@ -319,7 +349,7 @@ public final class SnapshotReconciler {
         if (sun == null) {
             return;
         }
-        sun.placeAt(state.x(), state.y(), state.is(EntityFlags.FALLING));
+        sun.placeAt(state.x(), state.y(), state.restHeight(), state.is(EntityFlags.FALLING));
     }
 
     // ---- setup -----------------------------------------------------------------------------------

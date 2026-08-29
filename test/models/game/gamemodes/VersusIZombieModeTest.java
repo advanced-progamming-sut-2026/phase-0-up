@@ -5,6 +5,7 @@ import factories.ZombieFactory;
 import models.game.Faction;
 import models.game.GameSession;
 import models.game.GameState;
+import models.entities.zombies.Zombie;
 import models.game.Level;
 import models.map.Row;
 import models.user.Profile;
@@ -49,6 +50,23 @@ class VersusIZombieModeTest {
         return (VersusIZombieMode) session.getMode();
     }
 
+    // Past the opening grace, so a test about summoning is about summoning.
+    //
+    // Every test below that buys a zombie goes through here rather than starting the clock at zero,
+    // because the mode now refuses everything for the first twenty seconds and a test that did not know
+    // that would fail with a message about digging.
+    private static GameSession openPlay() {
+        GameSession session = started();
+        session.advanceTime(modeOf(session).graceTicks());
+        return session;
+    }
+
+    // The cheapest thing on the belt, asked rather than typed: the price table is a balance knob and
+    // a test that hard-codes 25 goes quietly wrong the next time somebody turns it.
+    private static int cheapest(VersusIZombieMode mode) {
+        return mode.getRoster().values().stream().min(Integer::compareTo).orElseThrow();
+    }
+
     // --- Setup ------------------------------------------------------------------------------------
 
     @Test
@@ -86,7 +104,7 @@ class VersusIZombieModeTest {
 
     @Test
     void plantingAndSummoningSpendFromDifferentBanks() {
-        GameSession session = started();
+        GameSession session = openPlay();
         VersusIZombieMode mode = modeOf(session);
 
         int plantSunBefore = session.getSunAmount();
@@ -108,11 +126,11 @@ class VersusIZombieModeTest {
 
     @Test
     void aBrokeZombiePlayerCannotSummonEvenWhenThePlantPlayerIsRich() {
-        GameSession session = started();
+        GameSession session = openPlay();
         VersusIZombieMode mode = modeOf(session);
 
         // Drain the zombie bank the only way there is: buy until it will not stretch to another Imp.
-        while (mode.getZombieSun() >= 25) {
+        while (mode.getZombieSun() >= cheapest(mode)) {
             assertTrue(session.summonZombie("ZombieImp", 8, 0).success());
         }
         session.increaseSunAmount(10_000);   // the plant player is flush
@@ -141,7 +159,7 @@ class VersusIZombieModeTest {
 
     @Test
     void theZombiePlayerCannotSummonLeftOfTheRedLine() {
-        GameSession session = started();
+        GameSession session = openPlay();
         VersusIZombieMode mode = modeOf(session);
         assertFalse(session.summonZombie("ZombieImp", mode.getRedLineColumn() - 1, 0).success());
         assertTrue(session.summonZombie("ZombieImp", mode.getRedLineColumn(), 0).success());
@@ -201,10 +219,10 @@ class VersusIZombieModeTest {
 
     @Test
     void aSpentHordeIsAPlantWin() {
-        GameSession session = started();
+        GameSession session = openPlay();
         VersusIZombieMode mode = modeOf(session);
 
-        while (mode.getZombieSun() >= 25) {
+        while (mode.getZombieSun() >= cheapest(mode)) {
             session.summonZombie("ZombieImp", 8, 0);
         }
         // Every summoned zombie shot down. The sun makers are left standing on purpose: they never
@@ -279,7 +297,7 @@ class VersusIZombieModeTest {
     void onStartIsIdempotent() {
         // The server calls GameEngine.init() and both clients build the same level; a second onStart
         // must not reset the banks or stack a second row of sun makers.
-        GameSession session = started();
+        GameSession session = openPlay();
         VersusIZombieMode mode = modeOf(session);
         session.summonZombie("ZombieImp", 8, 0);
         int sun = mode.getZombieSun();
@@ -291,9 +309,124 @@ class VersusIZombieModeTest {
         assertEquals(zombies, session.getMap().getRow(0).getZombies().size());
     }
 
+    // --- Balance, at the only point it is decidable in a unit test ---------------------------------
+    //
+    // These do not pin the numbers -- the price table is a knob and pinning it would just mean editing
+    // two files instead of one. They pin the two SHAPES the first build got wrong: an opening the plant
+    // player could not answer, and a belt where the cheap entry was strictly the best entry.
+
+    @Test
+    void theOpeningBankCannotPutAZombieInEveryLane() {
+        VersusIZombieMode mode = modeOf(started());
+        assertTrue(mode.startingZombieSun() < mode.brainsTotal() * cheapest(mode),
+                "five lanes bought on tick one is not a match, it is a countdown: the plant player can "
+                        + "afford to answer in one of them");
+    }
+
+    @Test
+    void thePlantPlayerCanOpenWithAnEngineAndAShooter() {
+        VersusIZombieMode mode = modeOf(started());
+        int sunflowers = 3;
+        int engine = sunflowers * costOf("Sunflower") + costOf("Peashooter");
+        assertTrue(mode.startingPlantSun() >= engine,
+                "the opening bank has to cover " + sunflowers + " Sunflowers and something that shoots ("
+                        + engine + "); it was " + mode.startingPlantSun());
+    }
+
+    @Test
+    void theHeaviestZombieIsAMatchLongCommitment() {
+        // The Gargantuar has nineteen times a basic's health, and no five columns of shooters bring one
+        // down before it reaches the brain. It was priced at six times a basic and affordable from the
+        // opening bank, so the answer to a Gargantuar was another Gargantuar. It has to be something a
+        // player saves for, not something they start with.
+        VersusIZombieMode mode = modeOf(started());
+        int dearest = mode.getRoster().values().stream().max(Integer::compareTo).orElseThrow();
+        assertTrue(dearest > mode.startingZombieSun(),
+                "the toughest thing on the belt must not be an opening move");
+    }
+
+    @Test
+    void aSunMakerCanActuallyBeShotDownInsideAMatch() {
+        // The plant player's only answer to the zombie economy is to destroy it, and that has to be
+        // reachable. A buckethead maker is 1290 health; a Peashooter does 20 damage every 1.5 seconds,
+        // so killing one took ninety-seven seconds of clear fire out of a hundred-and-eighty second
+        // match -- counterplay that existed on paper and never once in a game.
+        GameSession session = started();
+        VersusIZombieMode mode = modeOf(session);
+        Zombie maker = session.getMap().getRow(0).getZombies().stream()
+                .filter(mode::isSunProducer).findFirst().orElseThrow();
+
+        double shooterDps = peashooterDamage() / peashooterInterval();
+        double secondsToKill = maker.getHealth().getMaxTotalHp() / shooterDps;
+        assertTrue(secondsToKill < mode.matchDurationTicks() / (double) Constants.TICKS_PER_SECOND / 3,
+                "one Peashooter needs " + Math.round(secondsToKill) + "s to bring a sun maker down, "
+                        + "and it has to be worth committing a lane to");
+    }
+
+    private static int costOf(String plant) {
+        return utils.registry.PlantRegistry.getInstance().getTemplateByName(plant).getCost();
+    }
+
+    private static double peashooterDamage() {
+        return utils.registry.PlantRegistry.getInstance().getTemplateByName("Peashooter").getDamage();
+    }
+
+    private static double peashooterInterval() {
+        return utils.registry.PlantRegistry.getInstance()
+                .getTemplateByName("Peashooter").getActionInterval();
+    }
+
+    // --- The opening grace ------------------------------------------------------------------------
+
+    @Test
+    void nothingIsSummonableWhileThePlantPlayerIsStillDigging() {
+        GameSession session = started();
+        VersusIZombieMode mode = modeOf(session);
+        assertTrue(mode.graceTicks() > 0, "there is no match without it: see the class comment");
+        assertTrue(mode.summoningLocked(session));
+
+        Result tooSoon = session.summonZombie("ZombieDefault", 8, 0);
+        assertFalse(tooSoon.success());
+        assertTrue(tooSoon.message().toLowerCase().contains("diggin"),
+                "the refusal has to say WHY, and how long is left: " + tooSoon.message());
+        assertTrue(session.getMap().getRow(0).getZombies().stream().allMatch(mode::isSunProducer),
+                "a refused summon must not put a zombie on the lawn anyway");
+
+        session.advanceTime(mode.graceTicks());
+        assertFalse(mode.summoningLocked(session));
+        assertTrue(session.summonZombie("ZombieDefault", 8, 0).success(),
+                "and the belt opens the moment it expires");
+    }
+
+    @Test
+    void aBrokenOpeningIsNotASpentHorde() {
+        // The grace period looks EXACTLY like a spent horde from hordeSpent's seat -- an empty lawn and
+        // a bank the player has not been allowed to spend -- so a mode that did not exclude it would
+        // hand the plant player the match on tick one, and the log would say the zombies ran out.
+        GameSession session = started();
+        VersusIZombieMode mode = modeOf(session);
+        for (Row row : session.getMap().getRows()) {
+            row.getZombies().removeIf(zombie -> !mode.isSunProducer(zombie));
+        }
+        session.evaluateModeRules();
+        assertNull(mode.winner());
+    }
+
+    @Test
+    void theGraceNeverSwallowsAShortMatch() {
+        // The server can shorten a match and the harness does. A fixed twenty seconds would be the whole
+        // of a ten-second one, and the zombie player would never get a turn.
+        GameSession session = started(40);
+        VersusIZombieMode mode = modeOf(session);
+        assertTrue(mode.graceTicks() <= 40 / 4,
+                "the grace is capped at a quarter of the match, not a constant");
+        session.advanceTime(mode.graceTicks());
+        assertFalse(mode.summoningLocked(session));
+    }
+
     @Test
     void anUnknownZombieIsRefusedByName() {
-        GameSession session = started();
+        GameSession session = openPlay();
         Result refused = session.summonZombie("ZombieDrHeadInAJar", 7, 0);
         assertFalse(refused.success());
         assertNotNull(refused.message());

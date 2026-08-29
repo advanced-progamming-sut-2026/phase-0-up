@@ -8,7 +8,19 @@ public final class Protocol {
     // Bumped whenever a packet changes shape in a way an older build would misread. HelloRequest is
     // checked against this BEFORE authentication, so a version skew is reported as a version skew
     // rather than surfacing later as an unexplained "unknown packet type" mid-match.
-    public static final int VERSION = 1;
+    //
+    // "Changes shape" includes changing what an EXISTING field MEANS, which is the one that got missed
+    // and is the one worth spelling out. v2 gave EntityState.maxHp a second job -- a sun's resting
+    // height -- and added the ACTING flag. Nothing about either is a decode error: a v1 server happily
+    // fills maxHp with the sun's worth, a v2 client reads 25 as a rest height of 0.25, and every sun in
+    // the sky is filed in row 0 and cannot be collected. The wire still parses perfectly and the game
+    // is quietly broken, which is exactly the failure this constant exists to convert into a sentence.
+    //
+    // Practical consequence, since the server is a SEPARATE long-lived process: rebuilding the client
+    // is not enough. Bump this and both ends have to be restarted, which is the point.
+    // v3 adds MatchSnapshot.seedCooldowns -- the plant player's recharge wipes, which a mirror cannot
+    // measure for itself because the field they are derived from is only ever written by the server.
+    public static final int VERSION = 3;
 
     public static final int DEFAULT_PORT = 7777;
 

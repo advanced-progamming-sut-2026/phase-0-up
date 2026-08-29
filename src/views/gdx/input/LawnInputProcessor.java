@@ -284,12 +284,11 @@ public final class LawnInputProcessor extends InputAdapter {
         return commands.collectSun(at);
     }
 
-    // The tile the model files this sun under -- which is what the collect command addresses, even
-    // while the sun is drawn high above it. A falling sun is claimed by the tile it is heading FOR,
-    // matching how SunSystem.findSunAt locates one.
+    // The tile the collect command has to address. Asked of the sun rather than worked out here: this
+    // used to reimplement SunSystem.findSunAt's rule, and the two copies read different fields on a
+    // mirrored sun -- which is a sun the player can see, can click, and cannot collect.
     private static GridPos tileOf(Sun sun) {
-        int row = sun.isFalling() ? (int) Math.floor(sun.getTargetY()) : sun.getY();
-        return new GridPos((int) Math.floor(sun.getX()), row);
+        return new GridPos(sun.tileColumn(), sun.tileRow());
     }
 
     private boolean hasSunAt(GridPos at) {

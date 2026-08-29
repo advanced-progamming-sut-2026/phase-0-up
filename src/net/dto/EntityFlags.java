@@ -26,6 +26,10 @@ public final class EntityFlags {
     // A falling sun has not landed yet; the view drops it in from above the board rather than drawing
     // it at rest. Same distinction Sun.isFalling makes in the model.
     public static final int FALLING = 1 << 8;
+    // A plant that has committed to an action -- a shot drawn back, a bloom starting -- but whose
+    // effect has not appeared yet. Plant.isWindingUp(), which asks the plant's abilities, and a
+    // mirrored plant's abilities never run. The view plays the attack clip off the rising edge of it.
+    public static final int ACTING = 1 << 9;
 
     public static boolean has(int flags, int flag) {
         return (flags & flag) != 0;

@@ -206,24 +206,24 @@ public class SunSystem {
         }
     }
 
+    // Which sun the player meant. The tile a sun answers to is Sun.tileColumn/tileRow -- asked rather
+    // than recomputed here, because the view has to name the same tile and a second copy of the rule in
+    // the view is what produced suns that could be clicked but never collected on a networked board.
+    //
+    // A sun already on the ground wins over one still falling towards the same tile: it is the one the
+    // player can see sitting there, and it is the one about to expire.
     private Sun findSunAt(GameSession gameSession, double x, int y) {
-        int targetColumn = (int) x;
+        int targetColumn = columnFromX(x);
         Sun fallingCandidate = null;
 
         for (Sun sun : gameSession.getActiveSuns()) {
-            if (sun.isRemovable()) {
+            if (sun.isRemovable() || sun.tileColumn() != targetColumn || sun.tileRow() != y) {
                 continue;
             }
-
-            if (columnFromX(sun.getX()) != targetColumn) {
-                continue;
-            }
-
-            if (!sun.isFalling() && sun.getY() == y) {
+            if (!sun.isFalling()) {
                 return sun;
             }
-
-            if (sun.isFalling() && fallingCandidate == null && targetRow(sun) == y) {
+            if (fallingCandidate == null) {
                 fallingCandidate = sun;
             }
         }
