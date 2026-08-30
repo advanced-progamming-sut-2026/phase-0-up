@@ -166,6 +166,8 @@ public final class SnapshotReconciler {
             }
         } else if (entity instanceof Sun sun) {
             session.getActiveSuns().removeIf(other -> other == sun);
+        } else if (entity instanceof models.entities.collectibles.PlantFood pickup) {
+            session.getActivePlantFoods().removeIf(other -> other == pickup);
         }
     }
 
@@ -193,6 +195,9 @@ public final class SnapshotReconciler {
             case PROJECTILE -> applyProjectile(state,
                     existing instanceof Projectile p ? p : createProjectile(state));
             case SUN -> applySun(state, existing instanceof Sun s ? s : createSun(state));
+            case PLANT_FOOD -> applyPlantFood(state,
+                    existing instanceof models.entities.collectibles.PlantFood f
+                            ? f : createPlantFood(state));
             // A mower is the one thing on the board the server does not currently send -- a versus
             // lawn has brains in those slots instead. Handled by clearMowers(), which is what a
             // mirrored brain lawn actually needs: the mirror's GameMap builds mowers in its
@@ -350,6 +355,23 @@ public final class SnapshotReconciler {
             return;
         }
         sun.placeAt(state.x(), state.y(), state.restHeight(), state.is(EntityFlags.FALLING));
+    }
+
+    // A mirrored plant food never moves -- it is dropped where a zombie fell and stays there -- so the
+    // only thing that has to keep arriving is its countdown, which is what the view flashes on.
+    private models.entities.collectibles.PlantFood createPlantFood(EntityState state) {
+        models.entities.collectibles.PlantFood pickup =
+                new models.entities.collectibles.PlantFood(state.x(), (int) state.y(), state.hp());
+        session.addPlantFood(pickup);
+        byNetId.put(state.netId(), pickup);
+        return pickup;
+    }
+
+    private void applyPlantFood(EntityState state, models.entities.collectibles.PlantFood pickup) {
+        if (pickup == null) {
+            return;
+        }
+        pickup.mirrorRemainingTicks(state.hp());
     }
 
     // ---- setup -----------------------------------------------------------------------------------

@@ -37,6 +37,16 @@ public abstract class Collectible extends Entity {
         return isCollected || isExpired;
     }
 
+    // Which of the two ways it left the board. isRemovable() answers "is it gone", these answer "and
+    // was it taken or was it missed" -- a sweep that announces a lost pickup has to tell them apart.
+    public boolean isCollected() {
+        return isCollected;
+    }
+
+    public boolean isExpired() {
+        return isExpired;
+    }
+
     // Ticks left before this vanishes on its own. Purely informational -- the view flashes a sun that
     // is about to time out so the player gets a chance to grab it. A collectible that never expires
     // reports a huge number, which reads naturally as "not soon".

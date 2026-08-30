@@ -33,6 +33,27 @@ public final class DevBoot {
     private static final List<String> DEFAULT_SEEDS =
             List.of("Sunflower", "Peashooter", "Wall-nut", "Snow Pea", "Cherry Bomb", "Potato Mine");
 
+    // -Dpvz.seeds=A,B,C picks the seed bar instead of the six above.
+    //
+    // The six are a sensible board to look at and a dead end for testing anything else: a level offers
+    // twenty-odd plants and the bar holds six, so every plant outside that list -- Squash, Grapeshot,
+    // Doom-shroom, all of them -- was simply unplantable in an unattended run. `plant plant -t X`
+    // routes fine and is then refused for a seed the player never selected, which reads in the log as
+    // the command working.
+    private static List<String> chosenSeeds() {
+        String wanted = views.gdx.core.DebugFlags.SEEDS;
+        if (wanted.isEmpty()) {
+            return DEFAULT_SEEDS;
+        }
+        List<String> names = new java.util.ArrayList<>();
+        for (String name : wanted.split(",")) {
+            if (!name.trim().isEmpty()) {
+                names.add(name.trim());
+            }
+        }
+        return names.isEmpty() ? DEFAULT_SEEDS : names;
+    }
+
     private final GameSession session;
     private final GameEngine engine;
 
@@ -136,7 +157,7 @@ public final class DevBoot {
         List<String> available = session.getLevel().getAvailablePlants();
         int slots = session.getMaxSeedSlots();
 
-        for (String name : DEFAULT_SEEDS) {
+        for (String name : chosenSeeds()) {
             if (session.getSelectedSeeds().size() >= slots) {
                 break;
             }

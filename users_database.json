@@ -7,14 +7,14 @@
     "hashPassword": "fae4ee5710378f2aa14e4cf2f6597794cc59263b8546e550e35ec0a845239108",
     "securityQuestionIndex": 0,
     "securityAnswerHash": "3227fe6bde46249b0aae4b69ef6efd806422a46788e281d050d32d0d9fbde723",
-    "stayLoggedIn": false,
+    "stayLoggedIn": true,
     "profile": {
       "gameNumbers": 0,
-      "coins": 17950,
-      "gems": 950,
+      "coins": 21280,
+      "gems": 1231,
       "plantFoodCount": 0,
       "difficultyLevel": 3,
-      "bestNumberOfMeowPoints": 525,
+      "bestNumberOfMeowPoints": 1237,
       "newsList": [
         {
           "id": 1,
@@ -132,6 +132,69 @@
           "date": "2026-07-31",
           "read": false,
           "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 14,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieProspector and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-29",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 15,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieTombRaiser and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-29",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 16,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieIceAgeTroglobite and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-29",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 17,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArmor4 and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-29",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 18,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieModernAllStar and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-30",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 19,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieGargantuar and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-30",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 20,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieIceAgeHunter and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-30",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
         }
       ],
       "unlockedPlants": [
@@ -219,18 +282,18 @@
         "endurian": 1,
         "primal sunflower": 1,
         "squash": 1,
-        "kiwibeast": 1,
-        "cat-tail": 1,
-        "hot potato": 1,
+        "kiwibeast": 3,
+        "cat-tail": 2,
+        "hot potato": 2,
         "gold bloom": 1,
         "sea-shroom": 1,
         "tangle kelp": 1,
-        "caulipower": 1,
+        "caulipower": 2,
         "ice-shroom": 1,
         "appease-mint": 1,
         "wasabi whip": 1,
         "torchwood": 1,
-        "peashooter": 96,
+        "peashooter": 97,
         "grapeshot": 1,
         "magnet-shroom": 1,
         "jalapeno": 1,
@@ -248,31 +311,31 @@
         "iceberg lettuce": 1,
         "puff-shroom": 1,
         "kernel-pult": 1,
-        "reinforce-mint": 1,
+        "reinforce-mint": 2,
         "threepeater": 1,
         "pea pod": 1,
         "lily pad": 1,
         "cactus": 1,
         "fume-shroom": 11,
         "starfruit": 1,
-        "melon-pult": 1,
-        "cabbage-pult": 1,
+        "melon-pult": 2,
+        "cabbage-pult": 2,
         "garlic": 1,
-        "goo peashooter": 1,
+        "goo peashooter": 2,
         "chomper": 1,
         "sunflower": 1,
         "twin sunflower": 1,
-        "bonk choy": 1,
+        "bonk choy": 2,
         "imitater": 1,
-        "electric blueberry": 1,
+        "electric blueberry": 2,
         "bombard-mint": 1,
-        "enforce-mint": 1,
+        "enforce-mint": 3,
         "snow pea": 1,
         "mega gatling pea": 1,
         "cattail-mint": 1,
         "tall-nut": 1,
         "primal potato mine": 1,
-        "sun-shroom": 1,
+        "sun-shroom": 2,
         "pumpkin": 1,
         "repeater": 1,
         "enlighten-mint": 1
@@ -380,12 +443,6 @@
               "y": 0,
               "state": "EMPTY",
               "readyAtTimestamp": 0
-            },
-            {
-              "x": 4,
-              "y": 0,
-              "state": "EMPTY",
-              "readyAtTimestamp": 0
             }
           ],
           [
@@ -398,25 +455,19 @@
             {
               "x": 1,
               "y": 1,
-              "state": "LOCKED",
+              "state": "EMPTY",
               "readyAtTimestamp": 0
             },
             {
               "x": 2,
               "y": 1,
-              "state": "LOCKED",
+              "state": "EMPTY",
               "readyAtTimestamp": 0
             },
             {
               "x": 3,
               "y": 1,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 4,
-              "y": 1,
-              "state": "LOCKED",
+              "state": "EMPTY",
               "readyAtTimestamp": 0
             }
           ],
@@ -424,13 +475,13 @@
             {
               "x": 0,
               "y": 2,
-              "state": "LOCKED",
+              "state": "EMPTY",
               "readyAtTimestamp": 0
             },
             {
               "x": 1,
               "y": 2,
-              "state": "LOCKED",
+              "state": "EMPTY",
               "readyAtTimestamp": 0
             },
             {
@@ -442,44 +493,6 @@
             {
               "x": 3,
               "y": 2,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 4,
-              "y": 2,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            }
-          ],
-          [
-            {
-              "x": 0,
-              "y": 3,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 1,
-              "y": 3,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 2,
-              "y": 3,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 3,
-              "y": 3,
-              "state": "LOCKED",
-              "readyAtTimestamp": 0
-            },
-            {
-              "x": 4,
-              "y": 3,
               "state": "LOCKED",
               "readyAtTimestamp": 0
             }
@@ -493,37 +506,76 @@
       "passedMiniGames": {
         "Beghouled": 1
       },
-      "dailyQuestsDone": 0,
-      "noneDailyQuestsDone": 0,
+      "dailyQuestsDone": 13,
+      "noneDailyQuestsDone": 2,
       "hasBoughtDailyOfferToday": false,
       "seenZombieAliases": [
+        "ZombieIceAgeTroglobite",
+        "ZombieRa",
+        "ZombieProspector",
+        "ZombieModernAllStar",
+        "ZombieTombRaiser",
+        "ZombieImp",
+        "ZombieGargantuar",
+        "ZombieIceAgeHunter",
         "ZombieDarkImpDragon",
+        "ZombieArmor4",
         "ZombieDefault",
         "ZombieArmor1",
         "ZombieArmor2",
         "ZombieLostCityJane",
-        "ZombieRa",
         "ZombieBeachFisherman",
         "ZombieBeachSnorkel",
-        "ZombieImp",
         "ZombieExplorer",
         "ZombieDarkArmor3",
         "ZombieCrystalSkull"
       ],
-      "completedQuestIds": [],
+      "completedQuestIds": [
+        "economical_herbivore",
+        "mowing_time"
+      ],
       "winStreakAtMaxDifficulty": 0,
+      "versusWins": 0,
+      "versusLosses": 0,
       "zombieKillsByChapter": {
         "ancient_egypt": 9
       },
-      "completedDailyQuestIds": [],
-      "questDayStamp": "2026-08-13",
-      "sunCollectedToday": 0,
-      "mowerlessFirstColumnKillsToday": 0,
-      "killsByPlantToday": {},
-      "lawnmowerKillsTotal": 6,
+      "completedDailyQuestIds": [
+        "ocd",
+        "one_column_less",
+        "pro_plant_player",
+        "daily_sun_catcher",
+        "flourish_in_constraints",
+        "almost_victorious",
+        "family_massacre"
+      ],
+      "questDayStamp": "2026-08-30",
+      "sunCollectedToday": 3975,
+      "mowerlessFirstColumnKillsToday": 13,
+      "killsByPlantToday": {
+        "winter melon": 4,
+        "bowling bulb": 6,
+        "wasabi whip": 6,
+        "rotobaga": 9,
+        "kernel-pult": 2,
+        "goo peashooter": 1,
+        "peashooter": 14,
+        "pea pod": 8,
+        "threepeater": 7,
+        "citron": 16,
+        "kiwibeast": 9,
+        "cactus": 13,
+        "fume-shroom": 3,
+        "fire peashooter": 3,
+        "starfruit": 3,
+        "melon-pult": 5,
+        "repeater": 4,
+        "cabbage-pult": 7
+      },
+      "lawnmowerKillsTotal": 25,
       "gameSpeed": 1,
       "showGrid": false,
-      "debugMode": false,
+      "debugMode": true,
       "volume": 80
     }
   },
@@ -535,11 +587,11 @@
     "hashPassword": "cadabbeda0c6e310082c8e006d528d665891be080880495e67438c244617afaa",
     "securityQuestionIndex": 1,
     "securityAnswerHash": "cc06146070ec57abdbc03a0dc60ce6f201f4a687c6273d210b3084faaf178951",
-    "stayLoggedIn": true,
+    "stayLoggedIn": false,
     "profile": {
       "gameNumbers": 0,
-      "coins": 12730,
-      "gems": 390,
+      "coins": 13560,
+      "gems": 393,
       "plantFoodCount": 3,
       "difficultyLevel": 3,
       "bestNumberOfMeowPoints": 747,
@@ -1120,7 +1172,6 @@
         "iceberg lettuce",
         "gold bloom",
         "starfruit",
-        "sunflower",
         "cabbage-pult"
       ],
       "myGreenHouse": {
@@ -1255,9 +1306,9 @@
         "Vasebreaker": 2,
         "Wall-nut Bowling": 1
       },
-      "dailyQuestsDone": 18,
+      "dailyQuestsDone": 20,
       "noneDailyQuestsDone": 4,
-      "hasBoughtDailyOfferToday": true,
+      "hasBoughtDailyOfferToday": false,
       "seenZombieAliases": [
         "ZombieRa",
         "ZombieDarkJuggler",
@@ -1295,16 +1346,25 @@
         "mowing_time"
       ],
       "winStreakAtMaxDifficulty": 0,
+      "versusWins": 0,
+      "versusLosses": 0,
       "zombieKillsByChapter": {
-        "ancient_egypt": 67,
+        "ancient_egypt": 104,
         "frostbite_caves": 42,
         "dark_ages": 73
       },
-      "completedDailyQuestIds": [],
-      "questDayStamp": "2026-08-26",
-      "sunCollectedToday": 0,
+      "completedDailyQuestIds": [
+        "daily_sun_catcher",
+        "ocd"
+      ],
+      "questDayStamp": "2026-08-29",
+      "sunCollectedToday": 5275,
       "mowerlessFirstColumnKillsToday": 0,
-      "killsByPlantToday": {},
+      "killsByPlantToday": {
+        "snow pea": 3,
+        "repeater": 27,
+        "bonk choy": 7
+      },
       "lawnmowerKillsTotal": 63,
       "gameSpeed": 1,
       "showGrid": false,
@@ -1327,7 +1387,6 @@
       "gems": 100,
       "plantFoodCount": 0,
       "difficultyLevel": 3,
-      "bestNumberOfMeowPoints": 0,
       "newsList": [],
       "unlockedPlants": [
         "sunflower",
@@ -1495,6 +1554,8 @@
       "seenZombieAliases": [],
       "completedQuestIds": [],
       "winStreakAtMaxDifficulty": 0,
+      "versusWins": 0,
+      "versusLosses": 0,
       "zombieKillsByChapter": {},
       "completedDailyQuestIds": [],
       "sunCollectedToday": 0,
@@ -1522,7 +1583,6 @@
       "gems": 58,
       "plantFoodCount": 0,
       "difficultyLevel": 3,
-      "bestNumberOfMeowPoints": 0,
       "newsList": [
         {
           "id": 1,
@@ -1802,6 +1862,8 @@
       ],
       "completedQuestIds": [],
       "winStreakAtMaxDifficulty": 0,
+      "versusWins": 0,
+      "versusLosses": 0,
       "zombieKillsByChapter": {},
       "completedDailyQuestIds": [],
       "sunCollectedToday": 0,
@@ -1829,7 +1891,6 @@
       "gems": 100,
       "plantFoodCount": 0,
       "difficultyLevel": 3,
-      "bestNumberOfMeowPoints": 0,
       "newsList": [],
       "unlockedPlants": [
         "sunflower",
@@ -1997,6 +2058,8 @@
       "seenZombieAliases": [],
       "completedQuestIds": [],
       "winStreakAtMaxDifficulty": 0,
+      "versusWins": 0,
+      "versusLosses": 0,
       "zombieKillsByChapter": {},
       "completedDailyQuestIds": [],
       "questDayStamp": "2026-07-31",

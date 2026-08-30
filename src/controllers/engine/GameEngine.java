@@ -17,6 +17,7 @@ public class GameEngine {
     private final MapRenderer mapRenderer;
     private CombatSystem combatSystem;
     private SunSystem sunSystem;
+    private PlantFoodSystem plantFoodSystem;
     private TimeSystem timeSystem;
     private WaveSystem waveSystem;
     private QuestSystem questSystem;
@@ -31,6 +32,7 @@ public class GameEngine {
         this.mapRenderer = renderers.map();
         this.combatSystem = new CombatSystem();
         this.sunSystem = new SunSystem();
+        this.plantFoodSystem = new PlantFoodSystem();
         this.timeSystem = new TimeSystem();
         // The scoring game must deal every player the same lawn on a given day, so its wave system runs
         // off the day's seed instead of an unseeded Random. That single decision covers which zombies
@@ -109,6 +111,12 @@ public class GameEngine {
         }
         for (Result combatEvent : combatSystem.processTick(gameSession, currentTick)) {
             inGameRenderer.render(combatEvent);
+        }
+        // After combat, because combat is what DROPS plant food: a pickup created this tick should get
+        // its full life, and ageing it before it exists would be a tick short. Its expiry line is also
+        // the last word on a drop, so it belongs after the death that produced it.
+        for (Result plantFoodEvent : plantFoodSystem.onTick(gameSession)) {
+            inGameRenderer.render(plantFoodEvent);
         }
         // Terrain reacts after the entities have moved, so it sees where they actually ended up
         // (a zombie that just stepped onto a slider tile, ice that a fire plant is now beside, ...).
@@ -302,6 +310,15 @@ public class GameEngine {
             int x = Integer.parseInt(InGameRegex.COLLECT_SUN.getGroup(input, "x"));
             int y = Integer.parseInt(InGameRegex.COLLECT_SUN.getGroup(input, "y"));
             new CollectSunCommand(gameSession, sunSystem, inGameRenderer, questSystem, x, y).execute();
+            return true;
+        }
+        // Beside the sun rather than with the plant commands: it is the same gesture on the same lawn
+        // -- name a tile, take what is lying on it -- and a player who has just learnt one has learnt
+        // the other.
+        if (InGameRegex.COLLECT_PLANT_FOOD.matches(input)) {
+            int x = Integer.parseInt(InGameRegex.COLLECT_PLANT_FOOD.getGroup(input, "x"));
+            int y = Integer.parseInt(InGameRegex.COLLECT_PLANT_FOOD.getGroup(input, "y"));
+            new CollectPlantFoodCommand(gameSession, plantFoodSystem, inGameRenderer, x, y).execute();
             return true;
         }
         if (InGameRegex.SHOW_SUN_AMOUNT.matches(input)) {

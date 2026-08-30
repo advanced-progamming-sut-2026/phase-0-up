@@ -3,8 +3,10 @@ import models.entities.plants.Plant;
 import models.entities.plants.abilities.PassiveModifierAbility;
 import models.entities.plants.abilities.GraveBusterAbility;
 import models.entities.plants.abilities.PlantAbility;
+import models.entities.plants.abilities.WarmthAbility;
 import models.entities.projectiles.Element;
 import models.entities.projectiles.Projectile;
+import models.map.Terrains.FrozenTerrain;
 import models.map.Terrains.GraveTerrain;
 import models.map.Terrains.Terrain;
 import utils.Result;
@@ -137,6 +139,16 @@ public class Cell {
             this.currentPlant = newPlant;
             return new Result(true, "Plant placed successfully.");
         }
+        // A plant that radiates heat is the second exception, for the same reason as the first: an ice
+        // block is the one tile Hot Potato is FOR, and an ice block is not plantable. A plant whose job
+        // is removing an obstacle has to be allowed onto the obstacle.
+        //
+        // A block holding a frozen PLANT is not covered: the cell already has a plant in it and the
+        // occupied check above turns it away, which is right -- you thaw that one from beside it.
+        if (isThawer(newPlant) && hasFrozenBlock()) {
+            this.currentPlant = newPlant;
+            return new Result(true, "Plant placed successfully.");
+        }
         // Use the terrain-aware check, not the raw field: a live grave (or any non-plantable terrain)
         // sitting on this tile must block planting.
         if (!isPlantable()) return new Result(false, "This cell is not plantable!");
@@ -221,6 +233,17 @@ public class Cell {
         return plant != null && plant.getAbilities() != null
                 && plant.getAbilities().stream().anyMatch(a -> a instanceof GraveBusterAbility);
     }
+    private boolean isThawer(Plant plant) {
+        return plant != null && plant.getAbilities() != null
+                && plant.getAbilities().stream().anyMatch(a -> a instanceof WarmthAbility);
+    }
+
+    // An ice block still standing on this tile.
+    public boolean hasFrozenBlock() {
+        return terrain != null
+                && terrain.stream().anyMatch(t -> t instanceof FrozenTerrain && !t.isDestroyed());
+    }
+
     // A headstone still standing on this tile.
     public boolean hasLiveGrave() {
         return terrain != null

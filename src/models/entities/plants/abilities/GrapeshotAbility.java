@@ -35,6 +35,49 @@ public class GrapeshotAbility extends InstantExplosiveAbility {
         this.bounces += extra;
     }
 
+    // Ticks the plant spends visibly winding up before it bursts. GRAPESHOT's art ships an `attack`
+    // clip (1.67s, plus two variants) and nothing ever played it: an INSTANT_EXPLOSIVE fires and
+    // consumes its plant on the same tick, so there was no window for an animation to run in and the
+    // plant simply vanished into the blast.
+    //
+    // Costs the simulation nothing -- the burst still happens once, at full damage, half a second
+    // later. See ShootProjectileAbility.WIND_UP_TICKS, which is the same trade for the same reason.
+    private static final int WIND_UP_TICKS = 5;
+    private int windUpRemaining = -1;
+
+    // The parent's own "already fired" flag is private, and the wind-up means execute() and the burst
+    // are no longer the same moment -- so this class needs its own. Without it a Grapeshot that
+    // somehow outlived its blast would arm a second wind-up on the very next tick.
+    private boolean burst;
+
+    @Override
+    public boolean isWindingUp() {
+        return windUpRemaining >= 0;
+    }
+
+    // The trigger fires here; the burst itself waits for the wind-up to run out.
+    @Override
+    public void execute(Plant owner, GameSession gameSession) {
+        if (windUpRemaining < 0 && !burst) {
+            windUpRemaining = WIND_UP_TICKS;
+        }
+    }
+
+    @Override
+    public void update(Plant owner, GameSession gameSession) {
+        if (windUpRemaining > 0) {
+            windUpRemaining--;
+            return;
+        }
+        if (windUpRemaining == 0) {
+            windUpRemaining = -1;
+            burst = true;
+            detonate(owner, gameSession);
+            return;
+        }
+        super.update(owner, gameSession);
+    }
+
     // Runs on the same detonation as the blast: the parent handles the 3x3 damage and consumes the
     // plant, then the pellets are launched from where the plant stood.
     @Override

@@ -66,8 +66,16 @@ public final class ImpactEffects {
                 "CACTUS_PROJECTILE_HIT");
         SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.STAR,
                 "T_STARFRUIT_PROJECTILE_HIT");
+        // The boosted Cactus spike bursts as a cactus spike, not as Red Stinger's.
         SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.PIERCING_SPIKE,
-                "T_REDSTINGER_PROJECTILE_HIT");
+                "CACTUS_PROJECTILE_HIT");
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.FUME,
+                "FUMESHROOM_BUBBLES_HIT");
+        // Citron bursts as citrus, and its plant-food orb bursts as plasma.
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.CITRUS_ORB,
+                "CITRON_CITRUS_ORB_HIT");
+        SPLAT_BY_TYPE.put(models.entities.projectiles.ProjectileType.CITRUS_PLASMA_ORB,
+                "CITRON_PLANTFOOD_ORB_HIT");
     }
 
     // How wide each splat is drawn. A melon bursting is a much bigger event than a thorn landing, and

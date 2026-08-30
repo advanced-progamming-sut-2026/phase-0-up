@@ -74,6 +74,9 @@ final class SnapshotBuilder {
         for (Sun sun : session.getActiveSuns()) {
             add(entities, alive, sun, sunState(sun));
         }
+        for (models.entities.collectibles.PlantFood pickup : session.getActivePlantFoods()) {
+            add(entities, alive, pickup, plantFoodState(pickup));
+        }
 
         ids.retainOnly(alive);
 
@@ -209,5 +212,15 @@ final class SnapshotBuilder {
         return new StateFields(EntityKind.SUN, sun.getType().name(),
                 (float) sun.getX(), (float) sun.getCurrentY(),
                 sun.getAmount(), EntityState.packRestHeight(sun.getTargetY()), flags);
+    }
+
+    // A plant food carries its remaining life in `hp`, and nothing else: it is always worth one, never
+    // falls, and has no type or variant. The countdown has to travel because the client draws the
+    // warning flash from it -- a mirrored pickup with no clock would vanish without one, which is the
+    // difference between "I was too slow" and "the game ate it".
+    private StateFields plantFoodState(models.entities.collectibles.PlantFood pickup) {
+        return new StateFields(EntityKind.PLANT_FOOD, "PLANT_FOOD",
+                (float) pickup.getX(), pickup.tileRow(),
+                pickup.getRemainingTicks(), 0, EntityFlags.NONE);
     }
 }

@@ -100,6 +100,15 @@ public class PlantTemplate {
         private int rowRadius;
         private int colRadius;
 
+        // Whether this plant's blast scorches the ground it stood on (Doom-shroom). Defaults false, so
+        // every other bomb leaves the lawn exactly as it found it.
+        private boolean leavesCrater;
+
+        // Whether the plant is used up by the thing it does (Hot Potato, which exists to melt one ice
+        // block and go). Defaults false, so a plant that radiates warmth as a side line -- Wasabi Whip,
+        // Pepper-pult -- keeps standing there afterwards.
+        private boolean consumedOnUse;
+
         public ProjectileType getProjectileType() { return projectileType; }
         public Element getElement() { return element; }
         public Trajectory getTrajectory() { return trajectory; }
@@ -137,6 +146,8 @@ public class PlantTemplate {
         public int getDamageMultiplier() { return damageMultiplier; }
         public int getRowRadius() { return rowRadius; }
         public int getColRadius() { return colRadius; }
+        public boolean isLeavesCrater() { return leavesCrater; }
+        public boolean isConsumedOnUse() { return consumedOnUse; }
     }
 
     // A secondary ability layered onto the plant (Split Pea's backward shots, Wasabi Whip's warmth).

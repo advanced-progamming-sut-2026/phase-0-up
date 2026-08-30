@@ -46,8 +46,9 @@ public final class SpriteRegistry {
     //  * The armor zombies (ZombieArmor1/2/4, ZombieDarkArmor3) have NO animation of their own. In
     //    PvZ2 a conehead is the base zombie with a cone PART enabled, which is precisely what libPVZ's
     //    visibility maps express -- so they map to the base body and ArmorVisibility supplies the hat.
-    //  * A few plants (Rotobaga, Cat-tail, Iceberg Lettuce, Kernel-pult, Pierce-mint) are simply not
-    //    in this asset dump. They resolve to a still image and are listed at startup.
+    //  * A few plants (Cat-tail, Iceberg Lettuce) are simply not in this asset dump. They resolve to a
+    //    still image and are listed at startup. Rotobaga, Kernel-pult and Phat Beet ARE in it under
+    //    names normalisation cannot reach (ROTORUTABAGA, KERNALPULT, PHATBEETS) and are mapped below.
     private static final Map<String, String> NAME_OVERRIDES = buildOverrides();
 
     private static Map<String, String> buildOverrides() {

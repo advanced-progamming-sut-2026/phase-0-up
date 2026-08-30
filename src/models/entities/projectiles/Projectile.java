@@ -265,6 +265,20 @@ public class Projectile extends Entity {
         }
     }
 
+    // How far a grape travels per tick, in cells. Fast -- it is a ricochet, not a lob -- but slow
+    // enough that the hop between two zombies takes several ticks and can actually be seen.
+    private static final double GRAPE_SPEED = 0.7;
+
+    // Close enough to count as arrived, so the pellet is not left creeping the last hundredth of a cell.
+    private static final double GRAPE_ARRIVAL = 0.35;
+
+    // A grape FLIES to its target and hits it on arrival.
+    //
+    // It used to teleport: every tick it snapped its own position onto the nearest unhit zombie and
+    // damaged it in the same instant. Nothing was ever in flight, so the bounce -- the whole point of
+    // the pellet -- happened entirely between two frames and was never drawn. And a grape that ran out
+    // of targets simply RETURNED, which parked it in mid-air, fully visible and doing nothing, for the
+    // rest of its five-second lifespan. That is the grape standing still on the lawn.
     private void updateGrape(GameSession gameSession) {
         if (grapeTtlTicks <= 0 || remainingHits <= 0) {
             this.isDestroyed = true;
@@ -274,12 +288,32 @@ public class Projectile extends Entity {
 
         Zombie target = nextGrapeTarget(gameSession);
         if (target == null) {
+            // Nothing left to ricochet to. Spent, not parked.
+            this.isDestroyed = true;
             return;
         }
 
-        this.x = target.getMovement().getPositionX();
-        this.y = target.getMovement().getPositionY();
-        this.exactY = this.y;
+        double targetX = target.getMovement().getPositionX();
+        double targetY = target.getMovement().getPositionY();
+        double dx = targetX - this.x;
+        double dy = targetY - this.exactY;
+        double distance = Math.sqrt((dx * dx) + (dy * dy));
+
+        if (distance > GRAPE_ARRIVAL) {
+            // Still on its way. Steps toward wherever the target is NOW, so a pellet chasing a walking
+            // zombie curves after it instead of flying at where it used to be.
+            double step = Math.min(GRAPE_SPEED, distance);
+            this.x += (dx / distance) * step;
+            this.exactY += (dy / distance) * step;
+            // The row it is filed under has to follow, or a grape crossing lanes is drawn in the lane
+            // it started in. CombatSystem.resolveProjectiles re-files a projectile whose row changed.
+            this.y = (int) Math.round(this.exactY);
+            return;
+        }
+
+        this.x = targetX;
+        this.exactY = targetY;
+        this.y = (int) targetY;
 
         target.getHealth().applyDamage(damage, element, shooter, trajectory);
         element.applyOnHit(target.getState());
@@ -480,6 +514,36 @@ public class Projectile extends Entity {
     public Trajectory getTrajectory() { return trajectory; }
 
     public void setDamage(int damage) { this.damage = damage; }
+
+    // Lit by a blue-flamed Torchwood as the shot passes over it. Cosmetic only -- the extra damage is
+    // already in `damage` by the time this is set -- but the view has no other way to tell a blue pea
+    // from an orange one, since both are simply FIRE. See PassiveModifierAbility.applyTo.
+    private boolean blueFlame;
+
+    public void setBlueFlame(boolean blueFlame) { this.blueFlame = blueFlame; }
+
+    public boolean isBlueFlame() { return blueFlame; }
+
+    // A plant-food giant pea. Cosmetic only -- the multiplied damage is already in `damage` -- but the
+    // view has no other way to tell one from the ordinary pea it is otherwise identical to.
+    private boolean giant;
+
+    public void setGiant(boolean giant) { this.giant = giant; }
+
+    public boolean isGiant() { return giant; }
+
+    // Zero for everything fired flat; non-zero only for the diagonals (Rotobaga, Starfruit). The view
+    // needs it to know a shot is NOT travelling along its lane.
+    public double getSpeedY() { return speedY; }
+
+    // Which FORM of its type this shot is, when the shooter has more than one and the dump ships art
+    // for each. Bowling Bulb is the case: it fires a cyan, a blue or an orange bulb depending on which
+    // has reloaded, and only the ability knows which one left. 0 means "the plain one".
+    private int artVariant;
+
+    public void setArtVariant(int artVariant) { this.artVariant = artVariant; }
+
+    public int getArtVariant() { return artVariant; }
 
     public int getDamage() { return damage; }
 

@@ -95,6 +95,31 @@ public class Plant extends Entity {
         return false;
     }
 
+    // Whether this plant is still building up to its next action rather than resting between them.
+    //
+    // True only while EVERY ability is counting down: a plant that could act this instant is ready,
+    // whatever else it also carries. Citron is what this is for -- it spends nine seconds drawing power
+    // and the art ships a seven-second `charge` clip for exactly that, so drawing it idle the whole time
+    // said "waiting for a target" when the truth was "not loaded yet".
+    public boolean isCharging() {
+        // Never on a mirrored board. A mirror holds real abilities that are never ticked, so every
+        // cooldown sits at its constructed value forever and this would answer "charging" for the whole
+        // match -- a Citron frozen mid-charge that never fires. The server does not send this, so the
+        // honest answer for a mirror is "I do not know", which draws the resting pose.
+        if (mirroredWindingUp != null) {
+            return false;
+        }
+        if (abilities == null || abilities.isEmpty()) {
+            return false;
+        }
+        for (PlantAbility ability : abilities) {
+            if (ability.isReady()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     // Told, rather than asked, on a networked client's mirrored board.
     //
     // A mirror holds real Plants with real abilities but never ticks them, so every ability sits at its

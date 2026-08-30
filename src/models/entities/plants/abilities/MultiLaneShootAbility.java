@@ -35,14 +35,38 @@ public class MultiLaneShootAbility extends PlantAbility implements Burstable {
 
     @Override
     public boolean canExecute(Plant owner, GameSession gameSession) {
-        if (remainingShotsInBurst > 0) {
-            return false;
+        if (remainingShotsInBurst > 0 || windUpRemaining >= 0) {
+            return false;   // already committed to a volley
         }
         return super.canExecute(owner, gameSession);
     }
 
+    // Ticks the plant spends visibly drawing back before the volley leaves. Threepeater ships a
+    // one-second `attack` clip and nothing ever played it: the renderer starts an action animation on
+    // the rising edge of isWindingUp(), and this ability never reported one, so the plant sat in its
+    // idle pose while peas appeared in three lanes out of nowhere.
+    //
+    // Costs the simulation nothing -- PlantAbility still resets the cooldown to actionInterval when
+    // execute() runs, so only the moment within the cycle shifts. Same trade as
+    // ShootProjectileAbility.WIND_UP_TICKS.
+    private static final int WIND_UP_TICKS = 4;
+    private int windUpRemaining = -1;
+
+    @Override
+    public boolean isWindingUp() {
+        return windUpRemaining >= 0;
+    }
+
     @Override
     public void update(Plant owner, GameSession gameSession) {
+        // The draw-back started by execute() runs down here; the volley leaves on the tick it ends.
+        if (windUpRemaining > 0) {
+            windUpRemaining--;
+        } else if (windUpRemaining == 0) {
+            windUpRemaining = -1;
+            fireAllLanes(owner, gameSession);
+        }
+
         if (remainingShotsInBurst > 0) {
             if (burstTimer > 0) {
                 burstTimer--;
@@ -60,7 +84,7 @@ public class MultiLaneShootAbility extends PlantAbility implements Burstable {
     @Override
     public void execute(Plant owner, GameSession gameSession) {
         plantFoodBurst = false;
-        fireAllLanes(owner, gameSession);
+        windUpRemaining = WIND_UP_TICKS;
     }
 
     @Override

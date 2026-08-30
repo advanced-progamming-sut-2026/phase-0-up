@@ -123,6 +123,7 @@ class FactionCommandsTest {
     private static String sample(InGameRegex command) {
         return switch (command) {
             case COLLECT_SUN -> "collect sun -l (3, 1)";
+            case COLLECT_PLANT_FOOD -> "collect plant-food -l (3, 1)";
             case SHOW_SUN_AMOUNT -> "show sun amount";
             case CHEAT_ADD_SUN -> "cheat add -n 50 suns";
             case ADVANCE_TIME -> "advance time -t 10 ticks";

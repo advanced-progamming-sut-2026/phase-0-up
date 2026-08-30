@@ -35,9 +35,19 @@ public class LobBarrageStrategy implements PlantFoodStrategy {
             }
         }
 
+        // `count` shots, ALWAYS -- cycling back through the targets when there are fewer of them than
+        // shots, and raining on the plant's own lane when there are none at all.
+        //
+        // It used to stop at `i < targets.size()`, which quietly turned "a barrage of ten" into "one
+        // lob per zombie currently on screen". Every pult's plant food therefore looked identical and
+        // tiny -- three zombies on the lawn meant three shots, whether the plant was a Cabbage-pult
+        // (10) or a Melon-pult (5) -- and feeding one on a clear lawn did nothing whatsoever.
         Collections.shuffle(targets);
-        for (int i = 0; i < count && i < targets.size(); i++) {
-            lobber.lobInLane(sourcePlant, gameSession, targets.get(i).getMovement().getPositionY());
+        for (int i = 0; i < count; i++) {
+            int lane = targets.isEmpty()
+                    ? sourcePlant.getY()
+                    : targets.get(i % targets.size()).getMovement().getPositionY();
+            lobber.lobInLane(sourcePlant, gameSession, lane);
         }
     }
 

@@ -46,6 +46,10 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
     private int giantShotTimer;
     private int giantShotMultiplier = 1;
     private static final int GIANT_SHOT_DELAY_TICKS = 5;
+    // Set only while updateGiantShots is inside fireSingleProjectile, so the one shot it creates is
+    // marked as the giant one. The alternative -- a parameter -- would thread through five callers that
+    // never fire a giant pea.
+    private boolean firingGiant;
 
     // status effects carried by each shot (Snow Pea chill extension, Goo poison-over-time)
     private int chillBonusTicks;
@@ -92,7 +96,8 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
     // running for exactly as long as this does, so the glow stops when the burst does rather than after
     // a guessed number of seconds -- a Peashooter's burst outlasted a fixed two-second window.
     public boolean hasPendingBurst() {
-        return (plantFoodBurst && remainingShotsInBurst > 0) || pendingGiantShots > 0;
+        return (plantFoodBurst && remainingShotsInBurst > 0) || pendingGiantShots > 0
+                || pendingPlasmaOrbs > 0;
     }
 
     @Override
@@ -125,12 +130,13 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
                 remainingShotsInBurst--;
 
                 if (remainingShotsInBurst > 0) {
-                    burstTimer = plantFoodBurst ? PLANT_FOOD_BURST_DELAY_TICKS : burstDelayTicks;
+                    burstTimer = plantFoodBurst ? PLANT_FOOD_BURST_DELAY_TICKS : burstSpacing();
                 }
             }
         }
 
         updateGiantShots(owner, gameSession);
+        updatePlasmaOrbs(owner, gameSession);
 
         super.update(owner, gameSession);
     }
@@ -160,8 +166,19 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
 
         // Only start the cadence if nothing was already running; a burst in progress keeps its own.
         if (remainingShotsInBurst > 0 && wasIdle) {
-            burstTimer = burstDelayTicks;
+            burstTimer = burstSpacing();
         }
+    }
+
+    // At least one tick between the shots of a burst.
+    //
+    // A delay of 0 does not mean "as fast as possible", it means "in the same tick": update() fires the
+    // release and then walks straight into the burst block with the timer already at zero, so two peas
+    // are created at the same instant at the same position and travel as one. That is what a two-headed
+    // Pea Pod looked like -- a second head that fired nothing -- and a three-headed one fired what
+    // looked like two peas, because the first two were stacked exactly on top of each other.
+    private int burstSpacing() {
+        return Math.max(1, burstDelayTicks);
     }
 
     private void fireSingleProjectile(Plant owner, GameSession gameSession) {
@@ -189,6 +206,8 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
         );
 
         projectile.setPierceCount(pierceCount);
+        // Set for the view's benefit only; the multiplied damage is already in `damage` above.
+        projectile.setGiant(firingGiant);
 
         projectile.setSplashProperties(
                 this.splashDamage,
@@ -266,13 +285,43 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
 
         int originalDamage = this.damage;
         this.damage = originalDamage * giantShotMultiplier;
+        firingGiant = true;
         fireSingleProjectile(owner, gameSession);
+        firingGiant = false;
         this.damage = originalDamage;
 
         pendingGiantShots--;
         if (pendingGiantShots > 0) {
             giantShotTimer = GIANT_SHOT_DELAY_TICKS;
         }
+    }
+
+    // Plant food (Citron): one plasma orb that stops for nothing.
+    //
+    // Not a bigger version of the ordinary shot. Citron's citrus orb is destroyed by what it hits; this
+    // one pierces the whole lane and carries enough damage to empty it, which is the difference the
+    // player is paying plant food for. It has its own art on both sides, so it is its own type.
+    private int pendingPlasmaOrbs;
+    private int plasmaOrbDamage;
+    private static final int PLASMA_ORB_PIERCE = 999;
+    private static final double PLASMA_ORB_MIN_SPEED = 0.4;
+
+    public void queuePlasmaOrb(int damage) {
+        this.pendingPlasmaOrbs++;
+        this.plasmaOrbDamage = damage;
+    }
+
+    private void updatePlasmaOrbs(Plant owner, GameSession gameSession) {
+        if (pendingPlasmaOrbs <= 0) {
+            return;
+        }
+        pendingPlasmaOrbs--;
+
+        Projectile orb = new Projectile(
+                owner.getX(), owner.getY(), ProjectileType.CITRUS_PLASMA_ORB, plasmaOrbDamage,
+                Math.max(PLASMA_ORB_MIN_SPEED, speedX), 0, owner, 0.0, element, Trajectory.DIRECT);
+        orb.setPierceCount(PLASMA_ORB_PIERCE);
+        gameSession.getMap().getRow(owner.getY()).addProjectile(orb);
     }
 
     // Plant food: permanently upgrades this shooter's projectiles (Cactus electric thorns).

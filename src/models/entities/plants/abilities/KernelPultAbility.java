@@ -36,10 +36,49 @@ public class KernelPultAbility extends PlantAbility implements VariantAction {
         this.butterChance += amount;
     }
 
+    // Ticks spent winding up before the lob leaves. Without one the plant had no attack animation at
+    // all: the renderer starts an action clip on the rising edge of isWindingUp(), and this ability
+    // never reported one -- so KERNALPULT's `attack` and `attack2` (the kernel swing and the butter
+    // swing) were never played and the corn just stood there while kernels appeared out of nowhere.
+    //
+    // Which of the two plays is already answered by actionVariant() below; the roll happens when the
+    // swing STARTS so the view picks the right arm on the first frame of it.
+    private static final int WIND_UP_TICKS = 4;
+    private int windUpRemaining = -1;
+
+    @Override
+    public boolean isWindingUp() {
+        return windUpRemaining >= 0;
+    }
+
+    @Override
+    public boolean canExecute(Plant owner, GameSession gameSession) {
+        if (windUpRemaining >= 0) {
+            return false;   // already mid-swing
+        }
+        return super.canExecute(owner, gameSession);
+    }
+
+    @Override
+    public void update(Plant owner, GameSession gameSession) {
+        if (windUpRemaining > 0) {
+            windUpRemaining--;
+        } else if (windUpRemaining == 0) {
+            windUpRemaining = -1;
+            lob(owner, gameSession);
+        }
+        super.update(owner, gameSession);
+    }
+
+    // Rolls which of the two it is about to throw and begins the swing; the shot leaves in lob().
     @Override
     public void execute(Plant owner, GameSession gameSession) {
-        boolean shootButter = random.nextDouble() < butterChance;
-        lastWasButter = shootButter;
+        lastWasButter = random.nextDouble() < butterChance;
+        windUpRemaining = WIND_UP_TICKS;
+    }
+
+    private void lob(Plant owner, GameSession gameSession) {
+        boolean shootButter = lastWasButter;
 
         ProjectileType typeToShoot = shootButter ? ProjectileType.BUTTER : ProjectileType.CORN_KERNEL;
         int shootDamage = shootButter ? butterDamage : kernelDamage;

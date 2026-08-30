@@ -110,6 +110,14 @@ public final class LawnInputProcessor extends InputAdapter {
             if (airborne != null && commands.collectSun(tileOf(airborne))) {
                 return true;
             }
+            // Plant food is tested the same way and for a related reason: it BOBS, so the sprite and
+            // its tile centre are never quite the same point, and a tile-only test misses the top of
+            // the drift. Tried before the tile paths so a drop on a planted tile can still be taken.
+            models.entities.collectibles.PlantFood pickup =
+                    maySpendOnPlants() ? collectibles.plantFoodAt(scratch.x, scratch.y) : null;
+            if (pickup != null && commands.collectPlantFood(tileOf(pickup))) {
+                return true;
+            }
         }
 
         // Right-click drops whatever is held, wherever the cursor is. The original game uses this and
@@ -287,6 +295,10 @@ public final class LawnInputProcessor extends InputAdapter {
     // The tile the collect command has to address. Asked of the sun rather than worked out here: this
     // used to reimplement SunSystem.findSunAt's rule, and the two copies read different fields on a
     // mirrored sun -- which is a sun the player can see, can click, and cannot collect.
+    private static GridPos tileOf(models.entities.collectibles.PlantFood pickup) {
+        return new GridPos(pickup.tileColumn(), pickup.tileRow());
+    }
+
     private static GridPos tileOf(Sun sun) {
         return new GridPos(sun.tileColumn(), sun.tileRow());
     }

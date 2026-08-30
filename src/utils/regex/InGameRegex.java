@@ -2,6 +2,7 @@ package utils.regex;
 
 public enum InGameRegex implements Regex{
     COLLECT_SUN("^\\s*collect\\s+sun\\s+-l\\s+\\(\\s*(?<x>\\d+)\\s*,\\s*(?<y>\\d+)\\s*\\)\\s*$"),
+    COLLECT_PLANT_FOOD("^\\s*collect\\s+plant-food\\s+-l\\s+\\(\\s*(?<x>\\d+)\\s*,\\s*(?<y>\\d+)\\s*\\)\\s*$"),
     SHOW_SUN_AMOUNT("^\\s*show\\s+sun\\s+amount\\s*$"),
     CHEAT_ADD_SUN("^\\s*cheat\\s+add\\s+-n\\s+(?<count>\\d+)\\s+suns\\s*$"),
     ADVANCE_TIME("^\\s*advance\\s+time\\s+-t\\s+(?<count>\\d+)\\s+ticks\\s*$"),

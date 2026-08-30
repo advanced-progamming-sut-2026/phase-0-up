@@ -24,14 +24,42 @@ public class GraveBusterAbility extends PlantAbility implements Striking {
         this.hasExecuted = false;
     }
 
+    // How long it spends chewing. The grave used to be gone on the tick the plant landed, so a Grave
+    // Buster appeared and vanished within a sixth of a second: its art is nothing BUT an attack clip
+    // and none of it was ever seen. The view plays that clip through the chew.
+    private static final int CHEW_TICKS = 20;
+    private int chewRemaining = -1;
+
+    @Override
+    public boolean isWindingUp() {
+        return chewRemaining >= 0;
+    }
+
     @Override
     public boolean canExecute(Plant owner, GameSession gameSession) {
         return !hasExecuted;
     }
 
     @Override
+    public void update(Plant owner, GameSession gameSession) {
+        if (chewRemaining > 0) {
+            chewRemaining--;
+        } else if (chewRemaining == 0) {
+            chewRemaining = -1;
+            devour(owner, gameSession);
+        }
+        super.update(owner, gameSession);
+    }
+
+    @Override
     public void execute(Plant owner, GameSession gameSession) {
         hasExecuted = true;
+        chewRemaining = CHEW_TICKS;
+    }
+
+    // The grave goes when the chewing stops -- including the strike bookkeeping, so the dirt flies on
+    // the frame the headstone actually breaks rather than the frame the plant landed.
+    private void devour(Plant owner, GameSession gameSession) {
         strikes++;
         lastStrikeX = owner.getX();
         lastStrikeY = owner.getY();

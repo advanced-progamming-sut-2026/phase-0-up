@@ -72,19 +72,8 @@ public final class PlantRenderer {
             new Color(0.45f, 0.76f, 1f, 1f),
     };
 
-    // A snared plant used to get a flat purple tint and nothing else, which read as poisoned rather
-    // than as grabbed -- and left T8.4 with no octopus to flash, because there was no octopus. The dump
-    // ships one, so it is drawn instead: an orange octopus clinging to the plant, over the top of it.
-    //
-    // `animation3` is the 3s clinging loop; `animation` is the 0.3s throw and `die` the 2s release,
-    // neither of which is the state a snared plant is in.
-    private static final String OCTOPUS_SPRITE = "ZOMBIE_OCTOPUS_PROJECTILE";
-    private static final String[] OCTOPUS_CLIPS = {"animation3", "animation4", "animation2"};
-
-    // Drawn a shade wider than the plant it has hold of, so the tentacles read as wrapping round it
-    // rather than sitting on it, and lifted to the plant's middle rather than its feet.
-    private static final float OCTOPUS_WIDTH_CELLS = 0.95f;
-    private static final float OCTOPUS_LIFT_CELLS = 0.42f;
+    // The long "building up to a shot" pose. Only Citron ships one.
+    private static final String CHARGE_CLIP = "charge";
 
     private final SpriteRegistry sprites;
     private final LawnGeometry lawn;
@@ -117,10 +106,14 @@ public final class PlantRenderer {
     // Neither is needed now. The model announces the wind-up, so one clip plays once, straight
     // through, and the join back to idle happens at the pose the clip ends on.
 
+    // The octopus that grabs a plant is drawn over it; see PlantOctopus.
+    private final PlantOctopus octopus;
+
     public PlantRenderer(SpriteRegistry sprites, LawnGeometry lawn, AnimationClocks clocks) {
         this.sprites = sprites;
         this.lawn = lawn;
         this.clocks = clocks;
+        this.octopus = new PlantOctopus(sprites, lawn);
     }
 
     // Redraws one plant on top of whatever has already been drawn, WITHOUT advancing its clock (the
@@ -148,29 +141,20 @@ public final class PlantRenderer {
 
     private void draw(Batch batch, Plant plant, int col, int row, float delta) {
         if (plant == null || plant.isDead()) {
-            if (plant != null) {
-                // A plant is still drawn on the tick it dies, so this is where its per-plant state is
-                // dropped. Without it a long level accumulates an entry per plant that ever died.
-                actionPhase.remove(plant);
-                winding.remove(plant);
-                fed.remove(plant);
-                plantFood.remove(plant);
-                plantFoodStage.remove(plant);
-                lastStage.remove(plant);
-                growing.remove(plant);
-                idlePhase.remove(plant);
-                idleVariant.remove(plant);
-                lastStrike.remove(plant);
-                frostKeys.remove(plant);
-                glowPhase.remove(plant);
-                glowStopped.remove(plant);
-                reportedStage.remove(plant);
-            }
+            forget(plant);
             return;
         }
         EntitySprite sprite = sprites.get(plant.getName());
         int damageStage = PlantDamage.stageFor(plant,
-                PlantDamage.stageCount(sprite, plant.getName()));
+                PlantDamage.stageCount(sprite, plant.getName(), plant.hasPlantFood()));
+
+        // A Squash in the air is drawn straight off its own leap, bypassing the action-clip machinery
+        // below: its action is TWO clips back to back and that machinery plays exactly one. See
+        // SquashJump.
+        if (drawIfLeaping(batch, plant, sprite, col, row, delta)) {
+            return;
+        }
+
         String clip = clipFor(sprite, plant, delta, damageStage);
 
         // The clock is advanced even while an action clip is driving the pose, so the plant keeps its
@@ -196,6 +180,7 @@ public final class PlantRenderer {
         // The plant-food aura, behind the plant so it haloes rather than covers.
         float glow = advancePlantFoodGlow(plant, delta);
         drawPlantFoodAura(batch, plant, cx, fy, glow);
+        drawBeetPulse(batch, plant, cx, fy, delta);
 
         batch.setColor(tint);
         // Plants face right, toward the oncoming horde. The visibility map is what actually cracks a
@@ -208,7 +193,7 @@ public final class PlantRenderer {
         drawPlantFoodShine(batch, sprite, plant, clip, stateTime, cx, fy, parts, glow);
 
         if (plant.hasOctopus()) {
-            drawOctopus(batch, plant, cx, fy, delta);
+            octopus.draw(batch, plant, cx, fy, delta);
         }
 
         // Frost over the top: stage 1 and 2 creeping over the plant, or the front half of the block.
@@ -218,6 +203,198 @@ public final class PlantRenderer {
         batch.setColor(previous);
     }
 
+
+    // How high a squash rises over the middle of its leap, in cell heights.
+    private static final float LEAP_ARC_CELLS = 0.9f;
+
+    // Sub-tick smoothing for the leap. The model advances leapProgress() ten times a second and the
+    // screen draws sixty, so using it raw moves the squash in ten visible jerks across its jump.
+    //
+    // No interpolator and no clock of the view's own: both would have to guess when the leap started.
+    // Instead the MODEL's value is the anchor and this only fills the gap to the next tick -- seconds
+    // since the last change, as a fraction of one tick, times one tick's worth of progress. When the
+    // model moves on, the accumulator resets and the drawn value lands exactly on the new one, so it
+    // can neither drift nor overshoot the landing.
+    private static final float TICK_SECONDS = 1f / utils.Constants.TICKS_PER_SECOND;
+
+    private final Map<Plant, Float> leapSeen = new IdentityHashMap<>();
+    private final Map<Plant, Float> leapSince = new IdentityHashMap<>();
+
+    private float smoothLeapProgress(Plant plant,
+                                     models.entities.plants.abilities.SquashAbility leaping,
+                                     float delta) {
+        float model = leaping.leapProgress();
+        Float seen = leapSeen.get(plant);
+        if (seen == null || Math.abs(seen - model) > 1e-4f) {
+            leapSeen.put(plant, model);
+            leapSince.put(plant, 0f);
+            return model;
+        }
+        // delta is 0 on a redraw pass, which must not advance the clock a second time this frame.
+        float since = leapSince.getOrDefault(plant, 0f) + delta;
+        leapSince.put(plant, since);
+        float withinTick = Math.min(1f, since / TICK_SECONDS);
+        return Math.min(1f, model + withinTick * leaping.leapStep());
+    }
+
+    // A Squash mid-jump. Drawn on its own because the leap is two clips and its timing belongs to the
+    // model -- see SquashJump for both reasons.
+    //
+    // It still gets its aura and its shine: a squash fed plant food leaps again, and the glow is what
+    // says the extra jumps are coming.
+    // A plant is still drawn on the tick it dies, so this is where its per-plant state is dropped.
+    // Without it a long level accumulates an entry per plant that ever died.
+    private void forget(Plant plant) {
+        if (plant == null) {
+            return;
+        }
+        actionPhase.remove(plant);
+        winding.remove(plant);
+        fed.remove(plant);
+        plantFood.remove(plant);
+        plantFoodStage.remove(plant);
+        lastStage.remove(plant);
+        growing.remove(plant);
+        idlePhase.remove(plant);
+        idleVariant.remove(plant);
+        lastStrike.remove(plant);
+        frostKeys.remove(plant);
+        glowPhase.remove(plant);
+        glowStopped.remove(plant);
+        feedCheck.forget(plant);
+        leapSeen.remove(plant);
+        leapSince.remove(plant);
+    }
+
+    // True when this plant is a Squash in mid-air and has been drawn as one.
+    private boolean drawIfLeaping(Batch batch, Plant plant, EntitySprite sprite,
+                                  int col, int row, float delta) {
+        models.entities.plants.abilities.SquashAbility leaping = SquashJump.leapingAbility(plant);
+        if (leaping == null) {
+            return false;
+        }
+        // Advanced once per plant per frame, before anything reads it -- the clip choice and the arc
+        // must agree about how far through the jump it is, or the squash changes pose a frame off
+        // where it changes direction.
+        float progress = smoothLeapProgress(plant, leaping, delta);
+        String clip = SquashJump.clipFor(sprite, leaping, progress);
+        if (clip == null) {
+            return false;
+        }
+        drawLeapingSquash(batch, plant, sprite, leaping, clip, progress, col, row, delta);
+        return true;
+    }
+
+    private void drawLeapingSquash(Batch batch, Plant plant, EntitySprite sprite,
+                                   models.entities.plants.abilities.SquashAbility leaping,
+                                   String clip, float progress, int col, int row, float delta) {
+        // Carried from its own tile to the one it is coming down on, plus a hop. The animation alone is
+        // authored in place, so without this a squash "jumped" without going anywhere -- and a boosted
+        // squash, which now crosses lanes, would land a row away from where it was last drawn.
+        float fromX = lawn.centerX(col);
+        float toX = lawn.centerX(leaping.landingColumn());
+        float fromY = footY(row);
+        float toY = footY(leaping.landingRow());
+
+        float cx = fromX + (toX - fromX) * progress;
+        float fy = fromY + (toY - fromY) * progress
+                // Zero at both ends, highest in the middle: it arrives exactly where it is aimed.
+                + LEAP_ARC_CELLS * lawn.cellHeight() * 4f * progress * (1f - progress);
+        float stateTime = SquashJump.phaseFor(sprite, clip, progress);
+
+        if (views.gdx.core.DebugFlags.BOARD_COUNTS) {
+            com.badlogic.gdx.Gdx.app.log("SquashJump", String.format(
+                    "%s at (%d, %d) %s t=%.2f progress=%.2f boosted=%s",
+                    plant.getName(), col, row, clip, stateTime, leaping.leapProgress(),
+                    leaping.isBoostedLeap()));
+        }
+
+        Color previous = batch.getColor().cpy();
+        float glow = advancePlantFoodGlow(plant, delta);
+        drawPlantFoodAura(batch, plant, cx, fy, glow);
+
+        batch.setColor(tintFor(plant));
+        SpritePlacer.drawStanding(batch, sprite, clip, stateTime, cx, fy, true, null);
+        drawPlantFoodShine(batch, sprite, plant, clip, stateTime, cx, fy, null, glow);
+        batch.setColor(previous);
+
+        // The clock is kept fed so the plant keeps its entry in AnimationClocks -- dropping out and
+        // back in would reset its idle to frame 0 when it lands. Its RESULT is deliberately ignored:
+        // the pose above comes from the model's leap, not from this clock.
+        clocks.advance(plant, clip, delta);
+    }
+
+    // The "still busy with the last one" pose, or null if this plant is not in that state or has no
+    // such clip. See the call site.
+    private String recoveringClip(EntitySprite sprite, Plant plant, int stage) {
+        if (plant.getAbilities() == null) {
+            return null;
+        }
+        for (models.entities.plants.abilities.PlantAbility ability : plant.getAbilities()) {
+            if (ability instanceof models.entities.plants.abilities.MeleeAttackAbility melee
+                    && melee.isRecovering()) {
+                return PlantStages.clip(sprite, stage, "special_idle");
+            }
+        }
+        return null;
+    }
+
+    // ---- Phat Beet's pulse -----------------------------------------------------------------------
+
+    // A plant that thumps rather than throws. Phat Beet and Kiwibeast do not lean and do not fire
+    // anything -- the damage is a ring that goes out around them. The dump ships those rings and
+    // nothing drew any of them, so both plants read as doing nothing at all while the zombies beside
+    // them quietly lost health.
+    //
+    // Behind the plant, so the plant stays readable and the ring looks like it is coming out from
+    // under it rather than being stuck on the front.
+    // Which pulse art belongs to which plant: the ring while it is swinging, and the quieter one it
+    // shows the rest of the time. Kiwibeast ships no resting ring of its own -- it is a beast sitting
+    // there, not a speaker humming -- so its second slot is null and it pulses only when it hits.
+    private record Pulse(String attack, String resting) { }
+
+    private static final Map<String, Pulse> PULSES = Map.of(
+            "phat beet", new Pulse("PHATBEETS_ATTACK_PULSE", "PHATBEETS_IDLE_PULSE"),
+            "kiwibeast", new Pulse("KIWIBEAST_ATTACK_PULSE", null));
+
+    // The resting pulse is the plant breathing; the attack pulse is the hit. One is background and
+    // must not compete with the other.
+    private static final float BEET_IDLE_ALPHA = 0.45f;
+    private static final float BEET_ATTACK_ALPHA = 1f;
+
+    // A touch above the foot line, so the ring sits around the beet's base rather than under its chin.
+    private static final float BEET_PULSE_LIFT_CELLS = 0.15f;
+
+    private void drawBeetPulse(Batch batch, Plant plant, float cx, float fy, float delta) {
+        Pulse pulse = plant.getName() == null ? null
+                : PULSES.get(plant.getName().toLowerCase(java.util.Locale.ROOT));
+        if (pulse == null) {
+            return;
+        }
+        boolean striking = plant.isWindingUp();
+        String name = striking ? pulse.attack() : pulse.resting();
+        if (name == null) {
+            return;   // this plant only pulses when it hits
+        }
+        EntitySprite sprite = sprites.get(name);
+        if (sprite == null || !sprite.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(sprite, "animation");
+        // Its own clock key, for the reason drawFrostAt documents: the plant's clock is already
+        // tracking the beet's body clip, and sharing the key would restart that every frame.
+        float stateTime = ClipMap.sample(sprite, clip,
+                clocks.advance(frostKey(name, plant), clip, delta));
+
+        float previous = batch.getPackedColor();
+        batch.setColor(1f, 1f, 1f, striking ? BEET_ATTACK_ALPHA : BEET_IDLE_ALPHA);
+        // CENTRED on the beet's base, not stood on it. The ring is authored around its own middle on a
+        // 390 canvas, so drawStanding -- which puts a sprite's FEET on the foot line -- lifted the
+        // whole ring a canvas-height above the plant. It belongs on the ground the beet is thumping.
+        SpritePlacer.drawCentred(batch, sprite, clip, stateTime, cx,
+                fy + BEET_PULSE_LIFT_CELLS * lawn.cellHeight(), true);
+        batch.setPackedColor(previous);
+    }
 
     // ---- plant food -----------------------------------------------------------------------------
 
@@ -260,7 +437,7 @@ public final class PlantRenderer {
     // so the light starts dying the moment the effect does rather than waiting for the wind-down clip.
     private float advancePlantFoodGlow(Plant plant, float delta) {
         if (!plantFood.contains(plant)) {
-            reportFeedEnd(plant);
+            feedCheck.end(plant, glowPhase.get(plant), glowStopped.get(plant));
             glowPhase.remove(plant);
             glowStopped.remove(plant);
             return 0f;
@@ -273,7 +450,8 @@ public final class PlantRenderer {
         } else {
             glowStopped.putIfAbsent(plant, phase);
         }
-        reportFeedStage(plant, phase);
+        int stage = plantFoodStage.getOrDefault(plant, STAGE_ON);
+        feedCheck.stage(plant, stage, stageClip(stage), phase, plant.isPlantFoodActive());
 
         float strength = Math.min(1f, phase / GLOW_RISE);
         Float stopped = glowStopped.get(plant);
@@ -285,39 +463,7 @@ public final class PlantRenderer {
 
     // ---- -Dpvz.feedCheck ------------------------------------------------------------------------
 
-    // The stage each fed plant was last seen in, so a change is logged once rather than every frame.
-    private final Map<Plant, Integer> reportedStage = new IdentityHashMap<>();
-
-    private void reportFeedStage(Plant plant, float phase) {
-        if (!views.gdx.core.DebugFlags.FEED_CHECK) {
-            return;
-        }
-        int stage = plantFoodStage.getOrDefault(plant, STAGE_ON);
-        Integer seen = reportedStage.put(plant, stage);
-        if (seen != null && seen == stage) {
-            return;
-        }
-        com.badlogic.gdx.Gdx.app.log("FeedCheck", String.format(
-                "%s %s at %.2fs  boostRunning=%s",
-                plant.getName(), stageClip(stage), phase, plant.isPlantFoodActive()));
-    }
-
-    private void reportFeedEnd(Plant plant) {
-        if (!views.gdx.core.DebugFlags.FEED_CHECK) {
-            return;
-        }
-        reportedStage.remove(plant);
-        Float drawn = glowPhase.get(plant);
-        if (drawn == null) {
-            return;
-        }
-        Float stopped = glowStopped.get(plant);
-        com.badlogic.gdx.Gdx.app.log("FeedCheck", String.format(
-                "%s DONE  boost ran %s,  drawn boosted %.2fs",
-                plant.getName(),
-                stopped == null ? "past the animation" : String.format("%.2fs", stopped),
-                drawn));
-    }
+    private final FeedCheckLog feedCheck = new FeedCheckLog();
 
     // Which part of the aura's own sequence to show. Its build-up runs on the aura's clock rather than
     // on the plant's stage, because a plant with no plantfood_on of its own starts at the loop and the
@@ -500,70 +646,12 @@ public final class PlantRenderer {
         SpritePlacer.endAdditive(batch);
     }
 
-    // The octopus clinging to a snared plant, and its own hit flash (T8.4).
-    //
-    // It gets a flash of its own rather than borrowing the plant's, because they take damage
-    // SEPARATELY: Projectile.onHit sends a shot into damageOctopus while the plant underneath is
-    // untouched, so flashing the plant would credit the hit to the wrong thing -- and the plant, being
-    // undamaged, would never flash at all while the player shot the octopus off it.
-    private void drawOctopus(Batch batch, Plant plant, float cx, float footY, float delta) {
-        EntitySprite octopus = sprites.get(OCTOPUS_SPRITE);
-        if (octopus == null || !octopus.isReady()) {
-            return;
-        }
-        String clip = ClipMap.firstAvailable(octopus, OCTOPUS_CLIPS);
-        // One shared clock, advanced once a frame in sweepFlashes, plus a per-plant phase derived from
-        // the tile it is on. AnimationClocks is an IdentityHashMap, so a per-octopus key would have to
-        // be an object that survives between frames -- and a stable offset off the coordinates gives the
-        // same "they do not writhe in unison" result with no state at all.
-        float phase = (float) (plant.getX() * 0.37 + plant.getY() * 0.61);
-        float stateTime = ClipMap.sample(octopus, clip, octopusClock + phase);
-        float centreY = footY + lawn.cellHeight() * OCTOPUS_LIFT_CELLS;
-
-        com.badlogic.gdx.math.Rectangle bounds = octopus.bounds(clip);
-        if (bounds == null || bounds.width <= 0f) {
-            return;
-        }
-        float scale = SpritePlacer.toSpriteSpace(OCTOPUS_WIDTH_CELLS * lawn.cellWidth())
-                / bounds.width;
-
-        float previous = batch.getPackedColor();
-        batch.setColor(Color.WHITE);
-        drawOctopusAt(batch, octopus, clip, stateTime, cx, centreY, scale, bounds);
-
-        // Keyed on the PLANT, in a DamageFlash of its own. The plant is the only stable identity the
-        // octopus has -- it is not an entity in the model, just two fields on the plant it grabbed --
-        // and a second instance is what keeps its hits from being confused with the plant's own.
-        float flash = octopusFlashes.intensity(plant, plant.getOctopusHp(), delta);
-        if (flash > 0f) {
-            SpritePlacer.beginAdditive(batch);
-            batch.setColor(flash, flash, flash, 1f);
-            drawOctopusAt(batch, octopus, clip, stateTime, cx, centreY, scale, bounds);
-            SpritePlacer.endAdditive(batch);
-        }
-        batch.setPackedColor(previous);
-    }
-
-    private void drawOctopusAt(Batch batch, EntitySprite octopus, String clip, float stateTime,
-                               float cx, float centreY, float scale,
-                               com.badlogic.gdx.math.Rectangle bounds) {
-        octopusTransform.begin(batch, SpritePlacer.toSpriteSpace(cx),
-                SpritePlacer.toSpriteSpace(centreY), scale);
-        octopus.draw(batch, clip, stateTime, 0f, bounds.y + bounds.height / 2f, true);
-        octopusTransform.end(batch);
-    }
-
-    private final LocalTransform octopusTransform = new LocalTransform();
-    private final DamageFlash octopusFlashes = new DamageFlash();
-    private float octopusClock;
-
     // Called once per frame by GameRenderer: drops plants that were not drawn, and advances the one
     // clock the octopuses share. Advancing it in draw() would run it once per snared plant per frame.
     void sweepFlashes(float delta) {
         flashes.sweep();
-        octopusFlashes.sweep();
         iceFlashes.sweep();
-        octopusClock += delta;
+        octopus.advance(delta);
     }
 
     // ---- strikes -------------------------------------------------------------------------------
@@ -667,10 +755,36 @@ public final class PlantRenderer {
     //
     // Its own phase rather than AnimationClocks': that clock RESETS whenever the clip name changes, so
     // the very act of cycling would restart the timer that decides when to cycle.
-    private String idleClip(EntitySprite sprite, Plant plant, float delta, int stage) {
+    private String idleClip(EntitySprite sprite, Plant plant, float delta, int stage,
+                            int damageStage) {
+        // A stacking plant does not cycle its idles at all -- its numbered idles are not variants of one
+        // pose, they are one pose per head. Cycling them made a freshly planted Pea Pod flick between
+        // one head and two, and pinned a full pod at two of its five.
+        if (plant.getStackableComponent() != null) {
+            idlePhase.remove(plant);
+            idleVariant.remove(plant);
+            String stacked = PlantStages.stacked(sprite, ClipMap.IDLE, headCount(plant));
+            return stacked != null ? stacked
+                    : PlantStages.idleVariants(sprite, stage, plant.getLevel(),
+                            plant.hasPlantFood()).get(0);
+        }
+        // hasPlantFood(), which is set once and never cleared, is exactly the right question for a
+        // plant whose boost is permanent: a Cactus that has been fed is upgraded for the rest of the
+        // level and the dump draws it differently from then on.
         java.util.List<String> variants =
-                PlantStages.idleVariants(sprite, stage, plant.getLevel());
-        if (variants.size() < 2) {
+                PlantStages.idleVariants(sprite, stage, plant.getLevel(), plant.hasPlantFood());
+        // For a plant whose idles ARE its damage stages, the list is indexed, not cycled: idle is the
+        // intact shell and the last one is a shell about to fall apart. See PlantDamage.IDLE_IS_DAMAGE.
+        if (PlantDamage.idleIsDamage(plant.getName())) {
+            idlePhase.remove(plant);
+            idleVariant.remove(plant);
+            return variants.get(Math.min(damageStage, variants.size() - 1));
+        }
+        // A charging plant rests on ONE pose too. Its idle is the brief "loaded, waiting for a target"
+        // moment between charges, and Citron's idle2 is a three-and-a-third second stretch that would
+        // swallow that moment whole -- so a Citron that had just finished charging would be seen
+        // yawning rather than ready.
+        if (variants.size() < 2 || sprite.hasClip(CHARGE_CLIP)) {
             idlePhase.remove(plant);
             idleVariant.remove(plant);
             return variants.get(0);
@@ -719,6 +833,29 @@ public final class PlantRenderer {
             }
         }
 
+        // A Chomper chewing is not a Chomper waiting. Its interval is forty seconds of digesting, and
+        // the art ships `special_idle` for exactly that -- so a chewing one used to be drawn with its
+        // mouth open and ready, which is the one thing it is not.
+        //
+        // Asked of the ART rather than of the plant's name: the clip is what decides whether a plant
+        // HAS a distinct recovering pose, and Chomper is the only one in the dump that does.
+        String chewing = recoveringClip(sprite, plant, stage);
+        if (chewing != null) {
+            return chewing;
+        }
+
+        // A plant that spends seconds building its shot is CHARGING, not resting between shots. Citron
+        // takes nine seconds and the dump ships it a seven-second `charge` clip that nothing could ask
+        // for -- so it was drawn breathing its nine-tenths-of-a-second idle over and over, which is the
+        // pose of a plant with nothing to do. Asked of the ART, like the Chomper case above: the clip is
+        // what says whether a plant has a distinct charging pose.
+        if (plant.isCharging()) {
+            String charging = PlantStages.clip(sprite, stage, CHARGE_CLIP);
+            if (charging != null) {
+                return charging;
+            }
+        }
+
         // A mine that has not finished burying itself is a lump in the dirt, not a live potato with its
         // eyes open. Checked after the action clips so an arming mine still animates if it acts.
         if (!plant.isArmed()) {
@@ -735,7 +872,7 @@ public final class PlantRenderer {
         if (damaged != null) {
             return damaged;
         }
-        return idleClip(sprite, plant, delta, stage);
+        return idleClip(sprite, plant, delta, stage, damageStage);
     }
 
     // The one-shot clip this plant is in the middle of, advanced by delta -- or null once it has run
@@ -753,17 +890,17 @@ public final class PlantRenderer {
         } else if (plantFood.contains(plant)) {
             action = plantFoodClip(sprite, plant, stage);
         } else {
-            // "attack"/"shooting" for shooters, "special" for sun producers (Sunflower's bloom).
-            //
-            // A plant whose action has more than one form asks for the numbered clip first: Kernel-pult
-            // lobs a kernel or, on a roll, stunning butter, and the art has a separate swing for each.
-            // Only the ability knows which it threw, so the model reports it (see VariantAction).
-            int variant = plant.getActionVariant();
-            action = variant > 0
-                    ? PlantStages.clip(sprite, stage, "attack" + (variant + 1), "attack", "shooting")
-                    : PlantStages.clip(sprite, stage, "attack", "shooting", "special");
+            action = PlantStages.actionClip(sprite, stage, plant.getActionVariant(),
+                    headCount(plant), plant.hasPlantFood());
         }
         if (action != null) {
+            if (plantFood.contains(plant) && boostOverMidLoop(plant)) {
+                if (cutToWindDown(sprite, plant, stage)) {
+                    actionPhase.put(plant, 0f);
+                    return plantFoodClip(sprite, plant, stage);
+                }
+                return endAction(plant);   // no wind-down to cut to: back to idle now
+            }
             // The clip's own length, always -- including the plant-food stages, which used to be given
             // an invented one. A stage that runs for exactly its clip is a stage that ends on the pose
             // it was drawn to end on.
@@ -783,12 +920,34 @@ public final class PlantRenderer {
                 actionPhase.put(plant, 0f);
                 return plantFoodClip(sprite, plant, stage);
             }
+            // A plant that is STILL winding up when its swing animation ends plays it again.
+            //
+            // Without this a fast attacker animates exactly once and then stands still for the rest of
+            // the level. The clip is started on the RISING edge of isWindingUp(), and Bonk Choy swings
+            // every quarter of a second: the model finishes one swing and arms the next inside a single
+            // tick, so the flag never reads false at a frame boundary and no second rising edge ever
+            // arrives. Replaying while the flag holds is what turns one punch into punching.
+            if (!plantFood.contains(plant) && !growing.contains(plant) && plant.isWindingUp()) {
+                actionPhase.put(plant, 0f);
+                return action;
+            }
         }
+        return endAction(plant);
+    }
+
+    // Drops every trace of the one-shot clip that was playing; the caller falls through to idle.
+    private String endAction(Plant plant) {
         actionPhase.remove(plant);
         plantFood.remove(plant);
         plantFoodStage.remove(plant);
         growing.remove(plant);
         return null;
+    }
+
+    // How many heads a stacking plant is carrying, and 1 for everything else.
+    private static int headCount(Plant plant) {
+        return plant.getStackableComponent() == null ? 1
+                : Math.max(1, plant.getStackableComponent().getCurrentStacks());
     }
 
     // A feed is announced by the model's feed COUNT going up, not by a flag turning true: the flag is
@@ -844,14 +1003,36 @@ public final class PlantRenderer {
         return fallback == null ? ClipMap.IDLE : fallback;
     }
 
+    // The boost has finished while the middle stage is still playing.
+    //
+    // advancePlantFoodStage below only gets to ask "is it still running?" when the loop clip runs out,
+    // which is fine for a plant whose loop is a sixth of a second (Peashooter) and wrong for one whose
+    // loop is five seconds or more. A fed Pea Pod threw its last giant pea after two and a half seconds
+    // and then kept dancing for another four with nothing coming out of it.
+    private boolean boostOverMidLoop(Plant plant) {
+        return plantFoodStage.getOrDefault(plant, STAGE_ON) == STAGE_LOOP
+                && !plant.isPlantFoodActive();
+    }
+
+    // Moves a plant that HAS a wind-down clip on to it. One with none has nothing to cut to, and the
+    // caller ends the sequence outright instead -- Fume-shroom's plant food is a single instant blast
+    // and its loop is five and a third seconds, so waiting for the clip meant five seconds of a plant
+    // glowing and puffing over an effect that was long finished.
+    private boolean cutToWindDown(EntitySprite sprite, Plant plant, int growthStage) {
+        if (PlantStages.clip(sprite, growthStage, "plantfood_off") == null) {
+            return false;
+        }
+        plantFoodStage.put(plant, STAGE_OFF);
+        return true;
+    }
+
     // Moves the sequence on, returning false once it has finished. Called when the current stage's clip
     // has just run out.
     //
     // The middle stage does not move on while the boost is still running -- it stays where it is and
-    // the caller replays it from frame 0. That is what makes the animation and the effect end together
-    // rather than one outlasting the other: the last replay is the one during which the model stops
-    // saying "active", and the wind-down follows within a clip length of it (a sixth of a second for a
-    // Peashooter). No stage is ever cut off mid-clip.
+    // the caller replays it from frame 0. That, together with boostOverMidLoop above, is what makes the
+    // animation and the effect end together rather than one outlasting the other: a short loop ends
+    // itself on the replay after the model stops saying "active", and a long one is cut where it is.
     private boolean advancePlantFoodStage(EntitySprite sprite, Plant plant, int growthStage) {
         int stage = plantFoodStage.getOrDefault(plant, STAGE_ON);
         if (stage >= STAGE_OFF) {

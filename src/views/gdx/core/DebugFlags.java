@@ -334,6 +334,28 @@ public final class DebugFlags {
     //       -Dpvz.smokeFrames=600
     public static final boolean FEED_CHECK = flag("pvz.feedCheck");
 
+    // Drops N plant food pickups on the lawn, one per lane. -1 is off.
+    //
+    // Unreachable any other way. A plant food is left behind by a GLOWING zombie, and a zombie glows on
+    // a 5% roll taken when it spawns -- so an unattended run would have to kill twenty of them and get
+    // lucky, and could never arrange several at once. `cheat add-plant-food` is no substitute: it fills
+    // the pouch directly, which is exactly the shortcut this pickup exists to replace.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.skipIntro=1 -Dpvz.dropFood=3 -Dpvz.smokeFrames=90
+    public static final int DROP_FOOD = number("pvz.dropFood");
+
+    // Picks the seed bar: -Dpvz.seeds=Squash,Grapeshot,Doom-shroom. Empty means DevBoot's usual six.
+    //
+    // Without it most of the plant roster cannot be reached at all in an unattended run. A level offers
+    // twenty-odd plants, the bar holds six, and `plant plant -t Squash` on a bar that has no Squash is
+    // refused -- but the flag that posts it only reports that the command PARSED, so the log looks like
+    // a success and the lawn stays empty. Names are matched against the level's own pool, so a level
+    // that bans a plant still bans it.
+    //
+    //   gradlew runGui -Dpvz.screen=game -Dpvz.skipIntro=1 "-Dpvz.seeds=Squash,Grapeshot" \
+    //       "-Dpvz.run=plant plant -t Squash -l (5, 3)"
+    public static final String SEEDS = text("pvz.seeds");
+
     // Joins the random-match queue the moment the lobby opens, so a two-player match can be started
     // without a human clicking on two machines.
     //

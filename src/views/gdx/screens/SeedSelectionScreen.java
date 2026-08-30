@@ -317,7 +317,9 @@ public final class SeedSelectionScreen extends MenuScreen {
 
         List<SeedPacket> selected = session.getSelectedSeeds();
         int slots = session.getMaxSeedSlots();
-        slotsLabel.setText(barCaption(selected.size(), slots, baseSlots(session)));
+        slotsLabel.setText(imitating
+                ? "Pick the plant your Imitater should copy  -  click him again to change your mind"
+                : barCaption(selected.size(), slots, baseSlots(session)));
 
         buildBar(selected, slots, baseSlots(session));
         buildGrid(session);
@@ -341,7 +343,8 @@ public final class SeedSelectionScreen extends MenuScreen {
         for (int slot = 0; slot < total; slot++) {
             Actor tile;
             if (slot < selected.size()) {
-                tile = card(selected.get(slot).getPlantType(), true);
+                SeedPacket packet = selected.get(slot);
+                tile = card(packet.getPlantType(), true, packet.isImitated());
             } else {
                 tile = SeedCardActor.emptySlot(art, slot < slots ? null : lockArt());
             }
@@ -379,7 +382,7 @@ public final class SeedSelectionScreen extends MenuScreen {
     private void buildGrid(GameSession session) {
         int column = 0;
         for (String plantName : offeredPlants(session)) {
-            if (session.isSeedSelected(plantName)) {
+            if (!showInGrid(session, plantName)) {
                 continue;
             }
             available.add(card(plantName, false)).size(TILE_WIDTH, TILE_HEIGHT)
@@ -394,9 +397,55 @@ public final class SeedSelectionScreen extends MenuScreen {
         }
     }
 
+    // ---- the Imitater ----------------------------------------------------------------------------
+    //
+    // Picking it is two clicks, not one: the Imitater, then the plant it should copy. While the first
+    // has happened and the second has not, this is true -- the grid stops hiding plants already on the
+    // bar (those are the ones worth a second packet of) and the caption says what it is waiting for.
+    // Clicking the Imitater again backs out.
+    private boolean imitating;
+
+    private static boolean isImitater(String plantName) {
+        return PlantRegistry.getInstance().isImitater(plantName);
+    }
+
+    private static String imitaterName() {
+        PlantTemplate template = PlantRegistry.getInstance().getImitaterTemplate();
+        return template == null ? "Imitater" : template.getName();
+    }
+
+    // Which offered plants belong in the lower row right now. Normally the ones not already on the bar;
+    // while the Imitater is waiting to be told what to copy, all of them. The Imitater itself drops out
+    // of the row once it has been spent -- there is only one.
+    private boolean showInGrid(GameSession session, String plantName) {
+        if (isImitater(plantName)) {
+            return session.getImitatedSeed() == null;
+        }
+        return imitating || !session.isSeedSelected(plantName);
+    }
+
+    // What one click on a card means, given where the card is and whether the Imitater is waiting.
+    private void clickCard(String plantName, boolean onBar, boolean imitated) {
+        if (onBar) {
+            commands.submit("remove plant -t " + (imitated ? imitaterName() : plantName));
+        } else if (isImitater(plantName)) {
+            imitating = !imitating;   // arm it, or back out of it
+        } else if (imitating) {
+            imitating = false;
+            commands.submit("imitate plant -t " + plantName);
+        } else {
+            commands.submit("add plant -t " + plantName);
+        }
+        rebuild();
+    }
+
+    private SeedCardActor card(String plantName, boolean onBar) {
+        return card(plantName, onBar, false);
+    }
+
     // A card that adds on click when it is in the available row, and removes when it is on the bar.
     // Hovering it moves the detail strip, which is what makes Boost and Upgrade reachable in one move.
-    private SeedCardActor card(String plantName, boolean onBar) {
+    private SeedCardActor card(String plantName, boolean onBar, boolean imitated) {
         PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(plantName);
         int cost = template == null ? 0 : template.getCost();
         int recharge = template == null ? 0 : (int) template.getRecharge();
@@ -415,14 +464,18 @@ public final class SeedSelectionScreen extends MenuScreen {
         // ToggleSeedCommand's; this only stops the card from looking like something you can take off.
         GameMode mode = session() == null ? null : session().getMode();
         actor.setLocked(mode != null && mode.isSeedForced(plantName));
+        // The Imitater's own packet in the far corner of the card it is dressed as, so two Peashooters
+        // on the bar are not two identical cards one of which mysteriously answers to another name.
+        if (imitated) {
+            actor.setImitated(portraitOf(imitaterName()));
+        }
         // The same swell-and-press the menu buttons have. A seed card is the most clicked thing on this
         // screen and was the only one that gave nothing back when the pointer was over it.
         ButtonJuice.applyTo(actor);
         actor.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                commands.submit((onBar ? "remove plant -t " : "add plant -t ") + plantName);
-                rebuild();
+                clickCard(plantName, onBar, imitated);
             }
 
             @Override

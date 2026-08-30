@@ -182,7 +182,7 @@
   {
     "id": 10,
     "name": "Rotobaga",
-    "abilityParams": { "projectileType": "RUTABAGA", "directionSpeeds": [[0.5, 0.5], [0.5, -0.5], [-0.5, 0.5], [-0.5, -0.5]], "shotCount": 1 },
+    "abilityParams": { "projectileType": "RUTABAGA", "directionSpeeds": [[0.5, 0.5], [0.5, -0.5], [-0.5, 0.5], [-0.5, -0.5]], "shotCount": 3 },
     "category": "SHOOTER",
     "tags": [],
     "cost": 150,
@@ -202,7 +202,7 @@
   {
     "id": 11,
     "name": "Pea Pod",
-    "abilityParams": { "projectileType": "NORMAL_PEA", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
+    "abilityParams": { "projectileType": "NORMAL_PEA", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 2, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["PEA", "STACK"],
     "cost": 125,
@@ -245,7 +245,7 @@
   {
     "id": 13,
     "name": "Citron",
-    "abilityParams": { "projectileType": "PLASMA_BALL", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 99, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
+    "abilityParams": { "projectileType": "CITRUS_ORB", "element": "NEUTRAL", "trajectory": "DIRECT", "direction": "FORWARD", "shotCount": 1, "speedX": 0.5, "burstDelayTicks": 0, "pierceCount": 0, "maxRange": 0.0, "splashDamage": 0, "splashRadiusX": 0.0, "splashRowRadius": 0 },
     "category": "SHOOTER",
     "tags": ["CHARGE"],
     "cost": 350,
@@ -255,7 +255,7 @@
     "recharge": 5.0,
     "abilityType": "SHOOT_PROJECTILE",
     "abilityValue": 1.0,
-    "plantFood": [ { "type": "LANE_CLEAR", "value": 2000.0 } ],
+    "plantFood": [ { "type": "PLASMA_ORB", "value": 2000.0 } ],
     "upgrades": [
       { "level": 2, "type": "BUFF_ACTION_INTERVAL", "value": -1.0, "specialTag": "CHARGE_REDUCTION" },
       { "level": 3, "type": "BUFF_DAMAGE", "value": 150.0, "specialTag": "" },
@@ -658,9 +658,9 @@
     "damage": 1800,
     "actionInterval": 0.0,
     "recharge": 20.0,
-    "abilityType": "DELAYED_EXPLOSIVE",
+    "abilityType": "SQUASH_LEAP",
     "abilityValue": 1.0,
-    "plantFood": [ { "type": "DESTROY_RANDOM", "value": 2 } ],
+    "plantFood": [ { "type": "SQUASH_LEAP", "value": 2 } ],
     "upgrades": [
       { "level": 2, "type": "BUFF_RECHARGE", "value": -3.0, "specialTag": "" },
       { "level": 3, "type": "BUFF_DAMAGE", "value": 600.0, "specialTag": "" },
@@ -710,7 +710,7 @@
   {
     "id": 36,
     "name": "Doom-shroom",
-    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 4, "explosionColRadius": 9 },
+    "abilityParams": { "element": "NEUTRAL", "explosionRowRadius": 4, "explosionColRadius": 9, "leavesCrater": true },
     "category": "EXPLOSIVE",
     "tags": ["SHROOM"],
     "cost": 125,
@@ -738,7 +738,7 @@
     "damage": 99999,
     "actionInterval": 0.0,
     "recharge": 15.0,
-    "abilityType": "DELAYED_EXPLOSIVE",
+    "abilityType": "GRAB_UNDERWATER",
     "abilityValue": 1.0,
     "plantFood": [ { "type": "PULL_UNDERWATER", "value": 4.0 } ],
     "upgrades": [
@@ -830,7 +830,7 @@
   {
     "id": 42,
     "name": "Wasabi Whip",
-    "abilityParams": { "element": "FIRE", "damageByStage": [40], "rowRadiusByStage": [0], "colRadiusByStage": [1], "stageUpTicks": [] },
+    "abilityParams": { "element": "FIRE", "damageByStage": [40], "rowRadiusByStage": [0], "colRadiusByStage": [2], "stageUpTicks": [] },
     "extraAbilities": [
       { "abilityType": "WARMTH", "actionInterval": 1.0, "abilityParams": { "rowRadius": 1, "colRadius": 1 } }
     ],
@@ -853,7 +853,7 @@
   {
     "id": 43,
     "name": "Kiwibeast",
-    "abilityParams": { "element": "NEUTRAL", "damageByStage": [15, 30, 45], "rowRadiusByStage": [0, 1, 1], "colRadiusByStage": [1, 1, 2], "stageUpTicks": [240, 720] },
+    "abilityParams": { "element": "NEUTRAL", "damageByStage": [15, 30, 45], "rowRadiusByStage": [0, 1, 1], "colRadiusByStage": [2, 2, 3], "stageUpTicks": [240, 720] },
     "category": "MELEE",
     "tags": ["AOE", "WARM_UP"],
     "cost": 175,
@@ -1087,7 +1087,7 @@
     "recharge": 20.0,
     "abilityType": "HYPNOTIZE_ON_EATEN",
     "abilityValue": 1.0,
-    "plantFood": [ { "type": "RANDOM_HYPNOTIZE", "value": 1.0 } ],
+    "plantFood": [ { "type": "HYPNO_GARGANTUAR", "value": 1.0 } ],
     "upgrades": [
       { "level": 2, "type": "BUFF_COST", "value": -25.0, "specialTag": "" },
       { "level": 3, "type": "SPECIAL_MECHANIC", "value": 1.2, "specialTag": "ZOMBIE_HEALTH_MULTIPLIER" },
@@ -1177,7 +1177,7 @@
   {
     "id": 59,
     "name": "Hot Potato",
-    "abilityParams": { "rowRadius": 0, "colRadius": 0 },
+    "abilityParams": { "rowRadius": 0, "colRadius": 0, "consumedOnUse": true },
     "category": "EXPLOSIVE",
     "tags": ["FIRE"],
     "cost": 0,

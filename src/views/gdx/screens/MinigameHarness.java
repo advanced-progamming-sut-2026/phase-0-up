@@ -49,6 +49,7 @@ final class MinigameHarness {
         runBowlCheck();
         runSummonCheck();
         runSpawn();
+        runDropFood();
         runCommands();
         runSwapCheck();
     }
@@ -215,6 +216,56 @@ final class MinigameHarness {
                     "cheat spawn-zombie -t " + alias + " -l (" + column + ", " + i + ")");
             Gdx.app.log("Spawn", alias + " in lane " + i + " at column " + column
                     + (routed ? "" : " -- the command did not even parse"));
+        }
+    }
+
+    // -Dpvz.dropFood=N. Puts N plant food pickups on the lawn, one per lane.
+    //
+    // The only way to look at one. A plant food is dropped by a GLOWING zombie, and a zombie glows on a
+    // 5% roll taken at spawn -- so reaching one in a screenshot run means killing about twenty zombies
+    // and hoping, and reaching a specific arrangement of them is not possible at all. There is no
+    // command for it either: `cheat add-plant-food` fills the pouch, which is the thing this feature
+    // exists to stop being the only way to get one.
+    //
+    // Placed straight into the session rather than through a command, deliberately: this is a view
+    // reading and nudging the model it is already drawing, which is what every other harness flag here
+    // does, and inventing a cheat verb for it would put a debug hook in the shipped command table.
+    // The second pass CLICKS the first of them, through LawnInputProcessor.touchDown -- the real
+    // gesture, not the command it eventually produces. That half is the part worth exercising: the
+    // hit-test runs against where the pickup was DRAWN, and it bobs, so a tile-centre test and a
+    // sprite test disagree by a few pixels and only one of them is what the player experiences.
+    private static final int DROP_FOOD_FRAME = 25;
+    private static final int DROP_FOOD_CLICK_FRAME = 60;
+
+    private int dropFoodFrames;
+
+    private void runDropFood() {
+        if (DebugFlags.DROP_FOOD < 1) {
+            return;
+        }
+        dropFoodFrames++;
+        if (dropFoodFrames == DROP_FOOD_FRAME) {
+            int wanted = Math.min(DebugFlags.DROP_FOOD, utils.Constants.BOARD_ROWS);
+            for (int row = 0; row < wanted; row++) {
+                // Spread across the lawn rather than stacked in one column, so a single frame shows
+                // the bob and the glow pulse at different points of their cycles.
+                models.entities.collectibles.PlantFood pickup =
+                        new models.entities.collectibles.PlantFood(2 + row, row);
+                session.addPlantFood(pickup);
+                Gdx.app.log("DropFood", "plant food at (" + pickup.tileColumn() + ", "
+                        + pickup.tileRow() + ") for " + pickup.getRemainingTicks() + " ticks");
+            }
+        } else if (dropFoodFrames == DROP_FOOD_CLICK_FRAME) {
+            if (session.getActivePlantFoods().isEmpty()) {
+                Gdx.app.error("DropFood", "nothing left to click -- the drops went early");
+                return;
+            }
+            models.entities.collectibles.PlantFood target = session.getActivePlantFoods().get(0);
+            int before = session.getPlantFoodCount();
+            clickTile(target.tileColumn(), target.tileRow());
+            Gdx.app.log("DropFood", "clicked (" + target.tileColumn() + ", " + target.tileRow()
+                    + "); pouch was " + before + ", " + session.getActivePlantFoods().size()
+                    + " left on the lawn");
         }
     }
 

@@ -27,12 +27,14 @@ public final class FactionCommands {
 
     private FactionCommands() { }
 
-    // The plant player's whole vocabulary: put a plant down, dig one up, feed one, pick up sun.
+    // The plant player's whole vocabulary: put a plant down, dig one up, feed one, pick up sun, pick
+    // up the plant food a glowing zombie dropped.
     private static final Set<InGameRegex> PLANT_COMMANDS = EnumSet.of(
             InGameRegex.PLANT_SEED,
             InGameRegex.PLUCK_PLANT,
             InGameRegex.FEED_PLANT,
-            InGameRegex.COLLECT_SUN);
+            InGameRegex.COLLECT_SUN,
+            InGameRegex.COLLECT_PLANT_FOOD);
 
     // The zombie player's. One verb, which is the shape of the mini-game.
     private static final Set<InGameRegex> ZOMBIE_COMMANDS = EnumSet.of(

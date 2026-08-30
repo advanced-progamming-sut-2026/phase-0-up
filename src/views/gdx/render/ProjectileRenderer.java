@@ -50,6 +50,21 @@ public final class ProjectileRenderer {
         ELEMENT_SPRITE.put(Element.FIRE, "T_FIRE_PEA");
     }
 
+    // The same flame in blue, for a shot boosted by a Torchwood that has eaten plant food.
+    private static final String BLUE_FIRE_PEA = "T_FIRE_PEA_BLUE";
+
+    // Pea Pod's plant food throws one of these per head. The dump ships it as its own effect rather
+    // than as a scaled-up pea, so a giant pea is not merely a big green circle.
+    private static final String GIANT_PEA = "PEAPOD_PLANTFOOD_GIANTPEA";
+
+    // Fume-shroom's cloud, and the spike a plant-food'd Cactus fires from then on.
+    private static final String FUME_BUBBLES = "FUMESHROOM_BUBBLES";
+    private static final String CACTUS_BOOSTED_SPIKE = "CACTUS_PROJECTILE_PLANTFOOD";
+
+    // Citron's ordinary citrus orb and the plasma orb its plant food fires.
+    private static final String CITRUS_ORB = "CITRON_CITRUS_ORB";
+    private static final String CITRUS_PLASMA_ORB = "CITRON_PLANTFOOD_ORB";
+
     // Shots whose art belongs to the PLANT rather than to an element, checked first.
     //
     // Element is the wrong axis for these: a rutabaga and a corn kernel are both NEUTRAL, so both were
@@ -63,8 +78,14 @@ public final class ProjectileRenderer {
             new java.util.EnumMap<>(models.entities.projectiles.ProjectileType.class);
 
     static {
+        // PROJECTILE2, not PROJECTILE1. The first is authored on a 105x12 canvas -- a motion streak
+        // nine times as long as it is tall -- and a streak drawn on a shot that is climbing or falling
+        // diagonally reads as a separate shot flying straight down the lane. It also made the rutabaga
+        // impossible to size: the vegetable is a small part of a very wide box, so the box had to be
+        // made a whole cell across for the veg to be visible, and the shot then sat half a box to the
+        // right of the plant that fired it. The second is authored on 38x14, which is the vegetable.
         TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.RUTABAGA,
-                "ROTORUTABAGA_PROJECTILE1");
+                "ROTORUTABAGA_PROJECTILE2");
         TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.CORN_KERNEL,
                 "T_KERNALPULT_PROJECTILE");
         TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.BUTTER,
@@ -83,8 +104,8 @@ public final class ProjectileRenderer {
                 "T_STARFRUIT_PROJECTILE");
         TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.SPORE,
                 "T_PUFFSHROOM_PROJECTILE");
-        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.FUME,
-                "T_SPORESHROOM_PROJECTILE");
+        // Fume-shroom's own bubbles, not the Spore-shroom's. Nothing else in the roster fires FUME.
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.FUME, FUME_BUBBLES);
         TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.GOO,
                 "GOOPEASHOOTER_PROJECTILES");
         TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.GRAPE,
@@ -93,8 +114,14 @@ public final class ProjectileRenderer {
                 "BOWLINGBULB_PROJECTILE1");
         TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.PLASMA_BALL,
                 "BOWLINGBULB_PLANTFOOD_PROJECTILE");
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.CITRUS_ORB, CITRUS_ORB);
+        TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.CITRUS_PLASMA_ORB,
+                CITRUS_PLASMA_ORB);
+        // A Cactus that has eaten plant food is upgraded for the rest of the level, and the dump ships
+        // the spike it fires afterwards. It was drawing Red Stinger's projectile -- a plant that is not
+        // in this roster -- because PIERCING_SPIKE is only ever produced by that upgrade.
         TYPE_SPRITE.put(models.entities.projectiles.ProjectileType.PIERCING_SPIKE,
-                "T_REDSTINGER_PROJECTILE");
+                CACTUS_BOOSTED_SPIKE);
     }
 
     // Fired at the plant's mouth on the frame a shot first appears. Only Rotobaga ships one; anything
@@ -133,21 +160,38 @@ public final class ProjectileRenderer {
     // so its box is the kernel, and the same 1.05 made it the size of the plant that threw it.
     private static final Map<String, Float> SPRITE_WIDTH_CELLS = Map.ofEntries(
             Map.entry("T_KERNALPULT_PROJECTILE", 0.40f),
-            Map.entry("ROTORUTABAGA_PROJECTILE1", 0.70f),
+            Map.entry("ROTORUTABAGA_PROJECTILE2", 0.55f),
+            // Thrown by a plant-food'd Pea Pod, and the whole point of it is that it is enormous --
+            // roughly three peas across, carrying twenty peas' worth of damage.
+            Map.entry(GIANT_PEA, 0.95f),
+            // Citron's charged shot is a heavy thing, and the plasma orb its plant food fires is
+            // heavier still -- it is about to go through an entire lane without stopping.
+            Map.entry(CITRUS_ORB, 0.70f),
+            Map.entry(CITRUS_PLASMA_ORB, 0.95f),
             // The lobbed fruit are big things a plant heaves overhead -- roughly two thirds of a tile,
             // sized against each other rather than against a pea so a melon outweighs a cabbage.
             Map.entry("T_CABBAGEPULT_PROJECTILE", 0.55f),
             Map.entry("T_MELON_PROJECTILE", 0.72f),
             Map.entry("T_WINTERMELON_PROJECTILE", 0.72f),
-            Map.entry("T_PEPPERPULT_PROJECTILE", 0.55f),
+            // The pepper is FIRE, so its box is mostly the flame trailing behind it and only a little
+            // of it is the pepper. Measured like the melon beside it -- 0.55 across the whole box --
+            // the pepper itself came out a third the size of the fruit the other pults throw.
+            Map.entry("T_PEPPERPULT_PROJECTILE", 0.95f),
             // Small, fast, and fired flat.
             Map.entry("T_CACTUS_PROJECTILE", 0.34f),
-            Map.entry("T_STARFRUIT_PROJECTILE", 0.40f),
+            Map.entry("T_STARFRUIT_PROJECTILE", 0.62f),
             Map.entry("T_PUFFSHROOM_PROJECTILE", 0.42f),
             Map.entry("T_SPORESHROOM_PROJECTILE", 0.50f),
+            // A fume is a cloud rather than a pellet, and it is authored on a full 390 plant canvas.
+            Map.entry(FUME_BUBBLES, 0.90f),
+            Map.entry(CACTUS_BOOSTED_SPIKE, 0.40f),
             Map.entry("GOOPEASHOOTER_PROJECTILES", 0.36f),
             Map.entry("GRAPESHOT_PROJECTILE", 0.30f),
+            // One entry per colour: the width is looked up by the name that is actually drawn, and a
+            // blue bulb falling through to the default was drawn twice the size of the cyan one.
             Map.entry("BOWLINGBULB_PROJECTILE1", 0.55f),
+            Map.entry("BOWLINGBULB_PROJECTILE2", 0.55f),
+            Map.entry("BOWLINGBULB_PROJECTILE3", 0.55f),
             Map.entry("BOWLINGBULB_PLANTFOOD_PROJECTILE", 0.60f),
             Map.entry("T_REDSTINGER_PROJECTILE", 0.36f));
 
@@ -202,6 +246,19 @@ public final class ProjectileRenderer {
         if (animated == null) {
             animated = ELEMENT_SPRITE.get(
                     projectile.getElement() == null ? Element.NEUTRAL : projectile.getElement());
+        }
+        // A shot that comes in numbered forms is drawn as the one that was actually fired: Bowling Bulb
+        // rolls a cyan, blue or orange bulb and the dump ships all three, but every bulb in the game
+        // came out as BOWLINGBULB_PROJECTILE1 because the type alone cannot tell them apart.
+        animated = variantOf(animated, projectile.getArtVariant());
+        // A giant pea is its own effect, whatever the shooter would otherwise have thrown.
+        if (projectile.isGiant()) {
+            animated = GIANT_PEA;
+        }
+        // A pea that crossed a blue-flamed Torchwood burns blue. The dump ships the same effect in both
+        // colours, authored on the same 450 canvas with the same clips, so it needs no size of its own.
+        if (projectile.isBlueFlame()) {
+            animated = BLUE_FIRE_PEA;
         }
         if (animated != null && drawAnimated(batch, projectile, alpha, delta, animated)) {
             return;
@@ -258,6 +315,7 @@ public final class ProjectileRenderer {
         float h = w * region.getRegionHeight() / (float) region.getRegionWidth();
         float sx = SpritePlacer.toSpriteSpace(x);
         float sy = SpritePlacer.toSpriteSpace(y);
+
         batch.draw(region, sx - w / 2f, sy - h / 2f, w, h);
 
         // The white disc that used to be stamped over non-neutral shots is gone. It was a workaround for
@@ -273,6 +331,7 @@ public final class ProjectileRenderer {
         lastX.put(projectile, lawn.worldX(modelX));
         lastY.put(projectile, y);
     }
+
 
     // Last drawn world position, so ImpactEffects can burst exactly where the pea vanished.
     private final Map<Projectile, Float> lastX = new IdentityHashMap<>();
@@ -337,6 +396,14 @@ public final class ProjectileRenderer {
     private float muzzleAdjusted(Projectile projectile, float interpolatedX) {
         Float start = launchX.get(projectile);
         if (start == null) {
+            return interpolatedX;
+        }
+        // Diagonals are exempt. The pull-back compensates a model-side spawn offset along x, and it
+        // leans toward the launch point -- which for a shot travelling LEFT means pushing it right. A
+        // Rotobaga fires two of each, so its four rutabagas came out fanned to one side of the plant
+        // instead of out of it. Their abilities now spawn on the plant's own tile, so there is nothing
+        // left here to correct.
+        if (Math.abs(projectile.getSpeedY()) > 1e-6) {
             return interpolatedX;
         }
         float travelled = Math.abs(interpolatedX - start);
@@ -455,13 +522,53 @@ public final class ProjectileRenderer {
 
     // Draws a shot whose art is a PAM animation rather than a still. Returns false if the sprite is
     // unavailable, so the caller falls back to the region path and a shot is never simply invisible.
+    // Which clip to ask each projectile sprite for.
+    //
+    // Almost all of them call their only clip "animation", which is why this used to be that one name
+    // hard-coded. GRAPESHOT_PROJECTILE does not: it ships a clip per direction of travel
+    // (animation_forward, animation_backward, animation_verticle_up/_down -- the misspelling is the
+    // dump's) and NO plain "animation". firstAvailable then fell through to its last-resort candidate,
+    // bounds() came back null for a clip the sprite does not have, and drawAnimated returned false --
+    // so every grape in the game was quietly drawn as a green pea, with the real art sitting unused.
+    //
+    // Forward, because a grape is launched down the lane at whatever it is chasing. The vertical
+    // variants belong to a bounce that this build does not animate separately.
+    //
+    // Citron's two orbs are the same story with a different spelling: each names its only clip after
+    // itself ("Citron_Citrus_Orb", "Plantfood_Citron_Plasma_Orb") and has no "animation" at all.
+    private static final Map<String, String[]> SPRITE_CLIPS = Map.of(
+            "GRAPESHOT_PROJECTILE", new String[] {"animation_forward", "animation"},
+            // The fume cloud's clips are "special" (the puff) and "plantfood"; it has no "animation"
+            // and no "idle" either, so without this it would fall through to nothing.
+            FUME_BUBBLES, new String[] {"special", "animation"},
+            CITRUS_ORB, new String[] {"Citron_Citrus_Orb", "animation"},
+            CITRUS_PLASMA_ORB, new String[] {"Plantfood_Citron_Plasma_Orb", "animation"});
+
+    // Swaps the trailing number of a numbered sprite name for the one this shot actually is. Only the
+    // names that END in a digit can be varied -- BOWLINGBULB_PROJECTILE1 becomes ...2 or ...3 -- so
+    // every other shot passes through untouched however its ability numbers itself.
+    private static String variantOf(String spriteName, int variant) {
+        if (spriteName == null || variant <= 0) {
+            return spriteName;
+        }
+        char last = spriteName.charAt(spriteName.length() - 1);
+        if (last < '1' || last > '9') {
+            return spriteName;
+        }
+        return spriteName.substring(0, spriteName.length() - 1) + variant;
+    }
+
+    private static String[] clipsFor(String spriteName) {
+        return SPRITE_CLIPS.getOrDefault(spriteName, new String[] {"animation"});
+    }
+
     private boolean drawAnimated(Batch batch, Projectile projectile, float alpha, float delta,
                                  String spriteName) {
         views.gdx.sprite.EntitySprite sprite = sprites == null ? null : sprites.get(spriteName);
         if (sprite == null || !sprite.isReady()) {
             return false;
         }
-        String clip = views.gdx.sprite.ClipMap.firstAvailable(sprite, "animation");
+        String clip = views.gdx.sprite.ClipMap.firstAvailable(sprite, clipsFor(spriteName));
         com.badlogic.gdx.math.Rectangle bounds = sprite.bounds(clip);
         if (bounds == null || bounds.width <= 0f) {
             return false;
@@ -491,8 +598,19 @@ public final class ProjectileRenderer {
         batch.setTransformMatrix(new com.badlogic.gdx.math.Matrix4(previous)
                 .translate(SpritePlacer.toSpriteSpace(x), SpritePlacer.toSpriteSpace(y), 0f)
                 .scale(scale, scale, 1f));
+        // CENTRED on the shot's position, in x as well as in y.
+        //
+        // x used to be left at the art's own origin, which for these effect PAMs is the LEFT EDGE of
+        // the box rather than its middle -- unlike a plant or a zombie, which are authored centred on
+        // their canvas, and which is why nothing else needed this. The shot was therefore drawn half a
+        // box to the right of where the model says it is: a fraction of a pea for a pea, half a tile
+        // for a wide effect box. That is why Rotobaga's rutabagas came out beside the plant instead of
+        // out of it, and why making the art bigger pushed them further out still.
+        //
+        // Self-cancelling for art that IS authored centred (bounds.x is then -width/2), so this is a
+        // correction for both conventions rather than a second guess about which one applies.
         sprite.draw(batch, clip, views.gdx.sprite.ClipMap.sample(sprite, clip, phase),
-                0f, bounds.y + bounds.height / 2f, true);
+                -(bounds.x + bounds.width / 2f), bounds.y + bounds.height / 2f, true);
         batch.setTransformMatrix(previous);
 
         lastX.put(projectile, lawn.worldX(modelX));

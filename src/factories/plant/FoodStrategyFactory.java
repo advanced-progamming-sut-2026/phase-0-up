@@ -8,9 +8,11 @@ import models.entities.plants.FoodStrategies.BurstShootStrategy;
 import models.entities.plants.FoodStrategies.CompositePlantFoodStrategy;
 import models.entities.plants.FoodStrategies.DestroyZombiesStrategy;
 import models.entities.plants.FoodStrategies.ElectricThornsStrategy;
+import models.entities.plants.FoodStrategies.SquashLeapStrategy;
 import models.entities.plants.FoodStrategies.GiantPeaStrategy;
 import models.entities.plants.FoodStrategies.GrantArmorStrategy;
 import models.entities.plants.FoodStrategies.HomingBarrageStrategy;
+import models.entities.plants.FoodStrategies.HypnoGargantuarStrategy;
 import models.entities.plants.FoodStrategies.InstantArmStrategy;
 import models.entities.plants.FoodStrategies.InstantGrowing;
 import models.entities.plants.FoodStrategies.InstantSunProductionStrategy;
@@ -25,6 +27,7 @@ import models.entities.plants.FoodStrategies.MeleeFlurryStrategy;
 import models.entities.plants.FoodStrategies.MoveLaneZombiesStrategy;
 import models.entities.plants.FoodStrategies.MultiDisarmStrategy;
 import models.entities.plants.FoodStrategies.PlantFoodStrategy;
+import models.entities.plants.FoodStrategies.PlasmaOrbStrategy;
 import models.entities.plants.FoodStrategies.RandomHypnotizeStrategy;
 import models.entities.plants.FoodStrategies.ResetLifespanStrategy;
 import models.entities.plants.FoodStrategies.SpawnClonesStrategy;
@@ -64,8 +67,10 @@ public final class FoodStrategyFactory {
             case GIANT_PEA_BURST: return new GiantPeaStrategy(value);
             case LANE_FREEZE: return new LaneFreezeStrategy(value);
             case LANE_CLEAR: return new LaneClearStrategy(value);
+            case PLASMA_ORB: return new PlasmaOrbStrategy(value);
             case RANDOM_HYPNOTIZE: return new RandomHypnotizeStrategy(value);
             case DESTROY_RANDOM: return new DestroyZombiesStrategy(value, true);
+            case SQUASH_LEAP: return new SquashLeapStrategy(value);
             case PULL_UNDERWATER: return new DestroyZombiesStrategy(value, false);
             case EXPLOSIVE_BULB_BURST: return new BowlingBulbBurstStrategy(value);
             case ELECTRIC_THORNS: return new ElectricThornsStrategy(value);
@@ -79,6 +84,7 @@ public final class FoodStrategyFactory {
 
     private static PlantFoodStrategy supportStrategyFor(PlantFoodType type, int value) {
         switch (type) {
+            case HYPNO_GARGANTUAR: return new HypnoGargantuarStrategy();
             case MELEE_FLURRY: return new MeleeFlurryStrategy(value);
             case LOCAL_AOE_ATTACK: return new LocalAoeAttackStrategy(value);
             case MAP_WIDE_FREEZE: return new MapWideFreezeStrategy(value);

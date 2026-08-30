@@ -377,6 +377,12 @@ public class InputRouter {
             new ToggleSeedCommand(ToggleAction.ADD, plantName , gameSession, plantMenuRenderer).execute();
             return true;
         }
+        else if (SeedSelectionRegex.IMITATE_PLANT.matches(input)){
+            String plantName = SeedSelectionRegex.IMITATE_PLANT.getGroup(input, "type");
+            new ToggleSeedCommand(ToggleAction.IMITATE, plantName, gameSession, plantMenuRenderer)
+                    .execute();
+            return true;
+        }
         else if(SeedSelectionRegex.REMOVE_PLANT.matches(input)){
             String plantName = SeedSelectionRegex.REMOVE_PLANT.getGroup(input, "type");
             new ToggleSeedCommand(ToggleAction.REMOVE , plantName , gameSession, plantMenuRenderer).execute();

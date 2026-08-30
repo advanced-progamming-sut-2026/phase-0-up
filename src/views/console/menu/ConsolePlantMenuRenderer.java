@@ -151,4 +151,19 @@ public class ConsolePlantMenuRenderer implements PlantMenuRenderer {
     public void seedPinnedByMode(String plantName){
         OutputHandler.showError("'" + plantName + "' is pinned to your seed bar by this level's rules -- "
                 + "it isn't coming off.");}
+
+    @Override
+    public void imitaterNeedsTarget(){
+        OutputHandler.showError("The Imitater has to copy somebody. Try \"imitate plant -t <plant>\" "
+                + "to bring a second packet of one you already picked.");}
+
+    @Override
+    public void imitaterAlreadyUsed(String copying){
+        OutputHandler.showError("Your Imitater is already dressed up as '" + copying + "'. "
+                + "There's only one of him!");}
+
+    @Override
+    public void successfulImitate(String plantName){
+        OutputHandler.showSuccess("The Imitater squeezes into a '" + plantName + "' costume -- "
+                + "that's two packets of him on the bar.");}
 }

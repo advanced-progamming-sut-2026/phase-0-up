@@ -68,7 +68,25 @@ public class HealthComponent {
     }
 
     public boolean isDead() {
-        return layers.isEmpty() || getTotalHP() <= 0;
+        return layers.isEmpty() || getTotalHP() <= 0 || !hasBaseBody();
+    }
+
+    // The body is the zombie; armor is only what it is wearing.
+    //
+    // Normal damage peels from the top down, so the body is always the LAST layer to go and the stack
+    // empties with it. Poison does not: it seeps past every layer straight to the body, so it could
+    // finish the zombie inside the cone and leave the cone standing there with HP of its own. The
+    // total was still above zero, so isDead() said no -- and the body layer was gone, so applyToBaseBody
+    // then found nothing to damage and the poison could never finish the job. A Goo Peashooter emptied
+    // a Conehead and the Conehead kept walking, permanently unkillable by the plant that had already
+    // killed it.
+    private boolean hasBaseBody() {
+        for (HealthLayer layer : layers) {
+            if (layer.getType() == ArmorType.BASE_BODY) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // The plant credited with this zombie's death (the last one to damage it), or null if only

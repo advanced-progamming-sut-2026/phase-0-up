@@ -8,11 +8,29 @@ public class SeedPacket {
     private long lastPlantedTick;
     private boolean isBoosted;
 
+    // Whether this packet is an Imitater wearing another plant's coat.
+    //
+    // The Imitater plants nothing of its own -- picking it is picking a SECOND packet of something you
+    // already brought, with its own recharge. So the copy carries the copied plant's name, because that
+    // is what it plants and what it costs, and this flag is the only thing that distinguishes it: it is
+    // what lets two packets of one plant sit on the bar without one of them looking like a mistake, and
+    // what tells "remove the Imitater" apart from "remove the Peashooter".
+    private final boolean imitated;
+
     public SeedPacket(String plantType, int cooldownDuration) {
+        this(plantType, cooldownDuration, false);
+    }
+
+    public SeedPacket(String plantType, int cooldownDuration, boolean imitated) {
         this.plantType = plantType;
         this.cooldownDuration = cooldownDuration;
         this.lastPlantedTick = -1;
         this.isBoosted = false;
+        this.imitated = imitated;
+    }
+
+    public boolean isImitated() {
+        return imitated;
     }
 
     public boolean isBoosted() {

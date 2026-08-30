@@ -78,17 +78,95 @@ public final class PlantStages {
         return sprite.hasClip(base) ? base : null;
     }
 
+    // The clip for a plant that has been STACKED this many deep, or null if there is no such clip.
+    //
+    // Pea Pod is the only one of these: it is a single plant carrying up to five heads, and the dump
+    // draws all five -- "idle" through "idle5", "attack" through "attack 5". The head count, not a
+    // cycle, is what chooses between them, which is why this is separate from idleVariants: a one-headed
+    // pod alternating onto "idle2" is showing the player a head that is not there.
+    //
+    // Both spellings are tried because the dump uses both in the SAME animation: its idles run the
+    // number straight on and its attacks separate it with a space.
+    public static String stacked(EntitySprite sprite, String base, int heads) {
+        if (sprite == null || base == null || heads <= 1) {
+            return null;
+        }
+        for (String candidate : new String[] {base + heads, base + " " + heads, base + "_" + heads}) {
+            if (sprite.hasClip(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    // The clip a plant plays while it acts: a swing, a shot, a bloom.
+    //
+    // `variant` is the form of the action the model chose (Kernel-pult lobs a kernel or, on a roll,
+    // stunning butter, and the art has a separate swing for each); `heads` is how many a stacking plant
+    // is carrying, which takes priority -- "attack 3" is a Pea Pod with three heads firing, and no
+    // ordinary shooter has such a clip to be caught by this.
+    //
+    // "bite" before "special": Chomper's action clip is `bite` and it has no `attack` at all, while its
+    // `special` is the two-second gulp it plays when it swallows something whole. Falling through to
+    // `special` made every ordinary chomp look like the swallow. Nothing that uses `special` as its
+    // action (Sunflower's bloom) has a `bite`, so this is safe.
+    public static String actionClip(EntitySprite sprite, int stage, int variant, int heads,
+                                    boolean boosted) {
+        String stacked = stacked(sprite, "attack", heads);
+        if (stacked != null) {
+            return stacked;
+        }
+        String upgraded = boosted ? boosted(sprite, "attack") : null;
+        if (upgraded != null) {
+            return upgraded;
+        }
+        // "special" is numbered too, for a plant whose action IS its special: Bowling Bulb rolls a cyan,
+        // a blue or an orange bulb and the art is `special`, `special2`, `special3`. It has no `attack`
+        // of any kind, so asking only for a numbered attack found nothing and it stood still.
+        return variant > 0
+                ? clip(sprite, stage, "attack" + (variant + 1), "special" + (variant + 1),
+                        "attack", "shooting", "special")
+                : clip(sprite, stage, "attack", "shooting", "bite", "special");
+    }
+
+    // The permanently-upgraded twin of a clip, for a plant the dump draws in two states for good.
+    //
+    // Cactus is the one: its plant food is not a burst, it is an upgrade it keeps for the rest of the
+    // level, and the art ships a whole second set for afterwards -- idle_plantfood, idle_plantfood2,
+    // idle_plantfood3, attack_plantfood. A boosted Cactus was drawn in its unboosted pose, so the one
+    // visible sign that the upgrade had happened was that its spikes went through everything.
+    public static String boosted(EntitySprite sprite, String base) {
+        if (sprite == null || base == null) {
+            return null;
+        }
+        String name = base + BOOST_SUFFIX;
+        return sprite.hasClip(name) ? name : null;
+    }
+
+    private static final String BOOST_SUFFIX = "_plantfood";
+
     // Every resting clip this plant has right now, in the order they should be cycled.
     //
     // A list rather than one name because most of these plants ship two or more idle variants and the
     // real game alternates them -- it is what makes a plant blink rather than sway forever on one loop.
     // Never empty: the last entry is whatever the animation's first clip happens to be.
     public static List<String> idleVariants(EntitySprite sprite, int growthStage, int level) {
+        return idleVariants(sprite, growthStage, level, false);
+    }
+
+    // boosted asks for the permanently-upgraded set first, where the art has one. See boosted().
+    public static List<String> idleVariants(EntitySprite sprite, int growthStage, int level,
+                                            boolean boosted) {
         List<String> found = new ArrayList<>();
         if (sprite == null) {
             return List.of(ClipMap.IDLE);
         }
-        addStaged(sprite, growthStage, found);
+        if (boosted) {
+            addBoosted(sprite, found);
+        }
+        if (found.isEmpty()) {
+            addStaged(sprite, growthStage, found);
+        }
         if (found.isEmpty()) {
             addLevelled(sprite, level, found);
         }
@@ -102,6 +180,18 @@ public final class PlantStages {
             addLastResort(sprite, found);
         }
         return found.isEmpty() ? List.of(ClipMap.IDLE) : found;
+    }
+
+    // idle_plantfood, idle_plantfood2, idle_plantfood3 -- the resting set of a permanently upgraded
+    // plant, cycled like any other. Stops at the first gap, so a plant with none adds nothing.
+    private static void addBoosted(EntitySprite sprite, List<String> into) {
+        for (int v = 1; v <= MAX_VARIANT; v++) {
+            String candidate = ClipMap.IDLE + BOOST_SUFFIX + (v == 1 ? "" : String.valueOf(v));
+            if (!sprite.hasClip(candidate)) {
+                return;
+            }
+            into.add(candidate);
+        }
     }
 
     // idle_stageN / idle2_stageN, and Doom-shroom's stageN_idle / stageN_idle2.

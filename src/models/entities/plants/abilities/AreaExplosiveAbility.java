@@ -28,8 +28,22 @@ public abstract class AreaExplosiveAbility extends PlantAbility {
         this.explosionColRadius += extraColRadius;
     }
 
+    // Whether this blast scorches the ground it stood on. Doom-shroom only: clearing nearly the whole
+    // board is supposed to cost you the tile, and without it the biggest bomb in the game was strictly
+    // better than every other one.
+    private boolean leavesCrater;
+
+    public void setLeavesCrater(boolean leavesCrater) {
+        this.leavesCrater = leavesCrater;
+    }
+
     protected void detonate(Plant owner, GameSession gameSession) {
         AreaAttack.strike(gameSession, owner, explosionRowRadius, explosionColRadius, damage, element);
+
+        // Before the plant is consumed, while its cell is still findable by its own coordinates.
+        if (leavesCrater) {
+            scorchOwnTile(owner, gameSession);
+        }
 
         // Announce the blast. Every exploding plant funnels through here, so one line covers Cherry
         // Bomb, Jalapeno, Doom-shroom, Potato Mine and the rest.
@@ -44,5 +58,29 @@ public abstract class AreaExplosiveAbility extends PlantAbility {
         if (owner.getHealth() != null) {
             owner.getHealth().takeDamage(owner.getHealth().getMaxHp());
         }
+    }
+
+    // Burns the tile the bomb stood on. Cell.isPlantable() already refuses any tile carrying a terrain
+    // that says it is unplantable, so dropping a CraterTerrain on the cell is the whole rule.
+    //
+    // Guarded against doubling up, because a crater on a crater would have to be removed twice if the
+    // level ever gains a way to clear one.
+    private void scorchOwnTile(Plant owner, GameSession gameSession) {
+        int row = owner.getY();
+        if (row < 0 || row >= utils.Constants.BOARD_ROWS) {
+            return;
+        }
+        models.map.Cell cell = gameSession.getMap().getRow(row).cellAt((int) owner.getX());
+        if (cell == null) {
+            return;
+        }
+        for (models.map.Terrains.Terrain terrain : cell.getTerrain()) {
+            if (terrain instanceof models.map.Terrains.CraterTerrain) {
+                return;
+            }
+        }
+        cell.addTerrain(new models.map.Terrains.CraterTerrain());
+        gameSession.reportEvent("The blast leaves a smoking crater at ("
+                + (int) owner.getX() + ", " + row + ") -- nothing will grow there now.");
     }
 }

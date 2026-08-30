@@ -88,6 +88,7 @@ public final class CollectibleRenderer {
     }
 
     public void draw(Batch batch, GameSession session, float delta, float alpha) {
+        drawPlantFood(batch, session, delta);
         EntitySprite sprite = sprites.get(SUN_SPRITE);
         java.util.Set<Sun> live = new java.util.HashSet<>(session.getActiveSuns());
         fallTime.keySet().retainAll(live);
@@ -169,6 +170,108 @@ public final class CollectibleRenderer {
 
             drawSun(batch, sun, sprite, x, y, age, delta);
         }
+    }
+
+    // ---- plant food ------------------------------------------------------------------------------
+
+    // The pickup a glowing zombie leaves behind. Its own art in the dump -- EFFECTS/PLANTFOOD_PICKUP,
+    // a 2s `idle` loop -- so this is the shipped object rather than a green sun.
+    private static final String PLANT_FOOD_SPRITE = "PLANTFOOD_PICKUP";
+
+    // Drawn a little under the tile's centre, because the art is tall and centring it puts the pod
+    // over the head of anything standing on that tile rather than on the ground beside it.
+    private static final float PLANT_FOOD_SIT_CELLS = 0.12f;
+
+    // It drifts. A pickup that sits perfectly still on a busy lawn is genuinely hard to notice, and
+    // this is the cheapest thing that makes the eye catch it.
+    private static final float BOB_CELLS = 0.10f;
+    private static final float BOB_HZ = 0.75f;
+
+    // And it glows: the whole sprite redrawn additively over itself, pulsing. Not a tint -- the art is
+    // already bright green, and tinting it can only make it darker. Additive is what makes it read as
+    // something giving off light on a lawn in full sun.
+    private static final float GLOW_MIN = 0.18f;
+    private static final float GLOW_MAX = 0.62f;
+    private static final float GLOW_HZ = 1.4f;
+
+    // Seconds each pickup has been on screen -- the bob, the glow pulse and the expiry blink all want
+    // a smooth clock rather than the model's 10 Hz ticks. Pruned every frame, like the suns'.
+    private final java.util.Map<models.entities.collectibles.PlantFood, Float> plantFoodAge =
+            new java.util.IdentityHashMap<>();
+    private final java.util.Map<models.entities.collectibles.PlantFood, float[]> plantFoodDrawn =
+            new java.util.IdentityHashMap<>();
+
+    private void drawPlantFood(Batch batch, GameSession session, float delta) {
+        java.util.List<models.entities.collectibles.PlantFood> pickups =
+                session.getActivePlantFoods();
+        java.util.Set<models.entities.collectibles.PlantFood> live =
+                java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        live.addAll(pickups);
+        plantFoodAge.keySet().retainAll(live);
+        plantFoodDrawn.keySet().retainAll(live);
+        if (pickups.isEmpty()) {
+            return;
+        }
+
+        EntitySprite sprite = sprites.get(PLANT_FOOD_SPRITE);
+        if (sprite == null || !sprite.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(sprite, "idle", "animation");
+
+        for (models.entities.collectibles.PlantFood pickup
+                : new java.util.ArrayList<>(pickups)) {
+            if (pickup.isRemovable()) {
+                continue;   // collected or gone stale; swept at the end of the tick
+            }
+            float age = plantFoodAge.merge(pickup, delta, Float::sum);
+            float x = lawn.centerX(pickup.tileColumn());
+            float y = lawn.centerY(pickup.tileRow())
+                    - PLANT_FOOD_SIT_CELLS * lawn.cellHeight()
+                    + BOB_CELLS * lawn.cellHeight()
+                            * (float) Math.sin(age * BOB_HZ * 2 * Math.PI);
+
+            // Hit-tested against where it is DRAWN, exactly as a sun is: it bobs, so the tile centre
+            // and the sprite are never quite the same point.
+            plantFoodDrawn.put(pickup, new float[] {x, y});
+
+            float stateTime = ClipMap.sample(sprite, clip, clocks.advance(pickup, clip, delta));
+            float previousColor = batch.getPackedColor();
+
+            float blink = expiryBlink(pickup.getRemainingTicks(), age);
+            com.badlogic.gdx.graphics.Color tint = batch.getColor();
+            batch.setColor(tint.r, tint.g, tint.b, tint.a * blink);
+            SpritePlacer.drawCentred(batch, sprite, clip, stateTime, x, y, true);
+
+            // The glow goes on top, and fades out with the blink -- a pickup that is about to vanish
+            // should dim as a whole rather than keep a bright halo while its body flickers.
+            float pulse = 0.5f + 0.5f * (float) Math.sin(age * GLOW_HZ * 2 * Math.PI);
+            float glow = (GLOW_MIN + (GLOW_MAX - GLOW_MIN) * pulse) * blink;
+            SpritePlacer.beginAdditive(batch);
+            batch.setColor(glow, glow, glow, 1f);
+            SpritePlacer.drawCentred(batch, sprite, clip, stateTime, x, y, true);
+            SpritePlacer.endAdditive(batch);
+
+            batch.setPackedColor(previousColor);
+        }
+    }
+
+    // The plant food drawn under this world point, or null. Same generous radius as a sun's, and for
+    // the same reason: it is a small target on a busy board.
+    public models.entities.collectibles.PlantFood plantFoodAt(float worldX, float worldY) {
+        float radius = lawn.cellWidth() * 0.55f;
+        for (java.util.Map.Entry<models.entities.collectibles.PlantFood, float[]> entry
+                : plantFoodDrawn.entrySet()) {
+            if (entry.getKey().isRemovable()) {
+                continue;
+            }
+            float dx = worldX - entry.getValue()[0];
+            float dy = worldY - entry.getValue()[1];
+            if (dx * dx + dy * dy <= radius * radius) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     private void drawSun(Batch batch, Sun sun, EntitySprite sprite,
@@ -261,7 +364,14 @@ public final class CollectibleRenderer {
     private static final float BLINK_MIN_ALPHA = 0.2f;
 
     private static float expiryBlink(Sun sun, float age) {
-        float remaining = sun.getRemainingTicks() / (float) utils.Constants.TICKS_PER_SECOND;
+        return expiryBlink(sun.getRemainingTicks(), age);
+    }
+
+    // Takes the tick count rather than the collectible, so the plant food gets the same warning the
+    // sun does. It is the more important of the two: a sun the player misses costs them 25 sun, while
+    // a plant food is one of at most three and has no other source on the lawn.
+    private static float expiryBlink(int remainingTicks, float age) {
+        float remaining = remainingTicks / (float) utils.Constants.TICKS_PER_SECOND;
         if (remaining > BLINK_LEAD_SECONDS) {
             return 1f;
         }

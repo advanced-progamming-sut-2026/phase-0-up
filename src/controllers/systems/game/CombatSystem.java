@@ -285,17 +285,31 @@ public class CombatSystem {
         }
     }
 
-    // A glowing zombie hands the player a plant food as it dies. Whether it glows was settled at spawn
-    // (ZombieFactory, 5%). The player can hold three at most, so the extra is lost on a full stock --
-    // the message still prints, as the spec asks for it whenever a glowing zombie dies, and simply
-    // reports the unchanged total.
+    // A glowing zombie LEAVES a plant food on the lawn as it dies. Whether it glows was settled at
+    // spawn (ZombieFactory, 5%).
+    //
+    // It used to be paid straight into the counter here. Now it is dropped where the zombie fell and
+    // has to be picked up -- clicked in the GUI, `collect plant-food -l (x, y)` in the terminal -- and
+    // it goes stale after PlantFood.EXPIRE_TICKS if nobody does. The credit therefore happens in
+    // PlantFood.applyEffect, not here.
+    //
+    // The sentence below is UNCHANGED and still fires on the death, not on the pickup: it is quoted
+    // verbatim from the project document (the misspelling "dropeed" is the document's), and the
+    // document asks for it whenever a glowing zombie dies. It reports the count as it stands at that
+    // moment, which is now the count BEFORE the pickup -- the second line is what tells the player
+    // there is something to go and get.
     private void dropPlantFood(GameSession session, Zombie zombie, List<Result> events) {
         if (!zombie.isGlowing()) {
             return;
         }
-        session.increasePlantFoodCount(1);
+        models.entities.collectibles.PlantFood dropped = new models.entities.collectibles.PlantFood(
+                zombie.getMovement().getPositionX(), zombie.getMovement().getPositionY());
+        session.addPlantFood(dropped);
+
         events.add(new Result(true, "The glowing zombie dropeed a plant food; you have "
                 + session.getPlantFoodCount() + " plant foods now."));
+        events.add(new Result(true, "Plant food is glowing on the lawn at ("
+                + dropped.tileColumn() + ", " + dropped.tileRow() + ") -- grab it before it fades!"));
     }
 
     // Hands over whatever this zombie walked on carrying. The 10% roll itself lives in ZombieFactory

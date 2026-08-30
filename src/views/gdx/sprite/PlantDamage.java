@@ -43,11 +43,35 @@ public final class PlantDamage {
 
     private PlantDamage() { }
 
-    // How many damaged looks this plant actually has, counting clips and part swaps and taking
-    // whichever offers more. A plant with damage clips but no part swaps still degrades, just by
+    // Plants whose numbered IDLE clips are damage stages rather than blink variants.
+    //
+    // There is no way to tell the two apart from the art. Peashooter's idle2 is the same plant taking
+    // another breath; Pumpkin's idle2 is the same shell with a piece out of it, and idle3 is one good
+    // bite from gone. Cycling those -- which is what happens to every other plant's idles -- made a
+    // brand-new Pumpkin flicker between intact and nearly broken twice a second.
+    private static final java.util.Set<String> IDLE_IS_DAMAGE = java.util.Set.of("pumpkin");
+
+    public static boolean idleIsDamage(String plantName) {
+        return IDLE_IS_DAMAGE.contains(plantName == null ? "" : plantName.toLowerCase());
+    }
+
+    // How many damaged looks this plant actually has, counting clips, part swaps and staged idles, and
+    // taking whichever offers most. A plant with damage clips but no part swaps still degrades, just by
     // expression alone -- which is what every plant did before the swaps existed.
-    public static int stageCount(EntitySprite sprite, String plantName) {
-        return Math.max(clipStages(sprite), partStages(sprite, plantName));
+    //
+    // boosted matters for the staged-idle plants: a Pumpkin that has eaten plant food is a reinforced
+    // Pumpkin and the dump draws FOUR states of it rather than three.
+    public static int stageCount(EntitySprite sprite, String plantName, boolean boosted) {
+        return Math.max(idleStages(sprite, plantName, boosted),
+                Math.max(clipStages(sprite), partStages(sprite, plantName)));
+    }
+
+    // One fewer than the number of idle looks: the first is "unhurt".
+    private static int idleStages(EntitySprite sprite, String plantName, boolean boosted) {
+        if (!idleIsDamage(plantName)) {
+            return 0;
+        }
+        return Math.max(0, PlantStages.idleVariants(sprite, 0, 1, boosted).size() - 1);
     }
 
     // 0 = unhurt, 1..stages = progressively more wrecked.

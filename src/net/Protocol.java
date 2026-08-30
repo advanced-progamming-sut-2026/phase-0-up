@@ -20,7 +20,7 @@ public final class Protocol {
     // is not enough. Bump this and both ends have to be restarted, which is the point.
     // v3 adds MatchSnapshot.seedCooldowns -- the plant player's recharge wipes, which a mirror cannot
     // measure for itself because the field they are derived from is only ever written by the server.
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
 
     public static final int DEFAULT_PORT = 7777;
 

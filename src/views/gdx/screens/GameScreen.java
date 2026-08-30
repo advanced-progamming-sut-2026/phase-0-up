@@ -1102,18 +1102,19 @@ public final class GameScreen extends ScreenAdapter {
             context.toasts().error("Nothing to restart.");
             return;
         }
-        java.util.List<String> loadout = new java.util.ArrayList<>();
-        for (models.game.SeedPacket packet : session.getSelectedSeeds()) {
-            loadout.add(packet.getPlantType());
-        }
+        // Copied packet by packet rather than name by name: an imitated packet is a second copy of a
+        // plant already on the bar, and rebuilding the loadout from names alone turned it into an
+        // ordinary duplicate that "remove the Imitater" could no longer find.
+        java.util.List<models.game.SeedPacket> loadout =
+                new java.util.ArrayList<>(session.getSelectedSeeds());
 
         GameSession fresh = new GameSession(profile, level);
-        for (String plantName : loadout) {
+        for (models.game.SeedPacket packet : loadout) {
             models.templates.PlantTemplate template =
-                    utils.registry.PlantRegistry.getInstance().getTemplateByName(plantName);
+                    utils.registry.PlantRegistry.getInstance().getTemplateByName(packet.getPlantType());
             if (template != null) {
-                fresh.addSeed(new models.game.SeedPacket(plantName,
-                        (int) Math.round(template.getRecharge())));
+                fresh.addSeed(new models.game.SeedPacket(packet.getPlantType(),
+                        (int) Math.round(template.getRecharge()), packet.isImitated()));
             }
         }
         context.appSession().setCurrentGameSession(fresh);

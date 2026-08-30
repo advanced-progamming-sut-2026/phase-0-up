@@ -51,6 +51,15 @@ public abstract class PlantAbility {
         return false;
     }
 
+    // Whether this ability's cooldown has run out, so it would act the moment its trigger allowed it.
+    //
+    // For the view: a plant that takes nine seconds to build a shot is not resting for nine seconds,
+    // it is CHARGING, and Citron's art ships a seven-second `charge` clip that nothing could ask for
+    // without this.
+    public boolean isReady() {
+        return cooldownTimer <= 0;
+    }
+
     // Whether a plant-food boost handed to THIS ability still has work left to do -- shots queued, a
     // flurry running, a ball waiting to roll. Abilities whose boost lands the instant it is given
     // (an armour grant, a lane freeze) are never busy, and the default says so.

@@ -7,6 +7,7 @@ import models.entities.plants.abilities.DeathExplosiveAbility;
 import models.entities.plants.abilities.DelayedExplosiveAbility;
 import models.entities.plants.abilities.FreezeOnContactAbility;
 import models.entities.plants.abilities.GraveBusterAbility;
+import models.entities.plants.abilities.SquashAbility;
 import models.entities.plants.abilities.HypnotizeOnEatenAbility;
 import models.entities.plants.abilities.HypnotizeRandomTargetAbility;
 import models.entities.plants.abilities.GrapeshotAbility;
@@ -27,6 +28,7 @@ import models.entities.plants.abilities.ReflectDamageAbility;
 import models.entities.plants.abilities.RepelZombieAbility;
 import models.entities.plants.abilities.ShootProjectileAbility;
 import models.entities.plants.abilities.ShootDirection;
+import models.entities.plants.abilities.TangleKelpAbility;
 import models.entities.plants.abilities.TargetingPriority;
 import models.entities.plants.abilities.WarmthAbility;
 import models.entities.projectiles.Element;
@@ -70,8 +72,12 @@ public final class PlantAbilityFactory {
             case DELAYED_EXPLOSIVE: return new DelayedExplosiveAbility(actionIntervalTicks,
                     TriggerResolver.forContact(), scalarDamage, params.getExplosionRowRadius(),
                     params.getExplosionColRadius(), element(params));
-            case INSTANT_EXPLOSIVE: return new InstantExplosiveAbility(scalarDamage,
-                    params.getExplosionRowRadius(), params.getExplosionColRadius(), element(params));
+            case GRAB_UNDERWATER: return new TangleKelpAbility(actionIntervalTicks,
+                    TriggerResolver.forContact(), scalarDamage, params.getExplosionRowRadius(),
+                    params.getExplosionColRadius(), element(params));
+            case INSTANT_EXPLOSIVE: return instantExplosive(params, scalarDamage);
+            case SQUASH_LEAP: return new SquashAbility(actionIntervalTicks,
+                    TriggerResolver.forContact(), scalarDamage, element(params));
             case GRAPESHOT: return new GrapeshotAbility(scalarDamage,
                     params.getExplosionRowRadius(), params.getExplosionColRadius(), element(params),
                     Constants.GRAPESHOT_BASE_BOUNCES);
@@ -80,6 +86,24 @@ public final class PlantAbilityFactory {
             case MELEE_ATTACK: return melee(params, actionIntervalTicks, damageBuff);
             default: return null;
         }
+    }
+
+    // Split out only because of the crater. A bomb that scorches its own tile is one boolean in the
+    // data (Doom-shroom's), and the ability has to be built before it can be told.
+    private static PlantAbility instantExplosive(AbilityParams params, int scalarDamage) {
+        InstantExplosiveAbility ability = new InstantExplosiveAbility(scalarDamage,
+                params.getExplosionRowRadius(), params.getExplosionColRadius(), element(params));
+        ability.setLeavesCrater(params.isLeavesCrater());
+        return ability;
+    }
+
+    // Split out for the same reason instantExplosive is: whether the plant is used up by its own thaw
+    // is one boolean in the data, and the ability has to be built before it can be told.
+    private static PlantAbility warmth(AbilityParams params, int actionIntervalTicks) {
+        WarmthAbility ability = new WarmthAbility(actionIntervalTicks, TriggerResolver.always(),
+                params.getRowRadius(), params.getColRadius());
+        ability.setConsumedOnUse(params.isConsumedOnUse());
+        return ability;
     }
 
     private static PlantAbility buildSupport(AbilityType type, AbilityParams params,
@@ -95,8 +119,7 @@ public final class PlantAbilityFactory {
             case MAGNET: return new MagnetAbility(actionIntervalTicks, TriggerResolver.forGlobal(), params.getRange());
             case HYPNOTIZE_ON_EATEN: return new HypnotizeOnEatenAbility();
             case INSTANT_FREEZE: return new InstantFreezeAbility(params.getFreezeDurationTicks());
-            case WARMTH: return new WarmthAbility(actionIntervalTicks, TriggerResolver.always(),
-                    params.getRowRadius(), params.getColRadius());
+            case WARMTH: return warmth(params, actionIntervalTicks);
             case GRAVE_BUSTER: return new GraveBusterAbility();
             case MINT_FAMILY_BOOST: return new MintFamilyBoostAbility();
             case MODIFIER_UTILITY: return null;

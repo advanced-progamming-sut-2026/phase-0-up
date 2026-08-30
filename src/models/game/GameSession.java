@@ -22,6 +22,7 @@ public class GameSession {
     private GameMap map;
     private int sunAmount;
     private List<Sun> activeSuns;
+    private final List<models.entities.collectibles.PlantFood> activePlantFoods = new ArrayList<>();
     private List<SeedPacket> selectedSeeds;
     private int plantFoodCount;
     private long timeTicks;
@@ -425,14 +426,48 @@ public class GameSession {
     public GameMode getMode() { return mode; }
     // Ignoring case/space: a mode-pinned seed carries the level file's casing, not the player's.
     public SeedPacket getSelectedSeed(String plantType) {
+        // The first READY one, falling back to the first that matches at all.
+        //
+        // Two packets of one plant is exactly what the Imitater is for, and returning the first match
+        // regardless threw the second one away: with a Peashooter and an imitated Peashooter on the
+        // bar, the answer was always the same card, so the player who paid for a spare was told
+        // "still recharging" while it sat there ready. The fallback keeps the refusal honest when
+        // neither is ready -- it still names a real packet with a real countdown.
+        SeedPacket first = null;
         String wanted = plantType == null ? null : plantType.trim();
         for (SeedPacket seed : selectedSeeds) {
             if (wanted != null && seed.getPlantType() != null
                     && seed.getPlantType().trim().equalsIgnoreCase(wanted)) {
+                if (first == null) {
+                    first = seed;
+                }
+                if (seed.isReady(timeTicks)) {
+                    return seed;
+                }
+            }
+        }
+        return first;
+    }
+
+    // The one packet on the bar that is an Imitater's copy, or null while the Imitater is unused.
+    public SeedPacket getImitatedSeed() {
+        for (SeedPacket seed : selectedSeeds) {
+            if (seed.isImitated()) {
                 return seed;
             }
         }
         return null;
+    }
+
+    // Takes the Imitater's copy back off the bar. Named separately from removeSeed because the copy
+    // answers to the plant it is imitating, so "remove Peashooter" cannot mean this one.
+    public boolean removeImitatedSeed() {
+        SeedPacket imitated = getImitatedSeed();
+        if (imitated == null) {
+            return false;
+        }
+        selectedSeeds.remove(imitated);
+        return true;
     }
 
     public boolean isSeedSelected(String plantType) { return getSelectedSeed(plantType) != null; }
@@ -446,7 +481,19 @@ public class GameSession {
     }
 
     public boolean removeSeed(String plantType){
+        // The player's OWN packet first when both it and an imitated copy are on the bar: "remove
+        // Peashooter" is about the Peashooter you picked, and the copy is taken off by name as the
+        // Imitater (see removeImitatedSeed).
         SeedPacket seed = getSelectedSeed(plantType);
+        if (seed != null && seed.isImitated()) {
+            for (SeedPacket other : selectedSeeds) {
+                if (!other.isImitated() && other.getPlantType() != null
+                        && other.getPlantType().trim().equalsIgnoreCase(plantType.trim())) {
+                    seed = other;
+                    break;
+                }
+            }
+        }
         if(seed == null){
             return false;
         }
@@ -466,6 +513,19 @@ public class GameSession {
     public void increaseSunAmount(int amount) { sunAmount += amount; }
     public void decreaseSunAmount(int amount) {sunAmount -= amount; }
     public void addSun(Sun sun) { activeSuns.add(sun); }
+
+    // Plant food lying on the lawn waiting to be picked up. Its own list rather than a shared
+    // collectible one, for the same reason it is its own class: every rule that touches suns -- the
+    // sky-spawn cadence, the Ra Zombie's theft, the radioactive catch, the snapshot's SUN entities --
+    // reads getActiveSuns() and means suns. Widening that list would make each of them start by
+    // filtering it back down.
+    public List<models.entities.collectibles.PlantFood> getActivePlantFoods() {
+        return activePlantFoods;
+    }
+
+    public void addPlantFood(models.entities.collectibles.PlantFood plantFood) {
+        activePlantFoods.add(plantFood);
+    }
 
     public void increasePlantFoodCount(int amount) {
         plantFoodCount += amount;

@@ -76,6 +76,16 @@ public final class ExplosionEffects {
     private static final int DEFAULT_RADIUS = 1;      // 3x3
     private static final int SUN_BOMB_RADIUS = 2;     // 5x5
 
+    // A Doom-shroom's blast is 4 rows by 9 columns -- effectively the whole board. Drawn as the ordinary
+    // fireball (the dump ships no doom-specific burst), but its FOOTPRINT has to be its own, because the
+    // footprint is what DeathEffects asks when it decides between a corpse and a heap of ash.
+    //
+    // At the default radius of 1 only the zombies within one tile of the mushroom turned to ash and
+    // every other one it killed -- which is nearly all of them -- toppled over as if shot by a pea. The
+    // biggest explosion in the game was the one whose kills did not look explosive.
+    private static final String DOOM_NAME = "Doom-shroom";
+    private static final int DOOM_RADIUS = 9;
+
     private static final class Blast {
         float x;
         float y;
@@ -120,6 +130,19 @@ public final class ExplosionEffects {
         }
     }
 
+    // How far this plant's blast reaches, in cells either side of the centre. Only the ones that differ
+    // from the 3x3 default are named; see DOOM_RADIUS for why getting this wrong is invisible until you
+    // look at what the corpses did.
+    private static int footprintOf(String plant) {
+        if (DOOM_NAME.equalsIgnoreCase(plant)) {
+            return DOOM_RADIUS;
+        }
+        if (SUN_BOMB_NAME.equalsIgnoreCase(plant)) {
+            return SUN_BOMB_RADIUS;
+        }
+        return DEFAULT_RADIUS;
+    }
+
     // Offered every event the model drains. Anything that is not a detonation is ignored, so this can
     // sit alongside the toast overlay reading the same stream.
     public void onEvent(String message) {
@@ -150,11 +173,11 @@ public final class ExplosionEffects {
                 logBlast(col, row);
                 return;
             }
+            blast.radius = footprintOf(plant);
             boolean ownArt = SUN_BOMB_NAME.equalsIgnoreCase(plant);
             if (ownArt) {
                 blast.sprite = SUN_BOMB_SPRITE;
                 blast.clip = SUN_BOMB_CLIP;
-                blast.radius = SUN_BOMB_RADIUS;
                 // Blow up WHERE THE SUN WAS DRAWN, not on the tile it was filed under. A falling sun is
                 // drawn several cells higher than its tile, so the tile is not where the player saw it.
                 float[] drawn = collectibles == null ? null

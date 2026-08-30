@@ -42,6 +42,29 @@ public class PlantRegistry {
         return plantTemplatesById.get(id);
     }
 
+    // The Imitater, or null if this roster has none.
+    //
+    // Found by its ABILITY rather than by its name: it is the one plant whose type is MODIFIER_UTILITY,
+    // the type PlantAbilityFactory deliberately builds nothing for, because picking the Imitater is not
+    // picking a plant at all -- it is picking a second packet of something else. Asked here rather than
+    // spelled out at each of the three call sites (the toggle command, seed selection, the seed bank)
+    // so a rename in plants.json cannot leave two of them believing different things.
+    public PlantTemplate getImitaterTemplate() {
+        for (PlantTemplate template : plantTemplatesByName.values()) {
+            if (template != null
+                    && template.getAbilityType() == models.templates.AbilityType.MODIFIER_UTILITY) {
+                return template;
+            }
+        }
+        return null;
+    }
+
+    public boolean isImitater(String plantName) {
+        PlantTemplate template = getTemplateByName(plantName);
+        return template != null
+                && template.getAbilityType() == models.templates.AbilityType.MODIFIER_UTILITY;
+    }
+
     public Map<String, PlantTemplate> getAllPlantTemplates() {
         return plantTemplatesByName;
     }

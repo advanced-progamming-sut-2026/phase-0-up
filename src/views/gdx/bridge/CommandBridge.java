@@ -81,6 +81,14 @@ public final class CommandBridge {
                 views.gdx.core.AudioManager.SFX_SUN_COLLECT);
     }
 
+    // "collect plant-food -l (x, y)" -- the pickup a glowing zombie left on the lawn. Same shape as
+    // collectSun above, and it borrows the sun's pickup cue: there is no plant-food sound in the
+    // dump, and a collect that makes no noise at all reads as a click that did not register.
+    public boolean collectPlantFood(GridPos at) {
+        return cue(at.isValid() && submit("collect plant-food -l " + at.toCommandArgs()),
+                views.gdx.core.AudioManager.SFX_SUN_COLLECT);
+    }
+
     // "break vase -l (x, y)" -- Vasebreaker. A bare click on a vase, with nothing held.
     public boolean breakVase(GridPos at) {
         return at.isValid() && submit("break vase -l " + at.toCommandArgs());

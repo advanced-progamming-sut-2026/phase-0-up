@@ -110,4 +110,19 @@ public final class GdxPlantMenuRenderer implements PlantMenuRenderer {
     public void seedPinnedByMode(String plantName) {
         toasts.error("'" + plantName + "' is pinned to your seed bar by this level's rules.");
     }
+
+    @Override
+    public void imitaterNeedsTarget() {
+        toasts.error("Pick the plant the Imitater should copy.");
+    }
+
+    @Override
+    public void imitaterAlreadyUsed(String copying) {
+        toasts.error("Your Imitater is already dressed up as '" + copying + "'.");
+    }
+
+    @Override
+    public void successfulImitate(String plantName) {
+        toasts.success("The Imitater squeezes into a '" + plantName + "' costume.");
+    }
 }

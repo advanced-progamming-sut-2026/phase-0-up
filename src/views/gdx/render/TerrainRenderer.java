@@ -244,9 +244,36 @@ public final class TerrainRenderer {
         } else if (terrain instanceof LowSandTerrain) {
             drawHiddenGround(batch, terrain, col, row, delta, LOW_SAND, LOW_SAND_PULSE,
                     LOW_SAND_MARK, LOW_SAND_MARK_CLIP, LOW_SAND_MARK_WIDTH_CELLS, LOW_SAND_MARK_ALPHA);
+        } else if (terrain instanceof models.map.Terrains.CraterTerrain) {
+            drawCrater(batch, col, row);
         } else if (terrain instanceof WaterTerrain) {
             drawWater(batch, col, row, delta);   // a marker on a cell the tide has not flagged
         }
+    }
+
+    // The hole a Doom-shroom leaves. Drawn as a still image rather than through SpriteRegistry: the
+    // dump's CRATER.PAM declares NO clips at all, so there is nothing for the animation player to play
+    // -- the art is the four loose images that PAM references, and the big one is the whole crater.
+    //
+    // Scorched into the ground, so it goes down at the tile's own centre with no lift and no bob. It
+    // never animates and never expires; the tile is simply ruined for the rest of the level.
+    private static final String CRATER_IMAGE = "IMAGE_EFFECTS_CRATER_CRATER_129X131";
+    private static final float CRATER_WIDTH_CELLS = 1.05f;
+
+    private void drawCrater(Batch batch, int col, int row) {
+        com.badlogic.gdx.graphics.g2d.TextureRegion art = assets.region(CRATER_IMAGE);
+        if (art == null) {
+            return;   // the tile is still unplantable; it just has nothing drawn on it
+        }
+        float width = SpritePlacer.toSpriteSpace(CRATER_WIDTH_CELLS * lawn.cellWidth());
+        float height = width * art.getRegionHeight() / (float) art.getRegionWidth();
+        float x = SpritePlacer.toSpriteSpace(lawn.centerX(col)) - width / 2f;
+        float y = SpritePlacer.toSpriteSpace(lawn.centerY(row)) - height / 2f;
+
+        float previous = batch.getPackedColor();
+        batch.setColor(1f, 1f, 1f, 1f);
+        batch.draw(art, x, y, width, height);
+        batch.setPackedColor(previous);
     }
 
     // The front half of an ice block, drawn AFTER the plants and zombies of the lane so whatever is

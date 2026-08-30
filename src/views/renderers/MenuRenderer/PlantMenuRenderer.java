@@ -46,4 +46,17 @@ public interface PlantMenuRenderer {
 
     // Fallback for a mode that pins a seed without marking it forced; "still locked" was plainly wrong.
     void seedPinnedByMode(String plantName);
+
+    // ---- the Imitater ---------------------------------------------------------------------------
+    //
+    // Picking it is two choices, not one: the Imitater, then the plant it copies. A graphical build
+    // makes that a second click; a typed one makes it a second word.
+
+    // Asked for on its own, or asked to copy itself. Either way it still needs a plant to be.
+    void imitaterNeedsTarget();
+
+    // Already spent on the named plant -- there is only one Imitater.
+    void imitaterAlreadyUsed(String copying);
+
+    void successfulImitate(String plantName);
 }

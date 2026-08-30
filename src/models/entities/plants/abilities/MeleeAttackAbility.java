@@ -33,7 +33,40 @@ public class MeleeAttackAbility extends PlantAbility implements Growable {
         this.element = element;
         this.currentStage = 0;
         this.currentAliveTicks = 0;
+
+        // Ready the moment it is planted. PlantAbility starts every ability on a full cooldown, which
+        // for a shooter is right -- it is a firing RATE -- but a melee plant's interval is how long it
+        // spends recovering AFTER a strike. Starting on it meant a Chomper, whose interval is forty
+        // seconds of chewing, stood there doing nothing for forty seconds after being planted while a
+        // zombie ate it. Phat Beet was two seconds late and Bonk Choy a quarter of one.
+        this.cooldownTimer = 0;
     }
+
+    // Ticks spent visibly winding up before the strike lands. Same trade as ShootProjectileAbility's:
+    // the ability still fires once per actionInterval, only the moment within the cycle shifts, and
+    // what it buys is a window for the view to play the swing in.
+    //
+    // Without it these plants had no animation at all. The renderer starts an action clip on the rising
+    // edge of isWindingUp(), and MeleeAttackAbility never reported one -- so Bonk Choy's five punch
+    // clips and Chomper's bite sat in the dump unused while the plants stood still and zombies
+    // silently lost health.
+    private static final int WIND_UP_TICKS = 3;
+    private int windUpRemaining = -1;
+
+    @Override
+    public boolean isWindingUp() {
+        return windUpRemaining >= 0;
+    }
+
+    // Still busy with the last one. For most melee plants this is a fraction of a second and nothing
+    // reads it; for a Chomper it is forty seconds of chewing, which is a whole state of its own and
+    // the art ships a loop for it (`special_idle`). Only true once it has ACTUALLY bitten -- a freshly
+    // planted Chomper is hungry, not chewing.
+    public boolean isRecovering() {
+        return hasStruck && windUpRemaining < 0 && cooldownTimer > 0;
+    }
+
+    private boolean hasStruck;
 
     @Override
     public void update(Plant owner, GameSession gameSession) {
@@ -44,13 +77,35 @@ public class MeleeAttackAbility extends PlantAbility implements Growable {
             currentStage++;
         }
 
+        // The swing started by execute() runs down here, and the damage lands on the tick it ends.
+        if (windUpRemaining > 0) {
+            windUpRemaining--;
+        } else if (windUpRemaining == 0) {
+            windUpRemaining = -1;
+            strike(owner, gameSession);
+        }
+
         updateFlurry(owner, gameSession);
 
         super.update(owner, gameSession);
     }
 
     @Override
+    public boolean canExecute(Plant owner, GameSession gameSession) {
+        if (windUpRemaining >= 0) {
+            return false;   // already mid-swing
+        }
+        return super.canExecute(owner, gameSession);
+    }
+
+    // Begins the swing. The damage itself lands in strike(), once the wind-up elapses.
+    @Override
     public void execute(Plant owner, GameSession gameSession) {
+        windUpRemaining = WIND_UP_TICKS;
+    }
+
+    private void strike(Plant owner, GameSession gameSession) {
+        hasStruck = true;
         AreaAttack.strike(gameSession, owner,
                 rowRadiusByStage[currentStage], colRadiusByStage[currentStage],
                 damageByStage[currentStage], element);

@@ -266,6 +266,11 @@ public final class GameHud implements Disposable {
             // future mode that pins a seed gets the same mark without this line changing.
             card.setLocked(session.getMode() != null
                     && session.getMode().isSeedForced(packet.getPlantType()));
+            // And the Imitater's own packet on the copy, so two cards of the same plant are not two
+            // identical cards -- the same mark seed selection puts on it.
+            if (packet.isImitated()) {
+                card.setImitated(imitaterBadge());
+            }
             card.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
@@ -275,6 +280,19 @@ public final class GameHud implements Disposable {
             cards.add(card);
             cardRow.add(card).size(SeedCardActor.CARD_WIDTH, SeedCardActor.CARD_HEIGHT).padRight(6f);
         }
+    }
+
+    // The Imitater's seed packet, for the corner of a card he is impersonating. Null art costs the
+    // badge, not the card.
+    private com.badlogic.gdx.scenes.scene2d.utils.Drawable imitaterBadge() {
+        models.templates.PlantTemplate imitater =
+                utils.registry.PlantRegistry.getInstance().getImitaterTemplate();
+        if (imitater == null) {
+            return null;
+        }
+        com.badlogic.gdx.graphics.g2d.TextureRegion region = art.packet(imitater.getName());
+        return region == null ? null
+                : new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(region);
     }
 
     // Whether this player gets a seed bank.

@@ -7,6 +7,7 @@ public enum EntityKind {
     ZOMBIE,
     PROJECTILE,
     SUN,
+    PLANT_FOOD,
     MOWER,
     VASE
 }

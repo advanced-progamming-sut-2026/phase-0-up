@@ -13,6 +13,9 @@ public enum AbilityType {
     BOWLING_BULB,
     KERNEL_PULT,
     DELAYED_EXPLOSIVE,
+    // Grabs whatever steps on it and drags it under (Tangle Kelp). Not an explosion, for the same
+    // reason SQUASH_LEAP is not one: see TangleKelpAbility.
+    GRAB_UNDERWATER,
     INSTANT_EXPLOSIVE,
     FREEZE_ON_CONTACT,
     MELEE_ATTACK,
@@ -30,5 +33,8 @@ public enum AbilityType {
     GRAVE_BUSTER,
     MINT_FAMILY_BOOST,
     // A 3x3 instant blast that also scatters bouncing grape pellets (Grapeshot).
-    GRAPESHOT
+    GRAPESHOT,
+    // Jumps onto a zombie and flattens it (Squash). Not an explosion: see SquashAbility for why the
+    // difference is worth a type of its own rather than a 0x0 blast radius.
+    SQUASH_LEAP
 }

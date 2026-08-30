@@ -28,11 +28,69 @@ public class ToggleSeedCommand implements Command {
     @Override
     public void execute() {
         PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(plantName);
-        if(action == ToggleAction.ADD){
+        if (action == ToggleAction.IMITATE) {
+            imitate(template);
+        } else if (action == ToggleAction.ADD) {
             add(template);
-        }else{
+        } else {
             remove(template);
         }
+    }
+
+    // ---- the Imitater ---------------------------------------------------------------------------
+    //
+    // The Imitater is not a plant you put on the lawn -- it is a second packet of something else, with
+    // its own recharge, so you can have two Peashooters in the air at once. Picking it is therefore two
+    // choices ("the Imitater" then "as what"), and this command is the second half of that: plantName
+    // here is the plant being COPIED.
+    //
+    // Which plant is the Imitater is asked of the DATA rather than matched by name: it is the one whose
+    // ability is MODIFIER_UTILITY, the type PlantAbilityFactory deliberately builds nothing for.
+    private static boolean isImitater(PlantTemplate template) {
+        return template != null
+                && PlantRegistry.getInstance().isImitater(template.getName());
+    }
+
+    private void imitate(PlantTemplate copied) {
+        if (copied == null) {
+            renderer.notExist(plantName);
+            return;
+        }
+        // The Imitater has to be in the loadout to be spent: it is one of the level's own seed choices,
+        // and without this check it would be a free extra packet in every level that does not offer it.
+        PlantTemplate imitater = imitaterTemplate();
+        if (imitater == null || !isUnlockedName(imitater.getName())
+                || !isAllowedInLevelName(imitater.getName())) {
+            renderer.notAvailableInLevel(imitater == null ? "Imitater" : imitater.getName());
+            return;
+        }
+        if (isImitater(copied)) {
+            renderer.imitaterNeedsTarget();
+            return;
+        }
+        SeedPacket existing = gameSession.getImitatedSeed();
+        if (existing != null) {
+            renderer.imitaterAlreadyUsed(existing.getPlantType());
+            return;
+        }
+        if (!isUnlocked()) {
+            renderer.isLocked(plantName);
+            return;
+        }
+        if (!isAllowedInLevel()) {
+            renderer.notAvailableInLevel(plantName);
+            return;
+        }
+        if (gameSession.getSelectedSeeds().size() >= gameSession.getMaxSeedSlots()) {
+            renderer.noEmptySlot();
+            return;
+        }
+        gameSession.addSeed(new SeedPacket(plantName, (int) Math.round(copied.getRecharge()), true));
+        renderer.successfulImitate(plantName);
+    }
+
+    private PlantTemplate imitaterTemplate() {
+        return PlantRegistry.getInstance().getImitaterTemplate();
     }
 
     // Separate from isAllowedInLevel(): "still locked" sent players to unlock what they owned.
@@ -44,26 +102,42 @@ public class ToggleSeedCommand implements Command {
     // hit the plants a player invests in hardest. Ownership is the unlocked list; that is also what
     // SeedSelectionScreen draws its grid from, so the screen and the command now agree.
     private boolean isUnlocked() {
+        return isUnlockedName(plantName);
+    }
+
+    // By name rather than off the field, because the Imitater has to be checked alongside the plant it
+    // is copying and only one of the two can be the command's own subject.
+    private boolean isUnlockedName(String name) {
         Profile profile = gameSession.getPlayer();
         List<String> owned = profile == null ? null : profile.getUnlockedPlants();
         if (owned == null) {
             return false;
         }
         // Profile keys are lower-cased while the level pool uses display names -> compare ignoring case.
-        return owned.stream().anyMatch(name -> name != null && name.equalsIgnoreCase(plantName));
+        return owned.stream().anyMatch(n -> n != null && n.equalsIgnoreCase(name));
     }
     private boolean isAllowedInLevel() {
+        return isAllowedInLevelName(plantName);
+    }
+
+    private boolean isAllowedInLevelName(String name) {
         // Read the pool off the Level, not its template: a level built without a template (the
         // scoring game, Zombotany and the other generated levels) carries its plant pool directly, and
         // going through the template dereferenced null and crashed seed selection outright.
         List<String> available = gameSession.getLevel().getAvailablePlants();
         return available != null
-                && available.stream().anyMatch(p -> p.equalsIgnoreCase(plantName));
+                && available.stream().anyMatch(p -> p.equalsIgnoreCase(name));
     }
 
     private void add(PlantTemplate template){
         if (template == null) {
             renderer.notExist(plantName);
+            return;
+        }
+        // An Imitater on its own does nothing at all -- it has no ability and plants nothing. Picking
+        // it is only ever the first half of a choice, so say so instead of handing over a dead card.
+        if (isImitater(template)) {
+            renderer.imitaterNeedsTarget();
             return;
         }
         if (isForcedByMode()) {
@@ -94,6 +168,16 @@ public class ToggleSeedCommand implements Command {
     private void remove(PlantTemplate template){
         if(template == null){
             renderer.notExist(plantName);
+            return;
+        }
+        // "remove the Imitater" is the only way to take the copy off: the copy answers to the plant it
+        // is imitating, so asking for that name would take the player's own packet instead.
+        if (isImitater(template)) {
+            if (gameSession.removeImitatedSeed()) {
+                renderer.successfulRemove(template.getName());
+            } else {
+                renderer.notSelected(template.getName());
+            }
             return;
         }
         if(isForcedByMode()){

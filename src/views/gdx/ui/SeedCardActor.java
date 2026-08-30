@@ -275,6 +275,17 @@ public final class SeedCardActor extends Table {
         return lockBadge != null;
     }
 
+    // The opposite corner, for a packet that is the Imitater wearing this plant's coat.
+    //
+    // Its own field rather than the padlock's, so isLocked() keeps meaning "bolted to the bar" and a
+    // card could in principle carry both. The mark is the Imitater's OWN seed packet, which says "this
+    // Peashooter is really the Imitater" in one glance and needs no new card type to do it.
+    private Drawable imitatedBadge;
+
+    public void setImitated(Drawable badge) {
+        this.imitatedBadge = badge;
+    }
+
     // A slot on the bar with nothing in it yet.
     //
     // The same shipped frame as a real card, sunk back and left empty, so a bar of eight reads as eight
@@ -345,6 +356,11 @@ public final class SeedCardActor extends Table {
         if (lockBadge != null) {
             float size = getWidth() * BADGE_FRACTION;
             lockBadge.draw(batch, getX() + getWidth() - size - BADGE_PAD,
+                    getY() + getHeight() - size - BADGE_PAD, size, size);
+        }
+        if (imitatedBadge != null) {
+            float size = getWidth() * BADGE_FRACTION;
+            imitatedBadge.draw(batch, getX() + BADGE_PAD,
                     getY() + getHeight() - size - BADGE_PAD, size, size);
         }
     }
