@@ -41,7 +41,44 @@ public final class ZombieActions {
     private static final Pattern SMASH =
             Pattern.compile("^(.+?) smashes (.+?) to pieces at \\((\\d+), (\\d+)\\)\\.$");
 
+    // SummonGraveAbility, at the START of its cast: "The Tomb Raiser starts chanting for the dead."
+    //
+    // The chant, not the result. "raises a grave at (x, y)" is the moment the stone is already standing,
+    // and starting a three-second animation there would have the raiser gesture at work it had finished
+    // -- so the model now announces the wind-up too, and the ability holds the graves back for exactly
+    // as long as this clip runs. See SummonGraveAbility.CHANT_TICKS.
+    private static final Pattern CHANT =
+            Pattern.compile("^The Tomb Raiser starts chanting for the dead\\.$");
+
+    // ThrowIceAbility, at the START of its throw: "ZombieIceAgeHunter takes aim at Peashooter at (3, 1)."
+    //
+    // The aim, not the hit. "hurls ice at" is the moment the plant is already frozen, and starting a
+    // two-second animation there would have the snowball land before the arm moved -- so the model now
+    // announces the wind-up too and holds the ice back for exactly as long as this clip runs. See
+    // ThrowIceAbility.AIM_TICKS; the hit sentence is what ImpactEffects draws the splat from.
+    //
+    // The lane IS the zombie's here, unlike the two above: the Hunter only throws at plants in its own
+    // row, so the tile in the sentence and the thrower's lane are the same number.
+    private static final Pattern THROW_ICE =
+            Pattern.compile("^(.+?) takes aim at (.+?) at \\((\\d+), (\\d+)\\)\\.$");
+
+    // ThrowOctopusAbility, at the START of its throw: "ZombieBeachOctopus winds up an octopus at (7, 2)."
+    //
+    // The tile is the THROWER's, not the target's -- the octopus has not left its hand yet, and the
+    // whole point of the sentence is to find the zombie that is about to swing. See
+    // ThrowOctopusAbility.TOSS_TICKS; the octopus itself is flown by ImpactEffects off the release.
+    private static final Pattern TOSS_OCTOPUS =
+            Pattern.compile("^(.+?) winds up an octopus at \\((\\d+), (\\d+)\\)\\.$");
+
+    // TurnIntoSheep, at the START of its cast: "ZombieWizard raises its staff at (6, 1)."
+    //
+    // The wizard's own tile, like the octopus toss: nothing is hexed yet and what this has to find is
+    // the zombie about to cast. See TurnIntoSheep.CAST_TICKS -- the plant changes when the clip ends.
+    private static final Pattern CAST_SHEEP =
+            Pattern.compile("^(.+?) raises its staff at \\((\\d+), (\\d+)\\)\\.$");
+
     private static final String IMP_ALIAS = "ZombieImp";
+    private static final String RAISER_ALIAS = "ZombieTombRaiser";
 
     // The thrower: wind up, then launch.
     private static final String[] THROWER_CLIPS = {"fire", "cannon_fire"};
@@ -50,6 +87,29 @@ public final class ZombieActions {
     // The hammer. DARK_GARGANTUAR ships `smash_left` (1.77s) and no `smash_right`; start() keeps only
     // the clips a sprite actually has, so naming both costs nothing and covers the art that has them.
     private static final String[] SMASH_CLIPS = {"smash_left", "smash_right"};
+    // The snowball. ZOMBIE_ICEAGE_HUNTER's one clip that is not a state, and the reason a Hunter used
+    // to freeze a plant across the lawn without so much as raising an arm.
+    private static final String[] THROW_CLIPS = {"throw"};
+    // The octopus. ZOMBIE_BEACH_OCTOPUS ships five idles, a walk, an eat, a die -- and `toss`, which is
+    // the only one of the nine that was never reachable from an ActionState.
+    private static final String[] TOSS_CLIPS = {"toss"};
+    // The hex. ZOMBIE_DARK_WIZARD's `sheep` -- the clip is named after what it does to the plant, and
+    // like `toss` and `power` it was the one clip in that animation no ActionState could reach.
+    private static final String[] SHEEP_CLIPS = {"sheep"};
+    // Raising the dead. ZOMBIE_EGYPT_TOMBRAISER's one clip that is not a state: `power`, 3s of it
+    // hurling bones at the ground. At the raiser's 0.185 cells/second that is barely half a tile of
+    // walking, so the zombie does not visibly skate through it.
+    private static final String[] RAISE_CLIPS = {"power"};
+
+    // A claim any zombie of the right species can take, wherever it is standing.
+    //
+    // The other two events name the tile they happen ON, which for a thrown Imp or a smashed plant is
+    // also the lane the zombie is in. The chant names no tile at all -- the Tomb Raiser reaches anywhere
+    // on the board, and where its stones will land is not decided until three seconds later -- so there
+    // is no lane to match on. The trade is that with two raisers on screen the wrong one may be the one
+    // that gestures. Both are on the same cooldown and one of them is genuinely chanting, so what the
+    // player sees is a Tomb Raiser raising a grave either way.
+    private static final int ANY_LANE = -1;
 
     // `fly` is a single frame (0.0333s in the dump) -- it is a POSE, not a movement, so it is held for a
     // readable beat instead of being played for its own length. Anything shorter and the Imp is on the
@@ -117,6 +177,31 @@ public final class ZombieActions {
         if (smashing.matches()) {
             raise(smashing.group(1).trim(), SMASH_CLIPS,
                     Integer.parseInt(smashing.group(4)), "swings at " + smashing.group(2).trim());
+            return;
+        }
+        Matcher casting = CAST_SHEEP.matcher(text);
+        if (casting.matches()) {
+            raise(casting.group(1).trim(), SHEEP_CLIPS,
+                    Integer.parseInt(casting.group(3)), "casts a sheep hex");
+            return;
+        }
+        Matcher tossing = TOSS_OCTOPUS.matcher(text);
+        if (tossing.matches()) {
+            raise(tossing.group(1).trim(), TOSS_CLIPS,
+                    Integer.parseInt(tossing.group(3)), "winds up an octopus");
+            return;
+        }
+        Matcher throwingIce = THROW_ICE.matcher(text);
+        if (throwingIce.matches()) {
+            raise(throwingIce.group(1).trim(), THROW_CLIPS,
+                    Integer.parseInt(throwingIce.group(4)),
+                    "takes aim at " + throwingIce.group(2).trim());
+            return;
+        }
+        // The alias is not in the sentence -- the model names the zombie the way a player would -- so it
+        // is supplied here. Only one species raises graves, so there is nothing to disambiguate.
+        if (CHANT.matcher(text).matches()) {
+            raise(RAISER_ALIAS, RAISE_CLIPS, ANY_LANE, "chants up a grave");
         }
     }
 
@@ -183,7 +268,7 @@ public final class ZombieActions {
         int lane = zombie.getMovement().getPositionY();
         String alias = zombie.getAlias();
         for (Claim claim : claims) {
-            if (claim.lane != lane) {
+            if (claim.lane != ANY_LANE && claim.lane != lane) {
                 continue;
             }
             if (!claim.claimed && alias.equalsIgnoreCase(claim.alias)) {

@@ -75,6 +75,24 @@ public class Zombie extends Entity {
         }
         state.update();
         health.update();
+
+        // Butter STUNS: a buttered zombie does nothing at all until it wears off.
+        //
+        // Gated centrally here rather than left to each ability, the same way Plant.update gates on
+        // isDisabled(). Most abilities did check isUnableToMove() for themselves and butter is part of
+        // that answer -- but "most" is the problem: the check was a convention rather than a rule, so
+        // whether a stunned zombie kept working depended on which zombie it was, and any ability added
+        // later would have started out ignoring it. A Kernel-pult's butter is supposed to be the same
+        // half-second of nothing whoever it lands on.
+        //
+        // ABOVE the ability loop and above movement, but BELOW the two component updates: the butter
+        // timer itself lives in state.update() and would never run down if this returned before it, and
+        // poison already in a zombie's blood keeps working on a stunned one -- being held still is not
+        // being protected.
+        if (state.isButtered()) {
+            return;
+        }
+
         for (ZombieAbility ability : abilities) {
             ability.execute(this);
         }

@@ -365,8 +365,13 @@ public class Projectile extends Entity {
 
     public void onHit(Zombie target, GameSession gameSession) {
         if (target.getState().isImmuneToFire() && this.element == Element.FIRE) {
-            gameSession.reportEvent("The Imp Dragon absorbs a fire projectile at ("
-                    + (int) target.getX() + ", " + target.getY() + ") and takes no damage.");
+            // Said ONCE per zombie -- see StateComponent.shouldAnnounceFireImmunity. The shot still
+            // dies here every time; only the sentence is rationed.
+            if (target.getState().shouldAnnounceFireImmunity()) {
+                gameSession.reportEvent("The Imp Dragon is wearing a fireproof dragon suit at ("
+                        + (int) target.getX() + ", " + target.getY()
+                        + ") -- fire shots just tickle. Try something colder!");
+            }
             this.isDestroyed = true;
             return;
         }
@@ -550,7 +555,11 @@ public class Projectile extends Entity {
     public Plant getShooter() { return shooter; }
 
     private boolean handleBlockedPlantCollisions(GameSession gameSession) {
-        if (this.trajectory == Trajectory.LOBBED) {
+        // A lob arcs OVER an ice-encased plant unless it was fired at one -- the same rule, and the same
+        // test, handleTerrainCollisions applies to a headstone. Without the second half a -pult would
+        // open fire on a frozen plant (ObstacleSight now sees one) and float every shot straight over
+        // it, which is a plant firing forever at something it can never hit.
+        if (this.trajectory == Trajectory.LOBBED && !isTerrainSeeking()) {
             return false;
         }
 

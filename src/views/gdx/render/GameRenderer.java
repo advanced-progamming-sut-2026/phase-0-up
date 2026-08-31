@@ -87,7 +87,7 @@ public final class GameRenderer {
                         EntityInterpolator interpolator, EnvironmentType environment) {
         this.terrain = new TerrainRenderer(assets, sprites, lawn, clocks, environment);
         this.plants = new PlantRenderer(sprites, lawn, clocks);
-        this.zombies = new ZombieRenderer(sprites, lawn, interpolator, clocks);
+        this.zombies = new ZombieRenderer(sprites, lawn, interpolator, clocks, environment);
         this.projectiles = new ProjectileRenderer(assets, lawn, interpolator, sprites);
         this.collectibles = new CollectibleRenderer(sprites, lawn, interpolator, clocks);
         this.mowers = new LawnmowerRenderer(sprites, lawn, interpolator, clocks, environment);
@@ -96,7 +96,7 @@ public final class GameRenderer {
         this.brains = new IZombieRenderer(assets, lawn);
         this.beghouled = new BeghouledRenderer(assets, lawn);
         this.weather = new WeatherEffects(sprites, lawn);
-        this.impacts = new ImpactEffects(sprites);
+        this.impacts = new ImpactEffects(sprites, lawn);
         this.explosions = new ExplosionEffects(sprites, lawn);
         this.explosions.setCollectibles(this.collectibles);
         this.deaths = new DeathEffects(sprites, lawn);
@@ -149,6 +149,18 @@ public final class GameRenderer {
         return zombies.actions();
     }
 
+    // And the bones a Tomb Raiser throws to bring a headstone up, which are drawn on the tile the
+    // sentence names rather than on anything the board can be asked about.
+    public TerrainRenderer terrain() {
+        return terrain;
+    }
+
+    // The Hunter's snowball is the one impact that cannot be inferred from a vanished projectile,
+    // because the model's ice throw never creates one. See ImpactEffects.onEvent.
+    public ImpactEffects impacts() {
+        return impacts;
+    }
+
     // Same seam, same reason: the tornado and the freezing wind leave nothing on the board to infer
     // them from, so the model's own narration is what raises them.
     public WeatherEffects weather() {
@@ -166,6 +178,8 @@ public final class GameRenderer {
         explosions.drawRear(batch, delta);
         // Once per frame, before the lane pass visits it five times. See DeathEffects.advance.
         deaths.advance(delta);
+        // Same reason, for the bones a Tomb Raiser throws at the ground.
+        terrain.advanceEffects(delta);
         beghouled.advance(session, delta);
 
         for (int row = 0; row < Constants.BOARD_ROWS; row++) {

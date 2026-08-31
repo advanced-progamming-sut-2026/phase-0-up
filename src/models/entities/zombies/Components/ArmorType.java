@@ -12,7 +12,11 @@ public enum ArmorType {
     CROWN(1600 , true, false),
     NEWSPAPER(800 , false, true),        // held up in front of the zombie
     SHOULDER_ARMOR(1600 , true, false),
-    ICE_BLOCK(300 , false, false),       // encases the zombie, so it is not "in front" of anything
+    // The Troglobite's frozen blocks. 1100 each, the game's own figure, and there are three of them --
+    // so a Troglobite is 3300 points of ice in front of a 470-point zombie. NOT a front shield: a
+    // shield is carried and can be lobbed over, and a block is a wall the zombie is standing behind,
+    // which is why a Melon-pult has to break one like everything else. See HealthComponent.
+    ICE_BLOCK(1100 , false, false),
     BARREL(190 , false, true);           // shoved along ahead of the zombie
     private int hp;
     private boolean metallic;

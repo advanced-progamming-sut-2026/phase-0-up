@@ -128,4 +128,23 @@ public class StateComponent {
     public void setSpinning(boolean spinning) { isSpinning = spinning; }
     public boolean isImmuneToFire() { return isImmuneToFire; }
     public void setImmuneToFire(boolean immuneToFire) { isImmuneToFire = immuneToFire; }
+
+    // Whether this zombie's fire immunity still needs announcing. True exactly once, for the first fire
+    // shot it swallows.
+    //
+    // A fire-proof zombie is invisible as a RULE: the shot arrives, it bursts like any other, and the
+    // health bar does not move -- which reads as a broken plant rather than as a zombie in a dragon
+    // suit. It has to be said. But a Fire Peashooter fires about once a second and a pair of them will
+    // stand there emptying into an Imp Dragon for a minute, so saying it every time is a wall of
+    // identical lines in the terminal build and a stack of identical toasts in the GUI. Once per zombie
+    // is the whole message.
+    private boolean fireImmunityAnnounced;
+
+    public boolean shouldAnnounceFireImmunity() {
+        if (fireImmunityAnnounced) {
+            return false;
+        }
+        fireImmunityAnnounced = true;
+        return true;
+    }
 }

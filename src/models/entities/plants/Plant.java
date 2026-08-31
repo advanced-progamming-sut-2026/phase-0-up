@@ -22,7 +22,7 @@ public class Plant extends Entity {
     private boolean hasOctopus = false;
     private int octopusHp = 0;
     protected List<PlantTags> tags;
-    private boolean isCat = false;
+    private boolean isSheep = false;
     private Zombie cursedByWizard = null;
 
     protected PlantHealthComponent health;
@@ -84,6 +84,15 @@ public class Plant extends Entity {
         if (mirroredWindingUp != null) {
             return mirroredWindingUp;
         }
+        // An incapacitated plant is not winding up, whatever its abilities were doing when it was
+        // stopped. update() returns above them while isDisabled(), so nothing they hold is ticking any
+        // more -- a Cabbage-pult frozen with its arm back reports a wind-up that can never finish, and
+        // the view replays its throw for as long as the ice lasts. Same shape as the mirrored case
+        // above: a derived answer whose inputs have stopped moving has to be read as "no", not as
+        // whatever it happened to be on the tick everything froze.
+        if (isDisabled()) {
+            return false;
+        }
         if (abilities == null) {
             return false;
         }
@@ -107,6 +116,12 @@ public class Plant extends Entity {
         // match -- a Citron frozen mid-charge that never fires. The server does not send this, so the
         // honest answer for a mirror is "I do not know", which draws the resting pose.
         if (mirroredWindingUp != null) {
+            return false;
+        }
+        // And an incapacitated plant is not charging either -- for the stronger version of the same
+        // reason. Every cooldown stops where it was, so "no ability is ready" stays true for the whole
+        // freeze, and a frozen Citron would draw its seven-second charge pose while doing nothing.
+        if (isDisabled()) {
             return false;
         }
         if (abilities == null || abilities.isEmpty()) {
@@ -353,7 +368,7 @@ public class Plant extends Entity {
         }
 
     //while frozen in ice, trapped by an octopus, or cursed into a cat the plant is incapacitated:
-    //its abilities and auto plant-food do nothing until it is freed (see damageIceBlock/damageOctopus/revertFromCat).
+    //its abilities and auto plant-food do nothing until it is freed (see damageIceBlock/damageOctopus/revertFromSheep).
         if (isDisabled()) {
             return;
         }
@@ -370,7 +385,7 @@ public class Plant extends Entity {
 
     // A plant is incapacitated while frozen solid, trapped by an octopus, or cursed into a cat.
     public boolean isDisabled() {
-        return isFrozen || hasOctopus || isCat;
+        return isFrozen || hasOctopus || isSheep;
     }
 
     // Rolls the auto-plant-food chance about once per second (Mega Gatling Pea's level-3 upgrade).
@@ -445,8 +460,20 @@ public class Plant extends Entity {
     public int getChillLevel() { return isFrozen ? 3 : iceHits; }
     public int getIceBlockHp() { return iceBlockHp; }
 
-    // A plant counts as a "fire plant" for melting nearby ice if it shoots a FIRE projectile.
+    // A plant counts as a "fire plant" for melting nearby ice.
+    //
+    // The TAG is the answer, and it has to be: this used to ask only whether the plant SHOOTS a fire
+    // projectile, which is true of two of the six plants data/plants.json calls FIRE. Torchwood sets
+    // other plants' peas alight and fires nothing itself; Hot Potato and Wasabi Whip have no projectile
+    // at all; Jalapeno's fire is a blast. None of them melted so much as a frost on a neighbouring tile,
+    // which is a strange thing for a plant that is on fire.
+    //
+    // The ability check stays behind it so an untagged fire shooter still counts -- the tag is the
+    // intent, the ability is the evidence, and neither alone catches all six.
     public boolean isFirePlant() {
+        if (tags != null && tags.contains(PlantTags.FIRE)) {
+            return true;
+        }
         for (PlantAbility ability : abilities) {
             if (ability instanceof models.entities.plants.abilities.ShootProjectileAbility
                     && ((models.entities.plants.abilities.ShootProjectileAbility) ability).getElement()
@@ -548,25 +575,32 @@ public class Plant extends Entity {
     // Nothing in the model or the controllers reads this.
     public int getOctopusHp() { return octopusHp; }
 
-    // Note: abilities are gated centrally in update() via isDisabled() (frozen / octopus / cat),
+    // Note: abilities are gated centrally in update() via isDisabled() (frozen / octopus / sheep),
     // so individual shoot / produce-sun abilities do not need their own guard.
 
-    public void turnIntoCat(Zombie wizard) {
-        if (isCat || isDead()) return;
+    // A SHEEP, where this used to say cat.
+    //
+    // The spec calls it a cat and the game calls it a sheep. Everything that ships for it agrees with
+    // the game -- the wizard's casting clip is literally named `sheep`, and the effect drawn over the
+    // plant is DARK_WIZARD_SHEEPENING -- so the art decides and the name follows it. The mechanic is
+    // untouched: the plant is disabled, zombies walk past it rather than eating it, and it comes back
+    // the moment the wizard that cast the spell dies.
+    public void turnIntoSheep(Zombie wizard) {
+        if (isSheep || isDead()) return;
 
-        this.isCat = true;
+        this.isSheep = true;
         this.cursedByWizard = wizard;
-        report(this.getName() + " is hexed into a cat at (" + (int) getX() + ", " + getY() + ").");
+        report(this.getName() + " is hexed into a sheep at (" + (int) getX() + ", " + getY() + ").");
     }
 
-    public void revertFromCat() {
-        if (!isCat) return;
+    public void revertFromSheep() {
+        if (!isSheep) return;
 
-        this.isCat = false;
+        this.isSheep = false;
         this.cursedByWizard = null;
         report(this.getName() + " shakes off the hex at (" + (int) getX() + ", " + getY() + ") and returns to normal.");
     }
 
-    public boolean isCat() { return isCat; }
+    public boolean isSheep() { return isSheep; }
     public Zombie getCursedByWizard() { return cursedByWizard; }
 }

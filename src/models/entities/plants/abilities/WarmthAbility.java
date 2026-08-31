@@ -84,7 +84,14 @@ public class WarmthAbility extends PlantAbility {
     }
 
     private void thawArea(Plant owner, GameSession gameSession) {
-        forEachCellInRange(owner, gameSession, this::thaw);
+        forEachCellInRange(owner, gameSession, cell -> {
+            thaw(cell);
+            // A FIRE hit shatters one block outright -- HealthComponent.strikeIce is where that rule
+            // lives, so warmth and a fire pea melt a Troglobite's ice by exactly the same route.
+            for (models.entities.zombies.Zombie pusher : pushedBlocksOn(cell, gameSession)) {
+                pusher.getHealth().applyDamage(0, Element.FIRE, owner);
+            }
+        });
         gameSession.reportEvent("The " + owner.getName() + " thaws the ice at ("
                 + (int) owner.getX() + ", " + owner.getY() + ") into a puddle"
                 + (consumedOnUse ? " and burns itself out!" : "!"));
@@ -103,8 +110,33 @@ public class WarmthAbility extends PlantAbility {
                     return;
                 }
             }
+            if (!pushedBlocksOn(cell, gameSession).isEmpty()) {
+                found[0] = true;
+            }
         });
         return found[0];
+    }
+
+    // The Troglobites whose wall of ice covers this tile.
+    //
+    // A Troglobite's blocks are the third kind of ice in this game -- alongside an authored '&' and the
+    // block a snowball puts a plant in -- and the only one that MOVES, so it is not terrain and cannot
+    // be found by looking at the cell. Without this, Hot Potato planted directly on the wall melted
+    // nothing at all, which is the one counter the game names for this zombie.
+    private java.util.List<models.entities.zombies.Zombie> pushedBlocksOn(Cell cell,
+                                                                         GameSession gameSession) {
+        java.util.List<models.entities.zombies.Zombie> pushers = new java.util.ArrayList<>();
+        java.util.List<models.entities.zombies.Zombie> lane =
+                gameSession.getMap().getRow(cell.getY()).getZombies();
+        if (lane == null) {
+            return pushers;
+        }
+        for (models.entities.zombies.Zombie zombie : lane) {
+            if (models.entities.zombies.Abilities.PushIceAbility.coversTile(zombie, cell.getX())) {
+                pushers.add(zombie);
+            }
+        }
+        return pushers;
     }
 
     private void forEachCellInRange(Plant owner, GameSession gameSession,

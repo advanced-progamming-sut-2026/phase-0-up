@@ -26,7 +26,7 @@ import models.entities.zombies.Abilities.SummonGraveAbility;
 import models.entities.zombies.Abilities.ThrowIceAbility;
 import models.entities.zombies.Abilities.ThrowImp;
 import models.entities.zombies.Abilities.ThrowOctopusAbility;
-import models.entities.zombies.Abilities.TurnIntoCat;
+import models.entities.zombies.Abilities.TurnIntoSheep;
 import models.entities.zombies.Abilities.TurnIntoKnightAbility;
 import models.entities.zombies.Abilities.ZombieAbility;
 import models.entities.zombies.Abilities.ZombieDuelAbility;
@@ -95,7 +95,7 @@ public final class ZombieBehaviorFactory {
             case "ZombieTombRaiserProps":
                 return abilities(new EatPlantAbility(), new SummonGraveAbility());
             case "ZombieDarkWizardProps":
-                return abilities(new EatPlantAbility(), new TurnIntoCat());
+                return abilities(new EatPlantAbility(), new TurnIntoSheep());
             case "ZombieDarkKingProps":
                 return abilities(new EatPlantAbility(), new TurnIntoKnightAbility());
             // Spins back STRAIGHT shots only; a parasol as well made it immune to everything.

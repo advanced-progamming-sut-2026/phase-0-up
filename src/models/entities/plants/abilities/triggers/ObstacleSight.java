@@ -136,6 +136,9 @@ public final class ObstacleSight {
     // "Not destroyed" is the test, never mere presence: a broken grave or a melted block may still be
     // sitting in the cell's terrain list until something sweeps it.
     private static boolean hasStandingObstacle(Cell cell) {
+        if (encasedPlant(cell)) {
+            return true;
+        }
         if (cell.getTerrain() == null) {
             return false;
         }
@@ -145,5 +148,20 @@ public final class ObstacleSight {
             }
         }
         return false;
+    }
+
+    // A PLANT that has become an obstacle: frozen solid, or wrapped in an octopus.
+    //
+    // The same half-built state the ice blocks were in before this class replaced GraveSight, one level
+    // down. Projectile.handleBlockedPlantCollisions has always stopped a shot on one of these and chipped
+    // the ice or the tentacles with it -- so the shots work -- but nothing ever aimed one, because sight
+    // was terrain-only and a plant in an ice block is not terrain. With no zombie on the lawn to trigger
+    // the lane, a frozen plant simply stayed frozen with three Peashooters standing behind it doing
+    // nothing, and the neighbours it was blocking could not shoot past it either.
+    //
+    // The predicate is again "what can my shots actually hurt", which is what that method answers.
+    private static boolean encasedPlant(Cell cell) {
+        models.entities.plants.Plant plant = cell.getCurrentPlant();
+        return plant != null && !plant.isDead() && (plant.isFrozen() || plant.hasOctopus());
     }
 }

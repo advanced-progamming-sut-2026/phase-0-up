@@ -544,6 +544,8 @@ public final class GameScreen extends ScreenAdapter {
         deliver("explosions", () -> entities.explosions().onEvent(message));
         deliver("weather", () -> entities.weather().onEvent(message));
         deliver("zombieActions", () -> entities.zombieActions().onEvent(message));
+        deliver("terrain", () -> entities.terrain().onEvent(message));
+        deliver("impacts", () -> entities.impacts().onEvent(message));
         deliver("deaths", () -> entities.deaths().onEvent(message));
         deliver("cameraShake", () -> shake.onEvent(message));
         deliver("audioCues", () -> cues.onEvent(message));

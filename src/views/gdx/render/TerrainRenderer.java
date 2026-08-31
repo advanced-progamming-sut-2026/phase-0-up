@@ -280,6 +280,9 @@ public final class TerrainRenderer {
     // frozen is inside the ice rather than behind it. Two passes over the same terrain list is the
     // price of that, and it is the only way the shipped two-part art can be used as intended.
     public void drawCellFront(Batch batch, Cell cell, int col, int row, float delta) {
+        // Before the early return, and deliberately: the bones outlive the headstone being shot down,
+        // and a tile whose terrain has just been cleared still owes the effect the rest of its life.
+        drawBones(batch, col, row);
         if (cell.getTerrain() == null || cell.getTerrain().isEmpty()) {
             return;
         }
@@ -322,6 +325,98 @@ public final class TerrainRenderer {
                 lawn.worldY(row) + lawn.cellHeight() * SpritePlacer.FOOT_INSET, true, null);
         SpritePlacer.endAdditive(batch);
         batch.setPackedColor(previous);
+    }
+
+    // ---- the Tomb Raiser's bones -------------------------------------------------------------------
+    //
+    // A raised headstone used to simply BE there on the next frame -- one tile ordinary, the next tile
+    // occupied, with nothing in between to say where it came from. The game's own answer ships in the
+    // dump: the raiser flings a handful of bones at the ground and the stone comes up through them.
+    //
+    // Driven off the model's narration, for the same reason the detonations are (see ExplosionEffects):
+    // the grave is added to the cell inside one call and there is no state on it saying "new". The
+    // sentence carries the tile, which is all this needs.
+    private static final java.util.regex.Pattern RAISED = java.util.regex.Pattern.compile(
+            "^The Tomb Raiser raises a grave at \\((\\d+), (\\d+)\\)\\.$");
+    private static final String BONES = "ZOMBIE_EGYPT_TOMBRAISER_BONE_HIT";
+    private static final String BONES_CLIP = "animation";
+    // A little wider than the tile, so the bones scatter past the stone rather than stacking on it.
+    private static final float BONES_WIDTH_CELLS = 1.35f;
+    // Used only if the art is missing; the real length is read off the clip, which is 1.33s.
+    private static final float BONES_FALLBACK_LIFETIME = 1.33f;
+
+    private static final class Raising {
+        int col;
+        int row;
+        float age;
+    }
+
+    private final java.util.List<Raising> raisings = new java.util.ArrayList<>();
+    private float bonesLifetime;
+
+    // Offered every event the model drains, alongside the explosions and the toasts. Anything that is
+    // not a grave going up is ignored.
+    public void onEvent(String message) {
+        if (message == null) {
+            return;
+        }
+        java.util.regex.Matcher matcher = RAISED.matcher(message.trim());
+        if (!matcher.matches()) {
+            return;
+        }
+        try {
+            Raising raising = new Raising();
+            raising.col = Integer.parseInt(matcher.group(1));
+            raising.row = Integer.parseInt(matcher.group(2));
+            raisings.add(raising);
+        } catch (NumberFormatException ignored) {
+            // a sentence shaped like a raising but not one; nothing to draw
+        }
+    }
+
+    // Ages the bursts. Once per FRAME, from GameRenderer -- ageing them inside the per-cell pass would
+    // run each one forty-five times a frame and the bones would be gone before they were seen.
+    public void advanceEffects(float delta) {
+        if (raisings.isEmpty()) {
+            return;
+        }
+        float lifetime = bonesLifetime();
+        for (int i = raisings.size() - 1; i >= 0; i--) {
+            Raising raising = raisings.get(i);
+            raising.age += delta;
+            if (raising.age >= lifetime) {
+                raisings.remove(i);
+            }
+        }
+    }
+
+    // Exactly as long as the animation, resolved once. A fixed lifetime shorter than the clip cuts the
+    // bones off mid-air; longer, and they hold their last frame on the ground like a decal.
+    private float bonesLifetime() {
+        if (bonesLifetime <= 0f) {
+            EntitySprite sprite = sprites.get(BONES);
+            float authored = sprite == null ? 0f : sprite.clipDuration(BONES_CLIP);
+            bonesLifetime = authored > 0f ? authored : BONES_FALLBACK_LIFETIME;
+        }
+        return bonesLifetime;
+    }
+
+    private void drawBones(Batch batch, int col, int row) {
+        if (raisings.isEmpty()) {
+            return;
+        }
+        EntitySprite sprite = sprites.get(BONES);
+        if (sprite == null || !sprite.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(sprite, BONES_CLIP);
+        for (Raising raising : raisings) {
+            if (raising.col != col || raising.row != row) {
+                continue;
+            }
+            fitted(batch, sprite, clip, ClipMap.sample(sprite, clip, raising.age),
+                    lawn.centerX(col), tileCentreY(row), BONES_WIDTH_CELLS);
+        }
     }
 
     // ---- the pieces ------------------------------------------------------------------------------

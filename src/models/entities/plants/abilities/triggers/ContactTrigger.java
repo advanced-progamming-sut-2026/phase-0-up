@@ -15,7 +15,13 @@ public class ContactTrigger implements TriggerStrategy {
 
         for (Zombie z : zombies) {
             // A zombie in the air sets off no mine -- the Dodo Rider flies over them.
-            if (z.getState().isFlying()) {
+            //
+            // Both halves are needed. isFlying() is the flag the zombie pass sets, and it is a tick
+            // behind here: this trigger runs in CombatSystem's PLANT pass, before the zombies have
+            // moved or re-decided anything, so on the tick a rider first reaches a mine the flag still
+            // says it is walking. Asking the rule directly covers exactly that tick.
+            if (z.getState().isFlying()
+                    || models.entities.zombies.Abilities.IgnoreObstaclesAbility.fliesOver(z, owner)) {
                 continue;
             }
             if (z.isTargetable()

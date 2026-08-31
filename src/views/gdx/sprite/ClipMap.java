@@ -24,9 +24,13 @@ public final class ClipMap {
     // "cannon" and "land" are here for the Gargantuar's imp throw: `cannon_fire` is the launch and
     // `land` is the Imp hitting the ground, and both are once-only. Note that "cannon_fire" does NOT
     // match the "fire" entry -- startsWith, not contains -- which is why it needs its own.
+    // "fly_start" and "fly_end" are spelled out rather than covered by a "fly" prefix, because
+    // "fly_loop" -- the Dodo Rider hanging in the air between them -- is the one clip of the three that
+    // must repeat. A bare "fly" would catch all three and drop the rider on its first airborne frame.
     private static final java.util.Set<String> ONE_SHOT_PREFIXES = java.util.Set.of(
             "die", "damage", "undamaged", "attack", "special", "shooting", "plantfood",
-            "smash", "fire", "cannon", "land", "spawn", "enter", "exit", "explosion", "splat");
+            "smash", "fire", "cannon", "land", "spawn", "enter", "exit", "explosion", "splat",
+            "throw", "toss", "sheep", "fly_start", "fly_end");
 
     public static boolean loops(String clip) {
         if (clip == null) {
@@ -101,6 +105,14 @@ public final class ClipMap {
                 // through to `idle` and slid up the lane frozen. Safe as a general fallback: the four
                 // piano variants are the ONLY animations in the dump with a `play` clip, and none of
                 // them has a `walk`, so nothing else can ever reach it.
+                // A Troglobite is not walking, it is SHOVING -- and the difference is the whole zombie.
+                // Its art ships `push` (arms out, leaning into the block) alongside `walk` (the same
+                // zombie once the block is gone), and nothing asked for it, so it shoved a block that
+                // was neither drawn nor leant on. The block is an ICE_BLOCK armour layer in the model,
+                // so "does it still have one" is the same question PushIceAbility asks.
+                if (pushesIce(zombie)) {
+                    yield firstAvailable(sprite, "push", "walk");
+                }
                 yield holdsNewspaper
                         ? firstAvailable(sprite, "walk_newspaper", "walk")
                         : firstAvailable(sprite, "walk", "play", IDLE);
@@ -110,8 +122,18 @@ public final class ClipMap {
 
     // The newspaper is armor in the model, so "still has it" means the layer is still on the stack.
     private static boolean hasNewspaper(Zombie zombie) {
-        return zombie.getHealth().getLayers().stream()
-                .anyMatch(layer -> layer.getType()
-                        == models.entities.zombies.Components.ArmorType.NEWSPAPER);
+        return hasLayer(zombie, models.entities.zombies.Components.ArmorType.NEWSPAPER);
+    }
+
+    // And so is the Troglobite's ice block: ZombieJSONParser adds one ICE_BLOCK layer per block the
+    // zombie spawns with, and PushIceAbility stops shoving when the last one is gone.
+    public static boolean pushesIce(Zombie zombie) {
+        return hasLayer(zombie, models.entities.zombies.Components.ArmorType.ICE_BLOCK);
+    }
+
+    private static boolean hasLayer(Zombie zombie,
+                                    models.entities.zombies.Components.ArmorType type) {
+        return zombie.getHealth() != null && zombie.getHealth().getLayers().stream()
+                .anyMatch(layer -> layer.getType() == type);
     }
 }

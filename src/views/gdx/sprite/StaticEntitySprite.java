@@ -21,9 +21,21 @@ final class StaticEntitySprite implements EntitySprite {
     private final float height;
 
     StaticEntitySprite(TextureRegion region) {
+        this(region, 1f);
+    }
+
+    // `scale` enlarges the image, and exists because a still is not necessarily lawn art.
+    //
+    // An animation is authored at the size the character is meant to be; a still that stands in for one
+    // is whatever the atlas happens to hold, which for the Knight Zombie is a 66x115 almanac thumbnail --
+    // barely half a zombie. Scaling here rather than at the draw call keeps the two honest: width and
+    // height are what bounds() reports, so placement, the foot line and anything fitting art to a card
+    // all see the size the entity is actually drawn at.
+    StaticEntitySprite(TextureRegion region, float scale) {
         this.region = region;
-        this.width = region != null ? region.getRegionWidth() : 0f;
-        this.height = region != null ? region.getRegionHeight() : 0f;
+        float factor = scale > 0f ? scale : 1f;
+        this.width = region != null ? region.getRegionWidth() * factor : 0f;
+        this.height = region != null ? region.getRegionHeight() * factor : 0f;
     }
 
     @Override

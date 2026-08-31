@@ -114,6 +114,18 @@ public final class SpriteRegistry {
         return m;
     }
 
+    // How much bigger the Knight Zombie's still has to be drawn to stand among animated zombies.
+    //
+    // Its almanac thumbnail is 66x115 at the 768 asset size, while a basic zombie's drawn body measures
+    // about 131x197 -- so the Knight walked the lawn at a little over half everyone else's height. 197/115
+    // is 1.71; rounded to 1.7, which puts him level with a Browncoat, and a hair taller after the extra
+    // width, which suits a zombie in armour.
+    //
+    // This is a fudge factor and it is one on purpose: the honest fix is an animation, and there is none
+    // in the dump. Nothing else needs it, because every other entity on the lawn is drawn from art that
+    // was authored at lawn scale.
+    private static final float KNIGHT_STILL_SCALE = 1.7f;
+
     // Entities the dump has a PICTURE of but no animation for.
     //
     // The still-image path already exists as a last resort (see StaticEntitySprite), but it can only
@@ -122,11 +134,19 @@ public final class SpriteRegistry {
     //
     // This wins over NAME_OVERRIDES on purpose: a named still is a deliberate answer, and borrowing
     // another entity's animation to avoid a blank is worse than not moving.
-    private static final Map<String, String> STILL_IMAGES = Map.of(
+    //
+    // The float is how much to enlarge the image by, and it matters because these are UI ART, drawn at
+    // whatever size the UI needed. An animation is authored at lawn scale; an almanac thumbnail is not,
+    // and standing one on the lawn unscaled draws an entity that is simply the wrong size next to its
+    // neighbours -- which is what the Knight Zombie did. See KNIGHT_STILL_SCALE.
+    private static final Map<String, Still> STILL_IMAGES = Map.of(
             // A knight, not the crowned king it used to borrow. No animation ships for it.
-            "ZombieDarkArmor3", "IMAGE_UI_ALMANAC_PACKETS_ZOMBIES_DARK_ARMOR3",
+            "ZombieDarkArmor3",
+            new Still("IMAGE_UI_ALMANAC_PACKETS_ZOMBIES_DARK_ARMOR3", KNIGHT_STILL_SCALE),
             // One of the handful of plants absent from the dump entirely; its seed packet is not.
-            "Iceberg Lettuce", "IMAGE_UI_PACKETS_ICEBURG");
+            "Iceberg Lettuce", new Still("IMAGE_UI_PACKETS_ICEBURG", 1f));
+
+    private record Still(String regionId, float scale) { }
 
     public SpriteRegistry(PamPlayer player, TextureBank bank, FileHandle assetRoot) {
         this.player = player;
@@ -212,13 +232,13 @@ public final class SpriteRegistry {
     }
 
     private EntitySprite build(String entityName) {
-        String still = STILL_IMAGES.get(entityName);
+        Still still = STILL_IMAGES.get(entityName);
         if (still != null) {
-            com.badlogic.gdx.graphics.g2d.TextureRegion region = regionOrNull(still);
+            com.badlogic.gdx.graphics.g2d.TextureRegion region = regionOrNull(still.regionId());
             if (region != null) {
-                return new StaticEntitySprite(region);
+                return new StaticEntitySprite(region, still.scale());
             }
-            Gdx.app.error("SpriteRegistry", "still image " + still + " for " + entityName
+            Gdx.app.error("SpriteRegistry", "still image " + still.regionId() + " for " + entityName
                     + " is not in the atlas");
         }
         AnimationEntry entry = lookup(entityName);

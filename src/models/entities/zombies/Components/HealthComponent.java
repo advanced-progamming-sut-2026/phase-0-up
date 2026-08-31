@@ -118,7 +118,9 @@ public class HealthComponent {
             lastAttacker = attacker;   // remember who to credit for the eventual kill
         }
 
-        if (element != null && element.piercesBaseArmor()) {
+        if (behindIce()) {
+            strikeIce(damage, element);
+        } else if (element != null && element.piercesBaseArmor()) {
             applyToBaseBody(damage);
         } else if (trajectory == Trajectory.LOBBED) {
             peelFromTopOverShields(damage);
@@ -129,6 +131,38 @@ public class HealthComponent {
         if (isDead()) {
             die();
         }
+    }
+
+    // Whether this zombie is still standing behind ice -- a Troglobite with at least one block left.
+    //
+    // The top of the stack is enough to ask: ZombieJSONParser pushes the blocks on last, so they are
+    // the outermost layers and they leave the stack from the outside in.
+    public boolean behindIce() {
+        return !layers.isEmpty() && layers.peek().getType() == ArmorType.ICE_BLOCK;
+    }
+
+    // A blow arriving at a frozen block, which is a different thing from a blow arriving at armour.
+    //
+    // Everything a plant can throw has to go through the ice first -- that is the whole point of a
+    // Troglobite, and it is why the poison branch above does NOT apply here. Goo seeping past a cone is
+    // goo landing on a zombie; a zombie sealed behind a wall of ice is not touching the goo at all, and
+    // letting it through made the game's most heavily armoured pusher softer than a Browncoat.
+    //
+    // The two elements ice cares about, matching FrozenTerrain and a plant's own block exactly, so all
+    // three kinds of block in this game answer fire and ice the same way:
+    //   FIRE  shatters one block outright, whatever it had left. This is what makes Hot Potato and a
+    //         Fire Peashooter the counter the game says they are.
+    //   ICE   does nothing at all. You cannot freeze ice.
+    // Anything else peels normally, so a big enough blow carries through into the block behind.
+    private void strikeIce(int damage, Element element) {
+        if (element == Element.ICE) {
+            return;
+        }
+        if (element == Element.FIRE) {
+            layers.pop();
+            return;
+        }
+        peelFromTop(damage);
     }
 
     // Poison and similar seep past every armor layer and damage the body directly.
@@ -223,8 +257,8 @@ public class HealthComponent {
             for (Cell cell : row.getCells()) {
                 if (cell.hasPlant()) {
                     Plant p = cell.getCurrentPlant();
-                    if (p != null && p.isCat() && p.getCursedByWizard() == currentZombie) {
-                        p.revertFromCat();
+                    if (p != null && p.isSheep() && p.getCursedByWizard() == currentZombie) {
+                        p.revertFromSheep();
                     }
                 }
             }

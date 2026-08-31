@@ -74,15 +74,25 @@ public final class ToastPolicy {
                     + "|spawned at wave|claws its way up|is dead at|is destroyed\\."
                     + "|wanders off the far end|smashes|hurls its Imp|hurls ice at"
                     + "|fires a laser beam|flings an octopus|rams its arcade machine|tackles"
-                    + "|knights a peasant|raises a grave|The Troglobite|The Barrel Roller falls"
+                    + "|takes aim at|winds up an octopus|raises its staff"
+                    // The wizard's hex, both ways round: the plant visibly BECOMES a sheep and
+                    // visibly comes back when its caster dies. See PlantSheep.
+                    + "|is hexed into a sheep|shakes off the hex"
+                    + "|knights a peasant|raises a grave|starts chanting|The Troglobite"
+                    + "|The Barrel Roller falls"
                     + "|The barrel bursts open|The rolling barrel crushes|The pianist strikes up"
                     + "|The piano smashes|The Fisherman Zombie|The Snorkel Zombie"
-                    + "|The Jester Zombie|dynamite explodes|dynamite fizzles"
+                    + "|The Jester Zombie|A frozen block shatters|dynamite explodes|dynamite fizzles"
                     + "|torch flares back to life|torch is snuffed out"
                     + "|ignores the chill|shrugs off the freeze"
                     // Shots, blasts and terrain damage.
                     + "|detonates at|Grapeshot bursts|A grave crumbles at|The grave at"
-                    + "|reflect|deflects|swats away|absorbs a fire projectile"
+                    // NOT the Imp Dragon's fire immunity. That one belongs on screen: a fire-proof
+                    // zombie is a RULE the board cannot show -- the pea bursts on it exactly as it
+                    // would on any other zombie and the health simply does not move, which reads as a
+                    // broken plant. The model now says it once per dragon (see StateComponent), so it
+                    // is a single line rather than one a second.
+                    + "|reflect|deflects|swats away"
                     // Cheats confirm themselves through the counter they just moved.
                     + "|Cooldowns gone|One fresh plant food|KA-BOOM|Kaboom! All|Sunny day!"
                     // Mini-game handling that is visible in the hand or on the lane.

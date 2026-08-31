@@ -42,6 +42,7 @@ public final class ZombieRenderer {
 
     // Event-driven one-shots (the Gargantuar's imp throw, the Imp's landing).
     private final ZombieActions actions = new ZombieActions();
+    private final ZombieFlight flight = new ZombieFlight();
 
     // Falling apart: which arm is still on, and the pieces already thrown. See ZombieDamage.
     private final views.gdx.sprite.ZombieDamage damage = new views.gdx.sprite.ZombieDamage();
@@ -69,12 +70,16 @@ public final class ZombieRenderer {
         return pieces;
     }
 
+    // The world this level is set in, for the one zombie whose art depends on it -- see spriteNameFor.
+    private final models.game.EnvironmentType environment;
+
     public ZombieRenderer(SpriteRegistry sprites, LawnGeometry lawn, EntityInterpolator interpolator,
-                          AnimationClocks clocks) {
+                          AnimationClocks clocks, models.game.EnvironmentType environment) {
         this.sprites = sprites;
         this.lawn = lawn;
         this.interpolator = interpolator;
         this.clocks = clocks;
+        this.environment = environment;
         this.pieces = new Dismemberment(sprites);
         this.botany = new ZombotanyHead(sprites);
     }
@@ -95,15 +100,15 @@ public final class ZombieRenderer {
         // landing are instants the model records only as a sentence, so ActionState still says WALKING
         // all the way through them. See ZombieActions.
         String action = actions.clipFor(zombie, sprite);
-        String clip = action != null ? action : ClipMap.forZombie(sprite, zombie);
+        // And a hop wins over both: a Dodo Rider clearing a Wall-nut is still WALKING as far as its
+        // ActionState is concerned, which is how it used to walk straight through one. See ZombieFlight.
+        String hop = flight.clipFor(zombie, sprite);
+        String clip = hop != null ? hop
+                : action != null ? action : ClipMap.forZombie(sprite, zombie);
         // Per zombie, restarted on clip change: otherwise the whole horde steps in unison and a
         // zombie that stops to bite starts its "eat" animation halfway through.
-        // A frozen zombie's animation stops dead. The model already holds its x still, but the walk
-        // clip kept playing -- so it marched on the spot and read as "the freeze does nothing". Passing
-        // 0 here holds the pose instead; the clock is still touched so AnimationClocks does not sweep
-        // the entry and restart the walk from frame 0 when it thaws.
-        float animationDelta = zombie.getState().isFrozen() ? 0f : delta;
-        float stateTime = ClipMap.sample(sprite, clip, clocks.advance(zombie, clip, animationDelta));
+        float stateTime = ClipMap.sample(sprite, clip,
+                clocks.advance(zombie, clip, heldStill(zombie) ? 0f : delta));
 
         float modelX = (float) zombie.getMovement().getPositionX();
         int modelLane = zombie.getMovement().getPositionY();
@@ -137,9 +142,7 @@ public final class ZombieRenderer {
         String alias = zombie.getAlias();
         parts = ZombotanyHead.hideSkull(alias, sprite, parts);
 
-        // Rear half of the ice block, so a frozen zombie is INSIDE it rather than behind a sticker.
-        // Drawn at white, then the batch colour is restored for the zombie's own tint.
-        drawIce(batch, zombie, ICE_BLOCK_BEHIND, x, footY, delta, 1f);
+        drawIceBehind(batch, zombie, x, footY, delta);
         batch.setColor(tintFor(zombie));
         drawWhole(batch, alias, sprite, clip, stateTime, x, footY, faceRight, parts,
                 scaleFor(zombie));
@@ -170,8 +173,8 @@ public final class ZombieRenderer {
             SpritePlacer.endAdditive(batch);
         }
 
-        // Front half of the block, over everything: the flash of a shot landing on the ice belongs
-        // under it, not on top.
+        // Front half of the block a frozen zombie is inside, over everything: the flash of a shot
+        // landing on the ice belongs under it, not on top.
         drawIce(batch, zombie, ICE_BLOCK_FRONT, x, footY, delta, ICE_FRONT_ALPHA);
 
         batch.setColor(previous);
@@ -195,6 +198,72 @@ public final class ZombieRenderer {
     // How much of the zombie still reads through the front half. Matches TerrainRenderer's, and for the
     // same reason: this world is near-white and so is the block.
     private static final float ICE_FRONT_ALPHA = 0.45f;
+
+    // Whether this zombie's animation should be standing still this frame.
+    //
+    // A frozen zombie's stops dead, and so does a BUTTERED one. The model already holds the x still for
+    // both, but the walk clip kept playing -- so it marched on the spot and read as "the freeze does
+    // nothing". The caller passes 0 delta instead, which holds the pose; the clock is still touched, so
+    // AnimationClocks does not sweep the entry and restart the walk from frame 0 when it comes back.
+    //
+    // Butter is a stun, not a slow: Zombie.update returns above every ability while it lasts, so a
+    // buttered zombie that went on swinging, tossing or chewing on screen would be showing work the
+    // model is not doing. Whatever pose it was caught in is the honest one to hold.
+    private static boolean heldStill(Zombie zombie) {
+        return zombie.getState().isFrozen() || zombie.getState().isButtered();
+    }
+
+    // Everything icy that belongs UNDER the zombie: the rear half of the block a frozen one is inside,
+    // so it is within the ice rather than behind a sticker, and the wall a Troglobite is shoving, so its
+    // hands come out onto the block it is leaning on.
+    private void drawIceBehind(Batch batch, Zombie zombie, float x, float footY, float delta) {
+        drawIce(batch, zombie, ICE_BLOCK_BEHIND, x, footY, delta, 1f);
+        drawPushedIce(batch, zombie, footY, delta);
+    }
+
+    // The wall of ice a Troglobite pushes, which had no art at all.
+    //
+    // In the model it is a stack of ICE_BLOCK layers -- three of them, each holding a Yeti Imp -- and
+    // the shared body's visibility maps cannot help: ZOMBIE_ICEAGE_TROGLOBITE carries no block part at
+    // all. Its art is a zombie leaning forward with empty hands, because in the original the blocks are
+    // separate objects. So they are drawn as separate objects, from the same two-part block that
+    // TerrainRenderer and the frozen-zombie path already use.
+    //
+    // Drawn BEFORE the zombie, and that is the whole difference between shoving and hiding: painted
+    // afterwards, the nearest block covers the Troglobite and it reads as a zombie cowering behind the
+    // ice rather than leaning into it.
+    //
+    // Both halves of each block at full opacity, unlike an occupied one: the transparency exists so a
+    // prisoner reads through the front, and the imp in these is not drawn until it is let out.
+    private void drawPushedIce(Batch batch, Zombie zombie, float footY, float delta) {
+        int blocks = models.entities.zombies.Abilities.PushIceAbility.blocksLeft(zombie);
+        // Furthest first, so a nearer block overlaps the one ahead of it the way a row of solid objects
+        // does when you are looking down the lane at it.
+        for (int index = blocks - 1; index >= 0; index--) {
+            float blockX = lawn.worldX((float) models.entities.zombies.Abilities.PushIceAbility
+                    .blockX(zombie, index));
+            drawIceBlockAt(batch, zombie, index, blockX, footY, delta);
+        }
+    }
+
+    private void drawIceBlockAt(Batch batch, Zombie zombie, int index, float blockX, float footY,
+                                float delta) {
+        for (String half : new String[] {ICE_BLOCK_BEHIND, ICE_BLOCK_FRONT}) {
+            EntitySprite ice = sprites.get(half);
+            if (ice == null || !ice.isReady()) {
+                continue;
+            }
+            String clip = ClipMap.firstAvailable(ice, ICE_BLOCK_CLIPS);
+            // Keyed per block as well as per zombie, or the three would shimmer in lockstep and read as
+            // one block drawn three times.
+            float stateTime = ClipMap.sample(ice, clip,
+                    clocks.advance(iceKey(half + index, zombie), clip, delta));
+            float previous = batch.getPackedColor();
+            batch.setColor(1f, 1f, 1f, 1f);
+            SpritePlacer.drawStanding(batch, ice, clip, stateTime, blockX, footY, true, null);
+            batch.setPackedColor(previous);
+        }
+    }
 
     private void drawIce(Batch batch, Zombie zombie, String spriteName, float x, float footY,
                          float delta, float alpha) {
@@ -259,8 +328,25 @@ public final class ZombieRenderer {
     // above and below. Brought down to roughly a normal zombie's footprint.
     private static final float SUN_PRODUCER_SCALE = 0.62f;
 
+    // The Yeti Imp, which is an ordinary Imp that came out of a block of ice.
+    //
+    // This roster has one imp -- ZombieImp, drawn in its Dark Ages monk's robes -- and the game calls
+    // the one a Troglobite carries a Yeti Imp; zombies.json even names the type ("iceage_imp"). Rather
+    // than invent a second zombie for what is the same 190-HP imp with the same behaviour, the WORLD
+    // picks the coat, which is exactly what SUN_PRODUCER_SPRITE below does for a different reason. A
+    // monk in a fur cave was the only thing wrong with it.
+    private static final String ICE_IMP_SPRITE = "ZOMBIE_ICEAGE_IMP";
+    private static final String IMP_ALIAS = "ZombieImp";
+
     private String spriteNameFor(Zombie zombie) {
-        return isSunProducer(zombie) ? SUN_PRODUCER_SPRITE : zombie.getAlias();
+        if (isSunProducer(zombie)) {
+            return SUN_PRODUCER_SPRITE;
+        }
+        if (IMP_ALIAS.equalsIgnoreCase(zombie.getAlias())
+                && environment == models.game.EnvironmentType.FROSTBITE_CAVES) {
+            return ICE_IMP_SPRITE;
+        }
+        return zombie.getAlias();
     }
 
     private float scaleFor(Zombie zombie) {
@@ -284,6 +370,8 @@ public final class ZombieRenderer {
         flashes.sweep();
         actions.advance(delta);
         actions.sweep();
+        flight.advance(delta);
+        flight.sweep();
         damage.sweep();
         pieces.advance(delta);
         worn.keySet().removeIf(zombie -> zombie.getHealth() == null

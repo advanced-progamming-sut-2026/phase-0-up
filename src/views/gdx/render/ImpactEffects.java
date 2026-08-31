@@ -148,13 +148,82 @@ public final class ImpactEffects {
         }
     };
 
+    // The Ice Age Hunter's snowball, which is the one impact in the game the view cannot infer.
+    //
+    // Everything else here is deduced from the board -- a projectile that was in flight and is gone has
+    // landed. The Hunter's throw creates no projectile at all: ThrowIceAbility reaches down the lane and
+    // calls takeIceHit() on the plant, so from the view's side a plant simply turns blue with nothing
+    // having crossed the gap. The model narrates it, so that sentence is the impact.
+    private static final java.util.regex.Pattern ICE_THROWN = java.util.regex.Pattern.compile(
+            "^.+? hurls ice at .+? at \\((\\d+), (\\d+)\\)\\.$");
+    private static final String SNOWBALL_SPLAT = "ZOMBIE_HUNTER_SNOWBALL_SPLAT";
+    // Bigger than a pea splat: this one covers a whole plant rather than marking a spot on a zombie.
+    private static final float SNOWBALL_WIDTH_CELLS = 1.0f;
+    private static final float SNOWBALL_LIFETIME = 0.625f;   // the clip's own length
+
+    // And the octopus a Beach Zombie throws, which is the same problem again with one difference: this
+    // one TRAVELS. The model binds the octopus to the plant in a single call with nothing in flight, so
+    // the sentence carries both tiles and the view flies the art between them.
+    private static final java.util.regex.Pattern OCTOPUS_THROWN = java.util.regex.Pattern.compile(
+            "^.+? flings an octopus from \\((\\d+), (\\d+)\\) onto .+? at \\((\\d+), (\\d+)\\)\\.$");
+    private static final String OCTOPUS = "ZOMBIE_OCTOPUS_PROJECTILE";
+    // `animation` is the 0.3s throw -- the octopus balled up in the air. Its long clips are the clinging
+    // loop PlantOctopus draws once it has landed, which is the wrong pose for something mid-flight.
+    private static final String OCTOPUS_CLIP = "animation";
+    private static final float OCTOPUS_WIDTH_CELLS = 0.8f;
+
+    // The throw leaves the zombie's HAND, which is over its head, not its tile centre.
+    //
+    // The sentence carries tiles and a tile has no height, so both ends of the flight would otherwise
+    // sit on the middle of a square: an octopus sliding along the ground out of the zombie's knees. A
+    // zombie is about 1.3 cells tall from the foot line, so a hand raised to throw is a little under a
+    // cell above the tile's centre.
+    private static final float OCTOPUS_FROM_LIFT_CELLS = 0.8f;
+    // And it lands where the octopus is DRAWN once it has hold of the plant, not on the plant's feet --
+    // the same lift PlantOctopus uses, so the thrown one arrives exactly where the clinging one appears.
+    private static final float OCTOPUS_TO_LIFT_CELLS = 0.42f;
+
     private final SpriteRegistry sprites;
+    private final views.gdx.map.LawnGeometry lawn;
     private final List<Burst> bursts = new ArrayList<>();
     private final LocalTransform transform = new LocalTransform();
     private int nextClip;
 
-    public ImpactEffects(SpriteRegistry sprites) {
+    public ImpactEffects(SpriteRegistry sprites, views.gdx.map.LawnGeometry lawn) {
         this.sprites = sprites;
+        this.lawn = lawn;
+    }
+
+    // Offered every event the model drains. Anything that is not a snowball landing is ignored.
+    public void onEvent(String message) {
+        if (message == null || lawn == null) {
+            return;
+        }
+        String text = message.trim();
+        try {
+            java.util.regex.Matcher iced = ICE_THROWN.matcher(text);
+            if (iced.matches()) {
+                int col = Integer.parseInt(iced.group(1));
+                int row = Integer.parseInt(iced.group(2));
+                // On the plant, not on the tile: a splat centred on the square lands at its feet.
+                add(lawn.centerX(col), lawn.centerY(row), lawn.centerX(col), lawn.centerY(row),
+                        SNOWBALL_SPLAT, SNOWBALL_WIDTH_CELLS, SNOWBALL_LIFETIME, null);
+                return;
+            }
+            java.util.regex.Matcher octopus = OCTOPUS_THROWN.matcher(text);
+            if (octopus.matches()) {
+                float cell = lawn.cellHeight();
+                add(lawn.centerX(Integer.parseInt(octopus.group(1))),
+                        lawn.centerY(Integer.parseInt(octopus.group(2)))
+                                + cell * OCTOPUS_FROM_LIFT_CELLS,
+                        lawn.centerX(Integer.parseInt(octopus.group(3))),
+                        lawn.centerY(Integer.parseInt(octopus.group(4)))
+                                + cell * OCTOPUS_TO_LIFT_CELLS,
+                        OCTOPUS, OCTOPUS_WIDTH_CELLS, STRIKE_LIFETIME, OCTOPUS_CLIP);
+            }
+        } catch (NumberFormatException ignored) {
+            // a sentence shaped like a throw but not one; nothing to draw
+        }
     }
 
     // World position, in the same space the projectile was drawn in. type may be null.
@@ -186,7 +255,7 @@ public final class ImpactEffects {
     // A named one-shot effect at a point -- the flash at a plant's mouth as it fires, rather than the
     // mark a shot leaves where it lands. Same machinery, different art and a different size.
     public void spawnMuzzle(float worldX, float worldY, String spriteName) {
-        add(worldX, worldY, worldX, worldY, spriteName, MUZZLE_WIDTH_CELLS, LIFETIME);
+        add(worldX, worldY, worldX, worldY, spriteName, MUZZLE_WIDTH_CELLS, LIFETIME, null);
     }
 
     // A strike: an effect that TRAVELS, from the plant that struck to whatever it struck.
@@ -196,11 +265,13 @@ public final class ImpactEffects {
     // knowledge that something went between them. Grave Buster uses the same call with both points the
     // same, because its dirt flies nowhere.
     public void spawnStrike(float fromX, float fromY, float toX, float toY, String spriteName) {
-        add(fromX, fromY, toX, toY, spriteName, STRIKE_WIDTH_CELLS, STRIKE_LIFETIME);
+        add(fromX, fromY, toX, toY, spriteName, STRIKE_WIDTH_CELLS, STRIKE_LIFETIME, null);
     }
 
+    // `clip` names one pose to hold; null cycles the CLIPS variants, which is what a repeated splat
+    // wants and a single flying object does not -- an octopus in the air has exactly one right pose.
     private void add(float fromX, float fromY, float toX, float toY, String spriteName,
-                     float widthCells, float lifetime) {
+                     float widthCells, float lifetime, String clip) {
         if (spriteName == null) {
             return;
         }
@@ -213,7 +284,7 @@ public final class ImpactEffects {
         burst.sprite = spriteName;
         burst.widthCells = widthCells;
         burst.lifetime = lifetime;
-        burst.clip = CLIPS[nextClip++ % CLIPS.length];
+        burst.clip = clip != null ? clip : CLIPS[nextClip++ % CLIPS.length];
         bursts.add(burst);
     }
 
@@ -249,7 +320,11 @@ public final class ImpactEffects {
         if (splat == null || !splat.isReady()) {
             return;
         }
-        String clip = ClipMap.firstAvailable(splat, burst.clip);
+        // "animation" behind the chosen variant, because firstAvailable's own fallback is `idle` and an
+        // effect animation has no idle -- so a splat that ships fewer variants than CLIPS cycles through
+        // was handed a clip name it does not carry, which resolves to nothing and draws nothing. The
+        // snowball has two of the three, so one throw in three left no mark at all.
+        String clip = ClipMap.firstAvailable(splat, burst.clip, "animation");
         com.badlogic.gdx.math.Rectangle bounds = splat.bounds(clip);
         if (bounds == null || bounds.width <= 0f) {
             return;

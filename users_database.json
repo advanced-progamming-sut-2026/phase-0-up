@@ -10,8 +10,8 @@
     "stayLoggedIn": true,
     "profile": {
       "gameNumbers": 0,
-      "coins": 21280,
-      "gems": 1231,
+      "coins": 21560,
+      "gems": 1233,
       "plantFoodCount": 0,
       "difficultyLevel": 3,
       "bestNumberOfMeowPoints": 1237,
@@ -193,6 +193,60 @@
           "description": "You\u0027ve met a ZombieIceAgeHunter and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-08-30",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 21,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieNewspaper and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 22,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDarkKing and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 23,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieIceAgeDodo and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 24,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBeachOctopus and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 25,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieDarkJuggler and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 26,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieWizard and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-08-31",
           "read": false,
           "type": "ZOMBIE_DISCOVERY"
         }
@@ -506,27 +560,33 @@
       "passedMiniGames": {
         "Beghouled": 1
       },
-      "dailyQuestsDone": 13,
+      "dailyQuestsDone": 15,
       "noneDailyQuestsDone": 2,
       "hasBoughtDailyOfferToday": false,
       "seenZombieAliases": [
-        "ZombieIceAgeTroglobite",
         "ZombieRa",
-        "ZombieProspector",
-        "ZombieModernAllStar",
         "ZombieTombRaiser",
+        "ZombieDarkJuggler",
         "ZombieImp",
         "ZombieGargantuar",
-        "ZombieIceAgeHunter",
         "ZombieDarkImpDragon",
+        "ZombieIceAgeDodo",
         "ZombieArmor4",
         "ZombieDefault",
         "ZombieArmor1",
         "ZombieArmor2",
         "ZombieLostCityJane",
+        "ZombieNewspaper",
+        "ZombieExplorer",
+        "ZombieIceAgeTroglobite",
+        "ZombieProspector",
+        "ZombieDarkKing",
+        "ZombieModernAllStar",
+        "ZombieIceAgeHunter",
+        "ZombieWizard",
+        "ZombieBeachOctopus",
         "ZombieBeachFisherman",
         "ZombieBeachSnorkel",
-        "ZombieExplorer",
         "ZombieDarkArmor3",
         "ZombieCrystalSkull"
       ],
@@ -541,42 +601,31 @@
         "ancient_egypt": 9
       },
       "completedDailyQuestIds": [
-        "ocd",
-        "one_column_less",
-        "pro_plant_player",
         "daily_sun_catcher",
-        "flourish_in_constraints",
-        "almost_victorious",
-        "family_massacre"
+        "pro_demolisher"
       ],
-      "questDayStamp": "2026-08-30",
-      "sunCollectedToday": 3975,
-      "mowerlessFirstColumnKillsToday": 13,
+      "questDayStamp": "2026-08-31",
+      "sunCollectedToday": 3625,
+      "mowerlessFirstColumnKillsToday": 3,
       "killsByPlantToday": {
-        "winter melon": 4,
-        "bowling bulb": 6,
-        "wasabi whip": 6,
-        "rotobaga": 9,
+        "potato mine": 1,
+        "kiwibeast": 1,
+        "mega gatling pea": 16,
         "kernel-pult": 2,
-        "goo peashooter": 1,
-        "peashooter": 14,
-        "pea pod": 8,
-        "threepeater": 7,
-        "citron": 16,
-        "kiwibeast": 9,
-        "cactus": 13,
-        "fume-shroom": 3,
-        "fire peashooter": 3,
-        "starfruit": 3,
-        "melon-pult": 5,
-        "repeater": 4,
-        "cabbage-pult": 7
+        "primal potato mine": 2,
+        "peashooter": 4,
+        "chomper": 1,
+        "fire peashooter": 2,
+        "jalapeno": 7,
+        "citron": 17,
+        "repeater": 8,
+        "bonk choy": 6
       },
-      "lawnmowerKillsTotal": 25,
+      "lawnmowerKillsTotal": 31,
       "gameSpeed": 1,
       "showGrid": false,
       "debugMode": true,
-      "volume": 80
+      "volume": 24
     }
   },
   "parsa": {

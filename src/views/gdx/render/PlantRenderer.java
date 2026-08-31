@@ -108,12 +108,14 @@ public final class PlantRenderer {
 
     // The octopus that grabs a plant is drawn over it; see PlantOctopus.
     private final PlantOctopus octopus;
+    private final PlantSheep sheep;
 
     public PlantRenderer(SpriteRegistry sprites, LawnGeometry lawn, AnimationClocks clocks) {
         this.sprites = sprites;
         this.lawn = lawn;
         this.clocks = clocks;
         this.octopus = new PlantOctopus(sprites, lawn);
+        this.sheep = new PlantSheep(sprites, lawn);
     }
 
     // Redraws one plant on top of whatever has already been drawn, WITHOUT advancing its clock (the
@@ -155,12 +157,26 @@ public final class PlantRenderer {
             return;
         }
 
-        String clip = clipFor(sprite, plant, delta, damageStage);
+        // A hexed plant is not drawn at all -- it IS a sheep until the wizard that cast it dies, and a
+        // Peashooter standing there doing nothing reads as a broken plant rather than a spell. The one
+        // status that replaces the plant instead of decorating it. See PlantSheep.
+        if (plant.isSheep()) {
+            sheep.draw(batch, plant, lawn.centerX(col), footY(row));
+            return;
+        }
+
+        // An incapacitated plant is STOPPED, not slowed: frozen solid, held by an octopus or hexed into
+        // a sheep, its abilities do not run (Plant.update returns above them) and neither should its
+        // animation. Passing 0 holds the pose exactly as ZombieRenderer does for a frozen zombie -- and
+        // the clock is still touched, so AnimationClocks does not sweep the entry and restart the plant
+        // from frame 0 the instant it thaws.
+        float animationDelta = plant.isDisabled() ? 0f : delta;
+        String clip = clipFor(sprite, plant, animationDelta, damageStage);
 
         // The clock is advanced even while an action clip is driving the pose, so the plant keeps its
         // entry in AnimationClocks: dropping out of the map and back in would reset idle to frame 0
         // after every shot, which is its own visible jump.
-        float freeRunning = clocks.advance(plant, clip, delta);
+        float freeRunning = clocks.advance(plant, clip, animationDelta);
         Float phase = actionPhase.get(plant);
         float elapsed = phase != null ? phase : freeRunning;
         // No wrapping here any more. The loop stage used to run for a fixed window far longer than its
@@ -652,6 +668,7 @@ public final class PlantRenderer {
         flashes.sweep();
         iceFlashes.sweep();
         octopus.advance(delta);
+        sheep.advance(delta);
     }
 
     // ---- strikes -------------------------------------------------------------------------------
@@ -817,7 +834,15 @@ public final class PlantRenderer {
         noteGrowth(sprite, plant);
         noteStrike(plant);
 
-        if (plant.isWindingUp()) {
+        // Nothing is in progress on an incapacitated plant. Its abilities stopped where they stood, so
+        // a clip left running would hold whatever pose it was in for the whole freeze -- a Cabbage-pult
+        // stuck with its arm back. Dropped rather than held: the plant is doing nothing, and the pose
+        // for doing nothing is idle. It replays from the top when the model arms the next action, which
+        // is a fresh rising edge because isWindingUp() reads false throughout.
+        if (plant.isDisabled()) {
+            endAction(plant);
+            winding.remove(plant);
+        } else if (plant.isWindingUp()) {
             if (winding.add(plant)) {
                 actionPhase.put(plant, 0f);   // rising edge: a fresh action just began
             }

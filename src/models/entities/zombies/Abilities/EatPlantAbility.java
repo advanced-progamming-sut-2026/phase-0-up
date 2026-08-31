@@ -25,7 +25,7 @@ public class EatPlantAbility implements ZombieAbility {
 
         Plant targetPlant = findTargetPlant(zombie);
 
-        if (targetPlant == null || targetPlant.isDead() && !targetPlant.isCat()) {
+        if (targetPlant == null || targetPlant.isDead()) {
             if (zombie.getState().getCurrentAction() == ActionState.EATING) {
                 zombie.getState().setAction(ActionState.WALKING);
             }
@@ -61,7 +61,12 @@ public class EatPlantAbility implements ZombieAbility {
         }
         for (Cell cell : zombie.getGameSession().getMap().getRow(zombieRow).getCells()) {
             Plant plant = cell.getDefendingPlant(); // eats the protective cover (Pumpkin) first, if any
-            if (plant != null && plant.getY() == zombieRow && !plant.isDead()) {
+            // A sheep is not lunch. The hex does two things in the game and this is the second of them:
+            // the plant stops working AND the horde walks straight past it, which is what makes one
+            // wizard worth more than the damage it deals. Skipped here rather than at the bite, so the
+            // zombie never even stops -- stopping at a plant it then refuses to eat would wall the lane
+            // just as effectively as the plant did.
+            if (plant != null && plant.getY() == zombieRow && !plant.isDead() && !plant.isSheep()) {
                 double distance = Math.abs(zombieX - plant.getX());
 
                 if (distance <= COLLISION_THRESHOLD) {
