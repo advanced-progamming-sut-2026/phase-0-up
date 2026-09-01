@@ -116,7 +116,7 @@ public final class ZombieRenderer {
         float x = lawn.worldX(interpolator.x(zombie, modelX, alpha)) + footPlanting(zombie, sprite,
                 clip, stateTime);
         float lane = interpolator.lane(zombie, modelLane, alpha);
-        float footY = laneFootY(lane);
+        float footY = laneFootY(lane) + flightArc(zombie);
         reportLane(zombie, modelLane, lane, footY);
 
         // No armour map for the mech: its parts are its own, and a bucket toggle would name nothing.
@@ -142,7 +142,7 @@ public final class ZombieRenderer {
         String alias = zombie.getAlias();
         parts = ZombotanyHead.hideSkull(alias, sprite, parts);
 
-        drawIceBehind(batch, zombie, x, footY, delta);
+        drawIceBehind(batch, zombie, sprite, x, footY, delta, clip, stateTime);
         batch.setColor(tintFor(zombie));
         drawWhole(batch, alias, sprite, clip, stateTime, x, footY, faceRight, parts,
                 scaleFor(zombie));
@@ -199,6 +199,29 @@ public final class ZombieRenderer {
     // same reason: this world is near-white and so is the block.
     private static final float ICE_FRONT_ALPHA = 0.45f;
 
+    // How high a flying Prospector is above its lane, in world pixels.
+    //
+    // The model owns where the zombie is ALONG the lane -- CarryADynamite walks its x from the launch
+    // tile to column 0 over thirteen ticks -- and this is the other axis, which the model has no notion
+    // of and does not need one: height is pure presentation, and a lane is a line rather than a plane.
+    //
+    // A parabola through the progress, so it leaves the ground at the launch, peaks over the middle of
+    // the lawn and touches down exactly as the flight ends. 4*p*(1-p) is zero at both ends and 1 in the
+    // middle, which is precisely the shape wanted and costs one multiply.
+    //
+    // The progress comes from ZombieFlight's own clock rather than from the model's, so it advances
+    // every FRAME instead of every tick -- see ZombieFlight.flightProgress. Reading the model's stepped
+    // it ten times a second and the zombie climbed in stairs.
+    private static final float FLIGHT_APEX_CELLS = 2.2f;
+
+    private float flightArc(Zombie zombie) {
+        float p = flight.flightProgress(zombie);
+        if (p <= 0f) {
+            return 0f;
+        }
+        return 4f * p * (1f - p) * FLIGHT_APEX_CELLS * lawn.cellHeight();
+    }
+
     // Whether this zombie's animation should be standing still this frame.
     //
     // A frozen zombie's stops dead, and so does a BUTTERED one. The model already holds the x still for
@@ -213,12 +236,160 @@ public final class ZombieRenderer {
         return zombie.getState().isFrozen() || zombie.getState().isButtered();
     }
 
-    // Everything icy that belongs UNDER the zombie: the rear half of the block a frozen one is inside,
-    // so it is within the ice rather than behind a sticker, and the wall a Troglobite is shoving, so its
-    // hands come out onto the block it is leaning on.
-    private void drawIceBehind(Batch batch, Zombie zombie, float x, float footY, float delta) {
+    // Everything that belongs UNDER the zombie: the rear half of the block a frozen one is inside, so
+    // it is within the ice rather than behind a sticker, and whatever it is SHOVING, so its hands come
+    // out onto the thing it is leaning on.
+    private void drawIceBehind(Batch batch, Zombie zombie, EntitySprite sprite, float x, float footY,
+                               float delta, String clip, float stateTime) {
         drawIce(batch, zombie, ICE_BLOCK_BEHIND, x, footY, delta, 1f);
-        drawPushedIce(batch, zombie, footY, delta);
+        // Both pushers hang off the zombie's DRAWN x plus the shove, so the thing being pushed shares
+        // its interpolation, its foot planting and the thrust of its arms. See pushShove.
+        float front = x + pushShove(zombie, sprite, clip, stateTime);
+        drawPushedIce(batch, zombie, front, footY, delta);
+        drawArcadeCabinet(batch, zombie, front, footY, delta);
+        drawPiano(batch, zombie, x, footY, delta);
+    }
+
+    // The Piano Zombie's piano, which is a whole separate animation and was never drawn.
+    //
+    // The dump ships two: ZOMBIE_PIANO is the zombies at the keyboard and PIANO is the instrument they
+    // are pushing. The alias resolves to the first, so the lane got a pianist rolling along playing
+    // nothing -- and the ability crushing two rows of plants had no visible cause at all.
+    //
+    // At the zombie's OWN x with no offset, unlike the ice and the cabinet: PianoCrushAbility flattens
+    // what is within a tile of the zombie itself across its lane AND the one above, so the instrument
+    // is not out in front of the group, it is what the group is standing at. Its authored height is
+    // what covers the second row.
+    //
+    // Drawn UNDER the zombie so the players stay visible over their own instrument, and on `play`,
+    // which is what a piano rolling down a lawn with someone sitting at it is doing.
+    private static final String PIANO_SPRITE = "PIANO";
+    private static final String[] PIANO_CLIPS = {"play", "idle"};
+    // Battered but still rolling. The instrument takes the same fire the zombies pushing it do, so it
+    // shows it: below half health it switches from playing to a splintered version of the same loop,
+    // which is the piano's equivalent of a zombie losing an arm. Its `die` belongs to the moment it
+    // comes apart and is played by DeathEffects, not here.
+    private static final String[] PIANO_DAMAGED_CLIPS = {"damage", "play2", "play"};
+    private static final float PIANO_DAMAGE_THRESHOLD = 0.5f;
+    private static final String PIANO_ALIAS = "ZombiePiano";
+
+    private void drawPiano(Batch batch, Zombie zombie, float x, float footY, float delta) {
+        if (!PIANO_ALIAS.equalsIgnoreCase(zombie.getAlias())) {
+            return;
+        }
+        EntitySprite piano = sprites.get(PIANO_SPRITE);
+        if (piano == null || !piano.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(piano, pianoBattered(zombie)
+                ? PIANO_DAMAGED_CLIPS : PIANO_CLIPS);
+        float stateTime = ClipMap.sample(piano, clip,
+                clocks.advance(iceKey(PIANO_SPRITE, zombie), clip, heldStill(zombie) ? 0f : delta));
+        float previous = batch.getPackedColor();
+        batch.setColor(1f, 1f, 1f, 1f);
+        SpritePlacer.drawStanding(batch, piano, clip, stateTime, x, footY, true, null);
+        batch.setPackedColor(previous);
+    }
+
+    // Measured against the health the zombie STARTED with, not the surviving layers: peeling armour
+    // pops layers off the stack, so summing what is left can never recover the original. Same figure
+    // ZombieDamage uses to decide when an arm comes off.
+    private static boolean pianoBattered(Zombie zombie) {
+        if (zombie.getHealth() == null) {
+            return false;
+        }
+        return zombie.getHealth().getTotalHP()
+                < zombie.getHealth().getMaxTotalHp() * PIANO_DAMAGE_THRESHOLD;
+    }
+
+    // How far ahead of the ZOMBIE the thing it is pushing should be drawn this frame, in world pixels,
+    // on top of its resting offset.
+    //
+    // The pushed object used to sit at a fixed distance ahead: it travelled with the zombie's position
+    // but not with its ANIMATION, so a Troglobite pumped its arms against a block gliding along
+    // untouched. The cycle is now push, walk up, push -- the block is sent on ahead during the thrust
+    // and stands still while the zombie closes the gap.
+    //
+    // Both terms are "how far ahead of the straight line", as fractions of one cycle's travel, and the
+    // answer is the DIFFERENCE: the block's own progress (PushCycle, the running maximum of the pushing
+    // hand) minus the body's (WalkCycle, the ground swatch). Subtracting the body is what makes the gap
+    // open and close instead of the pair moving as one piece -- and it is also why the hold is a real
+    // hold, because during the flat stretch the model's advance is cancelled exactly.
+    //
+    // Stride is computed the same way foot planting computes it, from the MODEL's speed, so a chilled
+    // pusher shoves proportionally less and the two corrections stay in the same units. Direction
+    // matches the facing for the same reason as well: a shove pointing the wrong way would pull the
+    // block back through the zombie on every thrust.
+    private float pushShove(Zombie zombie, EntitySprite sprite, String clip, float stateTime) {
+        if (sprite == null || clip == null) {
+            return 0f;
+        }
+        views.gdx.sprite.PushCycle push = pushFor(zombie.getAlias(), sprite, clip);
+        if (push == null) {
+            return 0f;
+        }
+        WalkCycle walk = walkFor(zombie.getAlias(), sprite, clip);
+        float bodyLead = walk == null ? 0f : walk.lead(stateTime);
+        double perTick = zombie.getMovement().getSpeed() * utils.Constants.ZOMBIE_SPEED_SCALE;
+        float stride = (float) (perTick * utils.Constants.TICKS_PER_SECOND
+                * sprite.clipDuration(clip)) * lawn.cellWidth();
+        float direction = zombie.getMovement().isMovingRight() ? 1f : -1f;
+        return direction * stride * (push.lead(stateTime) - bodyLead);
+    }
+
+    // Cached per (alias, clip) exactly as the walk cycles are: building one walks every frame of the
+    // clip, and this is asked once per pushing zombie per frame.
+    private final Map<String, views.gdx.sprite.PushCycle> pushes = new java.util.HashMap<>();
+    private final java.util.Set<String> pushesMissing = new java.util.HashSet<>();
+
+    private views.gdx.sprite.PushCycle pushFor(String alias, EntitySprite sprite, String clip) {
+        String key = alias + '#' + clip;
+        views.gdx.sprite.PushCycle cached = pushes.get(key);
+        if (cached != null || pushesMissing.contains(key)) {
+            return cached;
+        }
+        views.gdx.sprite.PushCycle built = views.gdx.sprite.PushCycle.of(sprite, clip);
+        if (built == null) {
+            pushesMissing.add(key);
+        } else {
+            pushes.put(key, built);
+        }
+        return built;
+    }
+
+
+    // The Arcade Zombie's machine, which had no art on the lawn at all.
+    //
+    // 80S_ARCADE_CABINET is its own animation rather than a part of the zombie -- in the original the
+    // cabinet is a grid item the zombie happens to be behind -- so it is drawn as a separate object one
+    // tile ahead, exactly as the Troglobite's ice blocks are, and BEFORE the zombie so the zombie's
+    // hands come out onto it.
+    //
+    // `active` is the 1.7s attract-mode loop, which is what a working arcade machine does: it sits
+    // there playing to nobody. `idle` is a quarter-second still and `death` belongs to the moment it
+    // comes apart, which the model announces separately.
+    private static final String ARCADE_CABINET = "80S_ARCADE_CABINET";
+    private static final String[] ARCADE_CABINET_CLIPS = {"active", "idle"};
+    private static final float ARCADE_OFFSET_CELLS = 0.9f;
+
+    private void drawArcadeCabinet(Batch batch, Zombie zombie, float front, float footY, float delta) {
+        if (!models.entities.zombies.Abilities.ArcadePushAbility.stillPushing(zombie)) {
+            return;
+        }
+        EntitySprite cabinet = sprites.get(ARCADE_CABINET);
+        if (cabinet == null || !cabinet.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(cabinet, ARCADE_CABINET_CLIPS);
+        float stateTime = ClipMap.sample(cabinet, clip,
+                clocks.advance(iceKey(ARCADE_CABINET, zombie), clip, delta));
+        float offset = lawn.cellWidth() * ARCADE_OFFSET_CELLS;
+        float cabinetX = zombie.getMovement().isMovingRight() ? front + offset : front - offset;
+
+        float previous = batch.getPackedColor();
+        batch.setColor(1f, 1f, 1f, 1f);
+        SpritePlacer.drawStanding(batch, cabinet, clip, stateTime, cabinetX, footY, true, null);
+        batch.setPackedColor(previous);
     }
 
     // The wall of ice a Troglobite pushes, which had no art at all.
@@ -235,34 +406,75 @@ public final class ZombieRenderer {
     //
     // Both halves of each block at full opacity, unlike an occupied one: the transparency exists so a
     // prisoner reads through the front, and the imp in these is not drawn until it is let out.
-    private void drawPushedIce(Batch batch, Zombie zombie, float footY, float delta) {
+    private void drawPushedIce(Batch batch, Zombie zombie, float front, float footY, float delta) {
         int blocks = models.entities.zombies.Abilities.PushIceAbility.blocksLeft(zombie);
+        // The model's own spacing, borrowed rather than re-guessed: it is what decides where the wall
+        // actually crushes things, and a drawn wall a different width from the one doing the crushing
+        // is a lie the player can measure.
+        float step = lawn.cellWidth()
+                * (float) models.entities.zombies.Abilities.PushIceAbility.BLOCK_SPACING;
+        float direction = zombie.getMovement().isMovingRight() ? 1f : -1f;
+        // Laid out from the zombie's drawn position rather than from its model tile. Reading the model
+        // straight -- which is what this did -- meant the wall ignored the interpolation between ticks
+        // and the foot planting, so it juddered against a zombie that was moving smoothly.
+        //
         // Furthest first, so a nearer block overlaps the one ahead of it the way a row of solid objects
         // does when you are looking down the lane at it.
         for (int index = blocks - 1; index >= 0; index--) {
-            float blockX = lawn.worldX((float) models.entities.zombies.Abilities.PushIceAbility
-                    .blockX(zombie, index));
-            drawIceBlockAt(batch, zombie, index, blockX, footY, delta);
+            drawIceBlockAt(batch, zombie, index, front + direction * step * (index + 1), footY, delta);
         }
     }
 
+    // Each block is drawn in three passes, which is the whole reason the block art ships in halves: the
+    // rear behind, the PASSENGER, then the front over it at partial alpha. Exactly how a frozen zombie
+    // is drawn inside its own block -- and it is the same situation, because there really is a zombie
+    // in there. Drawn at full opacity with nothing between the halves, the blocks were solid lumps and
+    // the Yeti Imp that bursts out of one arrived from nowhere.
     private void drawIceBlockAt(Batch batch, Zombie zombie, int index, float blockX, float footY,
                                 float delta) {
-        for (String half : new String[] {ICE_BLOCK_BEHIND, ICE_BLOCK_FRONT}) {
-            EntitySprite ice = sprites.get(half);
-            if (ice == null || !ice.isReady()) {
-                continue;
-            }
-            String clip = ClipMap.firstAvailable(ice, ICE_BLOCK_CLIPS);
-            // Keyed per block as well as per zombie, or the three would shimmer in lockstep and read as
-            // one block drawn three times.
-            float stateTime = ClipMap.sample(ice, clip,
-                    clocks.advance(iceKey(half + index, zombie), clip, delta));
-            float previous = batch.getPackedColor();
-            batch.setColor(1f, 1f, 1f, 1f);
-            SpritePlacer.drawStanding(batch, ice, clip, stateTime, blockX, footY, true, null);
-            batch.setPackedColor(previous);
+        drawIceHalf(batch, zombie, ICE_BLOCK_BEHIND, index, blockX, footY, delta, 1f);
+        drawTrappedImp(batch, zombie, index, blockX, footY, delta);
+        drawIceHalf(batch, zombie, ICE_BLOCK_FRONT, index, blockX, footY, delta, ICE_FRONT_ALPHA);
+    }
+
+    private void drawIceHalf(Batch batch, Zombie zombie, String half, int index, float blockX,
+                             float footY, float delta, float alpha) {
+        EntitySprite ice = sprites.get(half);
+        if (ice == null || !ice.isReady()) {
+            return;
         }
+        String clip = ClipMap.firstAvailable(ice, ICE_BLOCK_CLIPS);
+        // Keyed per block as well as per zombie, or the three would shimmer in lockstep and read as
+        // one block drawn three times.
+        float stateTime = ClipMap.sample(ice, clip,
+                clocks.advance(iceKey(half + index, zombie), clip, delta));
+        float previous = batch.getPackedColor();
+        batch.setColor(1f, 1f, 1f, alpha);
+        SpritePlacer.drawStanding(batch, ice, clip, stateTime, blockX, footY, true, null);
+        batch.setPackedColor(previous);
+    }
+
+    // The Yeti Imp waiting inside one of the blocks.
+    //
+    // Not a model object -- the imp does not exist until the block breaks and PushIceAbility creates it
+    // -- so this is the view drawing what the block CONTAINS, which the model records only as "one more
+    // ICE_BLOCK layer". That is enough: every one of those layers is an imp's ride.
+    //
+    // Its own art in this world, and its `idle` clip, held rather than run: something frozen in a block
+    // is not walking. Clocked at zero delta for exactly that reason.
+    private void drawTrappedImp(Batch batch, Zombie zombie, int index, float blockX, float footY,
+                                float delta) {
+        EntitySprite imp = sprites.get(ICE_IMP_SPRITE);
+        if (imp == null || !imp.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(imp, ClipMap.IDLE);
+        float stateTime = ClipMap.sample(imp, clip,
+                clocks.advance(iceKey("imp" + index, zombie), clip, 0f));
+        float previous = batch.getPackedColor();
+        batch.setColor(1f, 1f, 1f, 1f);
+        SpritePlacer.drawStanding(batch, imp, clip, stateTime, blockX, footY, true, null);
+        batch.setPackedColor(previous);
     }
 
     private void drawIce(Batch batch, Zombie zombie, String spriteName, float x, float footY,
@@ -338,15 +550,51 @@ public final class ZombieRenderer {
     private static final String ICE_IMP_SPRITE = "ZOMBIE_ICEAGE_IMP";
     private static final String IMP_ALIAS = "ZombieImp";
 
+    // A peasant the King Zombie has knighted, drawn as THE Knight Zombie.
+    //
+    // A knighted peasant and ZombieDarkArmor3 are the same thing -- zombies.json gives the Knight
+    // Zombie exactly the pair of armours the king hands out (CrownDefault, ShoulderArmorDefault) -- so
+    // it is drawn from the same art, and the two are guaranteed to look alike because they ARE alike.
+    // SpriteRegistry keys its still images on the alias, so this inherits the Knight's picture and its
+    // scale with nothing further to keep in step.
+    //
+    // The alternative was the Dark Ages peasant body with its crown and pauldron parts switched on,
+    // which would animate. It is not used, twice over: the shared body a peasant is normally drawn from
+    // (ZOMBIE_TUTORIAL) has no such parts at all, which is why a knighted zombie was coming out
+    // bare-headed -- and the substitute body did not read as a knight either. Whether those parts can
+    // be made to show is not answerable from the asset dump alone; the Knight's own art needs no such
+    // question asked of it.
+    private static final String KNIGHT_ALIAS = "ZombieDarkArmor3";
+    private static final String PEASANT_ALIAS = "ZombieDefault";
+
     private String spriteNameFor(Zombie zombie) {
         if (isSunProducer(zombie)) {
             return SUN_PRODUCER_SPRITE;
+        }
+        if (PEASANT_ALIAS.equalsIgnoreCase(zombie.getAlias()) && isKnighted(zombie)) {
+            return KNIGHT_ALIAS;
         }
         if (IMP_ALIAS.equalsIgnoreCase(zombie.getAlias())
                 && environment == models.game.EnvironmentType.FROSTBITE_CAVES) {
             return ICE_IMP_SPRITE;
         }
         return zombie.getAlias();
+    }
+
+    // Whether this zombie is carrying a knighthood -- either piece is enough, because a knight that has
+    // had its helm shot off is still wearing the pauldron and still needs the body that can draw it.
+    private static boolean isKnighted(Zombie zombie) {
+        if (zombie.getHealth() == null) {
+            return false;
+        }
+        for (models.entities.zombies.Components.HealthLayer layer : zombie.getHealth().getLayers()) {
+            models.entities.zombies.Components.ArmorType type = layer.getType();
+            if (type == models.entities.zombies.Components.ArmorType.CROWN
+                    || type == models.entities.zombies.Components.ArmorType.SHOULDER_ARMOR) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private float scaleFor(Zombie zombie) {

@@ -24,7 +24,7 @@ public class ForwardStandardTrigger implements TriggerStrategy {
 
         if (zombiesInRow != null) {
             for (Zombie z : zombiesInRow) {
-                if (z.isTargetable() && z.getMovement().getPositionX() > owner.getX()) {
+                if (Targets.reachable(owner, z) && z.getMovement().getPositionX() > owner.getX()) {
                     return true;
                 }
             }

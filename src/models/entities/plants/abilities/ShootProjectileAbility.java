@@ -228,6 +228,12 @@ public class ShootProjectileAbility extends PlantAbility implements Burstable {
         gameSession.getMap().getRow(owner.getY()).addProjectile(projectile);
     }
 
+    // How this plant's shots travel. Read by Plant.lobsShots, which is how the triggers know whether
+    // this plant can reach a zombie that is under water.
+    public Trajectory getTrajectory() {
+        return trajectory;
+    }
+
     public Element getElement() {
         return element;
     }

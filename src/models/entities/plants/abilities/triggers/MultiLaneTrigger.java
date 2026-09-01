@@ -39,7 +39,7 @@ public class MultiLaneTrigger implements TriggerStrategy {
 
                 if (zombiesInRow != null) {
                     for (Zombie z : zombiesInRow) {
-                        if (z.isTargetable() && z.getMovement().getPositionX() > ownerX) {
+                        if (Targets.reachable(owner, z) && z.getMovement().getPositionX() > ownerX) {
                             return true;
                         }
                     }

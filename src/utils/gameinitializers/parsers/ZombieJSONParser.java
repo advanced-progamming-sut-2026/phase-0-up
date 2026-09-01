@@ -55,16 +55,26 @@ public class ZombieJSONParser implements Parser<ZombieTemplate> {
                 d.eatDps,
                 d.wavePointCost,
                 d.canSpawnPlantFood,
-                buildArmors(d));
+                buildArmors(raw.objclass, d));
     }
 
-    // The zombie's full armor stack: its ZombieArmorProps (cone, bucket, ...) plus, for the Troglobite,
-    // one ICE_BLOCK layer per ice block it spawns with. The ice sits on top, so it is what damage --
-    // and PushIceAbility's "does it still have ice?" check -- meets first.
-    private List<ArmorType> buildArmors(ObjData d) {
+    // The objclass of the zombie that pushes an arcade machine. The machine is not in ZombieArmorProps
+    // -- nothing in the dump's data describes it, because in the original it is a grid item rather than
+    // armour -- so the blueprint is what identifies it, exactly as iceBlocksToSpawnWith identifies the
+    // Troglobite.
+    private static final String ARCADE_OBJCLASS = "ZombieArcadeProps";
+
+    // The zombie's full armor stack: its ZombieArmorProps (cone, bucket, ...) plus the things it SHOVES
+    // -- one ICE_BLOCK per ice block the Troglobite spawns with, and the Arcade Zombie's cabinet. Those
+    // sit on top, so they are what damage meets first, and what each pusher's "have I still got it?"
+    // check reads.
+    private List<ArmorType> buildArmors(String objclass, ObjData d) {
         List<ArmorType> armors = parseArmors(d.zombieArmorProps);
         for (int i = 0; i < d.iceBlocksToSpawnWith; i++) {
             armors.add(ArmorType.ICE_BLOCK);
+        }
+        if (ARCADE_OBJCLASS.equals(objclass)) {
+            armors.add(ArmorType.ARCADE_CABINET);
         }
         return armors;
     }

@@ -104,6 +104,7 @@ final class ZombieFlight {
         for (Hop hop : hops.values()) {
             hop.elapsed += delta;
         }
+        flights.replaceAll((zombie, elapsed) -> elapsed + delta);
     }
 
     // Drops riders that are gone, so a long level does not accumulate an entry for every one that ever
@@ -111,5 +112,32 @@ final class ZombieFlight {
     void sweep() {
         hops.keySet().removeIf(zombie -> zombie.getHealth() == null
                 || zombie.getHealth().getTotalHP() <= 0);
+        flights.keySet().removeIf(zombie -> zombie.getHealth() == null
+                || zombie.getHealth().getTotalHP() <= 0);
+    }
+
+    // ---- the Prospector's flight -------------------------------------------------------------------
+    //
+    // How far through its arc a launched zombie is, 0 at the blast and 1 at the landing.
+    //
+    // Timed HERE rather than read off the model, and that is what makes the arc smooth. The model's own
+    // flight progress advances once per tick, so a height computed from it stepped ten times a second
+    // while everything around it moved at sixty -- the zombie climbed in visible stairs. A view clock
+    // running on the frame's delta gives the same 1.3 seconds continuously.
+    //
+    // It also makes the two boards behave identically. A mirrored zombie never ticks, so its model
+    // progress would sit at zero for the whole flight; all the client is sent is the AIRBORNE bit and a
+    // stream of x positions, and this turns that bit into the same curve the host draws.
+    private static final float FLIGHT_SECONDS = 1.3f;
+
+    private final Map<Zombie, Float> flights = new IdentityHashMap<>();
+
+    float flightProgress(Zombie zombie) {
+        if (!zombie.getState().isAirborne()) {
+            flights.remove(zombie);
+            return 0f;
+        }
+        float elapsed = flights.computeIfAbsent(zombie, z -> 0f);
+        return Math.min(1f, elapsed / FLIGHT_SECONDS);
     }
 }

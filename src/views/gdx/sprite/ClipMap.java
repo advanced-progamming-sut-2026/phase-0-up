@@ -30,7 +30,14 @@ public final class ClipMap {
     private static final java.util.Set<String> ONE_SHOT_PREFIXES = java.util.Set.of(
             "die", "damage", "undamaged", "attack", "special", "shooting", "plantfood",
             "smash", "fire", "cannon", "land", "spawn", "enter", "exit", "explosion", "splat",
-            "throw", "toss", "sheep", "fly_start", "fly_end");
+            "throw", "toss", "sheep", "intro", "tackle", "blastoff", "cast", "reel",
+            "fly_start", "fly_end",
+            // Spelled out, not covered by a "power" prefix: `power` itself is the siphon LOOP and has
+            // to repeat, exactly as fly_loop does between fly_start and fly_end.
+            "power_up", "power_down",
+            // By full name, not a "newspaper" prefix: walk_newspaper and eat_newspaper are loops and
+            // do not start with it, but naming the whole clip makes that impossible to get wrong later.
+            "newspaper_defeat");
 
     public static boolean loops(String clip) {
         if (clip == null) {
@@ -89,6 +96,16 @@ public final class ClipMap {
         boolean holdsNewspaper = hasNewspaper(zombie);
         boolean spinning = zombie.getState().isSpinning();
 
+        // A thief drawing sun in stands and CHANNELS: the Turquoise's five-second heist and Ra's reel
+        // both hold `power` for as long as they last, and ZombieActions plays `power_up` and
+        // `power_down` either side. Asked ABOVE the switch rather than inside a case, because the two
+        // abilities leave their zombie in different ActionStates while it happens -- the Turquoise
+        // stops dead (IDLE) and Ra keeps walking -- and the answer is the same for both. Dying still
+        // wins: a thief shot mid-heist falls over.
+        if (action != ActionState.DYING && zombie.getState().isSiphoning()) {
+            return firstAvailable(sprite, "power");
+        }
+
         return switch (action) {
             case EATING -> holdsNewspaper
                     ? firstAvailable(sprite, "eat_newspaper", "eat")
@@ -105,12 +122,22 @@ public final class ClipMap {
                 // through to `idle` and slid up the lane frozen. Safe as a general fallback: the four
                 // piano variants are the ONLY animations in the dump with a `play` clip, and none of
                 // them has a `walk`, so nothing else can ever reach it.
+                // An All-Star charging is not walking either, and its art says so: `run` is a
+                // 0.67s cycle against `walk`'s 3s, which is the same stride at four and a half times
+                // the rate. The model sprints it at three times its speed for the same stretch.
+                if (zombie.getState().isRushing()) {
+                    yield firstAvailable(sprite, "run", "walk");
+                }
                 // A Troglobite is not walking, it is SHOVING -- and the difference is the whole zombie.
                 // Its art ships `push` (arms out, leaning into the block) alongside `walk` (the same
                 // zombie once the block is gone), and nothing asked for it, so it shoved a block that
                 // was neither drawn nor leant on. The block is an ICE_BLOCK armour layer in the model,
                 // so "does it still have one" is the same question PushIceAbility asks.
-                if (pushesIce(zombie)) {
+                //
+                // The Arcade Zombie is the same sentence with a different object in front of it: its
+                // animation ships `push` too, and its cabinet is an ARCADE_CABINET layer.
+                if (pushesIce(zombie)
+                        || models.entities.zombies.Abilities.ArcadePushAbility.stillPushing(zombie)) {
                     yield firstAvailable(sprite, "push", "walk");
                 }
                 yield holdsNewspaper

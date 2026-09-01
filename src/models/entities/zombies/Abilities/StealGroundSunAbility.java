@@ -45,6 +45,7 @@ public class StealGroundSunAbility implements ZombieAbility {
         double zombieX = zombie.getMovement().getPositionX();
         int zombieRow = zombie.getMovement().getPositionY();
 
+        boolean pulling = false;
         // A copy: pocketing a sun marks it removable and SunSystem may drop it from the live list.
         for (Sun sun : new ArrayList<>(session.getActiveSuns())) {
             if (sun.isRemovable()) {
@@ -55,6 +56,7 @@ public class StealGroundSunAbility implements ZombieAbility {
             if (Math.sqrt((dx * dx) + (dy * dy)) > pullRadius) {
                 continue;
             }
+            pulling = true;
             if (Math.abs(dx) <= GRAB_DISTANCE && sun.getY() == zombieRow) {
                 pocket(zombie, session, sun);
                 if (totalStolenSun >= maxStolenSun) {
@@ -64,6 +66,30 @@ public class StealGroundSunAbility implements ZombieAbility {
                 haulIn(sun, dx, dy);
             }
         }
+        setPulling(zombie, session, pulling);
+    }
+
+    // Ra reaching out and letting go, which is what its `power_up` / `power` / `power_down` clips are
+    // for -- three animations that nothing had ever asked for, on a zombie that dragged suns across the
+    // lawn without moving.
+    //
+    // The flag holds the `power` loop for as long as there is a sun in reach; the two sentences are the
+    // bookends, and they are reported only on the EDGES. Ra's pull runs every tick and there is usually
+    // a sun somewhere near it, so announcing the state rather than the change would be ten identical
+    // lines a second.
+    private boolean pullingLastTick;
+
+    private void setPulling(Zombie zombie, GameSession session, boolean pulling) {
+        if (pulling == pullingLastTick) {
+            return;
+        }
+        pullingLastTick = pulling;
+        zombie.getState().setSiphoning(pulling);
+        String where = " at (" + (int) zombie.getMovement().getPositionX() + ", "
+                + zombie.getMovement().getPositionY() + ")";
+        session.reportEvent(pulling
+                ? "The " + zombie.getAlias() + " powers up" + where + " and reaches for the sun."
+                : "The " + zombie.getAlias() + " powers down" + where + "; nothing left to reel in.");
     }
 
     // Slides one sun a step toward Ra, closing the lane gap first so it ends up in reach.

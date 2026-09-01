@@ -119,6 +119,10 @@ public final class ImpactEffects {
         float widthCells;
         String clip;
         String sprite;
+        // A beam is BURNING for its whole life, not dissolving from the moment it appears. Without this
+        // the laser would be at its brightest while the skull was still winding up and nearly gone by
+        // the frame it actually kills anything, which is the fade running backwards.
+        boolean sustained;
         // Owned by the Burst and set in place, never reassigned: a recycled burst must not drag a
         // fresh Color allocation along with it, which was the point of pooling it at all.
         final Color color = new Color();
@@ -134,6 +138,7 @@ public final class ImpactEffects {
             widthCells = 0f;
             clip = null;
             sprite = null;
+            sustained = false;
             color.set(Color.WHITE);
         }
     }
@@ -178,6 +183,58 @@ public final class ImpactEffects {
     // sit on the middle of a square: an octopus sliding along the ground out of the zombie's knees. A
     // zombie is about 1.3 cells tall from the foot line, so a hand raised to throw is a little under a
     // cell above the tile's centre.
+    // The Arcade Zombie's machine coming apart, on the tile it was being shoved along.
+    //
+    // 80S_ARCADE_CABINET_BREAK had never been used: the machine could not be destroyed at all before,
+    // so nothing had a moment to draw it at. Like the snowball, this is an impact the view cannot infer
+    // -- there is no projectile, only a layer leaving a health stack -- so the model narrates it.
+    private static final java.util.regex.Pattern ARCADE_BROKEN = java.util.regex.Pattern.compile(
+            "^.+?'s arcade machine falls apart at \\((\\d+), (\\d+)\\).*$");
+    private static final String ARCADE_BREAK = "80S_ARCADE_CABINET_BREAK";
+    private static final float ARCADE_BREAK_WIDTH_CELLS = 1.2f;
+    private static final float ARCADE_BREAK_LIFETIME = 1.07f;   // the clip's own length
+
+    // The Turquoise's beam, laid down the four tiles it burns.
+    //
+    // A whole lane-clearing attack that had nothing on screen at all: plants in four tiles simply died
+    // at once, with the skull standing there. The dump ships the beam as its own animation with one
+    // clip, so it is drawn as one wide effect spanning exactly the tiles LaserBeamAbility damages --
+    // drawn at the tiles' own count, so the picture and the rule cannot disagree about the reach.
+    private static final java.util.regex.Pattern LASER_AIMED = java.util.regex.Pattern.compile(
+            "^.+? levels its skull at \\((\\d+), (\\d+)\\) and takes aim down the next (\\d+) tiles\\.$");
+    private static final String BEAM = "CRYSTALSKULL_BEAM";
+    private static final String BEAM_CLIP = "laser_beam";
+    // Raised on the AIM and held for the whole of it, so the beam is lit through the `attack` clip and
+    // is still burning on the frame the plants die -- rather than appearing for two thirds of a second
+    // after everything in the lane was already gone.
+    //
+    // 2.1s covers LaserBeamAbility's 20-tick aim with a beat to spare. `laser_beam` is 0.667s and
+    // loops, so it runs three times over that; ClipMap.sample wraps it.
+    private static final float BEAM_LIFETIME = 2.1f;
+    // Lifted off the tile centre: the beam comes out of the skull's eyes, not its feet. Kept low
+    // enough that it crosses the plants it is burning rather than passing over their heads.
+    private static final float BEAM_LIFT_CELLS = 0.25f;
+
+    // The Prospector firing itself down the lane: a bang where the dynamite went off, and a trail of
+    // smoke arcing across to where it comes down.
+    //
+    // Two effects from one sentence, which is unusual here and is what the event describes: the model
+    // moves the zombie in a single call, so nothing about the board records that anything crossed the
+    // lawn. The blast stays on the tile it left; the smoke is the only thing that travels.
+    private static final java.util.regex.Pattern PROSPECTOR_BLAST = java.util.regex.Pattern.compile(
+            "^Boom! .+?'s dynamite explodes at \\((\\d+), (\\d+)\\) and blasts it back to "
+                    + "\\((\\d+), (\\d+)\\)\\.$");
+    private static final String PROSPECTOR_BLAST_OFF = "ZOMBIE_PROSPECTOR_BLAST_OFF";
+    private static final String PROSPECTOR_SMOKE = "ZOMBIE_PROSPECTOR_SMOKE_ARC";
+    private static final float BLAST_OFF_WIDTH_CELLS = 1.3f;
+    private static final float BLAST_OFF_LIFETIME = 1.667f;   // the clip's own length
+    private static final float SMOKE_WIDTH_CELLS = 1.0f;
+    // Matched to CarryADynamite.FLIGHT_TICKS (13 at 10 Hz): the smoke trails the zombie for exactly as
+    // long as the zombie is in the air, so the trail ends where the landing does.
+    private static final float SMOKE_LIFETIME = 1.3f;
+    // The smoke leaves at chest height rather than off the ground.
+    private static final float SMOKE_LIFT_CELLS = 0.5f;
+
     private static final float OCTOPUS_FROM_LIFT_CELLS = 0.8f;
     // And it lands where the octopus is DRAWN once it has hold of the plant, not on the plant's feet --
     // the same lift PlantOctopus uses, so the thrown one arrives exactly where the clinging one appears.
@@ -194,6 +251,24 @@ public final class ImpactEffects {
         this.lawn = lawn;
     }
 
+    // The Prospector's launch: two effects from one sentence, which is why it is not inline above.
+    private boolean prospectorBlast(String text) {
+        java.util.regex.Matcher blast = PROSPECTOR_BLAST.matcher(text);
+        if (!blast.matches()) {
+            return false;
+        }
+        float fromX = lawn.centerX(Integer.parseInt(blast.group(1)));
+        float fromY = lawn.centerY(Integer.parseInt(blast.group(2)));
+        float toX = lawn.centerX(Integer.parseInt(blast.group(3)));
+        float toY = lawn.centerY(Integer.parseInt(blast.group(4)));
+        float lift = lawn.cellHeight() * SMOKE_LIFT_CELLS;
+        add(fromX, fromY, fromX, fromY, PROSPECTOR_BLAST_OFF,
+                BLAST_OFF_WIDTH_CELLS, BLAST_OFF_LIFETIME, "animation");
+        add(fromX, fromY + lift, toX, toY + lift, PROSPECTOR_SMOKE,
+                SMOKE_WIDTH_CELLS, SMOKE_LIFETIME, "animation2");
+        return true;
+    }
+
     // Offered every event the model drains. Anything that is not a snowball landing is ignored.
     public void onEvent(String message) {
         if (message == null || lawn == null) {
@@ -208,6 +283,29 @@ public final class ImpactEffects {
                 // On the plant, not on the tile: a splat centred on the square lands at its feet.
                 add(lawn.centerX(col), lawn.centerY(row), lawn.centerX(col), lawn.centerY(row),
                         SNOWBALL_SPLAT, SNOWBALL_WIDTH_CELLS, SNOWBALL_LIFETIME, null);
+                return;
+            }
+            java.util.regex.Matcher beam = LASER_AIMED.matcher(text);
+            if (beam.matches()) {
+                int col = Integer.parseInt(beam.group(1));
+                int row = Integer.parseInt(beam.group(2));
+                int reach = Integer.parseInt(beam.group(3));
+                // Centred on the middle of the burnt stretch, which runs from the skull's own tile
+                // back `reach` tiles toward the house.
+                float centreX = lawn.centerX(col) - lawn.cellWidth() * (reach / 2f);
+                float y = lawn.centerY(row) + lawn.cellHeight() * BEAM_LIFT_CELLS;
+                add(centreX, y, centreX, y, BEAM, reach, BEAM_LIFETIME, BEAM_CLIP).sustained = true;
+                return;
+            }
+            if (prospectorBlast(text)) {
+                return;
+            }
+            java.util.regex.Matcher arcade = ARCADE_BROKEN.matcher(text);
+            if (arcade.matches()) {
+                int col = Integer.parseInt(arcade.group(1));
+                int row = Integer.parseInt(arcade.group(2));
+                add(lawn.centerX(col), lawn.centerY(row), lawn.centerX(col), lawn.centerY(row),
+                        ARCADE_BREAK, ARCADE_BREAK_WIDTH_CELLS, ARCADE_BREAK_LIFETIME, null);
                 return;
             }
             java.util.regex.Matcher octopus = OCTOPUS_THROWN.matcher(text);
@@ -270,10 +368,10 @@ public final class ImpactEffects {
 
     // `clip` names one pose to hold; null cycles the CLIPS variants, which is what a repeated splat
     // wants and a single flying object does not -- an octopus in the air has exactly one right pose.
-    private void add(float fromX, float fromY, float toX, float toY, String spriteName,
-                     float widthCells, float lifetime, String clip) {
+    private Burst add(float fromX, float fromY, float toX, float toY, String spriteName,
+                      float widthCells, float lifetime, String clip) {
         if (spriteName == null) {
-            return;
+            return DISCARDED;
         }
         Burst burst = pool.obtain();
         burst.x = fromX;
@@ -286,7 +384,12 @@ public final class ImpactEffects {
         burst.lifetime = lifetime;
         burst.clip = clip != null ? clip : CLIPS[nextClip++ % CLIPS.length];
         bursts.add(burst);
+        return burst;
     }
+
+    // Handed back when there is nothing to spawn, so a caller that wants to set one more field on the
+    // burst it just asked for does not have to null-check. Never drawn: it is not in `bursts`.
+    private static final Burst DISCARDED = new Burst();
 
     public void draw(Batch batch, float delta, float cellSize) {
         if (bursts.isEmpty()) {
@@ -307,8 +410,8 @@ public final class ImpactEffects {
             // Fades out over its life. The clip itself is short, so without this the last frame would
             // pop rather than dissolve. A travelling strike holds its colour until the last third, or
             // it is already half gone by the time it reaches what it hit.
-            float fade = burst.toX == burst.x && burst.toY == burst.y
-                    ? 1f - t : 1f - Math.max(0f, (t - 0.66f) / 0.34f);
+            boolean holds = burst.sustained || burst.toX != burst.x || burst.toY != burst.y;
+            float fade = holds ? 1f - Math.max(0f, (t - 0.66f) / 0.34f) : 1f - t;
             batch.setColor(burst.color.r, burst.color.g, burst.color.b, fade);
             drawSplat(batch, burst, SpritePlacer.toSpriteSpace(burst.widthCells * cellSize), t);
         }
@@ -339,7 +442,13 @@ public final class ImpactEffects {
                 SpritePlacer.toSpriteSpace(drawY), scale);
         // Same y-down correction as everywhere else: libPVZ reports bounds in the .PAM's Flash-style
         // coordinates, where the art hangs below the origin.
-        splat.draw(batch, clip, ClipMap.sample(splat, clip, t * LIFETIME),
+        // Sampled against the burst's OWN age, not against t scaled by the default lifetime. That is
+        // what it used to be, and it meant every effect with a lifetime of its own played only the
+        // first LIFETIME seconds of its clip stretched across the whole burst: a 0.63s snowball splat
+        // showed 0.3s of animation in slow motion, and a beam held for two seconds would have shown a
+        // seventh of itself. ClipMap.sample already wraps a looping clip and holds a one-shot on its
+        // last frame, so age is the right thing to hand it either way.
+        splat.draw(batch, clip, ClipMap.sample(splat, clip, burst.age),
                 0f, bounds.y + bounds.height / 2f, true);
         transform.end(batch);
     }

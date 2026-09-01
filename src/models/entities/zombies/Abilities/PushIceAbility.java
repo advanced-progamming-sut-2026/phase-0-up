@@ -16,7 +16,7 @@ public class PushIceAbility implements ZombieAbility {
     // One tile per block. A Troglobite spawns with three (NumberOfIceblocksToSpawnWith in zombies.json),
     // so it arrives shoving a three-tile wall of ice ahead of itself, and the wall gets a tile shorter
     // each time a block goes.
-    private static final double BLOCK_SPACING = 1.0;
+    public static final double BLOCK_SPACING = 1.0;
 
     // What comes out when one breaks. The game calls it a Yeti Imp -- zombies.json even names the type
     // ("ImpType": "iceage_imp") -- but this roster has exactly one imp, so that is what is freed. The

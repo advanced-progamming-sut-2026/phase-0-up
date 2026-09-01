@@ -238,6 +238,11 @@ public final class SnapshotReconciler {
         }
         zombie.getMovement().setPositionX(state.x());
         zombie.getState().setFrozen(state.is(EntityFlags.FROZEN));
+        // A mirrored Prospector really is in the air for the same thirteen ticks: its x arrives from
+        // the server along the arc, and this is what tells the view to lift it off the lane rather than
+        // sliding it across the ground. Without it the flight looked like a teleport on this side even
+        // though the server was sending every step of it.
+        zombie.getState().setAirborne(state.is(EntityFlags.AIRBORNE));
         zombie.getState().setAction(state.is(EntityFlags.DYING) ? ActionState.DYING
                 : state.is(EntityFlags.EATING) ? ActionState.EATING : ActionState.WALKING);
         syncZombieHealth(state, zombie);

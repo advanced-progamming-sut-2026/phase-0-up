@@ -174,7 +174,11 @@ public class Zombie extends Entity {
     public boolean isUntargetable() { return untargetable; }
     // A hypnotized zombie is fighting for the player, so nothing plant-side may act on it.
     public boolean isTargetable() {
-        return !health.isDead() && isOnBoard() && !untargetable && !state.isHypnotized();
+        // Airborne is not targetable: a Prospector riding its own dynamite across the lawn is over the
+        // lane, not in it, so shots pass under it and nothing aims at it. Without this a plant could
+        // shoot a zombie out of the sky halfway through a flight it is not standing anywhere for.
+        return !health.isDead() && isOnBoard() && !untargetable && !state.isHypnotized()
+                && !state.isAirborne();
     }
 
     // A zombie spawns one cell beyond the right edge and can be shoved past either end mid-fight, so

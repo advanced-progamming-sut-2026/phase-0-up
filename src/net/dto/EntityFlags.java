@@ -30,6 +30,13 @@ public final class EntityFlags {
     // effect has not appeared yet. Plant.isWindingUp(), which asks the plant's abilities, and a
     // mirrored plant's abilities never run. The view plays the attack clip off the rising edge of it.
     public static final int ACTING = 1 << 9;
+    // A zombie off the ground: a Prospector riding its own dynamite back down the lane.
+    //
+    // The FLAG travels and the progress does not. A mirrored zombie's x is sent every tick and
+    // interpolated on arrival, so the client already knows where along the arc it is; how HIGH it is
+    // drawn is presentation the client times for itself from the rising edge of this bit, the same way
+    // it times every other one-shot. One bit rather than a float, on the hottest field in the protocol.
+    public static final int AIRBORNE = 1 << 10;
 
     public static boolean has(int flags, int flag) {
         return (flags & flag) != 0;

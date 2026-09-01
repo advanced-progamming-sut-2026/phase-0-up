@@ -49,10 +49,15 @@ public class StealSunAbility implements ZombieAbility {
                 if (isPlantInRadius(zombie, searchRadius, gameSession)) {
                     currentState = StealState.STEALING;
                     zombie.getState().setAction(ActionState.IDLE);
+                    // The skull lights up (`power_up`) and then holds the draw (`power`) for the whole
+                    // heist. The sentence is what the view claims the one-shot from; the flag is what
+                    // holds the loop afterwards. See ZombieActions and ClipMap.
+                    zombie.getState().setSiphoning(true);
                     totalStealTicks = 0;
                     oneSecondTicks = 0;
-                    gameSession.reportEvent("The " + zombie.getAlias() + " spots a plant and starts "
-                            + "siphoning your sun.");
+                    gameSession.reportEvent("The " + zombie.getAlias() + " powers up at ("
+                            + (int) zombie.getMovement().getPositionX() + ", "
+                            + zombie.getMovement().getPositionY() + ") and starts siphoning your sun.");
                 }
                 break;
 
@@ -74,7 +79,13 @@ public class StealSunAbility implements ZombieAbility {
                 if (totalStealTicks >= MAX_STEAL_TICKS) {
                     currentState = StealState.FINISHED;
                     zombie.getState().setAction(ActionState.WALKING);
+                    zombie.getState().setSiphoning(false);
                     zombie.getState().setReadyForLaser(true);
+                    // The other bookend: the glow dies down (`power_down`) as the charge finishes and
+                    // the beam arms. The laser's own `attack` follows from LaserBeamAbility.
+                    gameSession.reportEvent("The " + zombie.getAlias() + " powers down at ("
+                            + (int) zombie.getMovement().getPositionX() + ", "
+                            + zombie.getMovement().getPositionY() + "); its beam is charged.");
                 }
                 break;
 

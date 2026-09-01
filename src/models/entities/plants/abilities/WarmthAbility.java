@@ -84,14 +84,26 @@ public class WarmthAbility extends PlantAbility {
     }
 
     private void thawArea(Plant owner, GameSession gameSession) {
+        // Collected first, hit once.
+        //
+        // A FIRE hit shatters one block outright (HealthComponent.strikeIce), so hitting inside the
+        // per-cell loop cost a Troglobite one block per TILE its wall overlapped -- three at a stride,
+        // and a different number from one tick to the next as the wall slid across the tile boundaries.
+        // The whole wall could evaporate from a single thaw, and it looked like the blocks were being
+        // damaged by moving, because in effect they were: what changed between the ticks that took one
+        // block and the ticks that took three was only the zombie's position.
+        //
+        // One thaw is one blow. Identity-keyed, because two Troglobites in range are two separate
+        // zombies to hit and the same one seen from three tiles is not.
+        java.util.Set<models.entities.zombies.Zombie> pushers =
+                java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
         forEachCellInRange(owner, gameSession, cell -> {
             thaw(cell);
-            // A FIRE hit shatters one block outright -- HealthComponent.strikeIce is where that rule
-            // lives, so warmth and a fire pea melt a Troglobite's ice by exactly the same route.
-            for (models.entities.zombies.Zombie pusher : pushedBlocksOn(cell, gameSession)) {
-                pusher.getHealth().applyDamage(0, Element.FIRE, owner);
-            }
+            pushers.addAll(pushedBlocksOn(cell, gameSession));
         });
+        for (models.entities.zombies.Zombie pusher : pushers) {
+            pusher.getHealth().applyDamage(0, Element.FIRE, owner);
+        }
         gameSession.reportEvent("The " + owner.getName() + " thaws the ice at ("
                 + (int) owner.getX() + ", " + owner.getY() + ") into a puddle"
                 + (consumedOnUse ? " and burns itself out!" : "!"));

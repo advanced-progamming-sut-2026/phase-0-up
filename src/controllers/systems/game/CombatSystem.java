@@ -260,11 +260,58 @@ public class CombatSystem {
             if (refund <= 0) {
                 continue;
             }
-            session.increaseSunAmount(refund);
-            events.add(new Result(true, "The " + zombie.getAlias() + " drops " + refund
-                    + " of the sun it stole; you have " + session.getSunAmount() + " sun now."));
+            spillSun(session, zombie, refund);
+            events.add(new Result(true, "The " + zombie.getAlias() + " drops " + spilledTotal(refund)
+                    + " of the sun it stole onto the lawn -- go and get it!"));
         }
     }
+
+    // How much sun each dropped token is worth. The standard sky sun, so a haul comes back as a handful
+    // of ordinary suns rather than one enormous one.
+    private static final int SPILLED_SUN_PER_TOKEN = 25;
+    // A cap on the tokens one corpse can produce, so a Ra that has been hoarding for a minute does not
+    // bury its own tile under fifty overlapping sprites.
+    private static final int MAX_SPILLED_TOKENS = 8;
+
+    // Puts the stolen sun back ON THE GROUND rather than into the bank.
+    //
+    // It used to be credited outright, which is the one thing a "drops" rule cannot mean: the counter
+    // ticked up and there was nothing to see, nothing to collect and no reason to have killed the thief
+    // where you did. Sun the player has to walk over and pick up is the whole point of taking it back.
+    //
+    // Spread across the tiles behind the corpse -- toward the house, which is where a zombie's momentum
+    // would carry a spill -- so a big haul is several suns to sweep up rather than a stack on one tile.
+    // Sun clamps its own position to the board, so a thief that dies at the very edge still drops
+    // everything somewhere collectable.
+    // Every dropped sun is worth exactly 25, and the haul is rounded to the nearest multiple of it.
+    //
+    // Not divided into equal shares, which is what this did first: a 37-sun haul came out as two suns
+    // worth 19 and 18, and a sun worth 18 is a thing that exists nowhere else in the game. A sun the
+    // player picks up is worth 25, always -- so the count is what varies, and a remainder under half a
+    // sun is simply rounded away rather than turned into a fraction of one.
+    private void spillSun(GameSession session, Zombie zombie, int refund) {
+        int tokens = Math.min(MAX_SPILLED_TOKENS,
+                Math.max(1, Math.round(refund / (float) SPILLED_SUN_PER_TOKEN)));
+        int row = zombie.getMovement().getPositionY();
+        double x = zombie.getMovement().getPositionX();
+        for (int i = 0; i < tokens; i++) {
+            double dropX = x - (i * 0.5);
+            session.addSun(new models.entities.collectibles.Sun(dropX, row, row,
+                    models.entities.collectibles.SunType.NORMAL, SPILLED_SUN_PER_TOKEN, false,
+                    SPILLED_SUN_EXPIRE_TICKS));
+        }
+    }
+
+    // What a spill is actually worth once rounded, for the sentence that announces it -- so the number
+    // the player reads is the number they can pick up.
+    private static int spilledTotal(int refund) {
+        return Math.min(MAX_SPILLED_TOKENS,
+                Math.max(1, Math.round(refund / (float) SPILLED_SUN_PER_TOKEN))) * SPILLED_SUN_PER_TOKEN;
+    }
+
+    // Long enough to be worth crossing the lawn for, short enough that a corpse's spill is not still
+    // sitting there at the end of the level. Matches the sky sun's ground life.
+    private static final int SPILLED_SUN_EXPIRE_TICKS = 240;
 
     // Credits the Almost Victorious quest when a plant fells a zombie standing in column 0 of a row
     // whose lawn mower is already spent -- a last-ditch kill with no mower left as a safety net. The

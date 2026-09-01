@@ -74,7 +74,10 @@ public final class ToastPolicy {
                     + "|spawned at wave|claws its way up|is dead at|is destroyed\\."
                     + "|wanders off the far end|smashes|hurls its Imp|hurls ice at"
                     + "|fires a laser beam|flings an octopus|rams its arcade machine|tackles"
-                    + "|takes aim at|winds up an octopus|raises its staff"
+                    + "|takes aim at|winds up an octopus|raises its staff|raises his sceptre"
+                    // The sun thieves powering up and down. The zombie visibly lights up and the
+                    // counter visibly drains; a line for each end of every heist is running commentary.
+                    + "|powers up|powers down|levels its skull"
                     // The wizard's hex, both ways round: the plant visibly BECOMES a sheep and
                     // visibly comes back when its caster dies. See PlantSheep.
                     + "|is hexed into a sheep|shakes off the hex"
@@ -82,7 +85,8 @@ public final class ToastPolicy {
                     + "|The Barrel Roller falls"
                     + "|The barrel bursts open|The rolling barrel crushes|The pianist strikes up"
                     + "|The piano smashes|The Fisherman Zombie|The Snorkel Zombie"
-                    + "|The Jester Zombie|A frozen block shatters|dynamite explodes|dynamite fizzles"
+                    + "|The Jester Zombie|A frozen block shatters|arcade machine falls apart"
+                    + "|dynamite explodes|dynamite fizzles"
                     + "|torch flares back to life|torch is snuffed out"
                     + "|ignores the chill|shrugs off the freeze"
                     // Shots, blasts and terrain damage.
@@ -107,6 +111,11 @@ public final class ToastPolicy {
     private static final Pattern ALERT = Pattern.compile(
             ".*(Wave \\d+ started|necromancy|low tide|The tide rises|The tide recedes"
                     + "|The tide can flood|A freezing wind sweeps|A tornado tears across"
+                    // A king arriving is exactly what this list is for: it parks on the far column,
+                    // out of most plants' reach, and every few seconds the lane in front of it gets
+                    // harder. Knowing it is there is the difference between answering it and wondering
+                    // why the peasants keep turning up in armour.
+                    + "|takes his throne"
                     + "|The lawn mower in the row).*",
             Pattern.CASE_INSENSITIVE);
 

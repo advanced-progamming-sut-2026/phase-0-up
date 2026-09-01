@@ -136,7 +136,7 @@ public class Cell {
             if (!hasLiveGrave()) {
                 return new Result(false, "Grave Buster only goes on a grave. Find a headstone to chew!");
             }
-            this.currentPlant = newPlant;
+            this.currentPlant = settle(newPlant);
             return new Result(true, "Plant placed successfully.");
         }
         // A plant that radiates heat is the second exception, for the same reason as the first: an ice
@@ -146,7 +146,7 @@ public class Cell {
         // A block holding a frozen PLANT is not covered: the cell already has a plant in it and the
         // occupied check above turns it away, which is right -- you thaw that one from beside it.
         if (isThawer(newPlant) && hasFrozenBlock()) {
-            this.currentPlant = newPlant;
+            this.currentPlant = settle(newPlant);
             return new Result(true, "Plant placed successfully.");
         }
         // Use the terrain-aware check, not the raw field: a live grave (or any non-plantable terrain)
@@ -162,8 +162,30 @@ public class Cell {
             return new Result(false, "This plant must be planted in water!");
         }
 
-        this.currentPlant = newPlant;
+        this.currentPlant = settle(newPlant);
         return new Result(true, "Plant placed successfully.");
+    }
+
+    // A plant that has just been accepted by this cell takes the cell's coordinates.
+    //
+    // It used to keep whatever it was built with, which was invisible for as long as the only way into
+    // a cell was PlantFactory creating the plant AT that cell. The Fisherman Zombie broke that: it
+    // reels a LIVE plant one tile along, so the plant sat in its new cell still believing it was in the
+    // old one -- and every single thing that asks a plant where it is was then wrong about it.
+    //
+    // The visible one was the flashing. PlantRenderer.drawCell draws from the CELL's column while
+    // redraw() -- the pass that stamps a shooter back over its own projectile -- reads plant.getX(),
+    // so a reeled Peashooter was drawn in its new tile and again in its old one, every frame it had a
+    // pea in the air. The quieter ones are worse: its shots spawned from the old tile, its blast
+    // radius was centred there, and its own narration reported the wrong square.
+    //
+    // Done here rather than in the Fisherman, so the invariant is "a plant in a cell is at that cell"
+    // and anything that moves a plant later inherits it. Only ever on a placement that SUCCEEDED --
+    // a refused move must not teleport the plant it just refused.
+    private Plant settle(Plant plant) {
+        plant.setX(this.x);
+        plant.setY(this.y);
+        return plant;
     }
 
     public Result removePlant(){
@@ -195,7 +217,7 @@ public class Cell {
         if (!isPlantable) return new Result(false, "This cell is not plantable!");
         if (!isFlooded) return new Result(false, "A Lily Pad must be placed on water!");
 
-        this.platform = newPlant;
+        this.platform = settle(newPlant);
         return new Result(true, "Platform placed.");
     }
 
@@ -209,7 +231,7 @@ public class Cell {
             if (!newPlant.isAquatic() && isFlooded) return new Result(false, "You can't plant this on water!");
         }
 
-        this.protector = newPlant;
+        this.protector = settle(newPlant);
         return new Result(true, "Protective cover placed.");
     }
 

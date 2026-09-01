@@ -20,7 +20,11 @@ public final class Protocol {
     // is not enough. Bump this and both ends have to be restarted, which is the point.
     // v3 adds MatchSnapshot.seedCooldowns -- the plant player's recharge wipes, which a mirror cannot
     // measure for itself because the field they are derived from is only ever written by the server.
-    public static final int VERSION = 4;
+    // v5 adds the AIRBORNE flag: a Prospector now really flies down the lane over thirteen ticks
+    // instead of teleporting, and a client that does not read the bit draws it sliding along the
+    // ground through plants it is supposed to be passing over. Additive on the wire and therefore
+    // exactly the quiet kind of break this constant exists to catch.
+    public static final int VERSION = 5;
 
     public static final int DEFAULT_PORT = 7777;
 

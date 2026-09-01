@@ -10,8 +10,8 @@
     "stayLoggedIn": true,
     "profile": {
       "gameNumbers": 0,
-      "coins": 21560,
-      "gems": 1233,
+      "coins": 22410,
+      "gems": 1245,
       "plantFoodCount": 0,
       "difficultyLevel": 3,
       "bestNumberOfMeowPoints": 1237,
@@ -247,6 +247,24 @@
           "description": "You\u0027ve met a ZombieWizard and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-08-31",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 27,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieArcade and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-09-01",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 28,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombiePiano and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-09-01",
           "read": false,
           "type": "ZOMBIE_DISCOVERY"
         }
@@ -541,7 +559,7 @@
             {
               "x": 2,
               "y": 2,
-              "state": "LOCKED",
+              "state": "EMPTY",
               "readyAtTimestamp": 0
             },
             {
@@ -560,7 +578,7 @@
       "passedMiniGames": {
         "Beghouled": 1
       },
-      "dailyQuestsDone": 15,
+      "dailyQuestsDone": 17,
       "noneDailyQuestsDone": 2,
       "hasBoughtDailyOfferToday": false,
       "seenZombieAliases": [
@@ -571,11 +589,13 @@
         "ZombieGargantuar",
         "ZombieDarkImpDragon",
         "ZombieIceAgeDodo",
+        "ZombieArcade",
         "ZombieArmor4",
         "ZombieDefault",
         "ZombieArmor1",
         "ZombieArmor2",
         "ZombieLostCityJane",
+        "ZombiePiano",
         "ZombieNewspaper",
         "ZombieExplorer",
         "ZombieIceAgeTroglobite",
@@ -601,27 +621,20 @@
         "ancient_egypt": 9
       },
       "completedDailyQuestIds": [
-        "daily_sun_catcher",
-        "pro_demolisher"
+        "ocd",
+        "one_column_less"
       ],
-      "questDayStamp": "2026-08-31",
-      "sunCollectedToday": 3625,
-      "mowerlessFirstColumnKillsToday": 3,
+      "questDayStamp": "2026-09-01",
+      "sunCollectedToday": 825,
+      "mowerlessFirstColumnKillsToday": 1,
       "killsByPlantToday": {
-        "potato mine": 1,
-        "kiwibeast": 1,
-        "mega gatling pea": 16,
-        "kernel-pult": 2,
-        "primal potato mine": 2,
-        "peashooter": 4,
-        "chomper": 1,
-        "fire peashooter": 2,
-        "jalapeno": 7,
-        "citron": 17,
-        "repeater": 8,
-        "bonk choy": 6
+        "melon-pult": 4,
+        "mega gatling pea": 20,
+        "citron": 7,
+        "cabbage-pult": 3,
+        "repeater": 2
       },
-      "lawnmowerKillsTotal": 31,
+      "lawnmowerKillsTotal": 33,
       "gameSpeed": 1,
       "showGrid": false,
       "debugMode": true,

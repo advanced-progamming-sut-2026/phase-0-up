@@ -56,7 +56,12 @@ public class EatPlantAbility implements ZombieAbility {
         double minDistance = Double.MAX_VALUE;
 
         // Airborne means passing over; a hypnotized zombie fights for the player and eats nothing.
-        if (zombie.getState().isFlying() || zombie.getState().isHypnotized()) {
+        //
+        // Two kinds of airborne, and both count: a Dodo Rider hopping an obstacle (isFlying, set per
+        // tick by IgnoreObstaclesAbility) and a Prospector mid-flight on its own dynamite (isAirborne,
+        // which lasts the whole arc). Neither is in a position to bite anything.
+        if (zombie.getState().isFlying() || zombie.getState().isAirborne()
+                || zombie.getState().isHypnotized()) {
             return null;
         }
         for (Cell cell : zombie.getGameSession().getMap().getRow(zombieRow).getCells()) {

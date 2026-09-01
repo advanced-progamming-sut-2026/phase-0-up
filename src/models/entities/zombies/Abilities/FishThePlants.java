@@ -21,24 +21,82 @@ public class FishThePlants implements ZombieAbility {
         if (fisherman.getState().isUnableToMove()) {
             return;
         }
+        if (castTicks != NOT_CASTING) {
+            advanceCast(fisherman);
+            return;
+        }
         tickCounter++;
-        if (tickCounter >= FISHING_COOLDOWN) {
-            boolean success = tryFishPlant(fisherman);
-            if (success) {
-                tickCounter = 0;
-            }
+        if (tickCounter >= FISHING_COOLDOWN && hasSomethingToCatch(fisherman)) {
+            tickCounter = 0;
+            beginCast(fisherman);
         }
     }
 
+    // The line goes out first and the plant comes in when it lands.
+    //
+    // 13 ticks is ZOMBIE_BEACH_FISHERMAN's `cast` clip, 1.267s at 10 Hz. Before this the plant simply
+    // slid a tile sideways with the fisherman standing motionless -- it has `intro`, `cast`, `reel` and
+    // `toss` and used none of them, which for a zombie whose entire behaviour is one gesture meant the
+    // gesture was never drawn.
+    private static final int CAST_TICKS = 13;
+    private static final int NOT_CASTING = -1;
+    private int castTicks = NOT_CASTING;
+
+    private void beginCast(Zombie fisherman) {
+        castTicks = 0;
+        fisherman.getGameSession().reportEvent("The Fisherman Zombie casts its line at ("
+                + (int) fisherman.getMovement().getPositionX() + ", "
+                + fisherman.getMovement().getPositionY() + ").");
+    }
+
+    private void advanceCast(Zombie fisherman) {
+        castTicks++;
+        if (castTicks < CAST_TICKS) {
+            return;
+        }
+        castTicks = NOT_CASTING;
+        // Re-found rather than remembered: a second is long enough for the plant to be eaten, dug up
+        // or shot, and the reel should take whatever is actually there when the hook lands. A cast
+        // that catches nothing simply catches nothing -- the animation has already played.
+        tryFishPlant(fisherman);
+    }
+
+    // Is there anything in this lane worth casting at? Cheap enough to ask every cooldown, and it stops
+    // the fisherman miming a cast at an empty row for the whole level.
+    private boolean hasSomethingToCatch(Zombie fisherman) {
+        if (fisherman.getGameSession() == null || fisherman.getGameSession().getMap() == null) {
+            return false;
+        }
+        Row row = fisherman.getGameSession().getMap().getRow(fisherman.getMovement().getPositionY());
+        if (row == null || row.getCells() == null) {
+            return false;
+        }
+        for (Cell cell : row.getCells()) {
+            if (cell != null && cell.hasPlant() && !cell.getCurrentPlant().isDead()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean anchored;
+
     // Speed 0, not an unable-to-move state (which would stop it fishing). Looks one step ahead.
     private void anchorAtShoreline(Zombie fisherman) {
-        if (fisherman.getMovement() == null) {
+        if (fisherman.getMovement() == null || anchored) {
             return;
         }
         double nextStep = fisherman.getMovement().getSpeed() * utils.Constants.ZOMBIE_SPEED_SCALE;
         if (fisherman.getMovement().getPositionX() - nextStep <= SHORELINE_X) {
             fisherman.getMovement().setPositionX(SHORELINE_X);
             fisherman.getMovement().setSpeed(0);
+            anchored = true;
+            // `intro` -- the fisherman settling in at the water's edge. Said once, on the tick it
+            // stops: it is the only moment that clip belongs to and this is the only zombie in the
+            // game that arrives somewhere and stays there.
+            fisherman.getGameSession().reportEvent("The Fisherman Zombie wades in at ("
+                    + (int) SHORELINE_X + ", " + fisherman.getMovement().getPositionY()
+                    + ") and settles down to fish.");
         }
     }
     private boolean tryFishPlant(Zombie fisherman) {

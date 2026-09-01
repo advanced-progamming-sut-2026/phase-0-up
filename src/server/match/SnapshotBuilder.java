@@ -162,6 +162,8 @@ final class SnapshotBuilder {
         flags = EntityFlags.with(flags, EntityFlags.DYING, zombie.getHealth().isDead());
         flags = EntityFlags.with(flags, EntityFlags.SUN_PRODUCER,
                 lawn != null && lawn.isSunProducer(zombie));
+        // Thirteen ticks of flight is thirteen snapshots, so neither edge of it can fall between two.
+        flags = EntityFlags.with(flags, EntityFlags.AIRBORNE, zombie.getState().isAirborne());
         flags |= armourFlags(zombie);
         // getPositionX/Y off the movement component, not getX()/getY(): a lane switch is in progress
         // between two whole rows, and the y an entity is FILED under is the rounded one.

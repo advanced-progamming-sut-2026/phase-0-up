@@ -41,6 +41,13 @@ public class MovementComponent {
             return;
         }
         if (state.isUnableToMove()) return;
+        // Rooted while it channels: a Turquoise drawing sun in or lining its beam up stands still and
+        // the animation says so, but nothing had ever stopped it walking -- the skull siphoned and
+        // lasered while gliding up the lawn in a standing pose. See StateComponent.isRooted.
+        if (state.isRooted()) return;
+        // And a zombie in the air is not walking anywhere: CarryADynamite drives its x along the arc
+        // for the whole flight, and a step added on top would land it short of where it was aimed.
+        if (state.isAirborne()) return;
         double currentSpeed = (state.isChilled() ? this.speed * 0.5 : this.speed)
                 * utils.Constants.ZOMBIE_SPEED_SCALE;   // global speed knob
         if(!state.isHypnotized()) {

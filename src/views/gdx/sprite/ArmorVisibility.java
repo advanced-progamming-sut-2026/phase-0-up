@@ -32,6 +32,13 @@ public final class ArmorVisibility {
         STEMS.put(ArmorType.BRICK, "zombie_armor_brick");
     }
 
+    // No stems for CROWN or SHOULDER_ARMOR, and that is deliberate rather than an omission.
+    //
+    // They are the knight's two pieces, and no body a zombie wearing them is ever drawn from carries a
+    // part for either: the shared ZOMBIE_TUTORIAL has only the cone, the bucket and the brick. A zombie
+    // that earns a knighthood mid-lane is therefore drawn as the Knight Zombie outright rather than
+    // having armour switched on -- see ZombieRenderer.KNIGHT_ALIAS.
+
     // Status-effect overlays that exist on essentially every zombie body.
     private static final String BUTTER_PART = "butter";
 

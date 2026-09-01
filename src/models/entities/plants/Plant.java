@@ -484,6 +484,24 @@ public class Plant extends Entity {
         return false;
     }
 
+    // Whether this plant LOBS its shots, which is the only kind that can reach a submerged zombie.
+    //
+    // Asked of the abilities rather than of the name, exactly as isFirePlant is: the trajectory comes
+    // out of plants.json, so a plant retuned from a straight shot to an arc changes its answer here
+    // with nothing to remember to update.
+    public boolean lobsShots() {
+        if (abilities == null) {
+            return false;
+        }
+        for (PlantAbility ability : abilities) {
+            if (ability instanceof models.entities.plants.abilities.ShootProjectileAbility shooter
+                    && shooter.getTrajectory() == models.entities.projectiles.Trajectory.LOBBED) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void freezePlant() {
         this.isFrozen = true;
         this.iceBlockHp = Constants.FROZEN_HP;   // 600, matching the Frostbite ice-block rule

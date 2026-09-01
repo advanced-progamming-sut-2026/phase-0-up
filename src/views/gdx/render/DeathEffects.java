@@ -280,7 +280,37 @@ public final class DeathEffects {
         dead.clip = DIE_CLIP;
         dead.fades = true;
         dead.lifetime = durationOf(sprite, DIE_CLIP);
+        // A piano outlives the zombies pushing it: their `die` runs a second and the instrument's runs
+        // three, so the corpse is held for the longer of the two or the piano would be swept away
+        // mid-splinter.
+        if (PIANO_ALIAS.equalsIgnoreCase(alias)) {
+            dead.lifetime = Math.max(dead.lifetime,
+                    durationOf(sprites.get(PIANO_SPRITE), DIE_CLIP));
+        }
         return dead;
+    }
+
+    // The Piano Zombie's instrument.
+    //
+    // It is a separate animation (PIANO, alongside ZOMBIE_PIANO's players), so it needs a separate
+    // corpse -- and it is the piece worth seeing come apart: PianoCrushAbility's spiky-plant rule
+    // destroys the zombie by SHATTERING the piano, which the model narrates and nothing drew.
+    //
+    // Drawn on the same ground as the body it belongs to, exactly like the Zombotany head below it.
+    private static final String PIANO_ALIAS = "ZombiePiano";
+    private static final String PIANO_SPRITE = "PIANO";
+
+    private void drawPianoRemains(Batch batch, Remains dead, float footY) {
+        if (!PIANO_ALIAS.equalsIgnoreCase(dead.sprite)) {
+            return;
+        }
+        EntitySprite piano = sprites.get(PIANO_SPRITE);
+        if (piano == null || !piano.isReady()) {
+            return;
+        }
+        String clip = ClipMap.firstAvailable(piano, DIE_CLIP);
+        SpritePlacer.drawStanding(batch, piano, clip, ClipMap.sample(piano, clip, dead.age),
+                dead.x, footY, false, null);
     }
 
     // Caught in a blast. A Gargantuar's remains and an Imp's are both in the dump, and the difference
@@ -356,6 +386,8 @@ public final class DeathEffects {
             // No width fitting: both the bodies and the ash are authored at the same resolution as the
             // zombies, so the correct amount of interference is none. Facing left, which is the way
             // every zombie on this board was walking.
+            // Under the fallen players, as it is under them alive.
+            drawPianoRemains(batch, dead, footY);
             SpritePlacer.drawStanding(batch, sprite, clip, stateTime, dead.x, footY, false, parts);
             if (botany != null) {
                 botany.draw(batch, dead.sprite, sprite, clip, stateTime, dead.x, footY, false);

@@ -126,6 +126,60 @@ public class StateComponent {
 
     public boolean isSpinning() { return isSpinning; }
     public void setSpinning(boolean spinning) { isSpinning = spinning; }
+
+    // Charging rather than walking -- the All-Star's opening sprint, until it hits something.
+    //
+    // A state, not an event: it is what the zombie is doing for that whole stretch and it is readable
+    // on any frame, which is what separates it from the tackle at the end (an instant, announced as a
+    // sentence and played by ZombieActions). The view draws the `run` clip while this holds.
+    private boolean isRushing = false;
+
+    public boolean isRushing() { return isRushing; }
+    public void setRushing(boolean rushing) { isRushing = rushing; }
+
+    // Drawing sun in -- the Turquoise draining the player's bank, and Ra reeling a sun off the lawn.
+    //
+    // A state for the same reason the All-Star's charge is one: it lasts for a stretch and is readable
+    // on any frame. The view holds the `power` clip while it is true; the `power_up` and `power_down`
+    // bookends either side of it are instants, announced as sentences and played by ZombieActions.
+    private boolean isSiphoning = false;
+
+    public boolean isSiphoning() { return isSiphoning; }
+    public void setSiphoning(boolean siphoning) { isSiphoning = siphoning; }
+
+    // In the air, and how far through the flight it is (0 at the launch, 1 at the landing).
+    //
+    // The Prospector's dynamite used to TELEPORT it: one tick on its own tile, the next on column 0,
+    // with no moment in between for anything to be drawn at. A real flight needs the model to hold
+    // that moment, because it is the model that owns where a zombie is -- and the progress has to be
+    // readable too, since the view arcs the zombie through it and nothing else knows how far along it
+    // has got.
+    private boolean isAirborne = false;
+    private float flightProgress;
+
+    public boolean isAirborne() { return isAirborne; }
+    public void setAirborne(boolean airborne) { isAirborne = airborne; }
+    public float getFlightProgress() { return flightProgress; }
+    public void setFlightProgress(float progress) { flightProgress = progress; }
+
+    // Mid-laser: the Turquoise has stopped to line its beam up and is about to let it off.
+    private boolean isFiringLaser = false;
+
+    public boolean isFiringLaser() { return isFiringLaser; }
+    public void setFiringLaser(boolean firing) { isFiringLaser = firing; }
+
+    // Standing still to do something, as opposed to being HELD still by something.
+    //
+    // Deliberately separate from isUnableToMove(). That one is the "can this zombie act at all" gate --
+    // frozen, buttered, mid-bite -- and most abilities return early on it, including the two this
+    // covers. Folding channelling into it would stop the very ability doing the channelling: a
+    // Turquoise would freeze on its first siphon tick and never finish the heist or fire the beam.
+    //
+    // So this asks a narrower question, and only MovementComponent asks it: the zombie is rooted while
+    // it draws sun in and while it aims, and walks the rest of the time.
+    public boolean isRooted() {
+        return isSiphoning || isFiringLaser;
+    }
     public boolean isImmuneToFire() { return isImmuneToFire; }
     public void setImmuneToFire(boolean immuneToFire) { isImmuneToFire = immuneToFire; }
 
