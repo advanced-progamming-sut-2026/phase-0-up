@@ -118,6 +118,30 @@ public final class PlantRenderer {
         this.sheep = new PlantSheep(sprites, lawn);
     }
 
+    // How far above its own cell a plant is currently drawn, in world pixels.
+    //
+    // Null on every ordinary board, and that is the point: a plant is IN its cell and nothing about the
+    // lawn moves it. Beghouled is the one mode where a cell's contents arrive from somewhere -- its
+    // board is a match-3 grid whose pieces collapse and refill -- and rather than teach this class about
+    // match-3, the mode's own renderer answers the one question the drawing needs.
+    //
+    // Deliberately a lift rather than a full position: a Beghouled piece only ever travels straight down
+    // into the cell it already belongs to, and anything that wanted to move a plant sideways would be
+    // moving it to a different cell, which is the model's business rather than this one's.
+    public interface CellLift {
+        float at(int col, int row);
+    }
+
+    private CellLift lift;
+
+    public void setLift(CellLift lift) {
+        this.lift = lift;
+    }
+
+    private float liftAt(int col, int row) {
+        return lift == null ? 0f : lift.at(col, row);
+    }
+
     // Redraws one plant on top of whatever has already been drawn, WITHOUT advancing its clock (the
     // main pass already did that this frame). Used to put a shooter back over its own projectile.
     public void redraw(Batch batch, Plant plant) {
@@ -187,7 +211,10 @@ public final class PlantRenderer {
         Color previous = batch.getColor().cpy();
         Color tint = tintFor(plant);
         float cx = lawn.centerX(col);
-        float fy = footY(row);
+        // The lift is added HERE, to the one value everything below is placed from, so a plant that is
+        // still falling into its cell takes its ice block, its aura, its shine and its octopus with it
+        // rather than leaving them on the ground it has not reached yet.
+        float fy = footY(row) + liftAt(col, row);
 
         // Rear half of the ice block first, so a frozen plant sits INSIDE it. Drawn before the tint is
         // applied to the plant, and at its own colour.

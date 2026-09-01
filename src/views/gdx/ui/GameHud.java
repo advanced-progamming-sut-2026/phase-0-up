@@ -325,6 +325,9 @@ public final class GameHud implements Disposable {
     // Null on every other level. Non-null, it is added to the stage as its own left-edge column.
     private Table conveyor;
 
+    // The nuts themselves, which ride rather than sit. See ConveyorTrack.
+    private ConveyorTrack beltTrack;
+
     // A VERTICAL belt down the left-hand side, nuts riding UP it.
     //
     // A vertical belt is a stack of horizontal slats, which is exactly what the shipped
@@ -355,7 +358,7 @@ public final class GameHud implements Disposable {
         // One slat per slot the belt can hold, always -- never per nut currently on it. A belt that
         // shrank as nuts were taken would read as the belt itself being consumed, and the empty run
         // below the last nut is the useful part: it is how much more is coming.
-        cardRow.top();
+        beltTrack = new ConveyorTrack(BELT_SLOT_WIDTH, BELT_SLOT_HEIGHT);
         Stack track = new Stack();
         // One scrolling actor rather than a column of static Images -- see ConveyorBelt. A belt that
         // does not move is the one thing a conveyor must not be.
@@ -367,8 +370,12 @@ public final class GameHud implements Disposable {
                             BELT_SLOT_HEIGHT * mode.conveyorCapacity());
             track.add(slats);
         }
-        track.add(cardRow);
-        column.add(track).width(BELT_SLOT_WIDTH + BELT_PAD * 2f).row();
+        // The nuts go in the SAME stack cell as the slats, so the track is exactly as tall as the belt
+        // and a card riding on from below is clipped by the belt column rather than appearing under the
+        // sun counter.
+        track.add(beltTrack);
+        column.add(track).width(BELT_SLOT_WIDTH + BELT_PAD * 2f)
+                .height(BELT_SLOT_HEIGHT * mode.conveyorCapacity()).row();
 
         conveyor = new Table();
         conveyor.setFillParent(true);
@@ -388,14 +395,19 @@ public final class GameHud implements Disposable {
 
     // The nuts currently on the belt, in belt order.
     //
-    // Rebuilt on change for the same reason Vasebreaker's hand is: the conveyor is a LIST, not a set of
-    // counts -- the mode delivers a nut every five seconds and removes the one you bowl -- so positions
-    // shift and a card cannot simply be updated in place. The signature check is what keeps that from
-    // happening sixty times a second, which would hand every click an actor that no longer exists.
+    // RECONCILED rather than rebuilt, unlike Vasebreaker's hand. The conveyor is a LIST, not a set of
+    // counts -- the mode delivers a nut every five seconds and removes the one you bowl -- and the hand
+    // answers that by throwing every card away and making new ones. That is fine for a bank that snaps
+    // into place and wrong for a belt: a card discarded and recreated has no history, so there is
+    // nothing left to ride anywhere. ConveyorTrack keeps the cards that stayed and animates them to
+    // their new slots; only a genuinely new nut is built here.
+    //
+    // The signature check remains, because reconcile() is the expensive half and the belt is unchanged
+    // on the overwhelming majority of frames.
     private void refreshConveyor() {
         models.game.gamemodes.WallnutBowlingMode mode =
                 views.gdx.render.BowlingRenderer.modeOf(session);
-        if (mode == null) {
+        if (mode == null || beltTrack == null) {
             return;
         }
         java.util.List<models.entities.plants.bowling.BowlingKind> belt = mode.getConveyor();
@@ -404,13 +416,11 @@ public final class GameHud implements Disposable {
             return;
         }
         conveyorSignature = signature;
-
+        // Dropped and rebuilt from the surviving riders, because `cards` is what update() walks to
+        // refresh every card each frame and a card that has left the belt must not stay on it.
         cards.clear();
-        cardRow.clearChildren();
-        for (models.entities.plants.bowling.BowlingKind kind : belt) {
-            // A ROW each, not a column: this belt runs top to bottom.
-            cardRow.add(nutCard(kind)).size(BELT_SLOT_WIDTH, BELT_SLOT_HEIGHT).row();
-        }
+        beltTrack.reconcile(belt, this::nutCard);
+        beltTrack.collectInto(cards);
     }
 
     // ---- I, Zombie's roster -----------------------------------------------------------------------
@@ -466,7 +476,9 @@ public final class GameHud implements Disposable {
                 tools.selectNut(token);
             }
         });
-        cards.add(card);
+        // NOT added to `cards` here: the belt owns which cards exist, and refreshConveyor rebuilds that
+        // list from the riders that survived the reconcile. Adding here as well would leave a bowled
+        // nut's card in the refresh pass for the rest of the level.
         return card;
     }
 
@@ -505,8 +517,18 @@ public final class GameHud implements Disposable {
     private SeedCardActor handCard(String plantType, int count) {
         // A packet out of a vase has no recharge and no price: it is used once and it is gone. The
         // SeedPacket here exists only to carry the plant's name into the card.
+        //
+        // Cost ZERO, and that is the whole fix for a Vasebreaker hand that came out uniformly dark. The
+        // card dims itself when `sunAvailable < cost` (SeedCardActor.refresh draws BROKE_VEIL over the
+        // whole thing), and Vasebreaker is the one mode with NO sun economy at all -- no sun falls and
+        // none is banked. Handing the card the plant's ordinary shop price therefore said "100 sun" to a
+        // player who would forever have 0, so every packet in the hand was permanently veiled as
+        // unaffordable -- unusable-looking, for plants the player had already earned by breaking a vase.
+        //
+        // The price was never even displayed: setSupply(count) below swaps the cost row for "xN". So the
+        // only thing costOf() contributed here was the dimming.
         SeedCardActor card = new SeedCardActor(assets, art, new SeedPacket(plantType, 0),
-                costOf(plantType), new PlantIcon(sprites.get(plantType)));
+                0, new PlantIcon(sprites.get(plantType)));
         card.setSupply(count);
         card.addListener(new ClickListener() {
             @Override

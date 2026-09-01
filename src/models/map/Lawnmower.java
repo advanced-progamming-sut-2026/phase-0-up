@@ -19,7 +19,8 @@ public class Lawnmower {
     private double positionX;
     private boolean isActiveNow;
 
-    // Everything mown over the whole run, reported in one go when the mower leaves the board.
+    // Whatever this tick's step drove over. Rebuilt each tick rather than accumulated over the run --
+    // see update().
     private final List<Zombie> killed = new ArrayList<>();
 
     public Lawnmower(int row) {
@@ -61,14 +62,26 @@ public class Lawnmower {
         }
     }
 
-    // Advances the mower one tick, killing whatever it has driven past.
+    // Advances the mower one tick, killing whatever it has driven past, and returns what it killed
+    // ON THIS TICK.
     //
-    // Returns its full kill list on the tick it leaves the board -- that is when the run is over and
-    // there is a complete list to report -- and an empty list on every other tick.
+    // ## It used to hold the whole run back
+    //
+    // The kill list was accumulated across the run and returned only on the tick the mower drove off
+    // the board, so that the summary could be printed in one go. The zombies themselves were removed
+    // from the row the instant they were struck, but nothing SAID they had died until the run ended --
+    // and the death sentence is the only thing the view has to play a death on (the model deletes a
+    // zombie the tick it dies; see DeathEffects).
+    //
+    // A mower crosses at LAWNMOWER_SPEED to LAWNMOWER_END_POSITION -- 0.6 a tick over nine cells, so
+    // fifteen ticks, a second and a half. Everything it mowed therefore vanished on contact and then
+    // died on screen up to a second and a half later, in a heap, next to a mower that had already gone.
+    // Reporting per tick is what puts the death back on the frame the blade reaches it.
     public List<Zombie> update(GameSession gameSession) {
         if (!isActiveNow || used) {
             return Collections.emptyList();
         }
+        killed.clear();
 
         double newX = positionX + Constants.LAWNMOWER_SPEED;
 
@@ -82,8 +95,9 @@ public class Lawnmower {
             if (hasPassed(zombie.getMovement().getPositionX(), newX)) {
                 zombie.getHealth().applyDamage(zombie.getHealth().getTotalHP(), Element.NEUTRAL, null);
                 // The mower owns what it mows: pull it off the row now so processDeaths never reports
-                // it separately, and hold it for the single summary printed when the run ends. The
-                // zombie keeps its position, so its death line reads the spot it was struck.
+                // it separately. The zombie keeps its position, so its death line reads the spot it was
+                // struck -- which, now that the line goes out on the same tick, is also where the mower
+                // is standing when the body appears.
                 rowZombies.remove(zombie);
                 killed.add(zombie);
             }
@@ -94,9 +108,8 @@ public class Lawnmower {
         if (positionX > Constants.LAWNMOWER_END_POSITION) {
             used = true;
             isActiveNow = false;
-            return List.copyOf(killed);
         }
-        return Collections.emptyList();
+        return List.copyOf(killed);
     }
 
     // Has the mower driven past this zombie? Everything from the left edge up to the mower's leading

@@ -144,7 +144,12 @@ public final class SpriteRegistry {
             "ZombieDarkArmor3",
             new Still("IMAGE_UI_ALMANAC_PACKETS_ZOMBIES_DARK_ARMOR3", KNIGHT_STILL_SCALE),
             // One of the handful of plants absent from the dump entirely; its seed packet is not.
-            "Iceberg Lettuce", new Still("IMAGE_UI_PACKETS_ICEBURG", 1f));
+            "Iceberg Lettuce", new Still("IMAGE_UI_PACKETS_ICEBURG", 1f),
+            // The pea a Zombotany Peashooter zombie spits. The same sub-image ProjectileRenderer fires
+            // out of a real Peashooter -- a pea is a pea whichever end of the lawn threw it -- named
+            // here so ImpactEffects can ask for it by entity name like everything else it draws.
+            // The dump has no animated pea: the green one is a still and only the FIRE pea is a PAM.
+            "ZOMBOTANY_PEA", new Still("IMAGE_PLANT_PEASHOOTER_PEASHOOTER_23X23", 1f));
 
     private record Still(String regionId, float scale) { }
 

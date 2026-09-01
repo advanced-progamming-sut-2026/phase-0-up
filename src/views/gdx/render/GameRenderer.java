@@ -95,6 +95,10 @@ public final class GameRenderer {
         this.nuts = new BowlingRenderer(sprites, lawn, clocks, interpolator);
         this.brains = new IZombieRenderer(assets, lawn);
         this.beghouled = new BeghouledRenderer(assets, lawn);
+        // Beghouled's pieces fall into their cells; every other board's plants are simply in theirs. The
+        // lift answers 0 for both a cell at rest and every cell of a board that is not Beghouled at all,
+        // so this costs an ordinary level one array bounds check per plant. See PlantRenderer.CellLift.
+        this.plants.setLift(this.beghouled::liftAt);
         this.weather = new WeatherEffects(sprites, lawn);
         this.impacts = new ImpactEffects(sprites, lawn);
         this.explosions = new ExplosionEffects(sprites, lawn);
@@ -147,6 +151,12 @@ public final class GameRenderer {
     // sentence rather than as something readable off the board.
     public ZombieActions zombieActions() {
         return zombies.actions();
+    }
+
+    // And the Zombotany Peashooter's shot, which the head has to hear about to fire: the model damages
+    // the plant down the lane in one call, so nothing on the board records that anything was spat.
+    public ZombotanyHead botany() {
+        return zombies.botany();
     }
 
     // And the bones a Tomb Raiser throws to bring a headstone up, which are drawn on the tile the

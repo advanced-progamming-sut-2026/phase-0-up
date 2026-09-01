@@ -38,6 +38,40 @@ public class WallnutBowlingMode extends StandardMode {
     private static final int WAVES_PER_DIFFICULTY = 1;
     private static final int WAVE_INTERVAL_TICKS = 20 * Constants.TICKS_PER_SECOND;
     private static final int BASE_ZOMBIES_PER_ROW = 1;
+
+    // ## How a wave actually walks on
+    //
+    // A wave used to be materialised in one tick as a RECTANGLE: every lane got the identical count, at
+    // the identical integer columns (BOARD_COLS - 1 + i, so 8, 9, 10 ...), which meant the first zombie
+    // of every row appeared already standing ON column 8 rather than walking in from off the edge, and
+    // the rest queued behind it in five perfectly aligned columns. Forty zombies in a grid, stepping in
+    // lockstep. Nothing about it read as a horde arriving, and it made the mode trivially readable: with
+    // every lane identical there was never a reason to bowl at one lane rather than another.
+    //
+    // Three changes, and the wave's SIZE is deliberately not one of them -- the budget below is exactly
+    // what the old per-row count summed to, so difficulty and pacing are untouched:
+    //
+    //   * The wave becomes a QUEUE that drains over time instead of a burst. Zombies walk on a few
+    //     tenths of a second apart, which is what spaces them out along the lane.
+    //   * The budget is dealt UNEVENLY across the lanes -- one each so no lane is safe to ignore, then
+    //     the remainder scattered at random -- so a heavy lane is a thing the player has to notice.
+    //   * Each one enters at ZOMBIE_SPAWN_X (the same half-cell-off-the-edge every other mode in the
+    //     game uses), scattered BACKWARDS off it, so no two arrive on the same footing.
+    //
+    // ## The scatter runs the only direction it can
+    //
+    // Backwards -- toward the board -- and never past ZOMBIE_SPAWN_X, because CombatSystem.processDeaths
+    // deletes any zombie whose x exceeds exactly that. The threshold is right and deliberate (it is what
+    // stops a Prospector blown off the far edge from wandering into the desert and holding the level
+    // open forever), but it means the spawn point is a CEILING and not merely a convention: a scatter
+    // added to it rather than subtracted from it spawns zombies straight into the sweep, and the whole
+    // wave vanishes on the tick it arrives, one "wanders off the far end of the lawn" line each.
+    //
+    // Half a cell, which is as much as there is room for: below 9.0 a zombie is ON the board (isOnBoard
+    // is x < BOARD_COLS) and would pop into existence already standing on column 8, which is the exact
+    // thing the old rectangle did wrong.
+    private static final int SPAWN_GAP_TICKS = 8;
+    private static final double ENTRY_SCATTER = 0.5;
     private static final double HIT_RADIUS = 0.5;        // how close a nut must be to strike a zombie
     private static final int CHERRY_BOMB_DAMAGE = 1800;  // Explode-o-Nut's 3x3 blast
     private static final double EXPLODE_COL_RADIUS = 1.5;
@@ -108,14 +142,19 @@ public class WallnutBowlingMode extends StandardMode {
                 waveTimer = 0;
             }
         }
+        drainSpawns(session);
         stepBalls(session);
     }
 
-    // Won only once every wave has been released AND the lawn is clear -- clearing wave 1 no longer
-    // ends the level while three more waves are still queued.
+    // Won only once every wave has been released AND has finished walking on AND the lawn is clear.
+    //
+    // `pending.isEmpty()` is not optional now that a wave arrives over several seconds: without it the
+    // last wave's first zombie could be bowled over before its second had left the queue, and the level
+    // would declare victory with a dozen still to come.
     @Override
     public boolean checkWin(GameSession session) {
-        return wavesReleased >= totalWaves && zombiesSpawned > 0 && livingZombies(session) == 0;
+        return wavesReleased >= totalWaves && pending.isEmpty()
+                && zombiesSpawned > 0 && livingZombies(session) == 0;
     }
 
     @Override
@@ -266,27 +305,54 @@ public class WallnutBowlingMode extends StandardMode {
 
     // --- Setup helpers ---------------------------------------------------------------------------
 
-    // Walks one wave onto the lawn. Each wave is bigger than the last (and difficulty adds on top), so
-    // the pressure builds instead of peaking on the opening burst. Reports the wave so the player knows
-    // how many are still to come.
+    // Queues one wave. Each wave is bigger than the last (and difficulty adds on top), so the pressure
+    // builds instead of peaking on the opening burst. Reports the wave so the player knows how many are
+    // still to come -- and how many are coming, which is the number this queues rather than the number
+    // standing on the lawn a tick later.
     private void releaseWave(GameSession session) {
         wavesReleased++;
         int rows = session.getMap().getRows().size();
-        int perRow = BASE_ZOMBIES_PER_ROW + difficulty + (wavesReleased - 1);
-        int spawnedThisWave = 0;
+        int budget = rows * (BASE_ZOMBIES_PER_ROW + difficulty + (wavesReleased - 1));
+        // One per lane first: an empty lane is a lane the player never has to look at, and five of them
+        // scattered at random would happen often enough to matter.
         for (int y = 0; y < rows; y++) {
-            for (int i = 0; i < perRow; i++) {
-                double x = Constants.BOARD_COLS - 1 + i;   // queue them up off the right edge
-                Zombie zombie = ZombieFactory.createZombie(randomZombieAlias(), x, y, session);
-                if (zombie != null) {
-                    session.getMap().getRow(y).getZombies().add(zombie);
-                    zombiesSpawned++;
-                    spawnedThisWave++;
-                }
-            }
+            pending.add(y);
         }
+        for (int i = rows; i < budget; i++) {
+            pending.add(random.nextInt(rows));
+        }
+        // Shuffled so the guaranteed one-per-lane opening is not five zombies walking on in lane order,
+        // which would be the old rectangle again in slow motion.
+        java.util.Collections.shuffle(pending, random);
         session.reportEvent("Wave " + wavesReleased + " of " + totalWaves + " shambles in -- "
-                + spawnedThisWave + " zombies. Let 'em roll!");
+                + budget + " zombies. Let 'em roll!");
+    }
+
+    // Lanes waiting to have a zombie walk into them, one per zombie still to arrive.
+    private final List<Integer> pending = new ArrayList<>();
+    private int spawnTimer;
+
+    // Lets one queued zombie walk on, every SPAWN_GAP_TICKS.
+    //
+    // The gap is what does most of the spacing, and it does far more of it than its own length suggests:
+    // successive spawns go to different lanes, so two zombies sharing a lane are typically five spawns
+    // -- most of four seconds -- apart, which at a walker's pace is a good cell of clear ground between
+    // them. The scatter then breaks the last of the regularity.
+    private void drainSpawns(GameSession session) {
+        if (pending.isEmpty()) {
+            return;
+        }
+        if (++spawnTimer < SPAWN_GAP_TICKS) {
+            return;
+        }
+        spawnTimer = 0;
+        int lane = pending.remove(pending.size() - 1);
+        double x = Constants.ZOMBIE_SPAWN_X - random.nextDouble() * ENTRY_SCATTER;
+        Zombie zombie = ZombieFactory.createZombie(randomZombieAlias(), x, lane, session);
+        if (zombie != null) {
+            session.getMap().getRow(lane).getZombies().add(zombie);
+            zombiesSpawned++;
+        }
     }
 
     private BowlingType create(BowlingKind kind, int x, int y) {

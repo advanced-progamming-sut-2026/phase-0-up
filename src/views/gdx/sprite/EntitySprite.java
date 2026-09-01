@@ -68,6 +68,22 @@ public interface EntitySprite {
     // box so big" -- the question no amount of staring at a screenshot can.
     com.badlogic.gdx.math.Rectangle partBounds(String clip, String partName);
 
+    // One part's box at a given instant of a clip -- the SAME instant, and therefore the same frame,
+    // that draw() would put on screen for that stateTime.
+    //
+    // This is the one to use for hanging something off a part. partBoundsByFrame hands back an array
+    // with no rule for turning a stateTime into an index, and every attempt to invent that rule at the
+    // call site is a chance to disagree with the renderer by a frame -- which is exactly how the
+    // Zombotany head ended up lagging the neck it was supposed to sit on. Here the animation runtime
+    // answers with its own frame arithmetic, so the two cannot drift.
+    //
+    // Default null for implementations with no frames to ask about (a still image has none, and neither
+    // do the test doubles); callers must treat null as "cannot say".
+    default com.badlogic.gdx.math.Rectangle partBoundsAt(String clip, float stateTime,
+                                                         String partName) {
+        return null;
+    }
+
     // One part's box for each frame of a clip, in frame order. Null when the clip never poses it.
     //
     // Where partBounds flattens the motion, this keeps it -- which is the whole point for anything that

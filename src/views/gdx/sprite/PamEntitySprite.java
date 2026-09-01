@@ -170,6 +170,23 @@ final class PamEntitySprite implements EntitySprite {
         return answer;
     }
 
+    // libPVZ's own time-to-frame arithmetic: floor(stateTime * frameRate), wrapped into the clip's
+    // frame range. Identical to what its draw path uses, which is the entire point of routing through
+    // it rather than indexing partBoundsByFrame by hand.
+    @Override
+    public com.badlogic.gdx.math.Rectangle partBoundsAt(String clip, float stateTime,
+                                                        String partName) {
+        ClipRef ref = resolve(clip);
+        if (ref == null || partName == null) {
+            return null;
+        }
+        try {
+            return player.partBounds(ref, stateTime, partName);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     @Override
     public com.badlogic.gdx.math.Rectangle[] partBoundsByFrame(String clip, String partName) {
         ClipRef ref = resolve(clip);

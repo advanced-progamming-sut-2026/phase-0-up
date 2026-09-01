@@ -119,6 +119,17 @@ public class CombatSystem {
             }
             if(!lawnmower.isActiveNow() && hasBreached(row)){
                 lawnmower.activate();
+                // The header goes out on the tick the mower STARTS, not the tick it finishes.
+                //
+                // The sentence and its list are unchanged and still arrive in that order -- the header
+                // first, then a death line for every zombie the run mows. What has moved is when the
+                // death lines are raised: each now goes out on the tick the blade actually reaches its
+                // zombie, instead of all of them together a second and a half later when the mower
+                // leaves the board. See Lawnmower.update for why that delay was visible.
+                //
+                // Spacing is the spec's: "the row <r>is triggered" has no space before "is".
+                events.add(new Result(true, "The lawn mower in the row " + row.getIndex()
+                        + "is triggered and killed these zombies:"));
             }
 
             List<Zombie> killed = lawnmower.update(session);
@@ -126,11 +137,7 @@ public class CombatSystem {
                 continue;
             }
 
-            // The mower has already pulled these zombies off the row as it passed them; it reports the
-            // whole run here, in one go, the tick it drives off the board. Spacing is the spec's: "the
-            // row <r>is triggered" has no space before "is".
-            events.add(new Result(true, "The lawn mower in the row " + row.getIndex()
-                    + "is triggered and killed these zombies:"));
+            // The mower has already pulled these zombies off the row as it passed them.
             session.recordLawnmowerKills(killed.size());   // for the Mowing Time quest
             for (Zombie zombie : killed) {
                 reportZombieDeath(session, zombie, events);

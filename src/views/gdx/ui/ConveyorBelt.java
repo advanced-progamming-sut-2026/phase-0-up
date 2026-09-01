@@ -32,7 +32,11 @@ final class ConveyorBelt extends Actor {
     // About one slot every three seconds. The mode delivers a nut roughly every five, and matching that
     // exactly makes the belt look stopped between deliveries -- a real conveyor runs continuously and
     // the cargo is what is intermittent.
-    private static final float PIXELS_PER_SECOND = 27f;
+    //
+    // Shared with ConveyorTrack, which rides the nuts up at this exact rate. Cargo travelling at a
+    // different speed to the surface under it is the one thing a conveyor cannot do, so the two read
+    // one number rather than each holding their own.
+    static final float PIXELS_PER_SECOND = 27f;
 
     private final Drawable slat;
     private final float slatHeight;

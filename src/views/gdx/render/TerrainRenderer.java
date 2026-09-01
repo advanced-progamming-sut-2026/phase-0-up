@@ -282,7 +282,7 @@ public final class TerrainRenderer {
     public void drawCellFront(Batch batch, Cell cell, int col, int row, float delta) {
         // Before the early return, and deliberately: the bones outlive the headstone being shot down,
         // and a tile whose terrain has just been cleared still owes the effect the rest of its life.
-        drawBones(batch, col, row);
+        drawRaising(batch, col, row);
         if (cell.getTerrain() == null || cell.getTerrain().isEmpty()) {
             return;
         }
@@ -339,20 +339,55 @@ public final class TerrainRenderer {
     private static final java.util.regex.Pattern RAISED = java.util.regex.Pattern.compile(
             "^The Tomb Raiser raises a grave at \\((\\d+), (\\d+)\\)\\.$");
     private static final String BONES = "ZOMBIE_EGYPT_TOMBRAISER_BONE_HIT";
-    private static final String BONES_CLIP = "animation";
+    private static final String EFFECT_CLIP = "animation";
     // A little wider than the tile, so the bones scatter past the stone rather than stacking on it.
     private static final float BONES_WIDTH_CELLS = 1.35f;
-    // Used only if the art is missing; the real length is read off the clip, which is 1.33s.
-    private static final float BONES_FALLBACK_LIFETIME = 1.33f;
+    // Used only if the art is missing; the real length is read off each clip.
+    private static final float EFFECT_FALLBACK_LIFETIME = 1.33f;
+
+    // ---- Dark Ages graves ---------------------------------------------------------------------------
+    //
+    // The same problem in a different world, with a different cause. A Dark Ages grave is not raised by
+    // a zombie -- EnvironmentSystem heaves a batch of them out of the empty ground at the start of each
+    // wave -- and until now that was as abrupt as the Tomb Raiser's used to be: several tiles that were
+    // bare lawn on one frame were headstones on the next, with nothing in between.
+    //
+    // Worse, the three Dark headstone animations (DARK_SUN, DARK_PLANTFOOD, DARK_NOOP) are each a set of
+    // SINGLE-FRAME damage poses -- 0.0333s apiece -- so there is not even a rise built into the stone
+    // itself to play. The arrival has to be its own effect.
+    //
+    // DIRT_SPAWN_DIRT, and NOT the obvious-looking TOMBSTONE_DARK_SPAWN_EFFECT. That one is already
+    // spoken for a few lines above as NECROMANCY_MARK -- the disc and beam standing permanently on every
+    // tile a zombie can climb out of -- and Dark Ages boards carry both fixtures at once. Borrowing it
+    // would mean the same picture saying "a headstone appeared here" in one place and "a zombie can
+    // surface here" in another, on the same lawn, which is worse than no effect at all.
+    //
+    // DIRT_SPAWN_DIRT is the right one on its own merits anyway: its single clip is named
+    // `tomb_dirt_anim`, it is 0.67s of earth thrown up, and the dump ships one per world
+    // (DIRT_SPAWN_GRASS, _PIRATE, _FUTURE) -- which is what a set authored for "a tombstone arrives"
+    // looks like. The plain dirt variant is the one that reads on the Dark Ages' stone courtyard.
+    private static final java.util.regex.Pattern HEAVED = java.util.regex.Pattern.compile(
+            "^A grave heaves up out of the ground at \\((\\d+), (\\d+)\\)\\.$");
+    private static final String DARK_SPAWN = "DIRT_SPAWN_DIRT";
+    private static final String DARK_SPAWN_CLIP = "tomb_dirt_anim";
+    // Tighter than the bones: this one is the ground itself breaking, so it belongs inside the tile
+    // rather than scattered across it.
+    private static final float DARK_SPAWN_WIDTH_CELLS = 1.1f;
 
     private static final class Raising {
         int col;
         int row;
         float age;
+        // Which effect, which of its clips, and how wide. Held per raising rather than as constants now
+        // that two different things can raise a grave -- and the two do not even agree on a clip name,
+        // since the bones call theirs `animation` and the dirt calls its `tomb_dirt_anim`.
+        String sprite;
+        String clip;
+        float widthCells;
     }
 
     private final java.util.List<Raising> raisings = new java.util.ArrayList<>();
-    private float bonesLifetime;
+    private final java.util.Map<String, Float> effectLifetimes = new java.util.HashMap<>();
 
     // Offered every event the model drains, alongside the explosions and the toasts. Anything that is
     // not a grave going up is ignored.
@@ -360,18 +395,29 @@ public final class TerrainRenderer {
         if (message == null) {
             return;
         }
-        java.util.regex.Matcher matcher = RAISED.matcher(message.trim());
+        String text = message.trim();
+        if (!raise(RAISED.matcher(text), BONES, EFFECT_CLIP, BONES_WIDTH_CELLS)) {
+            raise(HEAVED.matcher(text), DARK_SPAWN, DARK_SPAWN_CLIP, DARK_SPAWN_WIDTH_CELLS);
+        }
+    }
+
+    private boolean raise(java.util.regex.Matcher matcher, String sprite, String clip,
+                          float widthCells) {
         if (!matcher.matches()) {
-            return;
+            return false;
         }
         try {
             Raising raising = new Raising();
             raising.col = Integer.parseInt(matcher.group(1));
             raising.row = Integer.parseInt(matcher.group(2));
+            raising.sprite = sprite;
+            raising.clip = clip;
+            raising.widthCells = widthCells;
             raisings.add(raising);
         } catch (NumberFormatException ignored) {
             // a sentence shaped like a raising but not one; nothing to draw
         }
+        return true;
     }
 
     // Ages the bursts. Once per FRAME, from GameRenderer -- ageing them inside the per-cell pass would
@@ -380,42 +426,46 @@ public final class TerrainRenderer {
         if (raisings.isEmpty()) {
             return;
         }
-        float lifetime = bonesLifetime();
         for (int i = raisings.size() - 1; i >= 0; i--) {
             Raising raising = raisings.get(i);
             raising.age += delta;
-            if (raising.age >= lifetime) {
+            if (raising.age >= effectLifetime(raising.sprite, raising.clip)) {
                 raisings.remove(i);
             }
         }
     }
 
-    // Exactly as long as the animation, resolved once. A fixed lifetime shorter than the clip cuts the
-    // bones off mid-air; longer, and they hold their last frame on the ground like a decal.
-    private float bonesLifetime() {
-        if (bonesLifetime <= 0f) {
-            EntitySprite sprite = sprites.get(BONES);
-            float authored = sprite == null ? 0f : sprite.clipDuration(BONES_CLIP);
-            bonesLifetime = authored > 0f ? authored : BONES_FALLBACK_LIFETIME;
+    // Exactly as long as the animation, resolved once per effect. A fixed lifetime shorter than the clip
+    // cuts the bones off mid-air; longer, and they hold their last frame on the ground like a decal.
+    // Keyed on the clip as well as the sprite, because the two effects name theirs differently.
+    private float effectLifetime(String spriteName, String clipName) {
+        String key = spriteName + '#' + clipName;
+        Float cached = effectLifetimes.get(key);
+        if (cached != null) {
+            return cached;
         }
-        return bonesLifetime;
+        EntitySprite sprite = sprites.get(spriteName);
+        float authored = sprite == null ? 0f : sprite.clipDuration(clipName);
+        float lifetime = authored > 0f ? authored : EFFECT_FALLBACK_LIFETIME;
+        effectLifetimes.put(key, lifetime);
+        return lifetime;
     }
 
-    private void drawBones(Batch batch, int col, int row) {
+    private void drawRaising(Batch batch, int col, int row) {
         if (raisings.isEmpty()) {
             return;
         }
-        EntitySprite sprite = sprites.get(BONES);
-        if (sprite == null || !sprite.isReady()) {
-            return;
-        }
-        String clip = ClipMap.firstAvailable(sprite, BONES_CLIP);
         for (Raising raising : raisings) {
             if (raising.col != col || raising.row != row) {
                 continue;
             }
+            EntitySprite sprite = sprites.get(raising.sprite);
+            if (sprite == null || !sprite.isReady()) {
+                continue;
+            }
+            String clip = ClipMap.firstAvailable(sprite, raising.clip, EFFECT_CLIP);
             fitted(batch, sprite, clip, ClipMap.sample(sprite, clip, raising.age),
-                    lawn.centerX(col), tileCentreY(row), BONES_WIDTH_CELLS);
+                    lawn.centerX(col), tileCentreY(row), raising.widthCells);
         }
     }
 

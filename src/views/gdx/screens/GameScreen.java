@@ -544,6 +544,7 @@ public final class GameScreen extends ScreenAdapter {
         deliver("explosions", () -> entities.explosions().onEvent(message));
         deliver("weather", () -> entities.weather().onEvent(message));
         deliver("zombieActions", () -> entities.zombieActions().onEvent(message));
+        deliver("botany", () -> entities.botany().onEvent(message));
         deliver("terrain", () -> entities.terrain().onEvent(message));
         deliver("impacts", () -> entities.impacts().onEvent(message));
         deliver("deaths", () -> entities.deaths().onEvent(message));
@@ -664,9 +665,9 @@ public final class GameScreen extends ScreenAdapter {
                 tools.selectTool(views.gdx.input.ToolState.Tool.PLANT_FOOD);
                 return true;
             }
+            // Escape disarms the cursor as well as pausing -- see the pause branch below.
             if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
                 tools.clear();
-                return true;
             }
             // The cheat panel is a debug tool, so it is gated on the setting that says so. Without the
             // gate a stray C during a real match hands the player a "Nuke Everything" button.
@@ -680,9 +681,24 @@ public final class GameScreen extends ScreenAdapter {
             }
             // Pausing stops the accumulator, so the model AND every animation clock freeze together --
             // a paused board that keeps waving its leaves does not read as paused.
+            //
+            // ESCAPE is here because it is the key every player reaches for first, and it was the one
+            // key that did not pause. It keeps its old job of disarming the cursor (above) rather than
+            // trading it away, and does both on the SAME press: a player holding a seed who hits Escape
+            // wants out of the seed as well as into the menu, and making them press it twice reads as
+            // the key not working. Coming back from a pause with a live seed stuck to the cursor is a
+            // mis-click waiting to happen anyway.
+            //
+            // Guarded on the same two panels the pause overlay itself is (see render): the objective
+            // card and the result panel already hold the loop paused for their own reasons, so a toggle
+            // underneath either of them would unpause a board the player can neither see nor play. That
+            // guard is new for P and SPACE too, which could do exactly that.
             if (keycode == com.badlogic.gdx.Input.Keys.P
-                    || keycode == com.badlogic.gdx.Input.Keys.SPACE) {
-                loop.togglePause();
+                    || keycode == com.badlogic.gdx.Input.Keys.SPACE
+                    || keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
+                if (!overlays.isObjectiveVisible() && !overlays.isOutcomeVisible()) {
+                    loop.togglePause();
+                }
                 return true;
             }
             if (keycode >= com.badlogic.gdx.Input.Keys.NUM_1

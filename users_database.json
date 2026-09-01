@@ -10,8 +10,8 @@
     "stayLoggedIn": true,
     "profile": {
       "gameNumbers": 0,
-      "coins": 22410,
-      "gems": 1245,
+      "coins": 23160,
+      "gems": 1509,
       "plantFoodCount": 0,
       "difficultyLevel": 3,
       "bestNumberOfMeowPoints": 1237,
@@ -263,6 +263,51 @@
           "id": 28,
           "title": "New Face in the Horde",
           "description": "You\u0027ve met a ZombiePiano and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-09-01",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 29,
+          "title": "New Mini-Game Unlocked",
+          "description": "Beghouled level 2 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-09-01",
+          "read": false,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 30,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBotanyJalapeno and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-09-01",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 31,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBotanyPeashooter and lived to file the paperwork. It\u0027s in your almanac now.",
+          "author": "System",
+          "date": "2026-09-01",
+          "read": false,
+          "type": "ZOMBIE_DISCOVERY"
+        },
+        {
+          "id": 32,
+          "title": "New Mini-Game Unlocked",
+          "description": "Wall-nut Bowling level 1 is ready to play. Think you can handle it?",
+          "author": "System",
+          "date": "2026-09-01",
+          "read": false,
+          "type": "MINIGAME_UNLOCK"
+        },
+        {
+          "id": 33,
+          "title": "New Face in the Horde",
+          "description": "You\u0027ve met a ZombieBotanySquash and lived to file the paperwork. It\u0027s in your almanac now.",
           "author": "System",
           "date": "2026-09-01",
           "read": false,
@@ -565,7 +610,7 @@
             {
               "x": 3,
               "y": 2,
-              "state": "LOCKED",
+              "state": "EMPTY",
               "readyAtTimestamp": 0
             }
           ]
@@ -576,10 +621,11 @@
       "lastChapter": 4,
       "lastLevel": 4,
       "passedMiniGames": {
-        "Beghouled": 1
+        "Beghouled": 2,
+        "Wall-nut Bowling": 1
       },
-      "dailyQuestsDone": 17,
-      "noneDailyQuestsDone": 2,
+      "dailyQuestsDone": 21,
+      "noneDailyQuestsDone": 3,
       "hasBoughtDailyOfferToday": false,
       "seenZombieAliases": [
         "ZombieRa",
@@ -587,6 +633,7 @@
         "ZombieDarkJuggler",
         "ZombieImp",
         "ZombieGargantuar",
+        "ZombieBotanySquash",
         "ZombieDarkImpDragon",
         "ZombieIceAgeDodo",
         "ZombieArcade",
@@ -596,11 +643,13 @@
         "ZombieArmor2",
         "ZombieLostCityJane",
         "ZombiePiano",
+        "ZombieBotanyPeashooter",
         "ZombieNewspaper",
         "ZombieExplorer",
         "ZombieIceAgeTroglobite",
         "ZombieProspector",
         "ZombieDarkKing",
+        "ZombieBotanyJalapeno",
         "ZombieModernAllStar",
         "ZombieIceAgeHunter",
         "ZombieWizard",
@@ -612,33 +661,46 @@
       ],
       "completedQuestIds": [
         "economical_herbivore",
+        "defense_master",
         "mowing_time"
       ],
       "winStreakAtMaxDifficulty": 0,
       "versusWins": 0,
       "versusLosses": 0,
       "zombieKillsByChapter": {
-        "ancient_egypt": 9
+        "ancient_egypt": 9,
+        "dark_ages": 9
       },
       "completedDailyQuestIds": [
         "ocd",
-        "one_column_less"
+        "one_column_less",
+        "defenseless_row",
+        "symmetry",
+        "defenseless_cross",
+        "cloudy_day"
       ],
       "questDayStamp": "2026-09-01",
-      "sunCollectedToday": 825,
+      "sunCollectedToday": 2940,
       "mowerlessFirstColumnKillsToday": 1,
       "killsByPlantToday": {
-        "melon-pult": 4,
         "mega gatling pea": 20,
+        "wasabi whip": 1,
+        "puff-shroom": 2,
+        "cherry bomb": 1,
+        "fume-shroom": 3,
+        "peashooter": 5,
+        "cactus": 2,
+        "starfruit": 3,
+        "melon-pult": 4,
         "citron": 7,
-        "cabbage-pult": 3,
+        "cabbage-pult": 5,
         "repeater": 2
       },
-      "lawnmowerKillsTotal": 33,
+      "lawnmowerKillsTotal": 37,
       "gameSpeed": 1,
       "showGrid": false,
       "debugMode": true,
-      "volume": 24
+      "volume": 0
     }
   },
   "parsa": {

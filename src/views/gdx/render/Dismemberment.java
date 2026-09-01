@@ -55,19 +55,55 @@ public final class Dismemberment {
     // Backwards and up. A pea travels left to right into a zombie walking right to left, so whatever it
     // knocks loose goes AWAY from the house -- a cone that flew toward the plants would read as the
     // zombie having thrown it.
+    //
+    // Armor and the severed arm only. A HEAD is not knocked off by the shot that lands, it comes off
+    // because the zombie died, so it is thrown at random instead -- see randomiseHead.
     private static final float LAUNCH_X = 130f;
     private static final float LAUNCH_Y = 270f;
     private static final float GRAVITY = 700f;
-    // A little over one turn across the flight. Enough to read as tumbling; more and a bucket becomes a
-    // blur, which is worse than not spinning at all.
-    private static final float SPIN_DEGREES_PER_SECOND = 420f;
 
-    // Ends about where it would hit the ground: LAUNCH_Y * 2 / GRAVITY is 0.77s of flight.
-    private static final float LIFETIME = 0.77f;
+    // ## Nothing here rotates, and that is the whole point
+    //
+    // A piece used to be spun as it flew, and it did not read as a tumble -- it read as the piece
+    // ORBITING, on a wide circular path with no parabola visible in it at all.
+    //
+    // That was not a matter of too many degrees per second. A .PAM is drawn from the body's origin, down
+    // at the zombie's feet, and every part is posed at an offset from it -- a head sits a couple of
+    // hundred pixels UP. Rotating the transform about that origin therefore sweeps the head around a
+    // circle of that radius, and the drawn position is the arc PLUS that circle. With a radius bigger
+    // than the arc's own height, the circle is all you see. (The old comment here claimed the difference
+    // between spinning about the origin and about the piece's own middle "is not visible at this size";
+    // it is the only thing that was visible.)
+    //
+    // Rotating about the measured centre instead would fix the path and cost a visibleBounds call
+    // against the hidden-part set every frame. Not worth it: a clean parabola is what was asked for, and
+    // it is also what the pieces actually want to do.
 
-    // Fraction of the flight held at full opacity before it dissolves. A piece that simply disappeared
-    // at ground level would read as a dropped frame.
-    private static final float HOLD = 0.6f;
+    // ## A head goes wherever it goes
+    //
+    // The spec asks for the head specifically to be thrown "in a random direction -- once backwards,
+    // once forwards", and that is not decoration: every other piece here comes off because something hit
+    // it, so a fixed away-from-the-shot arc is the correct reading for a cone or an arm. A head that
+    // always flew the same way, at the same speed, off every zombie in a wave of ten made ten identical
+    // parabolas -- which reads as one canned effect rather than as ten zombies falling apart.
+    //
+    // Both the sign and the magnitude are drawn, and so is the lift. The sign is what the spec names;
+    // the rest is what stops two heads thrown the same way looking like copies of each other. Horizontal
+    // speed is kept off zero at the bottom of its band so a head never simply rises and drops back onto
+    // its own body.
+    private static final float HEAD_SPEED_MIN = 70f;
+    private static final float HEAD_SPEED_MAX = 190f;
+    private static final float HEAD_LIFT_MIN = 220f;
+    private static final float HEAD_LIFT_MAX = 340f;
+
+    // How long a piece lies where it landed before it is cleared. The spec wants the pieces to fall ON
+    // the ground and allows them to vanish outright afterwards, so this is short and there is no bounce.
+    // Zero would be wrong: the flight ends at ground level, so a piece removed on that frame is gone on
+    // the first frame it has actually landed, and nothing is ever seen lying on the lawn.
+    private static final float GROUND_REST = 0.45f;
+
+    // Seconds of fade at the very end. A piece that blinked out would read as a dropped frame.
+    private static final float FADE = 0.3f;
 
     private static final class Piece implements Pool.Poolable {
         float x;
@@ -75,6 +111,13 @@ public final class Dismemberment {
         int row;
         float age;
         float lifetime;
+        // Launch velocity in world pixels per second. Held per piece rather than as constants because a
+        // head's is drawn at random and an armor piece's is not.
+        float velocityX;
+        float velocityY;
+        // When it hits the ground: 2 * velocityY / GRAVITY. Held rather than recomputed so the draw pass
+        // can clamp the arc to it and leave the piece lying still.
+        float flight;
         // +1 for a piece thrown to the right, -1 for one off a hypnotised zombie walking the other way.
         float direction;
         boolean faceRight;
@@ -94,6 +137,9 @@ public final class Dismemberment {
             row = 0;
             age = 0f;
             lifetime = 0f;
+            velocityX = 0f;
+            velocityY = 0f;
+            flight = 0f;
             direction = 1f;
             faceRight = false;
             sprite = null;
@@ -153,6 +199,7 @@ public final class Dismemberment {
             return;
         }
         piece.parts.put(PARTICLE_ARM, false);
+        randomiseHead(piece);
         log(spriteName, PARTICLE_HEAD, row);
         if (audio != null) {
             audio.play(views.gdx.core.AudioManager.forEntity(
@@ -175,7 +222,7 @@ public final class Dismemberment {
     // what comes off has to be that -- drawn at the size ZombotanyHead was wearing it at, or it doubles
     // in size on the frame it comes loose.
     //
-    // Everything else about the throw is unchanged: same arc, same spin, same fade, same lane.
+    // Everything else about the throw is unchanged: same arc, same fade, same lane.
     public void throwWhole(String spriteName, String clip, float scale,
                            float x, float footY, int row, boolean faceRight) {
         EntitySprite sprite = spriteName == null ? null : sprites.get(spriteName);
@@ -191,7 +238,8 @@ public final class Dismemberment {
         piece.row = row;
         piece.faceRight = faceRight;
         piece.direction = faceRight ? -1f : 1f;
-        piece.lifetime = LIFETIME;
+        // A Zombotany head is still a head, so it is thrown like one.
+        randomiseHead(piece);
         pieces.add(piece);
         log(spriteName, clip, row);
     }
@@ -236,10 +284,28 @@ public final class Dismemberment {
         piece.faceRight = faceRight;
         // Away from whatever hit it, which is the side the zombie is walking towards.
         piece.direction = faceRight ? -1f : 1f;
-        // Not read from the clip: `particles` is one frame long. See the note above.
-        piece.lifetime = LIFETIME;
+        launch(piece, piece.direction * LAUNCH_X, LAUNCH_Y);
         pieces.add(piece);
         return piece;
+    }
+
+    // Gives a piece its arc, and sizes its life to it.
+    //
+    // The lifetime is NOT read from the clip: `particles` is one frame long (see the note above), so the
+    // only thing that can say how long the piece should exist is how long it takes to come down.
+    private static void launch(Piece piece, float velocityX, float velocityY) {
+        piece.velocityX = velocityX;
+        piece.velocityY = velocityY;
+        piece.flight = 2f * velocityY / GRAVITY;
+        piece.lifetime = piece.flight + GROUND_REST;
+    }
+
+    // Throws a head somewhere other than where the last one went. See the note on HEAD_SPEED_MIN.
+    private static void randomiseHead(Piece piece) {
+        float sign = com.badlogic.gdx.math.MathUtils.randomBoolean() ? 1f : -1f;
+        launch(piece,
+                sign * com.badlogic.gdx.math.MathUtils.random(HEAD_SPEED_MIN, HEAD_SPEED_MAX),
+                com.badlogic.gdx.math.MathUtils.random(HEAD_LIFT_MIN, HEAD_LIFT_MAX));
     }
 
     // Once per frame, never per lane: the lane pass visits drawRow five times a frame and ageing there
@@ -270,23 +336,22 @@ public final class Dismemberment {
             if (sprite == null || !sprite.isReady()) {
                 continue;
             }
-            float t = piece.age;
-            float fraction = t / piece.lifetime;
-            float fade = fraction <= HOLD ? 1f : 1f - (fraction - HOLD) / (1f - HOLD);
-            batch.setColor(1f, 1f, 1f, fade);
+            // Clamped at the landing, so the last stretch of the piece's life is spent lying still on
+            // the lawn rather than continuing down through it.
+            float t = Math.min(piece.age, piece.flight);
+            float remaining = piece.lifetime - piece.age;
+            batch.setColor(1f, 1f, 1f, remaining >= FADE ? 1f : Math.max(remaining, 0f) / FADE);
 
             // A plain ballistic arc from where it came off. Nothing about this reaches the model -- the
             // same split ProjectileRenderer makes for a lobbed shot.
-            float dx = piece.direction * LAUNCH_X * t;
-            float dy = LAUNCH_Y * t - 0.5f * GRAVITY * t * t;
+            float dx = piece.velocityX * t;
+            float dy = piece.velocityY * t - 0.5f * GRAVITY * t * t;
 
-            // Rotated about the point it is drawn from rather than about its own middle. Measuring the
-            // middle would mean visibleBounds against the hidden-part set on every frame, and at this
-            // size and speed the difference between a spin and a tight orbit is not visible.
+            // Translate and scale only. See the note on GRAVITY for why there is no rotation.
             transform.begin(batch,
                     SpritePlacer.toSpriteSpace(piece.x + dx),
                     SpritePlacer.toSpriteSpace(piece.footY + dy),
-                    piece.scale, piece.direction * SPIN_DEGREES_PER_SECOND * t);
+                    piece.scale);
             // stateTime 0: `particles` is a single frame, so there is nothing to sample into -- and a
             // thrown whole sprite is held on its opening pose for the same reason a corpse is, because
             // what is being watched is the arc rather than the animation.

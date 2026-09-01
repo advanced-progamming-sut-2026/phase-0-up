@@ -75,6 +75,8 @@ public final class ToastPolicy {
                     + "|wanders off the far end|smashes|hurls its Imp|hurls ice at"
                     + "|fires a laser beam|flings an octopus|rams its arcade machine|tackles"
                     + "|takes aim at|winds up an octopus|raises its staff|raises his sceptre"
+                    // The Zombotany Peashooter's shot, which now has a pea and a splat of its own.
+                    + "|spits a pea from"
                     // The sun thieves powering up and down. The zombie visibly lights up and the
                     // counter visibly drains; a line for each end of every heist is running commentary.
                     + "|powers up|powers down|levels its skull"
@@ -91,6 +93,10 @@ public final class ToastPolicy {
                     + "|ignores the chill|shrugs off the freeze"
                     // Shots, blasts and terrain damage.
                     + "|detonates at|Grapeshot bursts|A grave crumbles at|The grave at"
+                    // One line per Dark Ages headstone, and each one now breaks the ground open where
+                    // it names. The batch's own summary is NOT suppressed -- it is the count, which is
+                    // the part the board cannot show.
+                    + "|A grave heaves up out of the ground at"
                     // NOT the Imp Dragon's fire immunity. That one belongs on screen: a fire-proof
                     // zombie is a RULE the board cannot show -- the pea bursts on it exactly as it
                     // would on any other zombie and the health simply does not move, which reads as a
@@ -116,6 +122,10 @@ public final class ToastPolicy {
                     // harder. Knowing it is there is the difference between answering it and wondering
                     // why the peasants keep turning up in armour.
                     + "|takes his throne"
+                    // A lit fuse on a ten-second timer, which is the clearest case this list has: the
+                    // board cannot show a countdown, and a lane of plants going up because the player
+                    // never knew to shoot one particular zombie is the least fair thing in the mode.
+                    + "|is about to blow"
                     + "|The lawn mower in the row).*",
             Pattern.CASE_INSENSITIVE);
 

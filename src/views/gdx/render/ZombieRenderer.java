@@ -144,7 +144,7 @@ public final class ZombieRenderer {
 
         drawIceBehind(batch, zombie, sprite, x, footY, delta, clip, stateTime);
         batch.setColor(tintFor(zombie));
-        drawWhole(batch, alias, sprite, clip, stateTime, x, footY, faceRight, parts,
+        drawWhole(batch, zombie, sprite, clip, stateTime, x, footY, faceRight, parts,
                 scaleFor(zombie));
 
         // Carrier aura: the same frame again, additively, in the colour of whatever it is carrying.
@@ -156,7 +156,7 @@ public final class ZombieRenderer {
             Color colour = carrierColour(zombie);
             SpritePlacer.beginAdditive(batch);
             batch.setColor(colour.r * aura, colour.g * aura, colour.b * aura, 1f);
-            drawWhole(batch, alias, sprite, clip, stateTime, x, footY, faceRight, parts,
+            drawWhole(batch, zombie, sprite, clip, stateTime, x, footY, faceRight, parts,
                     scaleFor(zombie));
             SpritePlacer.endAdditive(batch);
         }
@@ -168,7 +168,7 @@ public final class ZombieRenderer {
         if (flash > 0f) {
             SpritePlacer.beginAdditive(batch);
             batch.setColor(flash, flash, flash, 1f);
-            drawWhole(batch, alias, sprite, clip, stateTime, x, footY, faceRight, parts,
+            drawWhole(batch, zombie, sprite, clip, stateTime, x, footY, faceRight, parts,
                     scaleFor(zombie));
             SpritePlacer.endAdditive(batch);
         }
@@ -510,7 +510,7 @@ public final class ZombieRenderer {
     // Body, then whatever stands in for its head. One method because the hit flash redraws the SAME
     // frame additively, and a plant-headed zombie that lit up only from the neck down would read as the
     // head belonging to something else.
-    private void drawWhole(Batch batch, String alias, EntitySprite sprite, String clip,
+    private void drawWhole(Batch batch, Zombie zombie, EntitySprite sprite, String clip,
                            float stateTime, float x, float footY, boolean faceRight,
                            Map<String, Boolean> parts, float scale) {
         // faceRight IS the mirror here: zombie art is authored walking left, so anything travelling
@@ -518,7 +518,10 @@ public final class ZombieRenderer {
         // through the EntitySprite flag.
         SpritePlacer.drawStandingScaled(batch, sprite, clip, stateTime, x, footY, faceRight, parts,
                 scale);
-        botany.draw(batch, alias, sprite, clip, stateTime, x, footY, faceRight);
+        // The zombie rather than just its alias, so a Zombotany head can play its own shot pose -- the
+        // alias says which plant it is, and only the object says which one just fired. See
+        // ZombotanyHead.clipFor.
+        botany.draw(batch, zombie.getAlias(), sprite, clip, stateTime, x, footY, faceRight, zombie);
     }
 
     // -Dpvz.laneCheck=1. See DebugFlags: a tall sprite covering the rows above its feet is
@@ -621,6 +624,7 @@ public final class ZombieRenderer {
         flight.advance(delta);
         flight.sweep();
         damage.sweep();
+        botany.advance(delta);
         pieces.advance(delta);
         worn.keySet().removeIf(zombie -> zombie.getHealth() == null
                 || zombie.getHealth().getTotalHP() <= 0);

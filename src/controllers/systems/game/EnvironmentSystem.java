@@ -131,7 +131,17 @@ public class EnvironmentSystem {
             } else {
                 type = GravesInDarkAgesTypes.PLAIN;
             }
-            empty.get(i).addTerrain(new GraveInDarkAgesTerrain(type, session, empty.get(i)));
+            Cell cell = empty.get(i);
+            cell.addTerrain(new GraveInDarkAgesTerrain(type, session, cell));
+            // One line per grave, naming its TILE.
+            //
+            // The summary below is the line the player reads, and it is deliberately kept -- but a count
+            // is all it is, and a count cannot be drawn anywhere. A Dark Ages grave was added to its cell
+            // inside this one call and carries no state saying "new", so the tile in this sentence is the
+            // only thing the view can hang the ground-breaking effect on. Exactly the seam the Tomb
+            // Raiser's bones already use; see TerrainRenderer.
+            events.add(new Result(true, "A grave heaves up out of the ground at ("
+                    + (int) cell.getX() + ", " + cell.getY() + ")."));
         }
         events.add(new Result(true, count + " graves rose from the ground; " + lootCount
                 + " of them hold loot."));

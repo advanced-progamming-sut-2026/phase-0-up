@@ -235,6 +235,22 @@ public final class ImpactEffects {
     // The smoke leaves at chest height rather than off the ground.
     private static final float SMOKE_LIFT_CELLS = 0.5f;
 
+    // The Zombotany Peashooter's pea, which is the same shape of problem as the octopus: the model
+    // reaches down the lane and damages the plant in one call, so nothing is ever in flight for the
+    // ordinary projectile path to draw. Before this, plants in a Zombotany lane lost health from four
+    // tiles away with nothing crossing the gap -- which looks exactly like damage arriving from nowhere.
+    private static final java.util.regex.Pattern PEA_SPAT = java.util.regex.Pattern.compile(
+            "^.+? spits a pea from \\((-?\\d+), (\\d+)\\) at .+? at \\((\\d+), (\\d+)\\)\\.$");
+    // The zombie's x is a continuous double the sentence floors, and it can be off the right-hand edge
+    // while the zombie is still walking on -- hence the optional sign above.
+    private static final String ZOMBOTANY_PEA = "ZOMBOTANY_PEA";
+    private static final float PEA_WIDTH_CELLS = 0.24f;
+    // Peas are quick. Long enough to be followed across two or three tiles, short enough that the next
+    // one is not still catching up with the last.
+    private static final float PEA_FLIGHT = 0.32f;
+    // It leaves the plant head on the zombie's shoulders, and lands on the plant rather than at its feet.
+    private static final float PEA_LIFT_CELLS = 0.55f;
+
     private static final float OCTOPUS_FROM_LIFT_CELLS = 0.8f;
     // And it lands where the octopus is DRAWN once it has hold of the plant, not on the plant's feet --
     // the same lift PlantOctopus uses, so the thrown one arrives exactly where the clinging one appears.
@@ -269,6 +285,27 @@ public final class ImpactEffects {
         return true;
     }
 
+    // A Zombotany pea: the shot itself, then the splat where it lands.
+    //
+    // Two effects again, but unlike the Prospector's they are SEQUENTIAL rather than simultaneous -- the
+    // splat has to wait for the pea to arrive, or the plant bursts before anything has reached it. That
+    // is what the negative age is for: a burst whose age starts below zero is not drawn until it climbs
+    // past it, so the splat is scheduled for exactly the frame the flight ends.
+    private boolean peaSpat(String text) {
+        java.util.regex.Matcher pea = PEA_SPAT.matcher(text);
+        if (!pea.matches()) {
+            return false;
+        }
+        float lift = lawn.cellHeight() * PEA_LIFT_CELLS;
+        float fromX = lawn.centerX(Integer.parseInt(pea.group(1)));
+        float fromY = lawn.centerY(Integer.parseInt(pea.group(2))) + lift;
+        float toX = lawn.centerX(Integer.parseInt(pea.group(3)));
+        float toY = lawn.centerY(Integer.parseInt(pea.group(4))) + lift;
+        add(fromX, fromY, toX, toY, ZOMBOTANY_PEA, PEA_WIDTH_CELLS, PEA_FLIGHT, "animation");
+        add(toX, toY, toX, toY, SPLAT_DEFAULT, SPLAT_WIDTH_CELLS, LIFETIME, null).age = -PEA_FLIGHT;
+        return true;
+    }
+
     // Offered every event the model drains. Anything that is not a snowball landing is ignored.
     public void onEvent(String message) {
         if (message == null || lawn == null) {
@@ -297,7 +334,7 @@ public final class ImpactEffects {
                 add(centreX, y, centreX, y, BEAM, reach, BEAM_LIFETIME, BEAM_CLIP).sustained = true;
                 return;
             }
-            if (prospectorBlast(text)) {
+            if (prospectorBlast(text) || peaSpat(text)) {
                 return;
             }
             java.util.regex.Matcher arcade = ARCADE_BROKEN.matcher(text);
@@ -400,6 +437,13 @@ public final class ImpactEffects {
         for (int i = bursts.size() - 1; i >= 0; i--) {
             Burst burst = bursts.get(i);
             burst.age += delta;
+            // Not started yet. A burst spawned with a negative age is one that has been SCHEDULED --
+            // the splat that belongs at the end of a flight, rather than at the moment the flight began.
+            // Ageing it here and skipping the draw is what makes it arrive on its own beat without a
+            // queue of pending effects to keep.
+            if (burst.age < 0f) {
+                continue;
+            }
             float life = burst.lifetime > 0f ? burst.lifetime : LIFETIME;
             if (burst.age >= life) {
                 bursts.remove(i);

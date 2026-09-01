@@ -70,6 +70,7 @@ class ToastPolicyTest {
                 "ZombieWizard raises its staff at (6, 1).",
                 "Peashooter is hexed into a sheep at (3, 1).",
                 "Peashooter shakes off the hex at (3, 1) and returns to normal.",
+                "ZombieBotanyPeashooter spits a pea from (7, 2) at Sunflower at (3, 2).",
                 "ZombieBeachOctopus winds up an octopus at (7, 2).",
                 "ZombieBeachOctopus flings an octopus from (7, 2) onto Wall-nut at (5, 2).",
                 "ZombieModernAllStar tackles Peashooter at (4, 0).",
@@ -78,6 +79,7 @@ class ToastPolicyTest {
                 "The King Zombie knights a peasant zombie at (7, 2).",
                 "The Tomb Raiser starts chanting for the dead.",
                 "The Tomb Raiser raises a grave at (5, 3).",
+                "A grave heaves up out of the ground at (4, 2).",
                 "The Troglobite's ice block crushes Peashooter at (2, 1).",
                 "A frozen block shatters at (4, 2) and the Yeti Imp inside it hits the ground running!",
                 "The Barrel Roller falls at (4, 4).",
@@ -142,6 +144,8 @@ class ToastPolicyTest {
         assertEquals(ToastPolicy.Kind.ALERT, of("The lawn mower in the row 2 has been used."));
         assertEquals(ToastPolicy.Kind.ALERT,
                 of("The King Zombie takes his throne at (8, 2) and starts handing out knighthoods."));
+        assertEquals(ToastPolicy.Kind.ALERT,
+                of("The Jalapeno Zombie in lane 3 is about to blow -- take it down!"));
     }
 
     // A refusal is invisible on the board by definition, so it is the one class that is never filtered.
