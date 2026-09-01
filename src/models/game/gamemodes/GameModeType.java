@@ -11,7 +11,9 @@ public enum GameModeType {
     VASE_BREAKER,
     WALL_NUT_BOWLING,
     I_ZOMBIE,
-    BEGHOULED;
+    BEGHOULED,
+    // The fifth level of every season: one Zomboss, a conveyor instead of a seed menu, and no waves.
+    ZOMBOSS;
 
     public static GameModeType fromJson(String raw) {
         if (raw == null) {

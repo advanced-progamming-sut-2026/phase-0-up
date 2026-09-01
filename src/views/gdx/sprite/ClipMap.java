@@ -106,6 +106,19 @@ public final class ClipMap {
             return firstAvailable(sprite, "power");
         }
 
+        // A staggered Zomboss. Asked above the switch for the same reason the siphon is: a boss reeling
+        // through one of its three armour bands is IDLE as far as ActionState is concerned -- it has no
+        // walk and nothing to eat -- so the switch below would draw it standing there perfectly composed
+        // through the one window the whole fight is built around.
+        //
+        // Four candidates because the four bosses do not agree on a name: the Sphinx, Dragon and Shark
+        // ship stun_start/stun_loop/stun_end, the Tuskmaster ships a single `stun`, and the Dragon also
+        // has `vulnerable_loop` for the same idea. Dying still wins -- a boss finished off mid-stagger
+        // falls over.
+        if (action != ActionState.DYING && zombie.getState().isDizzy()) {
+            return firstAvailable(sprite, "stun_loop", "stun", "vulnerable_loop", IDLE);
+        }
+
         return switch (action) {
             case EATING -> holdsNewspaper
                     ? firstAvailable(sprite, "eat_newspaper", "eat")

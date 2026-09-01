@@ -246,6 +246,8 @@ public final class TerrainRenderer {
                     LOW_SAND_MARK, LOW_SAND_MARK_CLIP, LOW_SAND_MARK_WIDTH_CELLS, LOW_SAND_MARK_ALPHA);
         } else if (terrain instanceof models.map.Terrains.CraterTerrain) {
             drawCrater(batch, col, row);
+        } else if (terrain instanceof models.map.Terrains.ScorchedTerrain scorch) {
+            drawScorch(batch, scorch, col, row);
         } else if (terrain instanceof WaterTerrain) {
             drawWater(batch, col, row, delta);   // a marker on a cell the tide has not flagged
         }
@@ -272,6 +274,54 @@ public final class TerrainRenderer {
 
         float previous = batch.getPackedColor();
         batch.setColor(1f, 1f, 1f, 1f);
+        batch.draw(art, x, y, width, height);
+        batch.setPackedColor(previous);
+    }
+
+    // Ground the Dark Dragon has burnt, which the tile gets back after four seconds.
+    //
+    // ## Why it borrows the crater's art, and why at a different size
+    //
+    // The dump ships no scorch mark -- "scorch", "burn" and "soot" appear nowhere in it -- and the
+    // nearest thing to ruined ground is the Doom-shroom's crater, which happens to come in four sizes.
+    // The small one is used here rather than the big one deliberately: a scorch and a crater must not
+    // look alike, because one of them is a tile the player gets back in four seconds and the other is
+    // a tile that is gone for the rest of the level. Same visual language, plainly different mark.
+    //
+    // ## The heat is what actually says "temporary"
+    //
+    // A static mark says a tile is ruined and stops there. This one starts hot orange and cools to a
+    // faded char as the terrain runs down, so the four seconds are READABLE -- the player can see the
+    // tile coming back rather than discovering it by clicking on it. The colour is driven straight off
+    // remainingTicks(), which is the same number the model expires the terrain on, so the mark cannot
+    // fade out early or linger after the ground is plantable again.
+    private static final String SCORCH_IMAGE = "IMAGE_EFFECTS_CRATER_CRATER_84X53";
+    private static final float SCORCH_WIDTH_CELLS = 0.95f;
+    private static final com.badlogic.gdx.graphics.Color SCORCH_HOT =
+            new com.badlogic.gdx.graphics.Color(1f, 0.55f, 0.18f, 1f);
+    private static final com.badlogic.gdx.graphics.Color SCORCH_COLD =
+            new com.badlogic.gdx.graphics.Color(0.35f, 0.30f, 0.28f, 0.75f);
+
+    private void drawScorch(Batch batch, models.map.Terrains.ScorchedTerrain scorch,
+                            int col, int row) {
+        com.badlogic.gdx.graphics.g2d.TextureRegion art = assets.region(SCORCH_IMAGE);
+        if (art == null) {
+            return;   // the tile is still unplantable; it just has nothing drawn on it
+        }
+        float total = models.map.Terrains.ScorchedTerrain.BURN_SECONDS * utils.Constants.TICKS_PER_SECOND;
+        float heat = total <= 0f ? 0f : Math.max(0f, Math.min(1f, scorch.remainingTicks() / total));
+
+        float width = SpritePlacer.toSpriteSpace(SCORCH_WIDTH_CELLS * lawn.cellWidth());
+        float height = width * art.getRegionHeight() / (float) art.getRegionWidth();
+        float x = SpritePlacer.toSpriteSpace(lawn.centerX(col)) - width / 2f;
+        float y = SpritePlacer.toSpriteSpace(lawn.centerY(row)) - height / 2f;
+
+        float previous = batch.getPackedColor();
+        batch.setColor(
+                SCORCH_COLD.r + (SCORCH_HOT.r - SCORCH_COLD.r) * heat,
+                SCORCH_COLD.g + (SCORCH_HOT.g - SCORCH_COLD.g) * heat,
+                SCORCH_COLD.b + (SCORCH_HOT.b - SCORCH_COLD.b) * heat,
+                SCORCH_COLD.a + (SCORCH_HOT.a - SCORCH_COLD.a) * heat);
         batch.draw(art, x, y, width, height);
         batch.setPackedColor(previous);
     }

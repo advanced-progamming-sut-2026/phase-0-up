@@ -118,6 +118,30 @@ class ToastPolicyTest {
                 "The tornado drops ZombieDefault into lane 2, 3 column(s) past the edge.");
     }
 
+    // Every Zomboss move lands somewhere the player is already watching, and each sentence carries the
+    // coordinates the view draws the effect at -- so they are narration for the terminal build and art
+    // on screen, never toasts. A boss throws one every few seconds for the length of the fight; left
+    // unclassified they would bury the one line that IS an alert (see theWarningsTheSpecNamesAreAlerts).
+    @Test
+    void everyZombossMoveIsDrawnRatherThanToasted() {
+        suppressed("The Zombot Dark Dragon hurls a fireball at (4, 2) -- the ground is left scorched "
+                        + "and an Imp Dragon claws out of it!",
+                "The Zombot Dark Dragon breathes fire down rows 1 and 2 -- everything in them is ash!",
+                "The Zombot Sphinx-inator fires a missile into (6, 3)!",
+                "The Zombot Sphinx-inator charges down rows 2 and 3, flattening 4 plants on the way!",
+                "The Zombot Tuskmaster slings an ice boulder into (5, 0)!",
+                "The Zombot Tuskmaster blasts a wall of ice wind down row 3!",
+                "The Zombot Tuskmaster glaciates column 4 -- there are zombies frozen in there!",
+                "The Zombot Sharktronic Sub sends a baby shark up the lane and it swallows the "
+                        + "Lily Pad at (7, 1) whole!",
+                "The Zombot Sharktronic Sub looses a shoal of baby sharks, but there is nothing "
+                        + "afloat to eat.",
+                "The Zombot Sharktronic Sub fires up its turbine and sucks rows 0 and 1 into the "
+                        + "grinder -- 6 of them are pulp!",
+                "The Zombot Sphinx-inator heaves itself across to rows 3 and 4.",
+                "The Zombot Dark Dragon opens a portal in lane 2 and a ZombieWizard steps through.");
+    }
+
     // An NPC saying it out loud and a toast saying it at the same time is one event announced twice.
     @Test
     void anythingAnNpcSaysIsNotAlsoAToast() {
@@ -129,6 +153,12 @@ class ToastPolicyTest {
                 "Beghouled! The lawn is a match-3 board.",
                 "Zombotany! Plant-headed zombies are coming.",
                 "Scoring Game for 2026-08-25.",
+                // The boss's arrival, which Zomboss delivers rather than Penny. Keyed on the "Zomboss!"
+                // opening the way every other banner is keyed on its mode's name, so all four seasons
+                // are covered by one entry -- see NpcLines.
+                "Zomboss! The Zombot Sphinx-inator rises at the back of the lawn. No seed picking "
+                        + "here -- plants come up the conveyor, so spend them as they arrive. Knock "
+                        + "out all three of its armour bands to bring it down.",
                 "The final wave has come.");
     }
 
@@ -146,6 +176,11 @@ class ToastPolicyTest {
                 of("The King Zombie takes his throne at (8, 2) and starts handing out knighthoods."));
         assertEquals(ToastPolicy.Kind.ALERT,
                 of("The Jalapeno Zombie in lane 3 is about to blow -- take it down!"));
+        // The boss's stagger: a few seconds of free damage, and the only part of a boss fight that is
+        // over before a player who was looking at the lawn notices it started.
+        assertEquals(ToastPolicy.Kind.ALERT,
+                of("The Zombot Tuskmaster reels, sparking and dizzy -- 2 band(s) of armour left. "
+                        + "Pour it on!"));
     }
 
     // A refusal is invisible on the board by definition, so it is the one class that is never filtered.

@@ -92,6 +92,22 @@ public class Lawnmower {
             if (zombie.getHealth().isDead()) {
                 continue;
             }
+            // A mower does not mow a Zomboss.
+            //
+            // It would, and that one line deleted the entire boss fight. The blade one-shots whatever it
+            // drives past -- full current HP, no cap -- and a boss parks at x=7.5, squarely inside the
+            // mower's run from 0 to 9. So the optimal play on a boss level was to plant NOTHING, let a
+            // minion walk into the house, and have the mower erase a 15,000-HP machine on its way by.
+            // That is not a corner case: it is what happened on the first unattended run of this level,
+            // which finished "Level Complete" with the boss untouched and the lawn empty.
+            //
+            // Skipping it rather than capping the damage, because a mower is a last-ditch clear of the
+            // LANE -- it is the answer to the horde the boss sends, and the boss is the answer to the
+            // player. Keyed on rowSpan() like the other three boss exceptions, so nothing here has to
+            // know what a Zomboss is. See Zombie.rowSpan.
+            if (zombie.rowSpan() > 1) {
+                continue;
+            }
             if (hasPassed(zombie.getMovement().getPositionX(), newX)) {
                 zombie.getHealth().applyDamage(zombie.getHealth().getTotalHP(), Element.NEUTRAL, null);
                 // The mower owns what it mows: pull it off the row now so processDeaths never reports

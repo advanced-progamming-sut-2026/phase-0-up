@@ -44,6 +44,18 @@ public final class UiArt {
     public static final String METER_FILL = "IMAGE_UI_HUD_INGAME_PROGRESS_METER_FILL";
     public static final String METER_FLAG = "IMAGE_UI_HUD_INGAME_PROGRESS_METER_FLAG_DEFAULT";
     public static final String METER_HEAD = "IMAGE_UI_HUD_INGAME_PROGRESS_METER_ZOMBIEHEAD";
+    // The boss meter, which the game ships as its own set rather than as a recolour of the wave one.
+    //
+    // The NOTCH is the piece worth pointing at: a divider drawn across the bar, and the fact that the
+    // dump ships one at all is the confirmation that a Zomboss bar is meant to read as SEGMENTS rather
+    // than as one long drain -- which is the spec's "divided into 3 sections to indicate when the boss
+    // gets dizzy". The skull rides the bar the way the zombie head rides the wave meter.
+    public static final String BOSS_METER = "IMAGE_UI_HUD_INGAME_ZOMBOSS_PROGRESS_METER";
+    public static final String BOSS_METER_FILL = "IMAGE_UI_HUD_INGAME_PROGRESS_METER_ZOMBOSS_FILL";
+    public static final String BOSS_METER_NOTCH = "IMAGE_UI_HUD_INGAME_PROGRESS_METER_ZOMBOSS_NOTCH";
+    public static final String BOSS_METER_HEAD = "IMAGE_UI_HUD_INGAME_PROGRESS_METER_ZOMBOSS_HEAD";
+    public static final String BOSS_SKULL = "IMAGE_UI_HUD_INGAME_ZOMBOSS_HEALTH_METER_SKULL_ICON";
+
     public static final String PAUSE_BUTTON = "IMAGE_UI_HUD_INGAME_PAUSE_BUTTON";
     public static final String COIN = "IMAGE_UI_HUD_INGAME_COIN";
 

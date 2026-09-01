@@ -127,6 +127,7 @@ public class LevelTemplate {
         private int deadLineColumn;          // Dead Line: X threshold no zombie may cross
         private List<PrePlacedPlant> protectedPlants; // Save Our Seeds: must-survive plants
         private int difficulty;              // Vasebreaker: board difficulty tier (1..3)
+        private List<String> bossMinions;    // Zomboss: the zombies the boss may summon mid-fight
 
         public int getLockedType() {
             return lockedType;
@@ -154,6 +155,13 @@ public class LevelTemplate {
 
         public int getDifficulty() {
             return difficulty;
+        }
+
+        // The Zomboss's summon roster. A boss level authors no waves at all -- the machine is the only
+        // thing sending zombies in -- so this is where its lane fodder is listed, rather than in the
+        // "waves" array that WaveSystem would otherwise start launching alongside the fight.
+        public List<String> getBossMinions() {
+            return bossMinions;
         }
     }
 

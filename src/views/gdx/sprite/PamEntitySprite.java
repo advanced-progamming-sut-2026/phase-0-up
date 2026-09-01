@@ -323,6 +323,15 @@ final class PamEntitySprite implements EntitySprite {
     // returns the whole animation for `root`, which would silently undo the correction. And the union
     // takes the LOWEST point, so an Imp riding on a Gargantuar's back contributes its own feet without
     // affecting the result.
+    // How far down the resting pose a foot part has to land before it is believed to be the ground.
+    //
+    // Measured, not guessed, from the only two entities in the dump whose foot parts move the anchor at
+    // all: the Dark Gargantuar's boots sit at 0.709 (correct -- its hammer hangs below them) and the
+    // Sphinx-inator's leg parts at 0.375 (wrong -- they are mounted high on a quadruped chassis).
+    // Halfway between them, and on the safe side: rejecting a real correction only ever restores the
+    // behaviour every other entity in the game already has.
+    private static final float MIN_FOOT_FRACTION = 0.55f;
+
     private void standOnFeet(String restingClip) {
         if (anchor == null || restingClip == null) {
             return;
@@ -343,6 +352,32 @@ final class PamEntitySprite implements EntitySprite {
         if (lowest == null) {
             return;   // nothing named for a foot: keep the artwork's own bottom, as before
         }
+        // A ground line in the TOP half of the resting pose is not a ground line.
+        //
+        // This correction trusts part NAMES, and a name is only evidence. It holds up for a humanoid --
+        // a Gargantuar's boots come out at 71% down its box, with the hammer hanging below them, which
+        // is exactly the case it was written for. It falls apart on a machine: the Zombot Sphinx-inator
+        // is a quadruped whose articulated leg parts are mounted high on the chassis, so the union of
+        // everything named for a foot landed at 37.5% -- and the anchor was cropped from 501 units to
+        // 188, barely three quarters of a basic zombie.
+        //
+        // Both consumers then went wrong at once, which is what made it so visible. bottomOffset drew
+        // the boss 312 units too high, so its legs ran off the bottom of the screen; and any code sizing
+        // the entity against its own height (ZombieRenderer.bossScale) read a body two and a half times
+        // shorter than the art and scaled UP to compensate, making the overhang worse.
+        //
+        // So the correction is applied only when it is small enough to be believable. Rejecting it is
+        // safe by construction: the fallback is the artwork's own bottom, which is what every entity
+        // without foot parts already uses and what this method's own null case returns.
+        com.badlogic.gdx.math.Rectangle box = bounds(restingClip);
+        if (box != null && box.height > 0f && (lowest - box.y) / box.height < MIN_FOOT_FRACTION) {
+            if (views.gdx.core.DebugFlags.LANE_CHECK) {
+                com.badlogic.gdx.Gdx.app.log("Anchor", pamPath() + " [" + restingClip
+                        + "] foot parts land at " + ((lowest - box.y) / box.height)
+                        + " of the box -- too high to be the ground line, keeping the artwork bottom");
+            }
+            return;
+        }
         float was = anchor.y + anchor.height;
         // Only the ground line moves. The box's x, width and top are untouched, because bottomOffset is
         // the sole consumer and it reads nothing else.
@@ -351,7 +386,8 @@ final class PamEntitySprite implements EntitySprite {
         if (views.gdx.core.DebugFlags.LANE_CHECK && Math.abs(was - lowest) > 1f) {
             com.badlogic.gdx.Gdx.app.log("Anchor", pamPath() + " [" + restingClip
                     + "] ground line " + was + " -> " + lowest + " (moved "
-                    + (was - lowest) + " units up to the feet)");
+                    + (was - lowest) + " units up to the feet, "
+                    + ((lowest - box.y) / box.height) + " of the way down the box)");
         }
     }
 

@@ -37,9 +37,15 @@ final class ConveyorTrack extends WidgetGroup {
     private final float slotWidth;
     private final float slotHeight;
 
-    // The kinds currently shown, parallel to `riders`. Kept so the mode's list can be diffed against
+    // What is currently shown, parallel to `riders`. Kept so the mode's list can be diffed against
     // what is on screen instead of replacing it.
-    private final List<models.entities.plants.bowling.BowlingKind> shown = new ArrayList<>();
+    //
+    // Plain Strings, and that is deliberate: two different modes hand out two different things on a
+    // belt -- Wall-nut Bowling delivers BowlingKinds and a Zomboss level delivers plants by name -- and
+    // a belt does not care what is riding it. Keying on the card's own name rather than on the model
+    // type keeps one belt for both instead of a generic parameter threaded through the HUD for the sake
+    // of a list this class only ever compares for equality.
+    private final List<String> shown = new ArrayList<>();
     private final List<SeedCardActor> riders = new ArrayList<>();
 
     ConveyorTrack(float slotWidth, float slotHeight) {
@@ -55,16 +61,14 @@ final class ConveyorTrack extends WidgetGroup {
     // one with some entries deleted and some added at the end. Order is preserved in both, so a card is
     // matched to the first still-unmatched entry of its own kind -- and a player bowling one of three
     // Bowling nuts therefore takes the one at the front, which is the one they were looking at.
-    void reconcile(List<models.entities.plants.bowling.BowlingKind> belt,
-                   java.util.function.Function<models.entities.plants.bowling.BowlingKind,
-                           SeedCardActor> factory) {
+    void reconcile(List<String> belt, java.util.function.Function<String, SeedCardActor> factory) {
         if (belt.equals(shown)) {
             return;
         }
         List<SeedCardActor> kept = new ArrayList<>();
         int old = 0;
-        for (models.entities.plants.bowling.BowlingKind kind : belt) {
-            while (old < shown.size() && shown.get(old) != kind) {
+        for (String kind : belt) {
+            while (old < shown.size() && !shown.get(old).equals(kind)) {
                 riders.get(old).remove();
                 old++;
             }

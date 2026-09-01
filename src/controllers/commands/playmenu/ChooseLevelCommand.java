@@ -41,6 +41,25 @@ public class ChooseLevelCommand implements Command {
         GameSession gameSession = new GameSession(profile , chosen);
         appSession.setCurrentGameSession(gameSession);
         appSession.setCurrentMenu(MenuType.PLANTS_MENU);
-        renderer.chooseLevelRenderer(new Result(true , "you are now in Plants Menu!\nchoose your plants:"));
+        renderer.chooseLevelRenderer(new Result(true , enteringMessage(gameSession)));
+    }
+
+    // What to tell the player they have arrived at.
+    //
+    // Every adventure level goes to the plants menu, including the one that has nothing to pick: a boss
+    // level hands its plants out on a conveyor, so its mode manages the inventory itself and addSeed
+    // refuses every packet. "choose your plants:" over a menu where choosing does nothing is the message
+    // that made that read as a broken screen rather than as a level with no loadout. The graphical build
+    // skips the screen outright (SeedSelectionScreen.skipIfNoLoadout); the terminal has no screen to
+    // skip, so it gets told to go straight in.
+    private static String enteringMessage(GameSession gameSession) {
+        // Front-end neutral on purpose. The graphical build skips the screen but still shows this line
+        // as a toast on the way past, so a terminal instruction ("type start") would be a puzzle to a
+        // player who never sees a prompt -- and the command is the same "start game" every other level
+        // takes anyway.
+        if (gameSession.getMode() != null && !gameSession.getMode().requiresSeedSelection(gameSession)) {
+            return "No seed selection on this one -- your plants arrive on a conveyor.";
+        }
+        return "you are now in Plants Menu!\nchoose your plants:";
     }
 }

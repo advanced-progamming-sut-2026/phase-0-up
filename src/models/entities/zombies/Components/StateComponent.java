@@ -21,7 +21,30 @@ public class StateComponent {
         if (frozenTimer > 0 &&!isPermanentlyFrozen) frozenTimer--;
         if (chilledTimer > 0) chilledTimer--;
         if (butteredTimer > 0) butteredTimer--;
+        if (dizzyTimer > 0) dizzyTimer--;
     }
+
+    // Reeling. A Zomboss whose health falls through one of its three band boundaries is staggered for
+    // a few seconds: it stops attacking, stops shifting rows and stops summoning, and the player gets
+    // a free window to pour damage into it.
+    //
+    // Its own timer rather than a reuse of butter, which is the other full stun in the game, for two
+    // reasons. Butter is a Kernel-pult's doing and carries the Kernel-pult's art -- a boss with a pat
+    // of butter on its head is the wrong picture -- and, more to the point, isUnableToMove() is read
+    // by MovementComponent and by half the abilities, so putting the boss's stagger in there would
+    // couple it to rules it has nothing to do with. A boss does not move or eat in the first place;
+    // what is being stopped is entirely ZombossMode's scheduler, and that is the one thing that asks.
+    private int dizzyTimer = 0;
+
+    public void applyDizzy(int durationInTicks) {
+        if (durationInTicks > this.dizzyTimer) {
+            this.dizzyTimer = durationInTicks;
+        }
+    }
+
+    public boolean isDizzy() { return dizzyTimer > 0; }
+
+    public int getDizzyTimer() { return dizzyTimer; }
 
     // An ice attack (Snow Pea, Hunter's ice, a Jester-reflected ice shot) freezes a zombie solid --
     // unless it is freeze-immune. Every zombie in Frostbite Caves is immune: the spec says they do not

@@ -93,6 +93,20 @@ public final class SpriteRegistry {
         m.put(factories.zombie.ZombotanyRoster.JALAPENO, "ZOMBIE_TUTORIAL");
         m.put(factories.zombie.ZombotanyRoster.SQUASH, "ZOMBIE_TUTORIAL");
 
+        // The four season bosses. Each has its own full animation in the dump and needs no composition
+        // at all -- the only thing normalisation cannot bridge is that our alias carries the world in
+        // the middle ("ZombieEgyptZomboss") while the art carries it as a separate token.
+        //
+        // These animations are also the confirmation that BossKind's two exception flags are the real
+        // game's design rather than a reading of the spec: ZOMBIE_ICEAGE_ZOMBOSS is the only one of the
+        // four with no walk clips and no summon clip, which is exactly the Mammoth that "does NOT move
+        // rows and does NOT spawn zombies". The other three ship walk_up/walk_down (Sphinx), summoning
+        // (Dragon) and spawn (Shark). See models.entities.zombies.BossKind.
+        m.put(models.entities.zombies.BossKind.SPHINX.getAlias(), "ZOMBIE_EGYPT_ZOMBOSS");
+        m.put(models.entities.zombies.BossKind.MAMMOTH.getAlias(), "ZOMBIE_ICEAGE_ZOMBOSS");
+        m.put(models.entities.zombies.BossKind.SHARK.getAlias(), "ZOMBIE_BEACH_ZOMBOSS");
+        m.put(models.entities.zombies.BossKind.DRAGON.getAlias(), "ZOMBIE_DARK_ZOMBOSS");
+
         // --- plants --------------------------------------------------------------------------------
         m.put("Twin Sunflower", "SUNFLOWER_TWIN");
         m.put("Mega Gatling Pea", "MEGAGATLING");

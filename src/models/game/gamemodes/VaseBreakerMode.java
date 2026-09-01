@@ -219,6 +219,12 @@ public class VaseBreakerMode extends StandardMode {
         return handKey(plantType) != null;
     }
 
+    // Vasebreaker's own wording, which every mode on this path used to get whether or not it had vases.
+    @Override
+    public String plantUnavailableMessage(String plantType) {
+        return "No \"" + plantType + "\" in hand. Crack open a vase and grab the seed packet first!";
+    }
+
     @Override
     public void consumePlant(String plantType) {
         String key = handKey(plantType);

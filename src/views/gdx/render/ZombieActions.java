@@ -274,7 +274,72 @@ public final class ZombieActions {
                     Integer.parseInt(smashing.group(4)), "swings at " + smashing.group(2).trim());
             return;
         }
+        if (bossMove(text)) {
+            return;
+        }
         castOrThrow(text);
+    }
+
+    // ---- the season bosses -------------------------------------------------------------------------
+    //
+    // A Zomboss animating its OWN attack, which is the feedback that actually reads.
+    //
+    // The first pass drew every attack on the lawn instead -- a row of missile bursts for a charge, a
+    // burst per tile for a shot -- and the machine that supposedly did all of it stood perfectly still
+    // through each one. That is the same mistake the Gargantuar's silent hammer was (see SMASH above),
+    // only louder: these are the biggest animations in the dump and every one of them was going unused.
+    // The Sphinx ships `stomp`, `missile_start` and `rocket_launch`; the Dragon `fire_attack` and
+    // `fire_bomb`; the Tuskmaster `slingshot`, `wind_1..4` and `glacier_column_1..6`; the Sub
+    // `suction_on/loop/off` and `spawn`.
+    //
+    // Matched off the DISPLAY name, because that is what the model's sentences carry, and resolved to
+    // the alias the sprite layer is keyed on through BossKind.forDisplayName.
+    //
+    // The clip lists are shared rather than split per boss, and safely so: no two bosses own the same
+    // move, and start() drops any clip the animation does not define -- so the summon list can name all
+    // three spellings at once and each machine plays only its own.
+    private static final Pattern BOSS_MOVE = Pattern.compile(
+            "^The (.+?) (hurls a fireball|breathes fire down|fires a missile|charges down"
+                    + "|slings an ice boulder|blasts a wall of ice|glaciates column"
+                    + "|sends a baby shark|looses a shoal|fires up its turbine"
+                    + "|opens a portal)\\b.*$");
+
+    private static final Map<String, String[]> BOSS_CLIPS = bossClips();
+
+    private static Map<String, String[]> bossClips() {
+        Map<String, String[]> m = new java.util.LinkedHashMap<>();
+        m.put("hurls a fireball", new String[] {"fire_bomb", "fire_bomb_end"});
+        m.put("breathes fire down", new String[] {"fire_attack", "fire_attack_end"});
+        m.put("fires a missile", new String[] {"missile_start", "rocket_launch"});
+        m.put("charges down", new String[] {"stomp"});
+        m.put("slings an ice boulder", new String[] {"slingshot"});
+        m.put("blasts a wall of ice", new String[] {"wind_1"});
+        m.put("glaciates column", new String[] {"glacier_column_1"});
+        m.put("sends a baby shark", new String[] {"spawn"});
+        m.put("looses a shoal", new String[] {"spawn"});
+        m.put("fires up its turbine", new String[] {"suction_on", "suction_loop", "suction_off"});
+        // Shared by the three bosses that summon; the Tuskmaster has none of these and never says it.
+        m.put("opens a portal",
+                new String[] {"zombie_portal_start", "zombie_portal_end", "summoning", "spawn"});
+        return m;
+    }
+
+    private boolean bossMove(String text) {
+        Matcher matcher = BOSS_MOVE.matcher(text);
+        if (!matcher.matches()) {
+            return false;
+        }
+        models.entities.zombies.BossKind kind =
+                models.entities.zombies.BossKind.forDisplayName(matcher.group(1).trim());
+        String[] clips = BOSS_CLIPS.get(matcher.group(2));
+        if (kind == null || clips == null) {
+            return false;
+        }
+        // ANY_LANE: a boss straddles two rows and is drawn from the top one, so a claim pinned to the
+        // lane in the sentence would miss it half the time -- and there is only ever one machine on the
+        // board to claim it.
+        raise(kind.getAlias(), clips, ANY_LANE, matcher.group(2));
+        return true;
     }
 
     // The wind-ups: every ability that announces itself before it acts, so its zombie can play the one

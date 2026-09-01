@@ -153,8 +153,9 @@ public class GameSession {
 
     private Result plantFromModeInventory(int x, int y, String plantType) {
         if (!mode.hasPlantAvailable(plantType)) {
-            return new Result(false, "No \"" + plantType + "\" in hand. "
-                    + "Crack open a vase and grab the seed packet first!");
+            // Asked of the MODE: the reason a plant is not in hand is the mode's own rule, and the
+            // wording here used to be Vasebreaker's for every mode that shares this path.
+            return new Result(false, mode.plantUnavailableMessage(plantType));
         }
         PlantTemplate template = PlantRegistry.getInstance().getTemplateByName(plantType);
         if (template == null) {

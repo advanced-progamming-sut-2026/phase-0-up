@@ -363,7 +363,12 @@ public class EnvironmentSystem {
     private void applySliderTiles(GameSession session) {
         for (Row row : session.getMap().getRows()) {
             for (Zombie zombie : new ArrayList<>(row.getZombies())) {
-                if (zombie.getHealth().isDead() || !zombie.isOnBoard() || isDodoRider(zombie)) {
+                // A boss is not shoved by the ground either -- it straddles two rows and a slider tile
+                // would try to hop it into a third. It also sits in two row lists, so this loop reaches
+                // it twice. Same exemption as the Dodo Rider, different reason: the Dodo flies over the
+                // tile, the Zomboss is simply too big for it to mean anything.
+                if (zombie.getHealth().isDead() || !zombie.isOnBoard() || isDodoRider(zombie)
+                        || zombie.rowSpan() > 1) {
                     continue;
                 }
                 int column = (int) Math.floor(zombie.getMovement().getPositionX());

@@ -3,6 +3,8 @@ package factories;
 import controllers.systems.game.EnvironmentSystem;
 import factories.zombie.ZombieBehaviorFactory;
 import models.entities.zombies.Abilities.ZombieAbility;
+import models.entities.zombies.BossKind;
+import models.entities.zombies.Zomboss;
 import models.entities.zombies.Zombie;
 import models.game.EnvironmentType;
 import models.game.GameSession;
@@ -97,6 +99,38 @@ public final class ZombieFactory {
             gameSession.discoverZombie(template.getAlias());
         }
         return zombie;
+    }
+
+    // Builds the season's Zomboss. Its own entry point rather than an alias handed to createZombie,
+    // because a boss has no blueprint in zombies.json and would want almost nothing from one if it did:
+    // no armour stack, no abilities (ZombossMode drives every attack it has), no wave point cost, no
+    // loot roll and no glow. What it does take from this factory is the ID SEQUENCE -- ids have to stay
+    // unique across every zombie on the board, and a boss minted from its own counter would collide
+    // with the minions it summons.
+    //
+    // Difficulty scales its HP exactly as it scales every other zombie's, so a boss on a hard profile
+    // is a longer fight rather than an unchanged one standing among tougher minions.
+    public static Zomboss createBoss(BossKind kind, int baseHp, double x, int topRow,
+                                     GameSession gameSession) {
+        if (kind == null) {
+            return null;
+        }
+        Zomboss boss = new Zomboss(ID_SEQUENCE.getAndIncrement(), kind,
+                scaled(baseHp, difficultyScale(gameSession)), x, topRow, gameSession);
+        if (EnvironmentSystem.environmentOf(gameSession) == EnvironmentType.FROSTBITE_CAVES) {
+            boss.getState().setFreezeImmune(true);
+        }
+        // Deliberately NOT discoverZombie(). That call adds the alias to the profile's seen list, which
+        // is what the almanac is built from -- and the almanac reads its pages out of zombies.json,
+        // where a boss has no entry. The page would come out titled with the raw alias and captioned
+        // "Not yet encountered" for a zombie the player had just spent two minutes fighting.
+        //
+        // The honest fix would be four blueprints in zombies.json, and that is worse than it sounds: a
+        // blueprint is also what createZombie spawns FROM, so a cheat or a wave roster naming one would
+        // put a second 15,000-HP machine on the lawn with none of the two-row filing that makes it work.
+        // A boss is not a zombie you collect; it is the level. It announces itself in Zomboss's own
+        // voice on arrival, which is the introduction that moment actually wants.
+        return boss;
     }
 
     // How much tougher (or softer) a zombie is than the blueprint says, from the player's difficulty.

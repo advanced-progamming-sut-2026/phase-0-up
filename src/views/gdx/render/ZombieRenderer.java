@@ -116,7 +116,10 @@ public final class ZombieRenderer {
         float x = lawn.worldX(interpolator.x(zombie, modelX, alpha)) + footPlanting(zombie, sprite,
                 clip, stateTime);
         float lane = interpolator.lane(zombie, modelLane, alpha);
-        float footY = laneFootY(lane) + flightArc(zombie);
+        // A zombie stands on the foot line of the row it is filed under -- except a Zomboss, which is
+        // filed under the TOP of the two rows it straddles and whose feet are therefore on the bottom
+        // one. rowSpan() is 1 for every other zombie in the game, so this is a no-op for them.
+        float footY = laneFootY(lane + zombie.rowSpan() - 1) + flightArc(zombie);
         reportLane(zombie, modelLane, lane, footY);
 
         // No armour map for the mech: its parts are its own, and a bucket toggle would name nothing.
@@ -145,7 +148,7 @@ public final class ZombieRenderer {
         drawIceBehind(batch, zombie, sprite, x, footY, delta, clip, stateTime);
         batch.setColor(tintFor(zombie));
         drawWhole(batch, zombie, sprite, clip, stateTime, x, footY, faceRight, parts,
-                scaleFor(zombie));
+                scaleFor(zombie, sprite));
 
         // Carrier aura: the same frame again, additively, in the colour of whatever it is carrying.
         //
@@ -157,7 +160,7 @@ public final class ZombieRenderer {
             SpritePlacer.beginAdditive(batch);
             batch.setColor(colour.r * aura, colour.g * aura, colour.b * aura, 1f);
             drawWhole(batch, zombie, sprite, clip, stateTime, x, footY, faceRight, parts,
-                    scaleFor(zombie));
+                    scaleFor(zombie, sprite));
             SpritePlacer.endAdditive(batch);
         }
 
@@ -169,7 +172,7 @@ public final class ZombieRenderer {
             SpritePlacer.beginAdditive(batch);
             batch.setColor(flash, flash, flash, 1f);
             drawWhole(batch, zombie, sprite, clip, stateTime, x, footY, faceRight, parts,
-                    scaleFor(zombie));
+                    scaleFor(zombie, sprite));
             SpritePlacer.endAdditive(batch);
         }
 
@@ -600,9 +603,45 @@ public final class ZombieRenderer {
         return false;
     }
 
-    private float scaleFor(Zombie zombie) {
-        return isSunProducer(zombie) ? SUN_PRODUCER_SCALE : 1f;
+    // How tall a Zomboss is drawn, in lanes. A shade over the two rows it occupies, because a boss that
+    // measured exactly two lanes read as a big zombie rather than as a machine -- the original's bosses
+    // overhang the top of their rows.
+    private static final float BOSS_LANES_TALL = 2.3f;
+    // A ceiling on the fitted scale, so a boss whose art turned out to be small is enlarged sensibly
+    // rather than blown up into a blur.
+    private static final float BOSS_MAX_SCALE = 2f;
+
+    private float scaleFor(Zombie zombie, EntitySprite sprite) {
+        if (isSunProducer(zombie)) {
+            return SUN_PRODUCER_SCALE;
+        }
+        if (zombie.rowSpan() > 1) {
+            return bossScale(sprite);
+        }
+        return 1f;
     }
+
+    // Sizes a boss to its own footprint rather than to a magic number.
+    //
+    // The four bosses are authored at wildly different sizes -- they are the biggest art in the dump and
+    // nothing about them is normalised the way the zombie bodies are -- so a single hand-tuned constant
+    // would fit one of them and be wrong for the other three. What IS the same for all four is the rule:
+    // a Zomboss occupies exactly two rows, so its drawn height is a known quantity and the scale that
+    // gets it there can simply be solved for.
+    //
+    // Measured off anchorBounds() rather than the playing clip, for the reason EntitySprite.anchorBounds
+    // spells out: a clip's box unions every frame, so scaling off the one currently playing would resize
+    // the boss every time it switched between idling and reeling.
+    private float bossScale(EntitySprite sprite) {
+        com.badlogic.gdx.math.Rectangle bounds = sprite == null ? null : sprite.anchorBounds();
+        if (bounds == null || bounds.height <= 0f) {
+            return 1f;
+        }
+        float authored = bounds.height * SpritePlacer.SPRITE_SCALE;   // what it measures at scale 1
+        float wanted = lawn.cellHeight() * BOSS_LANES_TALL;
+        return Math.min(BOSS_MAX_SCALE, wanted / authored);
+    }
+
 
     // Asked of the MODE, which is the only thing that knows which five of the board's zombies it
     // designated as makers -- they are otherwise ordinary bucketheads and indistinguishable from any

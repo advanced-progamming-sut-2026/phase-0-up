@@ -547,6 +547,7 @@ public final class GameScreen extends ScreenAdapter {
         deliver("botany", () -> entities.botany().onEvent(message));
         deliver("terrain", () -> entities.terrain().onEvent(message));
         deliver("impacts", () -> entities.impacts().onEvent(message));
+        deliver("bossEffects", () -> entities.bossEffects().onEvent(message));
         deliver("deaths", () -> entities.deaths().onEvent(message));
         deliver("cameraShake", () -> shake.onEvent(message));
         deliver("audioCues", () -> cues.onEvent(message));
@@ -1009,7 +1010,9 @@ public final class GameScreen extends ScreenAdapter {
     // ---- the five things the overlays can do ----
 
     // What this level wants, before it starts. The wave count is the objective for every standard
-    // level; a mode with its own goal says so itself through describeObjective.
+    // level; a mode with its own goal says so itself through describeObjective. Both live in
+    // LevelObjective -- lifted out when this class hit Checkstyle's 500-NCSS ceiling for the third
+    // time, and a better home for it anyway: what a level is for is a question about the session.
     private void openObjective() {
         // The showcase drives scripted actions and needs a running board; -Dpvz.skipIntro does the same
         // for a screenshot run. Both would otherwise capture this card instead of the lawn.
@@ -1077,11 +1080,7 @@ public final class GameScreen extends ScreenAdapter {
     }
 
     private String objectiveText() {
-        int waves = session.getLevel() == null ? 0 : session.getLevel().getWaveCount();
-        String goal = waves > 0
-                ? "Survive " + waves + (waves == 1 ? " wave" : " waves") + " of zombies."
-                : "Hold the lawn.";
-        return goal + "\nDon't let a zombie reach your house!";
+        return views.gdx.ui.LevelObjective.of(session);
     }
 
     private void dismissObjective() {

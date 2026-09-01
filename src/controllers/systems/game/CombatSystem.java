@@ -218,9 +218,26 @@ public class CombatSystem {
                 if (!zombie.getHealth().isDead()) {
                     continue;
                 }
-                row.getZombies().remove(zombie);
+                unlink(session, row, zombie);
                 reportZombieDeath(session, zombie, events);
             }
+        }
+    }
+
+    // Takes a dead zombie off the board -- out of EVERY row holding it, not just the one being swept.
+    //
+    // For the ordinary zombie those are the same thing and this is one list removal. For a Zomboss they
+    // are not: it is a member of both of its rows (see Zombie.rowSpan), so the sweep would reach it a
+    // second time when it got to the lower row and report the same death twice -- two death lines, two
+    // kill tallies, two lots of loot. Clearing both here means the second row's turn comes round to
+    // find it already gone, because processDeaths copies each row's list at that row's own turn.
+    private void unlink(GameSession session, Row row, Zombie zombie) {
+        if (zombie.rowSpan() <= 1) {
+            row.getZombies().remove(zombie);
+            return;
+        }
+        for (Row other : session.getMap().getRows()) {
+            other.getZombies().remove(zombie);
         }
     }
 
@@ -429,6 +446,14 @@ public class CombatSystem {
         for (int rowIndex = 0; rowIndex < rows.size(); rowIndex++) {
             Row row = rows.get(rowIndex);
             for (Zombie zombie : row.getZombies()) {
+                // A zombie that stands in more than one row files ITSELF, and disagreeing with the row
+                // holding it is its normal state rather than a lane change: a Zomboss straddling rows
+                // 2 and 3 has movement.y == 2 while row 3 also holds it. Re-filing that on sight would
+                // pull the boss out of its lower row on the very first tick and leave the plants there
+                // shooting at nothing. See Zombie.rowSpan.
+                if (zombie.rowSpan() > 1) {
+                    continue;
+                }
                 int lane = zombie.getMovement().getPositionY();
                 if (lane != rowIndex && lane >= 0 && lane < rows.size()) {
                     laneChanges.add(new ZombieLaneChange(zombie, row, lane));

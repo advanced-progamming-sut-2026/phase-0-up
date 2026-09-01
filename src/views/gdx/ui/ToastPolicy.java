@@ -97,6 +97,15 @@ public final class ToastPolicy {
                     // it names. The batch's own summary is NOT suppressed -- it is the count, which is
                     // the part the board cannot show.
                     + "|A grave heaves up out of the ground at"
+                    // Every Zomboss move, each of which lands somewhere the player is already looking:
+                    // a fireball leaves a burning tile, a missile leaves a crater, a glacier fills a
+                    // column with ice, a portal leaves a zombie standing in a lane, and the machine
+                    // visibly walks when it changes rows. The sentences still carry their coordinates,
+                    // because that is what the view hangs the effect on -- see ZombossAttacks.
+                    + "|hurls a fireball at|breathes fire down rows|fires a missile into"
+                    + "|charges down rows|slings an ice boulder into|wall of ice wind down row"
+                    + "|glaciates column|sends a baby shark|shoal of baby sharks"
+                    + "|fires up its turbine|heaves itself across to rows|opens a portal in lane"
                     // NOT the Imp Dragon's fire immunity. That one belongs on screen: a fire-proof
                     // zombie is a RULE the board cannot show -- the pea bursts on it exactly as it
                     // would on any other zombie and the health simply does not move, which reads as a
@@ -126,6 +135,11 @@ public final class ToastPolicy {
                     // board cannot show a countdown, and a lane of plants going up because the player
                     // never knew to shoot one particular zombie is the least fair thing in the mode.
                     + "|is about to blow"
+                    // The boss staggering. The clearest alert in the game after the Jalapeno's fuse:
+                    // it is a window of a few seconds, it is the only stretch of the fight where damage
+                    // is free, and the bar flashing at the bottom of the screen is easy to miss when
+                    // the player is watching the lawn.
+                    + "|reels, sparking and dizzy"
                     + "|The lawn mower in the row).*",
             Pattern.CASE_INSENSITIVE);
 

@@ -1,5 +1,7 @@
 package factories;
 
+import models.entities.zombies.BossKind;
+import models.game.EnvironmentType;
 import models.game.Level;
 import models.game.Wave;
 import models.game.gamemodes.DeadLineMode;
@@ -13,6 +15,7 @@ import models.game.gamemodes.BeghouledMode;
 import models.game.gamemodes.IZombieMode;
 import models.game.gamemodes.VaseBreakerMode;
 import models.game.gamemodes.WallnutBowlingMode;
+import models.game.gamemodes.ZombossMode;
 import models.templates.LevelTemplate;
 import models.templates.LevelTemplate.SpecialRules;
 import models.templates.LevelTemplate.WaveSpec;
@@ -64,6 +67,12 @@ public final class LevelFactory {
                 return new IZombieMode(rules != null && rules.getDifficulty() > 0 ? rules.getDifficulty() : 1);
             case BEGHOULED:
                 return new BeghouledMode(rules != null && rules.getDifficulty() > 0 ? rules.getDifficulty() : 1);
+            case ZOMBOSS:
+                // The boss is chosen by the CHAPTER, not by the level file: a Zomboss is its world's
+                // machine, so the only thing a level could do by naming one is name the wrong one.
+                return new ZombossMode(
+                        BossKind.forSeason(EnvironmentType.fromChapter(template.getChapter())),
+                        rules != null ? rules.getBossMinions() : null);
             case STANDARD:
             default:
                 return new StandardMode();

@@ -154,6 +154,29 @@ public final class SeedSelectionScreen extends MenuScreen {
         root.add(panel);
 
         rebuild();
+        skipIfNoLoadout();
+    }
+
+    // A level that never asked the player for a loadout does not stop here.
+    //
+    // Every adventure level is routed through this screen by ChooseLevelCommand, which is right for the
+    // nineteen that pick seeds and a dead end for the one that does not. A Zomboss level hands its
+    // plants out on a conveyor, so its GameMode manages the inventory itself -- and GameSession.addSeed
+    // returns early for exactly those modes. The result was a grid where every click did nothing, above
+    // a "Let's Rock" that refused to start because no seed had been picked. Both halves of that are
+    // working as designed; the level simply should not have been shown the screen.
+    //
+    // Asked through requiresSeedSelection(), which is the question this screen IS -- rather than by
+    // naming ZombossMode, so a future mode that hands out its own plants inherits the skip. The panel
+    // above is built first and thrown away: it costs one frame and it means the screen is in a valid
+    // state for however long it takes the menu change to be picked up, instead of half-built with a
+    // null bar that refresh() would walk into.
+    private void skipIfNoLoadout() {
+        GameSession session = session();
+        if (session != null && session.getMode() != null
+                && !session.getMode().requiresSeedSelection(session)) {
+            start();
+        }
     }
 
     // The bar's own caption, with the wallet on the other end -- both prices on this screen are paid
@@ -558,7 +581,12 @@ public final class SeedSelectionScreen extends MenuScreen {
             context.toasts().error("No level loaded.");
             return;
         }
-        if (session.getSelectedSeeds().isEmpty()) {
+        // An empty bar is a mistake on a level that asked for a loadout, and the whole point on a level
+        // that did not: a mode managing its own plant inventory (a conveyor level) can never have a seed
+        // on the bar, because GameSession.addSeed refuses to put one there. Refusing to start it too
+        // would leave that level unplayable -- which is what it was.
+        if (session.getSelectedSeeds().isEmpty()
+                && session.getMode() != null && session.getMode().requiresSeedSelection(session)) {
             context.toasts().error("Pick at least one plant -- bare hands won't stop a Gargantuar.");
             return;
         }

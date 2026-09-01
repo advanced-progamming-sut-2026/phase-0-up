@@ -161,6 +161,20 @@ public class Zombie extends Entity {
         return gameSession;
     }
 
+    // How many rows this zombie stands in. One for every zombie in the game except a Zomboss, which
+    // straddles two -- and that is exactly the question three separate systems have to ask before they
+    // touch a zombie found in a row, because a two-row zombie is a member of two rows' lists:
+    //
+    //   * CombatSystem.reconcileZombieLanes must not "correct" the lower row back to movement.y;
+    //   * CombatSystem.processDeaths must unlink it from every row, so its death is reported once;
+    //   * EnvironmentSystem.applySliderTiles must not shove it, and the view must draw it once.
+    //
+    // Asked as a NUMBER on Zombie rather than as `instanceof Zomboss` at those sites, so a boss stays
+    // one thing the rest of the game does not have to know the name of.
+    public int rowSpan() {
+        return 1;
+    }
+
     // Whether the zombie is standing on the grid. It spawns one cell beyond the right edge and walks
     // in, and can be shoved past either end mid-fight, so for part of its life it is off the board:
     // not a target, and with nothing under it to eat.

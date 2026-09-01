@@ -225,7 +225,45 @@ public class ConsoleMapRenderer implements MapRenderer {
                     + beghouled.getMatchTarget() + "  |  spend sun with: upgrade -t <plant>");
         } else if (session.getMode() instanceof BrainLawn iZombie) {
             renderIZombieStatus(session, iZombie);
+        } else if (session.getMode() instanceof models.game.gamemodes.ZombossMode zomboss) {
+            renderZombossStatus(zomboss);
         }
+    }
+
+    // The boss fight, in one line: how much armour is left, whether the machine is currently reeling,
+    // which two rows it is standing in, and what is on the belt.
+    //
+    // All four of those are things the graphical build shows without being asked -- the three-band bar
+    // along the bottom, the flash while it is dizzy, the enormous machine visibly straddling two lanes,
+    // and the cards riding the belt. The terminal has none of it, so a player here would be fighting a
+    // boss whose health, stagger and position were all invisible. Same reasoning as the bowling
+    // conveyor above: whatever the mode is actually about goes in front of the player every time they
+    // look at the lawn.
+    private void renderZombossStatus(models.game.gamemodes.ZombossMode mode) {
+        models.entities.zombies.Zomboss boss = mode.getBoss();
+        StringBuilder line = new StringBuilder(mode.getKind().getDisplayName());
+        if (boss == null || boss.getHealth().isDead()) {
+            line.append(" -- down!");
+        } else {
+            line.append("  |  armour ").append(boss.sectionsRemaining()).append('/')
+                    .append(models.entities.zombies.Zomboss.SECTIONS)
+                    .append("  |  hp ").append(boss.getHealth().getTotalHP()).append('/')
+                    .append(boss.getHealth().getMaxTotalHp())
+                    .append("  |  rows ").append(boss.occupiedRows());
+            if (boss.getState().isDizzy()) {
+                line.append("  |  DIZZY -- hit it!");
+            }
+        }
+        StringBuilder belt = new StringBuilder();
+        for (Map.Entry<String, Integer> entry : mode.plantInventory().entrySet()) {
+            if (belt.length() > 0) {
+                belt.append(", ");
+            }
+            belt.append(entry.getKey()).append(" x").append(entry.getValue());
+        }
+        OutputHandler.showMessage(line.toString());
+        OutputHandler.showMessage("Conveyor (" + mode.getConveyor().size() + "/"
+                + mode.conveyorCapacity() + "): " + (belt.length() == 0 ? "empty" : belt));
     }
     // I, Zombie: the roster and its costs, the sun to spend, and which brains are already eaten.
     private void renderIZombieStatus(GameSession session, BrainLawn mode) {

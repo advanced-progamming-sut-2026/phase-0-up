@@ -59,6 +59,15 @@
     ]
   },
   {
+    "id": "s1l5", "chapter": "ANCIENT_EGYPT", "levelNumber": 5, "mode": "ZOMBOSS",
+    "name": "Ancient Egypt - Zombot Sphinx-inator",
+    "startingSun": 0, "seedSlots": 8,
+    "availablePlants": ["Peashooter", "Repeater", "Snow Pea", "Threepeater", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Jalapeno", "Cabbage-pult", "Kernel-pult", "Melon-pult", "Bonk Choy", "Grave Buster"],
+    "terrain": [".........", ".........", ".........", ".........", "........."],
+    "rules": { "bossMinions": ["ZombieDefault", "ZombieArmor1", "ZombieArmor2", "ZombieExplorer", "ZombieRa", "ZombieImp", "ZombieGargantuar"] },
+    "waves": []
+  },
+  {
     "id": "s2l1", "chapter": "FROSTBITE_CAVES", "levelNumber": 1, "mode": "STANDARD",
     "name": "Frostbite Caves - Day 1",
     "startingSun": 50, "seedSlots": 7,
@@ -127,6 +136,15 @@
     ]
   },
   {
+    "id": "s2l5", "chapter": "FROSTBITE_CAVES", "levelNumber": 5, "mode": "ZOMBOSS",
+    "name": "Frostbite Caves - Zombot Tuskmaster",
+    "startingSun": 0, "seedSlots": 8,
+    "availablePlants": ["Peashooter", "Repeater", "Fire Peashooter", "Threepeater", "Wall-nut", "Endurian", "Potato Mine", "Squash", "Cherry Bomb", "Jalapeno", "Hot Potato", "Pepper-pult", "Kernel-pult", "Melon-pult", "Torchwood"],
+    "terrain": [".........", ".....^...", ".........", ".....v...", "........."],
+    "rules": { "bossMinions": ["ZombieDefault", "ZombieArmor1", "ZombieIceAgeHunter", "ZombieIceAgeTroglobite", "ZombieIceAgeDodo"] },
+    "waves": []
+  },
+  {
     "id": "s3l1", "chapter": "BIG_WAVE_BEACH", "levelNumber": 1, "mode": "STANDARD",
     "name": "Big Wave Beach - Day 1",
     "startingSun": 50, "seedSlots": 7,
@@ -186,6 +204,15 @@
     ]
   },
   {
+    "id": "s3l5", "chapter": "BIG_WAVE_BEACH", "levelNumber": 5, "mode": "ZOMBOSS",
+    "name": "Big Wave Beach - Zombot Sharktronic Sub",
+    "startingSun": 0, "seedSlots": 8,
+    "availablePlants": ["Lily Pad", "Tangle Kelp", "Sea-shroom", "Peashooter", "Repeater", "Snow Pea", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Kernel-pult", "Melon-pult", "Bowling Bulb", "Grapeshot"],
+    "terrain": [".....!!!!", ".....!!!!", ".....!!!!", ".....!!!!", ".....!!!!"],
+    "rules": { "bossMinions": ["ZombieDefault", "ZombieArmor1", "ZombieBeachFisherman", "ZombieBeachSnorkel", "ZombieBeachOctopus", "ZombieGargantuar"] },
+    "waves": []
+  },
+  {
     "id": "s4l1", "chapter": "DARK_AGES", "levelNumber": 1, "mode": "STANDARD",
     "name": "Dark Ages - Day 1",
     "startingSun": 100, "seedSlots": 7,
@@ -243,5 +270,14 @@
       { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"], "budget": 8000, "delay": 50 },
       { "zombies": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"], "budget": 9450, "delay": 55, "isFinal": true }
     ]
+  },
+  {
+    "id": "s4l5", "chapter": "DARK_AGES", "levelNumber": 5, "mode": "ZOMBOSS",
+    "name": "Dark Ages - Zombot Dark Dragon",
+    "startingSun": 0, "seedSlots": 8,
+    "availablePlants": ["Peashooter", "Repeater", "Snow Pea", "Threepeater", "Fume-shroom", "Wall-nut", "Tall-nut", "Potato Mine", "Squash", "Cherry Bomb", "Kernel-pult", "Melon-pult", "Magnet-shroom", "Chomper", "Pumpkin"],
+    "terrain": [".........", ".........", ".........", ".........", "........."],
+    "rules": { "bossMinions": ["ZombieDefault", "ZombieDarkArmor3", "ZombieDarkJuggler", "ZombieWizard", "ZombieDarkKing", "ZombieDarkImpDragon", "ZombieGargantuar"] },
+    "waves": []
   }
 ]

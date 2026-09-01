@@ -198,14 +198,15 @@ public class Constants {
     public static final Integer DEFAULT_BEST_MEOW_POINTS = null;
     public static final int DEFAULT_LAST_CHAPTER = 1;
     public static final int DEFAULT_LAST_LEVEL = 1;
-    // The campaign is 4 chapters of 4 levels each; lastChapter/lastLevel are pointers to the next
+    // The campaign is 4 chapters of 5 levels each -- four days and then the season's Zomboss, which is
+    // what the fifth of every chapter is. lastChapter/lastLevel are pointers to the next
     // unlocked level, so the number of levels a profile has actually finished is
     // (lastChapter-1)*LEVELS_PER_CHAPTER + (lastLevel-1). Used by the leaderboard to show the last
     // completed stage and by ShowProfileCommand to count completed levels.
     // Starting sun for the scoring game. Generous on purpose: leftover sun is itself worth Meow Points,
     // so the player is constantly trading defence against hoarding.
     public static final int SCORING_GAME_STARTING_SUN = 150;
-    public static final int LEVELS_PER_CHAPTER = 4;
+    public static final int LEVELS_PER_CHAPTER = 5;
     // Each mini-game hosts this many progressively harder levels (Travel Log). Clearing a level unlocks
     // the next, up to this cap; the leaderboard's mini-game tally is therefore 0..MINIGAME_LEVELS each.
     public static final int MINIGAME_LEVELS = 3;

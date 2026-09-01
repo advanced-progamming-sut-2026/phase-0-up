@@ -54,6 +54,8 @@ public final class GameHud implements Disposable {
     private final Table shovelButton;
     private final Table plantFoodButton;
     private final WaveBar waveBar;
+    // The season boss's three-band health, standing in for the wave meter on a Zomboss level only.
+    private final BossBar bossBar;
     // Coins and gems during a level. The spec asks for both to be visible "in all menus, even
     // during gameplay", and until now the lawn was the one screen without them -- which also left
     // a dropped coin with no counter to land on.
@@ -130,6 +132,9 @@ public final class GameHud implements Disposable {
         this.meowLabel = new Label("0", assets.skin());
         this.cardRow = new Table();
         this.waveBar = new WaveBar(assets, this.art);
+        // Null on every level but a boss one, which is what layoutRoot tests to decide which meter goes
+        // along the bottom.
+        this.bossBar = bossModeOf(session) == null ? null : new BossBar(assets, this.art);
         // Sun and plant food have in-game cheat commands; coins and gems do NOT -- the in-game grammar
         // is only `cheat add -n N suns` and `cheat add-plant-food`, so a command string for currency
         // would parse as nothing and the button would silently do nothing. Those two go out as a
@@ -345,10 +350,31 @@ public final class GameHud implements Disposable {
 
     private String conveyorSignature = "";
 
-    private void buildConveyor() {
-        models.game.gamemodes.WallnutBowlingMode mode =
+    // The Zomboss level's belt, which is the same widget carrying plants instead of nuts.
+    //
+    // A boss level asks the player for no loadout at all -- that is the spec's rule for it -- so it
+    // fills the same hole Wall-nut Bowling does and fills it the same way. Everything below is shared;
+    // only what a card is built FROM differs, which is why the belt itself keys on plain names.
+    static models.game.gamemodes.ZombossMode bossModeOf(GameSession session) {
+        return session != null && session.getMode() instanceof models.game.gamemodes.ZombossMode boss
+                ? boss : null;
+    }
+
+    // How many slots the belt shows, or 0 on a level that has no belt at all. One question asked of
+    // both modes, so the column is built once rather than twice.
+    private int beltCapacity() {
+        models.game.gamemodes.WallnutBowlingMode nuts =
                 views.gdx.render.BowlingRenderer.modeOf(session);
-        if (mode == null) {
+        if (nuts != null) {
+            return nuts.conveyorCapacity();
+        }
+        models.game.gamemodes.ZombossMode boss = bossModeOf(session);
+        return boss == null ? 0 : boss.conveyorCapacity();
+    }
+
+    private void buildConveyor() {
+        int capacity = beltCapacity();
+        if (capacity <= 0) {
             return;
         }
         Table column = new Table();
@@ -367,7 +393,7 @@ public final class GameHud implements Disposable {
             Table slats = new Table();
             slats.add(new ConveyorBelt(slatArt, BELT_SLOT_HEIGHT))
                     .size(BELT_SLOT_WIDTH + BELT_PAD * 2f,
-                            BELT_SLOT_HEIGHT * mode.conveyorCapacity());
+                            BELT_SLOT_HEIGHT * capacity);
             track.add(slats);
         }
         // The nuts go in the SAME stack cell as the slats, so the track is exactly as tall as the belt
@@ -375,7 +401,7 @@ public final class GameHud implements Disposable {
         // sun counter.
         track.add(beltTrack);
         column.add(track).width(BELT_SLOT_WIDTH + BELT_PAD * 2f)
-                .height(BELT_SLOT_HEIGHT * mode.conveyorCapacity()).row();
+                .height(BELT_SLOT_HEIGHT * capacity).row();
 
         conveyor = new Table();
         conveyor.setFillParent(true);
@@ -405,12 +431,28 @@ public final class GameHud implements Disposable {
     // The signature check remains, because reconcile() is the expensive half and the belt is unchanged
     // on the overwhelming majority of frames.
     private void refreshConveyor() {
-        models.game.gamemodes.WallnutBowlingMode mode =
-                views.gdx.render.BowlingRenderer.modeOf(session);
-        if (mode == null || beltTrack == null) {
+        if (beltTrack == null) {
             return;
         }
-        java.util.List<models.entities.plants.bowling.BowlingKind> belt = mode.getConveyor();
+        models.game.gamemodes.WallnutBowlingMode nuts =
+                views.gdx.render.BowlingRenderer.modeOf(session);
+        models.game.gamemodes.ZombossMode boss = bossModeOf(session);
+        // The belt as NAMES, which is all ConveyorTrack compares -- see its note. A nut rides as its
+        // BowlingKind's name and a boss level's plant rides as its own, so one belt serves both.
+        java.util.List<String> belt;
+        java.util.function.Function<String, SeedCardActor> factory;
+        if (nuts != null) {
+            belt = new ArrayList<>();
+            for (models.entities.plants.bowling.BowlingKind kind : nuts.getConveyor()) {
+                belt.add(kind.name());
+            }
+            factory = name -> nutCard(models.entities.plants.bowling.BowlingKind.valueOf(name));
+        } else if (boss != null) {
+            belt = boss.getConveyor();
+            factory = this::beltPlantCard;
+        } else {
+            return;
+        }
         String signature = String.valueOf(belt);
         if (signature.equals(conveyorSignature)) {
             return;
@@ -419,8 +461,32 @@ public final class GameHud implements Disposable {
         // Dropped and rebuilt from the surviving riders, because `cards` is what update() walks to
         // refresh every card each frame and a card that has left the belt must not stay on it.
         cards.clear();
-        beltTrack.reconcile(belt, this::nutCard);
+        beltTrack.reconcile(belt, factory);
         beltTrack.collectInto(cards);
+    }
+
+    // One plant riding a Zomboss level's belt.
+    //
+    // Cost ZERO, for exactly the reason Vasebreaker's hand is: a card dims itself when the player
+    // cannot afford it, and a boss level has no sun economy at all (ZombossMode.allowsSkySun is false),
+    // so charging the plant's shop price would veil every card on the belt as unaffordable forever.
+    // Off the belt it is free -- that IS the mode.
+    //
+    // And no supply count: one card on the belt is one plant, so "x1" under every single one of them
+    // would say nothing the belt is not already showing.
+    private SeedCardActor beltPlantCard(String plantType) {
+        SeedCardActor card = new SeedCardActor(assets, art, new SeedPacket(plantType, 0), 0,
+                new PlantIcon(sprites.get(plantType)));
+        card.setSupply(0);
+        card.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                tools.selectSeed(card.plantType());
+            }
+        });
+        // NOT added to `cards`: the belt owns which cards exist and refreshConveyor rebuilds that list
+        // from the riders that survived the reconcile. See nutCard.
+        return card;
     }
 
     // ---- I, Zombie's roster -----------------------------------------------------------------------
@@ -494,6 +560,14 @@ public final class GameHud implements Disposable {
     // exists.
     private void refreshHand() {
         if (session.getMode() == null || !session.getMode().managesPlantInventory()) {
+            return;
+        }
+        // A mode may manage the player's plants and still not want them laid out as a HAND. Vasebreaker
+        // does -- its plants come out of vases and sit in a bank along the top. A Zomboss level's come
+        // up a conveyor and ride it, which is a different picture of the same inventory, so it owns the
+        // cards instead; building both would leave two sets of actors fighting over `cards` (the belt
+        // would win, since it refreshes second) and a bank of ghost cards laid out off-stage.
+        if (beltTrack != null) {
             return;
         }
         java.util.Map<String, Integer> hand = session.getMode().plantInventory();
@@ -668,7 +742,12 @@ public final class GameHud implements Disposable {
         // it, so a flush-bottom meter loses the head off the screen.
         waveRow.bottom().pad(26f);
         // Bar first, count underneath it: the bar is the thing being read and the number annotates it.
-        waveRow.add(waveBar).size(440f, 30f).row();
+        //
+        // On a boss level the WAVE meter is not merely unhelpful, it is wrong: ZombossMode authors no
+        // waves at all, so it would read "Wave 0 / 0" and sit empty for the whole fight. The spec's
+        // instruction is exactly this swap -- take the zombie progress bar out and put the boss's
+        // three-band health in its place. See BossBar.
+        waveRow.add(bossBar != null ? bossBar : waveBar).size(440f, 30f).row();
         waveRow.add(waveLabel).padTop(2f);
         stage.addActor(waveRow);
     }
@@ -768,6 +847,23 @@ public final class GameHud implements Disposable {
     }
 
     private void updateWave() {
+        // The boss fight, which has no waves and is not trying to answer the same question. The label
+        // names the machine and how many bands of armour are left, because "which boss is this" is the
+        // one thing the bar itself cannot say -- and once the fight is over there is nothing left to
+        // read, so the readout stops rather than reporting a dead boss's zero.
+        models.game.gamemodes.ZombossMode zomboss = bossModeOf(session);
+        if (zomboss != null && bossBar != null) {
+            models.entities.zombies.Zomboss boss = zomboss.getBoss();
+            bossBar.set(boss);
+            if (boss == null || boss.getHealth().isDead()) {
+                waveLabel.setText(zomboss.getKind().getDisplayName() + " -- down!");
+            } else {
+                waveLabel.setText(zomboss.getKind().getDisplayName() + "  |  armour "
+                        + boss.sectionsRemaining() + " / " + models.entities.zombies.Zomboss.SECTIONS
+                        + (boss.getState().isDizzy() ? "  |  DIZZY -- hit it!" : ""));
+            }
+            return;
+        }
         // A versus match has no waves at all -- it has a clock, and the clock IS the win condition for
         // one of the two players. Same widget, same question: how far through am I? Without it the
         // three minutes the plant player is trying to survive are invisible, and "hold out" is not a

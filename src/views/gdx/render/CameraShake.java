@@ -39,6 +39,21 @@ public final class CameraShake {
     private static final float TRAUMA_EXPLOSION = 0.75f;
     private static final float TRAUMA_SMASH = 1.00f;
 
+    // A Zomboss landing one of its heavy moves. Full strength, and not by a slip of the dial: this is
+    // the Gargantuar's mallet argument taken to its conclusion. A missile, a charge and a turbine are
+    // each a several-ton machine doing something to ground the player is standing on, none of them is
+    // anything the player set off, and every one of them wipes a whole row -- so if the hammer is worth
+    // flinching at, these are.
+    //
+    // Only the heavy three. A fireball, an ice boulder and a baby shark all land on ONE tile and shaking
+    // the whole board for each would put the camera in permanent motion for the length of a boss fight,
+    // which is how a shake stops meaning anything.
+    private static final float TRAUMA_BOSS = 1.00f;
+
+    private static final Pattern BOSS_HEAVY = Pattern.compile(
+            "^The .+? (fires a missile into|charges down rows|breathes fire down rows"
+                    + "|fires up its turbine|glaciates column).*$");
+
     // Trauma bleeds off linearly, so a full-strength shake is over in about 0.6s and a blast in 0.47s.
     private static final float DECAY_PER_SECOND = 1.6f;
 
@@ -91,6 +106,11 @@ public final class CameraShake {
         if (DETONATION.matcher(text).matches()) {
             add(TRAUMA_EXPLOSION);
             log(text, TRAUMA_EXPLOSION);
+            return;
+        }
+        if (BOSS_HEAVY.matcher(text).matches()) {
+            add(TRAUMA_BOSS);
+            log(text, TRAUMA_BOSS);
             return;
         }
         Matcher smash = SMASH.matcher(text);

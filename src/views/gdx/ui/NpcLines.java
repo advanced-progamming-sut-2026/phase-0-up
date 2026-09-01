@@ -57,6 +57,12 @@ public final class NpcLines {
         m.put("Wall-nut Bowling!", Speaker.PENNY);
         m.put("Scoring Game for", Speaker.PENNY);
         m.put("Zombotany!", Speaker.PENNY);
+        // The one banner Penny does not deliver. A boss level's opening line is the boss ARRIVING, and
+        // the machine announcing itself is the whole point of the moment -- Penny explaining the rules
+        // of a fight the player can already see rolling onto the lawn throws it away. Keyed on the mode
+        // name rather than on the four boss names for the same reason every other entry here is: the
+        // banner opens with it (see ZombossMode.onStart), so one token covers all four seasons.
+        m.put("Zomboss!", Speaker.ZOMBOSS);
         return m;
     }
 

@@ -43,6 +43,8 @@ public final class GameRenderer {
     private final WeatherEffects weather;
     private final ImpactEffects impacts;
     private final ExplosionEffects explosions;
+    // A Zomboss's attacks. Silent on every board without one.
+    private final BossEffects bossEffects;
     private final DeathEffects deaths;
     // Craters and the settle flash after a match. Idle on every board that is not Beghouled.
     private final BeghouledRenderer beghouled;
@@ -103,6 +105,7 @@ public final class GameRenderer {
         this.impacts = new ImpactEffects(sprites, lawn);
         this.explosions = new ExplosionEffects(sprites, lawn);
         this.explosions.setCollectibles(this.collectibles);
+        this.bossEffects = new BossEffects(sprites, lawn);
         this.deaths = new DeathEffects(sprites, lawn);
         // A death asks the blasts whether one of them is what killed it -- that is what decides between
         // the zombie's own `die` clip and a heap of ash. See DeathEffects.
@@ -145,6 +148,10 @@ public final class GameRenderer {
     // The model narrates detonations; this is where the view hears about them.
     public ExplosionEffects explosions() {
         return explosions;
+    }
+
+    public BossEffects bossEffects() {
+        return bossEffects;
     }
 
     // And the Gargantuar's imp throw, which is an instant rather than a state -- so it too arrives as a
@@ -256,7 +263,17 @@ public final class GameRenderer {
         deaths.drawRow(batch, row);
 
         laneZombies.clear();
-        laneZombies.addAll(lane.getZombies());
+        for (Zombie zombie : lane.getZombies()) {
+            // A Zomboss is a member of BOTH of the rows it straddles -- that is what lets plants in
+            // either one shoot it (see Zombie.rowSpan) -- so this loop reaches it twice a frame. It is
+            // drawn from its TOP row only, which is the row it is filed under and the one its two-lane
+            // height is measured down from; drawn from the lower row as well it would appear a second
+            // time, one lane down, ghosting through itself.
+            if (zombie.rowSpan() > 1 && zombie.getMovement().getPositionY() != row) {
+                continue;
+            }
+            laneZombies.add(zombie);
+        }
         laneZombies.sort(BACK_TO_FRONT);
         for (Zombie zombie : laneZombies) {
             zombies.draw(batch, zombie, delta, alpha);
@@ -329,6 +346,11 @@ public final class GameRenderer {
         // The blast's front half, over everything -- drawn after the suns so a detonation is not hidden
         // behind one that happens to be sitting on the same tile.
         explosions.drawFront(batch);
+
+        // And a boss attack over even that. It is the single loudest thing that can happen on a frame,
+        // it wipes whole rows, and half of it hidden behind the plants it just destroyed would leave the
+        // player looking at an empty lane with no idea what emptied it.
+        bossEffects.draw(batch, delta);
     }
 
     // Effects raised during the lane pass, handed to ImpactEffects once it is over.
